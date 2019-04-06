@@ -12,17 +12,9 @@ def rmse_user_knn(model, dataset, mode="train"):
         ratings = dataset.test_ratings
 
     pred = []
-    delete = []
     for j, (u, i) in enumerate(zip(user_indices, item_indices)):
         p = model.predict(u, i)
         pred.append(p)
-
-    #    if p > 0:
-    #        pred.append(p)
-    #    else:
-    #        delete.append(j)
-    # ratings = np.delete(ratings, delete)
-    # print(len(pred), len(ratings))
     score = np.sqrt(np.mean(np.power(np.array(pred) - ratings, 2)))
     return score
 
