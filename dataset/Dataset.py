@@ -11,14 +11,22 @@ import tensorflow as tf
 
 class Dataset:
     def __init__(self):
-        self.data = defaultdict(dict)
+    #    self.data_user = defaultdict(dict)
+    #    self.data_item = defaultdict(dict)
+        self.train_user = defaultdict(dict)
+        self.train_item = defaultdict(dict)
+    #    self.test_user = defaultdict(dict)
+    #    self.test_item = defaultdict(dict)
         self.user2id = dict()
         self.item2id = dict()
         self.id2user = dict()
         self.id2item = dict()
-        self.user_indices = list()
-        self.item_indices = list()
-        self.ratings = list()
+        self.train_user_indices = list()
+        self.train_item_indices = list()
+        self.train_ratings = list()
+        self.test_user_indices = list()
+        self.test_item_indices = list()
+        self.test_ratings = list()
 
     @classmethod
     def load_dataset(cls, data_path="../ml-1m/ratings.dat", shuffle=False):
@@ -27,12 +35,17 @@ class Dataset:
             loaded_data = np.random.permutation(loaded_data)
         return loaded_data
 
-    def build_dataset(self, loaded_data, user_based=True, length="all"):
+    def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=False, length="all",
+                      train_frac=0.8, seed=42):
+        np.random.seed(seed)
         index_user = 0
         index_item = 0
+        loaded_data = open(data_path, 'r').readlines()
+        if shuffle:
+            loaded_data = np.random.permutation(loaded_data)
         if length == "all":
             length = len(loaded_data)
-        for line in loaded_data[:length]:
+        for i, line in enumerate(loaded_data[:length]):
             user = line.split("::")[0]
             item = line.split("::")[1]
             rating = line.split("::")[2]
@@ -48,42 +61,55 @@ class Dataset:
                 item_id = index_item
                 self.item2id[item] = index_item
                 index_item += 1
-            self.user_indices.append(user_id)
-            self.item_indices.append(item_id)
-            self.ratings.append(int(rating))
-            if user_based:
-                self.data[user_id].update(dict(zip([item_id], [int(rating)])))
+
+            if i <= int(train_frac * length):
+                self.train_user_indices.append(user_id)
+                self.train_item_indices.append(item_id)
+                self.train_ratings.append(int(rating))
+                self.train_user[user_id].update(dict(zip([item_id], [int(rating)])))
+                self.train_item[item_id].update(dict(zip([user_id], [int(rating)])))
             else:
-                self.data[item_id].update(dict(zip([user_id], [int(rating)])))
-        self.user_indices = np.array(self.user_indices)
-        self.item_indices = np.array(self.item_indices)
-        self.ratings = np.array(self.ratings)
+                self.test_user_indices.append(user_id)
+                self.test_item_indices.append(item_id)
+                self.test_ratings.append(int(rating))
+
+        '''
+        print("before: ", len(self.train_ratings), len(self.test_ratings))
+        for u, i, r in zip(self.test_user_indices, self.test_item_indices, self.test_ratings):
+            if u not in self.train_user:
+                self.test_user_indices.remove(u)
+                self.test_item_indices.remove(i)
+                self.test_ratings.remove(r)
+            elif i not in self.train_item:
+                self.test_user_indices.remove(u)
+                self.test_item_indices.remove(i)
+                self.test_ratings.remove(r)
+        for u, i, r in zip(self.test_user_indices, self.test_item_indices, self.test_ratings):
+            if u not in self.train_user:
+                self.test_user_indices.remove(u)
+                self.test_item_indices.remove(i)
+                self.test_ratings.remove(r)
+            elif i not in self.train_item:
+                self.test_user_indices.remove(u)
+                self.test_item_indices.remove(i)
+                self.test_ratings.remove(r)
+
+        for u, i, r in zip(self.test_user_indices, self.test_item_indices, self.test_ratings):
+            if u not in self.train_user:
+                print("left", u)
+            elif i not in self.train_item:
+                print("i left", i)
+        print("after: ", len(self.train_ratings), len(self.test_ratings))
+        '''
 
 
-    def train_test_split(self, seed=42, train_frac=0.8, shuffle=False):
-        np.random.seed(int(seed))
-        if shuffle:
-            user_indices = np.random.permutation(self.user_indices)
-            item_indices = np.random.permutation(self.item_indices)
-            ratings = np.random.permutation(self.ratings)
-        else:
-            user_indices = self.user_indices
-            item_indices = self.item_indices
-            ratings = self.ratings
-        split = int(train_frac * len(self.user_indices))
-        print("train data length: {}, test data length:{}".format(
-            split, len(self.user_indices) - split))
-        train_user_indices, test_user_indices = user_indices[:split], user_indices[split:]
-        train_item_indices, test_item_indices = item_indices[:split], item_indices[split:]
-        train_ratings, test_ratings = ratings[:split], ratings[split:]
-        train_data = defaultdict(dict)
-        test_data = defaultdict(dict)
-        for u, i, r in zip(train_user_indices, train_item_indices, train_ratings):
-            train_data[u].update(dict(zip([i], [r])))
-        for u, i, r in zip(test_user_indices, test_item_indices, test_ratings):
-            test_data[u].update(dict(zip([i], [r])))
-        return (train_user_indices, train_item_indices, train_ratings, train_data), \
-               (test_user_indices, test_item_indices, test_ratings, test_data)
+        self.train_user_indices = np.array(self.train_user_indices)
+        self.train_item_indices = np.array(self.train_item_indices)
+        self.train_ratings = np.array(self.train_ratings)
+        self.test_user_indices = np.array(self.test_user_indices)
+        self.test_item_indices = np.array(self.test_item_indices)
+        self.test_ratings = np.array(self.test_ratings)
+
 
     def train_test_split_LOOV(self, k):
         """
@@ -145,3 +171,15 @@ class Dataset:
     @property
     def get_id2user(self):
         return {idx: user for user, idx in self.user2id.items()}
+
+    @property
+    def global_mean(self):
+        return np.mean(self.train_ratings)
+
+    @property
+    def n_users(self):
+        return len(self.train_user)
+
+    @property
+    def n_items(self):
+        return len(self.train_item)
