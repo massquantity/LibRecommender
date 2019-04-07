@@ -49,8 +49,7 @@ class itemKNN:
 
             try:
                 pred = bui + sim_ratings / sim_sums
-                pred = min(5, pred)
-                pred = max(0, pred)
+                pred = np.clip(pred, 1, 5)
                 return pred
             except ZeroDivisionError:
                 return self.default_prediction
@@ -70,8 +69,7 @@ class itemKNN:
 
             try:
                 pred = sim_ratings / sim_sums
-                pred = min(5, pred)
-                pred = max(0, pred)
+                pred = np.clip(pred, 1, 5)
                 return pred
             except ZeroDivisionError:
                 return self.default_prediction
