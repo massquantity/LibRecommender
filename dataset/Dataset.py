@@ -109,6 +109,7 @@ class Dataset:
         self.test_user_indices = np.array(self.test_user_indices)
         self.test_item_indices = np.array(self.test_item_indices)
         self.test_ratings = np.array(self.test_ratings)
+        return self
 
 
     def train_test_split_LOOV(self, k):
