@@ -47,8 +47,9 @@ class userKNN:
                     sim_sums += sim
             try:
                 pred = bui + sim_ratings / sim_sums
-                pred = min(5, pred)
-                pred = max(0, pred)
+                pred = np.clip(pred, 1, 5)
+            #    pred = min(5, pred)
+            #    pred = max(1, pred)
                 return pred
             except ZeroDivisionError:
                 return self.default_prediction
@@ -67,8 +68,7 @@ class userKNN:
                     sim_sums += sim
             try:
                 pred = sim_ratings / sim_sums
-                pred = min(5, pred)
-                pred = max(0, pred)
+                pred = np.clip(pred, 1, 5)
                 return pred
             except ZeroDivisionError:
                 return self.default_prediction
@@ -85,8 +85,11 @@ class userKNN:
                     continue
                 pred = self.predict(u, j)
                 rank.append((j, pred))
+
         if random_rec:
             item_pred_dict = {j: pred for j, pred in rank if pred >= 4}
+            if len(item_pred_dict) == 0:
+                return "not enough neighbors"
             item_list = list(item_pred_dict.keys())
             pred_list = list(item_pred_dict.values())
             p = [p / np.sum(pred_list) for p in pred_list]
