@@ -1,9 +1,9 @@
 import time
 import numpy as np
-from recommender_project.dataset.Dataset import Dataset
-from recommender_project.algorithms import user_KNN, item_KNN, SVD
-from recommender_project.evaluate import rmse_knn, rmse_svd
-from recommender_project.utils.baseline_estimates import baseline_als, baseline_sgd
+from libreco.dataset.Dataset import Dataset
+from libreco.algorithms import user_KNN, item_KNN, SVD
+from libreco.evaluate import rmse_knn, rmse_svd
+from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
 
 
 if __name__ == "__main__":
@@ -32,8 +32,8 @@ if __name__ == "__main__":
 #    print(rmse_svd(svd, dataset, mode="train"))
 #    print(rmse_svd(svd, dataset, mode="test"))
 
-    svd = SVD.SVDBaseline(n_factors=100, n_epochs=20000, lr=0.001, reg=10.0,
-                          batch_size=64, batch_training=False)
+    svd = SVD.SVDBaseline(n_factors=50, n_epochs=20000, lr=0.001, reg=0.1,
+                          batch_size=64, batch_training=True)
     svd.fit(dataset)
     print(rmse_svd(svd, dataset, mode="train"))
     print(rmse_svd(svd, dataset, mode="test"))
