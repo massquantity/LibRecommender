@@ -32,8 +32,8 @@ if __name__ == "__main__":
 #    print(rmse_svd(svd, dataset, mode="train"))
 #    print(rmse_svd(svd, dataset, mode="test"))
 
-    svd = SVD.SVDBaseline(n_factors=50, n_epochs=20000, lr=0.001, reg=0.1,
-                          batch_size=64, batch_training=True)
+    svd = SVD.SVDBaseline(n_factors=50, n_epochs=20000, lr=0.001, reg=0.5,
+                          batch_size=256, batch_training=True)
     svd.fit(dataset)
     print(rmse_svd(svd, dataset, mode="train"))
     print(rmse_svd(svd, dataset, mode="test"))
