@@ -1,7 +1,7 @@
 import time
 import numpy as np
 from libreco.dataset.Dataset import Dataset
-from libreco.algorithms import user_KNN, item_KNN, SVD
+from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp
 from libreco.evaluate import rmse_knn, rmse_svd
 from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
 
@@ -32,10 +32,23 @@ if __name__ == "__main__":
 #    print(rmse_svd(svd, dataset, mode="train"))
 #    print(rmse_svd(svd, dataset, mode="test"))
 
-    svd = SVD.SVDBaseline(n_factors=50, n_epochs=20000, lr=0.001, reg=0.5,
-                          batch_size=256, batch_training=True)
-    svd.fit(dataset)
-    print(rmse_svd(svd, dataset, mode="train"))
-    print(rmse_svd(svd, dataset, mode="test"))
+#    svd = SVD.SVDBaseline(n_factors=30, n_epochs=20000, lr=0.001, reg=0.1,
+#                          batch_size=256, batch_training=True)
+#    svd.fit(dataset)
+#    print(rmse_svd(svd, dataset, mode="train"))
+#    print(rmse_svd(svd, dataset, mode="test"))
+
+#    svdpp = SVDpp.SVDpp(n_factors=30, n_epochs=20000, lr=0.001, reg=0.1,
+#                        batch_size=256, batch_training=True)
+#    svdpp.fit(dataset)
+#    print(rmse_svd(svdpp, dataset, mode="train"))
+#    print(rmse_svd(svdpp, dataset, mode="test"))
+
+    svdpp = SVDpp.SVDpp_tf(n_factors=100, n_epochs=10, lr=0.001, reg=0.1,
+                            batch_size=2048, batch_training=True)  # 0.8579
+    svdpp.fit(dataset)
+    print(svdpp.predict(1,2))
+    print(rmse_svd(svdpp, dataset, mode="train"))
+    print(rmse_svd(svdpp, dataset, mode="test"))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
