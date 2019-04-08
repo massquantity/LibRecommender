@@ -5,7 +5,7 @@ from ..evaluate import rmse_svd
 try:
     import tensorflow as tf
 except ModuleNotFoundError:
-    print("you need tensorflow for tf-version of SVD")
+    print("you need tensorflow for tf-version of this model")
 
 
 class SVD:
@@ -125,8 +125,8 @@ class SVDBaseline:
                     err = r - (self.global_mean + self.bu[u] + self.bi[i] + dot)
                     self.bu[u] += self.lr * (err - self.reg * self.bu[u])
                     self.bi[i] += self.lr * (err - self.reg * self.bi[i])
-                    self.pu[u] += self.lr * (err - self.qi[i] - self.reg * self.pu[u])
-                    self.qi[i] += self.lr * (err - self.pu[u] - self.reg * self.qi[i])
+                    self.pu[u] += self.lr * (err * self.qi[i] - self.reg * self.pu[u])
+                    self.qi[i] += self.lr * (err * self.pu[u] - self.reg * self.qi[i])
 
                 if epoch % 1 == 0:
                     print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
@@ -146,8 +146,8 @@ class SVDBaseline:
                     err = r - (self.global_mean + self.bu[u] + self.bi[i] + dot)
                     self.bu[u] += self.lr * (err - self.reg * self.bu[u])
                     self.bi[i] += self.lr * (err - self.reg * self.bi[i])
-                    self.pu[u] += self.lr * (err.reshape(-1, 1) - self.qi[i] - self.reg * self.pu[u])
-                    self.qi[i] += self.lr * (err.reshape(-1, 1) - self.pu[u] - self.reg * self.qi[i])
+                    self.pu[u] += self.lr * (err.reshape(-1, 1) * self.qi[i] - self.reg * self.pu[u])
+                    self.qi[i] += self.lr * (err.reshape(-1, 1) * self.pu[u] - self.reg * self.qi[i])
 
                 if epoch % 1 == 0:
                     print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
