@@ -149,7 +149,7 @@ class SVDBaseline:
                     self.pu[u] += self.lr * (err.reshape(-1, 1) * self.qi[i] - self.reg * self.pu[u])
                     self.qi[i] += self.lr * (err.reshape(-1, 1) * self.pu[u] - self.reg * self.qi[i])
 
-                if epoch % 1 == 0:
+                if epoch % 10 == 0:
                     print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
                     print("training rmse: ", self.rmse(dataset, "train"))
                     print("test rmse: ", self.rmse(dataset, "test"))
