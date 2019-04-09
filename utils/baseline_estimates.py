@@ -1,13 +1,14 @@
 import numpy as np
 
 
-def baseline_als(dataset, n_epochs=20, reg_u=15, reg_i=10):
+def baseline_als(dataset, n_epochs=100, reg_u=15, reg_i=10):
     train_user = dataset.train_user
     train_item = dataset.train_item
 
     bu = np.zeros((dataset.n_users))  # np.random.normal
     bi = np.zeros((dataset.n_items))
     global_mean = dataset.global_mean
+    count = 0
     for epoch in range(n_epochs):
         for u in train_user.keys():
             before_bu = bu.copy()
@@ -23,9 +24,11 @@ def baseline_als(dataset, n_epochs=20, reg_u=15, reg_i=10):
             i_ratings = np.array(list(train_item[i].values()))
             bi[i] = (np.sum(i_ratings) - i_length * global_mean - np.sum(bu[i_users])) / (reg_i + i_length)
 
-        if np.allclose(before_bu, bu, atol=1e-7) and np.allclose(before_bi, bi, atol=1e-7):
-            print("epoch {} converged !".format(epoch))
-            break
+        if np.allclose(before_bu, bu, atol=1e-5) and np.allclose(before_bi, bi, atol=1e-5):
+            count += 1
+            if count > 3:
+                print("epoch {} converged !".format(epoch))
+                break
     return bu, bi
 
 
