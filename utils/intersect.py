@@ -3,11 +3,14 @@ import pickle
 from .similarities import *
 
 
-def get_intersect(dataset, sim_option="pearson", min_support=1, k=40, load=True):
+def get_intersect(dataset, sim_option="pearson", min_support=1, k=40, load=False, parallel=True):
     n = len(dataset.train_item)
     ids = list(dataset.train_item.keys())
     if load:
         sim_matrix = pickle.load(open("test/sim_matrix.pkl", "rb"))
+    elif parallel:
+        sim_matrix = get_sim_parallel(dataset.train_item, sim_option,
+                                      ids, ids, min_support=min_support)
     else:
         sim_matrix = get_sim(dataset.train_item, sim_option, n, ids, min_support=min_support)
     print("similarity matrix shape: ", sim_matrix.shape)

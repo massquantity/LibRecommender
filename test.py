@@ -10,7 +10,7 @@ if __name__ == "__main__":
     t0 = time.time()
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     dataset = Dataset()
-    dataset.build_dataset(data_path="ml-1m/ratings.dat", length=10000, shuffle=True)
+    dataset.build_dataset(data_path="ml-1m/ratings.dat", length="all", shuffle=True)
 #    user_knn = user_KNN.userKNN(sim_option="pearson", k=40, min_support=5, baseline=True)
 #    user_knn.fit(dataset)
 #    print(rmse_knn(user_knn, dataset, mode="train"))
@@ -51,19 +51,12 @@ if __name__ == "__main__":
 #    print(rmse_svd(svdpp, dataset, mode="train"))
 #    print(rmse_svd(svdpp, dataset, mode="test"))
 
-#    superSVD = superSVD.superSVD(n_factors=30, n_epochs=10, lr=0.001, reg=0.1,
-#                                 batch_training=True, sim_option="pearson",
-#                                 k=40, min_support=10)  # lr1, lr2 reg1, reg2
-#    superSVD.fit(dataset)
-#    print(superSVD.predict(1,2))
-#    print(rmse_svd(superSVD, dataset, mode="train"))
-#    print(rmse_svd(superSVD, dataset, mode="test"))
-
-    superSVD_tf = superSVD.superSVD_tf(n_factors=30, n_epochs=10, lr=0.001, reg=0.1,
-                                       batch_training=True, sim_option="pearson",
-                                       k=40, min_support=10)  # lr1, lr2 reg1, reg2
-    superSVD_tf.fit(dataset)
-    print(rmse_svd(superSVD_tf, dataset, mode="train"))
-    print(rmse_svd(superSVD_tf, dataset, mode="test"))
+    superSVD = superSVD.superSVD(n_factors=200, n_epochs=10000, lr=0.001, reg=0.01,
+                                 batch_training=True, sim_option="pearson",
+                                 k=10, min_support=5)  # lr1, lr2 reg1, reg2
+    superSVD.fit(dataset)
+    print(superSVD.predict(1,2))
+    print(rmse_svd(superSVD, dataset, mode="train"))
+    print(rmse_svd(superSVD, dataset, mode="test"))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
