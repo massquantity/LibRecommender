@@ -182,7 +182,7 @@ class SVDBaseline:
 
 
 
-class SVD_tf:
+class SVD_tf_11111111111111111111555555555555555555:
     def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=1e-3,
                  batch_size=256, batch_training=True, seed=42):
         self.n_factors = n_factors
@@ -304,20 +304,231 @@ class SVD_tf:
 
 
 
+class SVD_tf_789999999089799999999999766:
+    def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=1e-3,
+                 batch_size=256, batch_training=True, seed=42):
+        self.n_factors = n_factors
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.reg = reg
+        self.batch_size = batch_size
+        self.batch_training = batch_training
+        self.seed = seed
+
+    def loss_define(self):
+        self.bias_user = tf.nn.embedding_lookup(self.bu, self.user_indices)
+        self.bias_item = tf.nn.embedding_lookup(self.bi, self.item_indices)
+        self.embed_user = tf.nn.embedding_lookup(self.pu, self.user_indices)
+        self.embed_item = tf.nn.embedding_lookup(self.qi, self.item_indices)
+
+        self.pred = self.global_mean + self.bias_user + self.bias_item + \
+                    tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item), axis=1)
+
+        self.loss = tf.reduce_sum(
+            tf.square(
+                tf.subtract(
+                    tf.cast(self.ratings, tf.float32), self.pred)))
+
+        self.reg_pu = tf.contrib.layers.l2_regularizer(self.reg)(self.pu)
+        self.reg_qi = tf.contrib.layers.l2_regularizer(self.reg)(self.qi)
+        self.reg_bu = tf.contrib.layers.l2_regularizer(self.reg)(self.bu)
+        self.reg_bi = tf.contrib.layers.l2_regularizer(self.reg)(self.bi)
+        self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi])
+
+        self.optimizer = tf.train.AdamOptimizer(self.lr)
+    #    self.optimizer = tf.train.GradientDescentOptimizer(self.lr)
+        self.training_op = self.optimizer.minimize(self.total_loss)
+
+    def fit(self, dataset):
+        tf.set_random_seed(self.seed)
+        train_user_indices = dataset.train_user_indices
+        train_item_indices = dataset.train_item_indices
+        test_user_indices = dataset.test_user_indices
+        test_item_indices = dataset.test_item_indices
+        train_ratings = dataset.train_ratings
+        test_ratings = dataset.test_ratings
+        self.global_mean = dataset.global_mean
+
+        self.bu = tf.Variable(tf.zeros([dataset.n_users]))
+        self.bi = tf.Variable(tf.zeros([dataset.n_items]))
+        self.pu = tf.Variable(tf.random_normal([dataset.n_users, self.n_factors], 0.0, 0.01))
+        self.qi = tf.Variable(tf.random_normal([dataset.n_items, self.n_factors], 0.0, 0.01))
+
+        iterator = tf.data.Iterator.from_structure(dataset.dataset_tf.output_types,
+                                                   dataset.dataset_tf.output_shapes)
+        sample = iterator.get_next()
+        self.user_indices = sample['user']
+        self.item_indices = sample['item']
+        self.ratings = sample['rating']
+
+        self.loss_define()
+        init = tf.global_variables_initializer()
+
+        with tf.Session() as sess:
+            sess.run(init)
+            for epoch in range(self.n_epochs):
+                t0 = time.time()
+                sess.run(iterator.make_initializer(dataset.dataset_tf))
+            #    iterator = dataset.dataset_tf.make_one_shot_iterator()  #####
+                sample = iterator.get_next()
+                self.user_indices = sample['user']
+                self.item_indices = sample['item']
+                self.ratings = sample['rating']
+                try:
+                    while True:
+                        train_loss, _ = sess.run([self.total_loss, self.training_op])
+                except tf.errors.OutOfRangeError:
+                    print("epoch end")
+                print("Epoch: ", epoch + 1, "\ttrain loss: {}".format(train_loss))
+                print("Epoch {}, training time: {:.4f}".format(epoch + 1, time.time() - t0))
+
+            self.pu = self.pu.eval()
+            self.qi = self.qi.eval()
+            self.bu = self.bu.eval()
+            self.bi = self.bi.eval()
+
+    #    self.pred = pred
+    #    self.ratings = ratings
+    #    self.user_indices = user_indices
+    #    self.item_indices = item_indices
+    #    self.global_mean = global_mean
+
+
+    def predict(self, u, i):
+        try:
+            pred = np.dot(self.pu[u], self.qi[i]) + \
+                   self.global_mean + \
+                   self.bu[u] + \
+                   self.bi[i]
+            pred = np.clip(pred, 1, 5)
+        except IndexError:
+            pred = self.global_mean
+        return pred
 
 
 
 
+class SVD_tf:
+    def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=1e-3,
+                 batch_size=256, batch_training=True, seed=42):
+        self.n_factors = n_factors
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.reg = reg
+        self.batch_size = batch_size
+        self.batch_training = batch_training
+        self.seed = seed
+
+    def loss_define(self):
+        self.bias_user = tf.nn.embedding_lookup(self.bu, self.user_indices)
+        self.bias_item = tf.nn.embedding_lookup(self.bi, self.item_indices)
+        self.embed_user = tf.nn.embedding_lookup(self.pu, self.user_indices)
+        self.embed_item = tf.nn.embedding_lookup(self.qi, self.item_indices)
+
+        self.pred = self.global_mean + self.bias_user + self.bias_item + \
+                    tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item), axis=1)
+
+        self.loss = tf.reduce_sum(
+            tf.square(
+                tf.subtract(
+                    tf.cast(self.ratings, tf.float32), self.pred)))
+
+        self.reg_pu = tf.contrib.layers.l2_regularizer(self.reg)(self.pu)
+        self.reg_qi = tf.contrib.layers.l2_regularizer(self.reg)(self.qi)
+        self.reg_bu = tf.contrib.layers.l2_regularizer(self.reg)(self.bu)
+        self.reg_bi = tf.contrib.layers.l2_regularizer(self.reg)(self.bi)
+        self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi])
+
+        self.optimizer = tf.train.AdamOptimizer(self.lr)
+    #    self.optimizer = tf.train.GradientDescentOptimizer(self.lr)
+        self.training_op = self.optimizer.minimize(self.total_loss)
+
+    def fit(self, dataset):
+        tf.set_random_seed(self.seed)
+        train_user_indices = dataset.train_user_indices
+        train_item_indices = dataset.train_item_indices
+        test_user_indices = dataset.test_user_indices
+        test_item_indices = dataset.test_item_indices
+        train_ratings = dataset.train_ratings
+        test_ratings = dataset.test_ratings
+        self.global_mean = dataset.global_mean
+
+        self.bu = tf.Variable(tf.zeros([dataset.n_users]))
+        self.bi = tf.Variable(tf.zeros([dataset.n_items]))
+        self.pu = tf.Variable(tf.random_normal([dataset.n_users, self.n_factors], 0.0, 0.01))
+        self.qi = tf.Variable(tf.random_normal([dataset.n_items, self.n_factors], 0.0, 0.01))
+        '''
+        iterator = dataset.dataset_tf.make_one_shot_iterator()  # repeat(5)
+        sample = iterator.get_next()
+        self.user_indices = sample['user']
+        self.item_indices = sample['item']
+        self.ratings = sample['rating']
+
+        self.loss_define()
+        init = tf.global_variables_initializer()
+        
+        with tf.Session() as sess:
+            sess.run(init)
+            try:
+                while True:
+                    train_loss, _ = sess.run([self.total_loss, self.training_op])
+            except tf.errors.OutOfRangeError:
+                print("epoch end")
 
 
+            self.pu = self.pu.eval()
+            self.qi = self.qi.eval()
+            self.bu = self.bu.eval()
+            self.bi = self.bi.eval()
+        '''
+
+        def get(sample):
+            return sample['user'], sample['item'], sample['rating']
+
+        iterator = dataset.dataset_tf.make_initializable_iterator()
+        sample = iterator.get_next()
+    #    self.user_indices = sample['user']
+    #    self.item_indices = sample['item']
+    #    self.ratings = sample['rating']
+        self.user_indices, self.item_indices, self.ratings = get(sample)
+
+        self.loss_define()
+        init = tf.global_variables_initializer()
+
+        with tf.Session() as sess:
+            sess.run(init)
+            for epoch in range(1, self.n_epochs + 1):
+                t0 = time.time()
+                sess.run(iterator.initializer)
+                while True:
+                    try:
+                        train_loss, _ = sess.run([self.total_loss, self.training_op])
+                    except tf.errors.OutOfRangeError:
+                        break
+
+            #    train_loss = sess.run(self.total_loss)
+                print("Epoch: ", epoch, "\ttrain loss: {}".format(train_loss))
+                print("Epoch {}, training time: {:.4f}".format(epoch + 1, time.time() - t0))
+
+            self.pu = self.pu.eval()
+            self.qi = self.qi.eval()
+            self.bu = self.bu.eval()
+            self.bi = self.bi.eval()
+
+    #    self.pred = pred
+    #    self.ratings = ratings
+    #    self.user_indices = user_indices
+    #    self.item_indices = item_indices
+    #    self.global_mean = global_mean
 
 
-
-
-
-
-
-
-
-
-
+    def predict(self, u, i):
+        try:
+            pred = np.dot(self.pu[u], self.qi[i]) + \
+                   self.global_mean + \
+                   self.bu[u] + \
+                   self.bi[i]
+            pred = np.clip(pred, 1, 5)
+        except IndexError:
+            pred = self.global_mean
+        return pred
