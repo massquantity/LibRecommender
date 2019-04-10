@@ -42,8 +42,8 @@ if __name__ == "__main__":
 #    print(svd.topN(1, 5, random_rec=False))
 #    print(svd.topN(1, 5, random_rec=True))
 
-    svd = SVD.SVD_tf(n_factors=100, n_epochs=20, lr=0.01, reg=0.1,
-                     batch_size=128, batch_training=True)
+    svd = SVD.SVD_tf(n_factors=100, n_epochs=10, lr=0.01, reg=0.1,
+                     batch_size=1280, batch_training=True)
     svd.fit(dataset)
     print(svd.predict(1,2))
     print(rmse_svd(svd, dataset, mode="train"))
