@@ -3,7 +3,7 @@ import pickle
 from .similarities import *
 
 
-def get_intersect(dataset, sim_option="pearson", min_support=1, k=40, load=False, parallel=True):
+def get_intersect(dataset, sim_option="pearson", min_support=1, k=40, load=False, parallel=False):
     n = len(dataset.train_item)
     ids = list(dataset.train_item.keys())
     if load:

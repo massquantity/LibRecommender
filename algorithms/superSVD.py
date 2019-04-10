@@ -265,7 +265,13 @@ class superSVD_tf:
 
         def compute_loss():
             pred_whole = []
-            for u, i in zip(dataset.train_user_indices, dataset.train_item_indices):
+        #    for u, i in zip(dataset.train_user_indices, dataset.train_item_indices):
+            data = tf.data.Dataset.from_tensor_slices((dataset.train_user_indices,
+                                                       dataset.train_item_indices,
+                                                       dataset.train_ratings))
+            for one_element in tfe.Iterator(data):
+                u = one_element[0].numpy()
+                i = one_element[1].numpy()
                 u_items = np.array(list(dataset.train_user[u].keys()))
                 nui = tf.reduce_sum(tf.gather(yj, u_items), axis=0) / \
                            tf.sqrt(tf.cast(tf.size(u_items), tf.float32))

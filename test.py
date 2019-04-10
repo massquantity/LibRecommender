@@ -51,9 +51,9 @@ if __name__ == "__main__":
 #    print(rmse_svd(svdpp, dataset, mode="train"))
 #    print(rmse_svd(svdpp, dataset, mode="test"))
 
-    superSVD = superSVD.superSVD(n_factors=200, n_epochs=10000, lr=0.001, reg=0.01,
-                                 batch_training=True, sim_option="pearson",
-                                 k=10, min_support=5)  # lr1, lr2 reg1, reg2
+    superSVD = superSVD.superSVD(n_factors=200, n_epochs=10000, lr=0.001, reg=0.001,
+                                 batch_training=True, sim_option="cosine",
+                                 k=40, min_support=5)  # lr1, lr2 reg1, reg2
     superSVD.fit(dataset)
     print(superSVD.predict(1,2))
     print(rmse_svd(superSVD, dataset, mode="train"))

@@ -162,7 +162,11 @@ class Dataset:
 
 #    def load_implicit_data
 
-#    def load_tf
+    def load_tf_dataset(self):
+        return 9
+
+
+
 
     def ratings(dataset):
         for user, r in dataset.items():
