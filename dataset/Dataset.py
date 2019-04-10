@@ -162,8 +162,12 @@ class Dataset:
 
 #    def load_implicit_data
 
-    def load_tf_dataset(self):
-        return 9
+    def load_tf_dataset(self, batch_size=1):
+        dataset_tf = tf.data.Dataset.from_tensor_slices({'user': self.train_user_indices,
+                                                         'item': self.train_item_indices,
+                                                         'rating': self.train_ratings})
+        self.dataset_tf = dataset_tf.shuffle(len(self.train_ratings)).batch(batch_size)
+        return self
 
 
 
