@@ -2,7 +2,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from libreco.dataset.Dataset import Dataset
-from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp
+from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF
 from libreco.evaluate import rmse_knn, rmse_svd
 from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
 
@@ -12,7 +12,7 @@ if __name__ == "__main__":
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     dataset = Dataset()
     dataset.build_dataset(data_path="ml-1m/ratings.dat",
-                          length="all", shuffle=True)
+                          length=100000, shuffle=True)
     '''
     with tf.Session() as sess:
         dataset.load_tf_dataset(batch_size=len(dataset.train_ratings))
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     print("dddd")
     '''
 #    with tf.Session() as sess:
-    dataset.load_tf_dataset(batch_size=2048)
+#    dataset.load_tf_dataset(batch_size=2048)
 
 #    user_knn = user_KNN.userKNN(sim_option="pearson", k=40, min_support=5, baseline=True)
 #    user_knn.fit(dataset)
@@ -42,12 +42,12 @@ if __name__ == "__main__":
 #    print(svd.topN(1, 5, random_rec=False))
 #    print(svd.topN(1, 5, random_rec=True))
 
-    svd = SVD.SVD_tf(n_factors=100, n_epochs=10, lr=0.01, reg=0.1,
-                     batch_size=1280, batch_training=True)
-    svd.fit(dataset, data_mode="make")
-    print(svd.predict(1,2))
-    print(rmse_svd(svd, dataset, mode="train"))
-    print(rmse_svd(svd, dataset, mode="test"))
+#    svd = SVD.SVD_tf(n_factors=100, n_epochs=10, lr=0.01, reg=0.1,
+#                     batch_size=1280, batch_training=True)
+#    svd.fit(dataset, data_mode="structure")
+#    print(svd.predict(1,2))
+#    print(rmse_svd(svd, dataset, mode="train"))
+#    print(rmse_svd(svd, dataset, mode="test"))
 
 #    svd = SVD.SVDBaseline(n_factors=30, n_epochs=20000, lr=0.001, reg=0.1,
 #                          batch_size=256, batch_training=True)
@@ -75,5 +75,9 @@ if __name__ == "__main__":
 #    print(superSVD.predict(1,2))
 #    print(rmse_svd(superSVD, dataset, mode="train"))
 #    print(rmse_svd(superSVD, dataset, mode="test"))
+
+    ncf = NCF.NCF(embed_size=16, lr=0.00001, batch_size=32)
+    ncf.fit(dataset)
+
 
     print("train + test time: {:.4f}".format(time.time() - t0))
