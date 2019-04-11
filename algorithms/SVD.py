@@ -314,7 +314,7 @@ class SVD_tf:
             elif data_mode == "make":
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
-                    self.sess.run(iterator.initializer)
+                    self.sess.run(iterator_init)
                     while True:
                         try:
                             train_loss, _ = self.sess.run([self.total_loss, self.training_op])
