@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     svd = SVD.SVD_tf(n_factors=100, n_epochs=10, lr=0.01, reg=0.1,
                      batch_size=1280, batch_training=True)
-    svd.fit(dataset)
+    svd.fit(dataset, data_mode="make")
     print(svd.predict(1,2))
     print(rmse_svd(svd, dataset, mode="train"))
     print(rmse_svd(svd, dataset, mode="test"))
