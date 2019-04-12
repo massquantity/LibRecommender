@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from math import sqrt
 import tensorflow as tf
+from ..utils.negative_sampling import negative_sampling
 
 
 class Dataset:
@@ -35,9 +36,10 @@ class Dataset:
             loaded_data = np.random.permutation(loaded_data)
         return loaded_data
 
-    def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=False, length="all",
-                      train_frac=0.8, seed=42):
+    def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
+                      train_frac=0.8, implicit=False, batch_size=256, seed=42):
         np.random.seed(seed)
+        self.batch_size = batch_size
         index_user = 0
         index_item = 0
         loaded_data = open(data_path, 'r').readlines()
@@ -76,6 +78,9 @@ class Dataset:
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_ratings = np.array(self.train_ratings)
+        if implicit:
+            self.train_labels = np.ones(len(self.train_ratings), dtype=np.float32)
+
     #    self.test_user_indices = np.array(self.test_user_indices)
     #    self.test_item_indices = np.array(self.test_item_indices)
     #    self.test_ratings = np.array(self.test_ratings)
@@ -89,8 +94,10 @@ class Dataset:
         self.test_user_indices = test_safe[:, 0]
         self.test_item_indices = test_safe[:, 1]
         self.test_ratings = test_safe[:, 2]
+        if implicit:
+            self.test_labels = np.ones(len(self.test_ratings), dtype=np.float32)
+            self.neg = negative_sampling(self, 4, self.batch_size)
         print("testset size after: ", len(self.test_ratings))
-
         return self
 
 
@@ -142,7 +149,44 @@ class Dataset:
 
 #    def load_pandas
 
-#    def load_implicit_data
+    def build_trainset_implicit(self, num_neg):
+        self.train_user_implicit, self.train_item_implicit, self.train_label_implict = [], [], []
+        train_user_negative_pool = self.neg.user_negative_pool
+        for i, u in enumerate(self.train_user_indices):
+            self.train_user_implicit.append(self.train_user_indices[i])
+            self.train_item_implicit.append(self.train_item_indices[i])
+            self.train_label_implict.append(self.train_labels[i])
+
+            item_neg = np.random.choice(train_user_negative_pool[u], num_neg, replace=False)
+            train_user_negative_pool[u] = list(set(train_user_negative_pool[u]) - set(item_neg))
+            if len(train_user_negative_pool[u]) < num_neg + 1:
+                train_user_negative_pool[u] = list(set(range(self.n_items)) - set(self.train_user[u]))
+                print("trainset {} negative pool exhausted".format(u))
+
+            self.train_user_implicit.extend([u] * num_neg)
+            self.train_item_implicit.extend(item_neg)
+            self.train_label_implict.extend([0.0] * num_neg)
+
+
+    def build_testset_implicit(self, num_neg):
+        self.test_user_implicit, self.test_item_implicit, self.test_label_implict = [], [], []
+        test_user_negative_pool = self.neg.user_negative_pool
+        for i, u in enumerate(self.test_user_indices):
+            self.test_user_implicit.append(self.test_user_indices[i])
+            self.test_item_implicit.append(self.test_item_indices[i])
+            self.test_label_implict.append(self.test_labels[i])
+
+            item_neg = np.random.choice(test_user_negative_pool[u], num_neg, replace=False)
+            test_user_negative_pool[u] = list(set(test_user_negative_pool[u]) - set(item_neg))
+            if len(test_user_negative_pool[u]) < num_neg + 1:
+                test_user_negative_pool[u] = list(set(range(self.n_items)) - set(self.train_user[u]))
+                print("testset {} negative pool exhausted".format(u))
+
+            self.test_user_implicit.extend([u] * num_neg)
+            self.test_item_implicit.extend(item_neg)
+            self.test_label_implict.extend([0.0] * num_neg)
+
+
 
     def load_tf_trainset(self, batch_size=1):
         trainset_tf = tf.data.Dataset.from_tensor_slices({'user': self.train_user_indices,
