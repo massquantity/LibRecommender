@@ -73,42 +73,24 @@ class Dataset:
                 self.test_item_indices.append(item_id)
                 self.test_ratings.append(int(rating))
 
-        '''
-        print("before: ", len(self.train_ratings), len(self.test_ratings))
-        for u, i, r in zip(self.test_user_indices, self.test_item_indices, self.test_ratings):
-            if u not in self.train_user:
-                self.test_user_indices.remove(u)
-                self.test_item_indices.remove(i)
-                self.test_ratings.remove(r)
-            elif i not in self.train_item:
-                self.test_user_indices.remove(u)
-                self.test_item_indices.remove(i)
-                self.test_ratings.remove(r)
-        for u, i, r in zip(self.test_user_indices, self.test_item_indices, self.test_ratings):
-            if u not in self.train_user:
-                self.test_user_indices.remove(u)
-                self.test_item_indices.remove(i)
-                self.test_ratings.remove(r)
-            elif i not in self.train_item:
-                self.test_user_indices.remove(u)
-                self.test_item_indices.remove(i)
-                self.test_ratings.remove(r)
-
-        for u, i, r in zip(self.test_user_indices, self.test_item_indices, self.test_ratings):
-            if u not in self.train_user:
-                print("left", u)
-            elif i not in self.train_item:
-                print("i left", i)
-        print("after: ", len(self.train_ratings), len(self.test_ratings))
-        '''
-
-
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_ratings = np.array(self.train_ratings)
-        self.test_user_indices = np.array(self.test_user_indices)
-        self.test_item_indices = np.array(self.test_item_indices)
-        self.test_ratings = np.array(self.test_ratings)
+    #    self.test_user_indices = np.array(self.test_user_indices)
+    #    self.test_item_indices = np.array(self.test_item_indices)
+    #    self.test_ratings = np.array(self.test_ratings)
+
+        print("testset size before: ", len(self.test_ratings))
+        test_all = np.concatenate([np.expand_dims(self.test_user_indices, 1),
+                                   np.expand_dims(self.test_item_indices, 1),
+                                   np.expand_dims(self.test_ratings, 1)], axis=1)
+        test_safe = test_all[(test_all[:, 0] < self.n_users) & (test_all[:, 1] < self.n_items)]
+        test_danger = test_all[(test_all[:, 0] >= self.n_users) & (test_all[:, 1] >= self.n_items)]
+        self.test_user_indices = test_safe[:, 0]
+        self.test_item_indices = test_safe[:, 1]
+        self.test_ratings = test_safe[:, 2]
+        print("testset size after: ", len(self.test_ratings))
+
         return self
 
 
@@ -162,15 +144,19 @@ class Dataset:
 
 #    def load_implicit_data
 
-    def load_tf_dataset(self, batch_size=1):
-        dataset_tf = tf.data.Dataset.from_tensor_slices({'user': self.train_user_indices,
+    def load_tf_trainset(self, batch_size=1):
+        trainset_tf = tf.data.Dataset.from_tensor_slices({'user': self.train_user_indices,
                                                          'item': self.train_item_indices,
                                                          'rating': self.train_ratings})
-        self.dataset_tf = dataset_tf.shuffle(len(self.train_ratings)).batch(batch_size)
+        self.trainset_tf = trainset_tf.shuffle(len(self.train_ratings)).batch(batch_size)
         return self
 
-
-
+    def load_tf_testset(self):
+        testset_tf = tf.data.Dataset.from_tensor_slices({'user': self.test_user_indices,
+                                                         'item': self.test_item_indices,
+                                                         'rating': self.test_ratings})
+        self.testset_tf = testset_tf.filter(lambda x: (x['user'] < self.n_users) & (x['item'] < self.n_items))
+        return self
 
     def ratings(dataset):
         for user, r in dataset.items():
