@@ -234,21 +234,21 @@ class SVD_tf:
             self.item_indices = tf.placeholder(tf.int32, shape=[None])
             self.ratings = tf.placeholder(tf.int32, shape=[None])
         elif data_mode == "structure":
-            iterator = tf.data.Iterator.from_structure(dataset.dataset_tf.output_types,
-                                                       dataset.dataset_tf.output_shapes)
+            iterator = tf.data.Iterator.from_structure(dataset.trainset_tf.output_types,
+                                                       dataset.trainset_tf.output_shapes)
             sample = iterator.get_next()
             self.user_indices = sample['user']
             self.item_indices = sample['item']
             self.ratings = sample['rating']
-            iterator_init = iterator.make_initializer(dataset.dataset_tf)
+            iterator_init = iterator.make_initializer(dataset.trainset_tf)
         elif data_mode == "repeat":
-            iterator = dataset.dataset_tf.repeat(self.n_epochs).make_one_shot_iterator()
+            iterator = dataset.trainset_tf.repeat(self.n_epochs).make_one_shot_iterator()
             sample = iterator.get_next()
             self.user_indices = sample['user']
             self.item_indices = sample['item']
             self.ratings = sample['rating']
         elif data_mode == "make":
-            iterator = dataset.dataset_tf.make_initializable_iterator()
+            iterator = dataset.trainset_tf.make_initializable_iterator()
             sample = iterator.get_next()
             self.user_indices = sample['user']
             self.item_indices = sample['item']
