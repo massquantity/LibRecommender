@@ -37,31 +37,23 @@ def rmse_svd(model, dataset, baseline=False, mode="train"):
     return score
 
 
+def rmse_tf(model, dataset, mode="train"):
+    if mode == "train":
+        user_indices = dataset.train_user_indices
+        item_indices = dataset.train_item_indices
+        ratings = dataset.train_ratings
+    elif mode == "test":
+        user_indices = dataset.test_user_indices
+        item_indices = dataset.test_item_indices
+        ratings = dataset.test_ratings
 
-'''
-    # score = 0
-    pred = []
-    for u, i, r in zip(user_indices, item_indices, ratings):
-        p = model.predict(u, i)
-        pred.append(p)
-    score = np.sqrt(np.mean(np.power(np.array(pred) - ratings, 2)))
-    return score
-
-        try:
-            pred = model.predict(u, i)
-        except IndexError:
-            pred = dataset.global_mean
-        score += np.power((r - pred), 2)
-    return np.sqrt(score / len(user_indices))
+    rmse = model.sess.run(model.metrics, feed_dict={model.user_indices: user_indices,
+                                                    model.item_indices: item_indices,
+                                                    model.ratings: ratings})
+    return rmse
 
 
 
-        pred = global_mean + \
-               model.bu[user_indices] + \
-               model.bi[item_indices] + \
-               np.dot(model.pu, model.qi.T)[user_indices, item_indices]
-    else:
-        pred = np.dot(model.pu, model.qi.T)[user_indices, item_indices]
-    score = np.sqrt(np.mean(np.power(pred - ratings, 2)))
-    return score
-'''
+
+
+
