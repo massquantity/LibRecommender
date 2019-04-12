@@ -3,8 +3,10 @@ import numpy as np
 import tensorflow as tf
 from libreco.dataset.Dataset import Dataset
 from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF
-from libreco.evaluate import rmse_knn, rmse_svd
+from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf
 from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
+from libreco.utils.negative_sampling import negative_sampling
+from pprint import pprint
 
 
 if __name__ == "__main__":
@@ -12,7 +14,17 @@ if __name__ == "__main__":
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     dataset = Dataset()
     dataset.build_dataset(data_path="ml-1m/ratings.dat",
-                          length=100000, shuffle=True)
+                          length="all", shuffle=True, implicit=True)
+    dataset.build_trainset_implicit(4)
+
+    print(dataset.train_user_implicit[:100])
+    print(dataset.train_item_implicit[:100])
+    print(dataset.train_label_implict[:100])
+
+#    neg = negative_sampling(dataset, 4, 8)
+#    pprint(neg.next_batch())
+#    pprint(neg.next_batch())
+#    pprint(neg.next_batch())
     '''
     with tf.Session() as sess:
         dataset.load_tf_dataset(batch_size=len(dataset.train_ratings))
@@ -26,7 +38,7 @@ if __name__ == "__main__":
     print("dddd")
     '''
 #    with tf.Session() as sess:
-#    dataset.load_tf_dataset(batch_size=2048)
+#    dataset.load_tf_trainset(batch_size=2048)
 
 #    user_knn = user_KNN.userKNN(sim_option="pearson", k=40, min_support=5, baseline=True)
 #    user_knn.fit(dataset)
@@ -76,8 +88,10 @@ if __name__ == "__main__":
 #    print(rmse_svd(superSVD, dataset, mode="train"))
 #    print(rmse_svd(superSVD, dataset, mode="test"))
 
-    ncf = NCF.NCF(embed_size=16, lr=0.00001, batch_size=32)
-    ncf.fit(dataset)
-
+#    ncf = NCF.NCF(embed_size=32, lr=0.00002, batch_size=16, n_epochs=200)
+#    ncf.fit(dataset)
+#    print(ncf.predict(1,2))
+#    print(rmse_tf(ncf, dataset, mode="train"))
+#    print(rmse_tf(ncf, dataset, mode="test"))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
