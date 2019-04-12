@@ -29,19 +29,3 @@ def get_intersect(dataset, sim_option="pearson", min_support=1, k=40, load=False
 
     return intersect_user_item_train
 
-
-
-    """
-    if not test:
-        return intersect_user_item_train
-    else:
-        intersect_user_item_test = {}
-        for user, item in zip(dataset.test_user_indices, dataset.test_item_indices):
-            u_items = list(dataset.train_user[u].keys())
-            sim_items = sim_whole[item]
-            intersect_items, index_u, _ = np.intersect1d(
-                u_items, sim_items, assume_unique=True, return_indices=True)
-            intersect_user_item_test[(user, item)] = (intersect_items, index_u)
-
-        return intersect_user_item_train, intersect_user_item_test
-    """
