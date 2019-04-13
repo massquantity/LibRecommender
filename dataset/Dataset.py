@@ -96,7 +96,7 @@ class Dataset:
         self.test_ratings = test_safe[:, 2]
         if implicit:
             self.test_labels = np.ones(len(self.test_ratings), dtype=np.float32)
-            self.neg = negative_sampling(self, 4, self.batch_size)
+    #        self.neg = negative_sampling(self, 4, self.batch_size)
         print("testset size after: ", len(self.test_ratings))
         return self
 
@@ -146,16 +146,22 @@ class Dataset:
                (test_user_indices, test_item_indices, test_ratings, test_data)
 
 
-
-#    def load_pandas
+#   TODO
+#   def load_pandas
 
     def build_trainset_implicit(self, num_neg):
-        self.train_user_implicit, self.train_item_implicit, self.train_label_implict = [], [], []
+        neg = negative_sampling(self, num_neg)
+        self.train_user_implicit, \
+        self.train_item_implicit, \
+        self.train_label_implicit = neg(mode="train")
+
+        '''
+        self.train_user_implicit, self.train_item_implicit, self.train_label_implicit = [], [], []
         train_user_negative_pool = self.neg.user_negative_pool
         for i, u in enumerate(self.train_user_indices):
             self.train_user_implicit.append(self.train_user_indices[i])
             self.train_item_implicit.append(self.train_item_indices[i])
-            self.train_label_implict.append(self.train_labels[i])
+            self.train_label_implicit.append(self.train_labels[i])
 
             item_neg = np.random.choice(train_user_negative_pool[u], num_neg, replace=False)
             train_user_negative_pool[u] = list(set(train_user_negative_pool[u]) - set(item_neg))
@@ -165,16 +171,22 @@ class Dataset:
 
             self.train_user_implicit.extend([u] * num_neg)
             self.train_item_implicit.extend(item_neg)
-            self.train_label_implict.extend([0.0] * num_neg)
-
+            self.train_label_implicit.extend([0.0] * num_neg)
+        '''
 
     def build_testset_implicit(self, num_neg):
-        self.test_user_implicit, self.test_item_implicit, self.test_label_implict = [], [], []
+        neg = negative_sampling(self, num_neg)
+        self.test_user_implicit, \
+        self.test_item_implicit, \
+        self.test_label_implicit = neg(mode="test")
+
+        '''
+        self.test_user_implicit, self.test_item_implicit, self.test_label_implicit = [], [], []
         test_user_negative_pool = self.neg.user_negative_pool
         for i, u in enumerate(self.test_user_indices):
             self.test_user_implicit.append(self.test_user_indices[i])
             self.test_item_implicit.append(self.test_item_indices[i])
-            self.test_label_implict.append(self.test_labels[i])
+            self.test_label_implicit.append(self.test_labels[i])
 
             item_neg = np.random.choice(test_user_negative_pool[u], num_neg, replace=False)
             test_user_negative_pool[u] = list(set(test_user_negative_pool[u]) - set(item_neg))
@@ -184,8 +196,8 @@ class Dataset:
 
             self.test_user_implicit.extend([u] * num_neg)
             self.test_item_implicit.extend(item_neg)
-            self.test_label_implict.extend([0.0] * num_neg)
-
+            self.test_label_implicit.extend([0.0] * num_neg)
+        '''
 
 
     def load_tf_trainset(self, batch_size=1):
