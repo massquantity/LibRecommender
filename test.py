@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from libreco.dataset.Dataset import Dataset
 from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF
-from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf
+from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
 from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
 from libreco.utils.negative_sampling import negative_sampling
 from pprint import pprint
@@ -16,10 +16,14 @@ if __name__ == "__main__":
     dataset.build_dataset(data_path="ml-1m/ratings.dat",
                           length="all", shuffle=True, implicit=True)
     dataset.build_trainset_implicit(4)
+    dataset.build_testset_implicit(4)
 
-    print(dataset.train_user_implicit[:100])
-    print(dataset.train_item_implicit[:100])
-    print(dataset.train_label_implict[:100])
+#    print(dataset.train_user_implicit[:10])
+#    print(dataset.train_item_implicit[:10])
+#    print(dataset.train_label_implict[:10])
+#    print(dataset.test_user_implicit[:10])
+#    print(dataset.test_item_implicit[:10])
+#    print(dataset.test_label_implict[:10])
 
 #    neg = negative_sampling(dataset, 4, 8)
 #    pprint(neg.next_batch())
@@ -88,9 +92,11 @@ if __name__ == "__main__":
 #    print(rmse_svd(superSVD, dataset, mode="train"))
 #    print(rmse_svd(superSVD, dataset, mode="test"))
 
-#    ncf = NCF.NCF(embed_size=32, lr=0.00002, batch_size=16, n_epochs=200)
-#    ncf.fit(dataset)
+    ncf = NCF.NCF(embed_size=32, lr=0.0007, batch_size=64, n_epochs=500)
+    ncf.fit(dataset)
 #    print(ncf.predict(1,2))
+#    print(AP_at_k(ncf, dataset, 1, 10))
+#    print(MAP_at_k(ncf, dataset, 10))
 #    print(rmse_tf(ncf, dataset, mode="train"))
 #    print(rmse_tf(ncf, dataset, mode="test"))
 
