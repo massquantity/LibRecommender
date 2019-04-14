@@ -92,7 +92,7 @@ if __name__ == "__main__":
 #    print(rmse_svd(superSVD, dataset, mode="train"))
 #    print(rmse_svd(superSVD, dataset, mode="test"))
 
-    ncf = NCF.NCF(embed_size=32, lr=0.0007, batch_size=64, n_epochs=500)
+    ncf = NCF.NCF(embed_size=32, lr=0.0007, batch_size=256, n_epochs=500)
     ncf.fit(dataset)
 #    print(ncf.predict(1,2))
 #    print(AP_at_k(ncf, dataset, 1, 10))
