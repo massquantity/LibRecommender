@@ -137,7 +137,7 @@ class NCF:
         self.dropout = dropout
         self.seed = seed
 
-    def fit(self, dataset):
+    def fit(self, dataset, verbose=1):
         tf.set_random_seed(self.seed)
         self.dataset = dataset
         self.n_users = dataset.n_users
@@ -234,32 +234,33 @@ class NCF:
                                              self.item_indices: dataset.test_item_implicit,
                                              self.labels: dataset.test_label_implicit})
 
-                print("Epoch {}, training time: {:.4f}".format(epoch, time.time() - t0))
+                if verbose > 0:
+                    print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
 
-                print("\t train loss: {:.4f}\ttest loss: {:.4f}".format(train_loss, test_loss))
-                print("\t train accuracy: {:.4f}\ttest accuracy: {:.4f}".format(train_acc, test_acc))
-                print("\t train precision: {:.4f}\ttest precision: {:.4f}".format(
-                    train_precision, test_precision))
+                    print("\t train loss: {:.4f}\ttest loss: {:.4f}".format(train_loss, test_loss))
+                    print("\t train accuracy: {:.4f}\ttest accuracy: {:.4f}".format(train_acc, test_acc))
+                    print("\t train precision: {:.4f}\ttest precision: {:.4f}".format(
+                        train_precision, test_precision))
 
-                t4 = time.time()
-                mean_average_precision_10 = MAP_at_k(self, self.dataset, 10)
-                print("\t MAP @ {}: {:.4f}".format(10, mean_average_precision_10))
-                print("\t MAP @ 10 time: {:.4f}".format(time.time() - t4))
+                    t4 = time.time()
+                    mean_average_precision_10 = MAP_at_k(self, self.dataset, 10)
+                    print("\t MAP @ {}: {:.4f}".format(10, mean_average_precision_10))
+                    print("\t MAP @ 10 time: {:.4f}".format(time.time() - t4))
 
-                t5 = time.time()
-                mean_average_precision_100 = MAP_at_k(self, self.dataset, 100)
-                print("\t MAP @ {}: {:.4f}".format(100, mean_average_precision_100))
-                print("\t MAP @ 100 time: {:.4f}".format(time.time() - t5))
+                    t5 = time.time()
+                    mean_average_precision_100 = MAP_at_k(self, self.dataset, 100)
+                    print("\t MAP @ {}: {:.4f}".format(100, mean_average_precision_100))
+                    print("\t MAP @ 100 time: {:.4f}".format(time.time() - t5))
 
-                t6 = time.time()
-                HitRatio = HitRatio_at_k(self, self.dataset, 10)
-                print("\t HitRatio @ {}: {:.4f}".format(10, HitRatio))
-                print("\t HitRatio time: {:.4f}".format(time.time() - t6))
+                    t6 = time.time()
+                    HitRatio = HitRatio_at_k(self, self.dataset, 10)
+                    print("\t HitRatio @ {}: {:.4f}".format(10, HitRatio))
+                    print("\t HitRatio time: {:.4f}".format(time.time() - t6))
 
-                t7 = time.time()
-                NDCG = NDCG_at_k(self, self.dataset, 10)
-                print("\t NDCG @ {}: {:.4f}".format(10, NDCG))
-                print("\t NDCG time: {:.4f}".format(time.time() - t7))
+                    t7 = time.time()
+                    NDCG = NDCG_at_k(self, self.dataset, 10)
+                    print("\t NDCG @ {}: {:.4f}".format(10, NDCG))
+                    print("\t NDCG time: {:.4f}".format(time.time() - t7))
 
 
     def predict(self, u, i):
