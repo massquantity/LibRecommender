@@ -2,7 +2,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from ..utils.negative_sampling import negative_sampling
-from ..evaluate.evaluate import precision_tf, AP_at_k, MAP_at_k
+from ..evaluate.evaluate import precision_tf, AP_at_k, MAP_at_k, HitRatio_at_k, NDCG_at_k
 
 
 class NCF_9999:
@@ -233,23 +233,36 @@ class NCF:
                                   feed_dict={self.user_indices: dataset.test_user_implicit,
                                              self.item_indices: dataset.test_item_implicit,
                                              self.labels: dataset.test_label_implicit})
-                print("Epoch: {}\ttrain loss: {:.4f}\ttest loss: {:.4f}".format(epoch, train_loss, test_loss))
-                print("Epoch: {}\ttrain accuracy: {:.4f}\ttest accuracy: {:.4f}".format(
-                    epoch, train_acc, test_acc))
-                print("Epoch: {}\ttrain precision: {:.4f}\ttest precision: {:.4f}".format(
-                    epoch, train_precision, test_precision))
-
-                mean_average_precision_10 = MAP_at_k(self, self.dataset, 10)
-                print("Epoch: {}\t MAP @ {}: {:.4f}".format(epoch, 10, mean_average_precision_10))
-                mean_average_precision_100 = MAP_at_k(self, self.dataset, 100)
-                print("Epoch: {}\t MAP @ {}: {:.4f}".format(epoch, 100, mean_average_precision_100))
 
                 print("Epoch {}, training time: {:.4f}".format(epoch, time.time() - t0))
 
+                print("\t train loss: {:.4f}\ttest loss: {:.4f}".format(train_loss, test_loss))
+                print("\t train accuracy: {:.4f}\ttest accuracy: {:.4f}".format(train_acc, test_acc))
+                print("\t train precision: {:.4f}\ttest precision: {:.4f}".format(
+                    train_precision, test_precision))
+
+                t4 = time.time()
+                mean_average_precision_10 = MAP_at_k(self, self.dataset, 10)
+                print("\t MAP @ {}: {:.4f}".format(10, mean_average_precision_10))
+                print("\t MAP @ 10 time: {:.4f}".format(time.time() - t4))
+
+                t5 = time.time()
+                mean_average_precision_100 = MAP_at_k(self, self.dataset, 100)
+                print("\t MAP @ {}: {:.4f}".format(100, mean_average_precision_100))
+                print("\t MAP @ 100 time: {:.4f}".format(time.time() - t5))
+
+                t6 = time.time()
+                HitRatio = HitRatio_at_k(self, self.dataset, 10)
+                print("\t HitRatio @ {}: {:.4f}".format(10, HitRatio))
+                print("\t HitRatio time: {:.4f}".format(time.time() - t6))
+
+                t7 = time.time()
+                NDCG = NDCG_at_k(self, self.dataset, 10)
+                print("\t NDCG @ {}: {:.4f}".format(10, NDCG))
+                print("\t NDCG time: {:.4f}".format(time.time() - t7))
+
 
     def predict(self, u, i):
-    #    r = np.zeros(len(u))
-    #    r = -1
         try:
             y_prob, y_pred = self.sess.run([self.y_prob, self.pred],
                                            feed_dict={self.user_indices: np.array([u]),
@@ -261,9 +274,9 @@ class NCF:
     def predict_user(self, u):
         user_indices = np.full(self.n_items, u)
         item_indices = np.arange(self.n_items)
-        y_ranklist = self.sess.run(self.y_prob, feed_dict={self.user_indices: user_indices,
-                                                           self.item_indices: item_indices})
-        return y_ranklist
+        item_ranklist = self.sess.run(self.y_prob, feed_dict={self.user_indices: user_indices,
+                                                              self.item_indices: item_indices})
+        return item_ranklist
 
 
 
