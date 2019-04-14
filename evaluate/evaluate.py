@@ -54,7 +54,6 @@ def rmse_tf(model, dataset, mode="train"):
                                                     model.ratings: ratings})
     return rmse
 
-#TODO
 
 def precision_tf(pred, y):
     one = tf.constant(1, dtype=tf.float32)
@@ -64,22 +63,6 @@ def precision_tf(pred, y):
     return precision[0]
 
 def AP_at_k(model, dataset, u, k):
-#    user_indices = np.full(dataset.n_items, u)
-#    item_indices = np.arange(dataset.n_items)
-#    y_ranklist = self.sess.run(self.y_prob, feed_dict={self.user_indices: user_indices,
-#                                                       self.item_indices: item_indices})
-
-#    top_k, indices = tf.nn.top_k(ranklist, k, sorted=True)
-
-#    ranklist = model.predict_user(u)
-#    y_pred_k, indices = np.sort(ranklist)[::-1][:k], np.argsort(ranklist)[::-1][:k]
-#    y_true_k = np.arange(dataset.n_items)[indices]
-#    precision = 0
-#    for i, pred in enumerate(y_pred_k, start=1):
-#        if pred in dataset.train_user[u]:
-#            precision += precision_score(y_true_k[:i], y_pred_k[:i])
-#    average_precision_at_k = precision / k
-
     ranklist = model.predict_user(u)
     top_k = np.argsort(ranklist)[::-1][:k]
     precision_k = 0
@@ -109,9 +92,38 @@ def MAP_at_k(model, dataset, k):
     return mean_average_precision_at_k
 
 
+def HitRatio_at_k(model, dataset, k):
+    HitRatio = []
+    for u in dataset.train_user:
+        user_HitRatio = 0
+        ranklist = model.predict_user(u)
+        top_k = np.argsort(ranklist)[::-1][:k]
+        for i in top_k:
+            if i in dataset.train_user[u]:
+                user_HitRatio += 1
+        HitRatio.append(user_HitRatio / k)
+    return np.mean(HitRatio)
+
+
+def NDCG_at_k(model, dataset, k):
+    NDCG = 0
+    for u in dataset.train_user:
+        DCG = 0
+        IDCG = 0
+        ranklist = model.predict_user(u)
+        top_k = np.argsort(ranklist)[::-1][:k]
+        for n, item in enumerate(top_k):
+            if item in dataset.train_user[u]:
+                DCG += np.reciprocal(np.log2(n + 2))
+        for n in range(k):
+            IDCG += np.reciprocal(np.log2(n + 2))
+        NDCG += DCG / IDCG
+    return NDCG / dataset.n_users
 
 
 
+
+#TODO
 # def recall
 
 # def f1
