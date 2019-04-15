@@ -2,7 +2,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from libreco.dataset.Dataset import Dataset
-from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF
+from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF, wide_deep
 from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
 from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
 from libreco.utils.negative_sampling import negative_sampling
@@ -15,8 +15,8 @@ if __name__ == "__main__":
     dataset = Dataset()
     dataset.build_dataset(data_path="ml-1m/ratings.dat",
                           length="all", shuffle=True, implicit=True)
-    dataset.build_trainset_implicit(4)
-    dataset.build_testset_implicit(4)
+#    dataset.build_trainset_implicit(4)
+#    dataset.build_testset_implicit(4)
 
 #    print(dataset.train_user_implicit[:10])
 #    print(dataset.train_item_implicit[:10])
@@ -92,12 +92,18 @@ if __name__ == "__main__":
 #    print(rmse_svd(superSVD, dataset, mode="train"))
 #    print(rmse_svd(superSVD, dataset, mode="test"))
 
-    ncf = NCF.NCF(embed_size=32, lr=0.0007, batch_size=256, n_epochs=500)
-    ncf.fit(dataset)
+#    ncf = NCF.NCF(embed_size=32, lr=0.0007, batch_size=256, n_epochs=500)
+#    ncf.fit(dataset)
 #    print(ncf.predict(1,2))
 #    print(AP_at_k(ncf, dataset, 1, 10))
 #    print(MAP_at_k(ncf, dataset, 10))
 #    print(rmse_tf(ncf, dataset, mode="train"))
 #    print(rmse_tf(ncf, dataset, mode="test"))
 
+    wd = wide_deep.WideDeep(embed_size=16, n_epochs=1)
+    wd.fit(dataset)
+
     print("train + test time: {:.4f}".format(time.time() - t0))
+
+
+
