@@ -22,7 +22,6 @@ class WideDeep:
                      tf.feature_column.embedding_column(items, dimension=self.embed_size)]
 
         config = tf.estimator.RunConfig(log_step_count_steps=1000, save_checkpoints_steps=10000)
-        params={'rmse': tf.losses.mean_squared_error}
         self.model = tf.estimator.DNNLinearCombinedRegressor(
             model_dir="wide_deep_dir",
             config=config,
