@@ -203,8 +203,8 @@ class Dataset:
 
     def load_tf_trainset(self, batch_size=1):
         trainset_tf = tf.data.Dataset.from_tensor_slices({'user': self.train_user_indices,
-                                                         'item': self.train_item_indices,
-                                                         'rating': self.train_ratings})
+                                                          'item': self.train_item_indices,
+                                                          'rating': self.train_ratings})
         self.trainset_tf = trainset_tf.shuffle(len(self.train_ratings)).batch(batch_size)
         return self
 
