@@ -100,7 +100,7 @@ if __name__ == "__main__":
 #    print(rmse_tf(ncf, dataset, mode="train"))
 #    print(rmse_tf(ncf, dataset, mode="test"))
 
-    wd = wide_deep.WideDeep(embed_size=16, n_epochs=4)
+    wd = wide_deep.WideDeep(embed_size=16, n_epochs=1)
     wd.fit(dataset)
 
     print("train + test time: {:.4f}".format(time.time() - t0))
