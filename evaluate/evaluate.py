@@ -121,9 +121,20 @@ def NDCG_at_k(model, dataset, k):
     return NDCG / dataset.n_users
 
 
+def NDCG_at_k_tf(labels, predictions, k):
+    _, indices = tf.nn.top_k(predictions, k, sorted=True)
+    n = tf.cast(tf.range(1, k + 1), tf.float32)
+    top_k = tf.gather(labels, indices)
+    denominator = tf.log(n + 1) / tf.log(2.0) # logarithm base 2
+    dcg_numerator = tf.pow(2.0, top_k) - 1.0
+    DCG = tf.reduce_sum(dcg_numerator / denominator, axis=1, keep_dims=True)
+    IDCG = tf.reduce_sum(1.0 / denominator, axis=1, keep_dims=True)
+    NDCG = DCG / IDCG
+    return tf.metrics.mean(NDCG)
 
 
-#TODO
+
+# TODO
 # def recall
 
 # def f1
