@@ -28,6 +28,8 @@ class Dataset:
         self.test_user_indices = list()
         self.test_item_indices = list()
         self.test_ratings = list()
+        self.train_timestamp = list()
+        self.test_timestamp = list()
 
     @classmethod
     def load_dataset(cls, data_path="../ml-1m/ratings.dat", shuffle=False):
@@ -51,6 +53,7 @@ class Dataset:
             user = line.split("::")[0]
             item = line.split("::")[1]
             rating = line.split("::")[2]
+            timestamp = line.split("::")[3]
             try:
                 user_id = self.user2id[user]
             except KeyError:
@@ -68,16 +71,19 @@ class Dataset:
                 self.train_user_indices.append(user_id)
                 self.train_item_indices.append(item_id)
                 self.train_ratings.append(int(rating))
+                self.train_timestamp.append(int(timestamp))
                 self.train_user[user_id].update(dict(zip([item_id], [int(rating)])))
                 self.train_item[item_id].update(dict(zip([user_id], [int(rating)])))
             else:
                 self.test_user_indices.append(user_id)
                 self.test_item_indices.append(item_id)
                 self.test_ratings.append(int(rating))
+                self.test_timestamp.append(int(timestamp))
 
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_ratings = np.array(self.train_ratings)
+        self.train_timestamp = np.array(self.train_timestamp)
         if implicit:
             self.train_labels = np.ones(len(self.train_ratings), dtype=np.float32)
 
@@ -88,12 +94,14 @@ class Dataset:
         print("testset size before: ", len(self.test_ratings))
         test_all = np.concatenate([np.expand_dims(self.test_user_indices, 1),
                                    np.expand_dims(self.test_item_indices, 1),
-                                   np.expand_dims(self.test_ratings, 1)], axis=1)
+                                   np.expand_dims(self.test_ratings, 1),
+                                   np.expand_dims(self.test_timestamp, 1)], axis=1)
         test_safe = test_all[(test_all[:, 0] < self.n_users) & (test_all[:, 1] < self.n_items)]
         test_danger = test_all[(test_all[:, 0] >= self.n_users) & (test_all[:, 1] >= self.n_items)]
         self.test_user_indices = test_safe[:, 0]
         self.test_item_indices = test_safe[:, 1]
         self.test_ratings = test_safe[:, 2]
+        self.test_timestamp = test_safe[:, 3]
         if implicit:
             self.test_labels = np.ones(len(self.test_ratings), dtype=np.float32)
     #        self.neg = negative_sampling(self, 4, self.batch_size)
