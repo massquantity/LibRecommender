@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from math import sqrt
 import tensorflow as tf
+from sklearn.preprocessing import KBinsDiscretizer
 from ..utils.negative_sampling import negative_sampling
 
 
@@ -84,6 +85,11 @@ class Dataset:
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_ratings = np.array(self.train_ratings)
         self.train_timestamp = np.array(self.train_timestamp)
+
+        self.kb = KBinsDiscretizer(n_bins=10, encode="ordinal", strategy="quantile")
+        self.train_timestamp = self.kb.fit_transform(self.train_timestamp.reshape(-1, 1))
+        self.train_timestamp = self.train_timestamp.astype(int)
+
         if implicit:
             self.train_labels = np.ones(len(self.train_ratings), dtype=np.float32)
 
@@ -102,9 +108,15 @@ class Dataset:
         self.test_item_indices = test_safe[:, 1]
         self.test_ratings = test_safe[:, 2]
         self.test_timestamp = test_safe[:, 3]
+
+        self.test_timestamp = self.kb.transform(self.test_timestamp.reshape(-1, 1))
+        self.test_timestamp = self.test_timestamp.astype(int)
+
         if implicit:
             self.test_labels = np.ones(len(self.test_ratings), dtype=np.float32)
     #        self.neg = negative_sampling(self, 4, self.batch_size)
+        #    self.build_trainset_implicit()
+        #    self.build_testset_implicit()
         print("testset size after: ", len(self.test_ratings))
         return self
 
@@ -162,51 +174,16 @@ class Dataset:
         neg = negative_sampling(self, num_neg)
         self.train_user_implicit, \
         self.train_item_implicit, \
-        self.train_label_implicit = neg(mode="train")
+        self.train_label_implicit, \
+        self.train_timestamp = neg(mode="train")
 
-        '''
-        self.train_user_implicit, self.train_item_implicit, self.train_label_implicit = [], [], []
-        train_user_negative_pool = self.neg.user_negative_pool
-        for i, u in enumerate(self.train_user_indices):
-            self.train_user_implicit.append(self.train_user_indices[i])
-            self.train_item_implicit.append(self.train_item_indices[i])
-            self.train_label_implicit.append(self.train_labels[i])
-
-            item_neg = np.random.choice(train_user_negative_pool[u], num_neg, replace=False)
-            train_user_negative_pool[u] = list(set(train_user_negative_pool[u]) - set(item_neg))
-            if len(train_user_negative_pool[u]) < num_neg + 1:
-                train_user_negative_pool[u] = list(set(range(self.n_items)) - set(self.train_user[u]))
-                print("trainset {} negative pool exhausted".format(u))
-
-            self.train_user_implicit.extend([u] * num_neg)
-            self.train_item_implicit.extend(item_neg)
-            self.train_label_implicit.extend([0.0] * num_neg)
-        '''
 
     def build_testset_implicit(self, num_neg):
         neg = negative_sampling(self, num_neg)
         self.test_user_implicit, \
         self.test_item_implicit, \
-        self.test_label_implicit = neg(mode="test")
-
-        '''
-        self.test_user_implicit, self.test_item_implicit, self.test_label_implicit = [], [], []
-        test_user_negative_pool = self.neg.user_negative_pool
-        for i, u in enumerate(self.test_user_indices):
-            self.test_user_implicit.append(self.test_user_indices[i])
-            self.test_item_implicit.append(self.test_item_indices[i])
-            self.test_label_implicit.append(self.test_labels[i])
-
-            item_neg = np.random.choice(test_user_negative_pool[u], num_neg, replace=False)
-            test_user_negative_pool[u] = list(set(test_user_negative_pool[u]) - set(item_neg))
-            if len(test_user_negative_pool[u]) < num_neg + 1:
-                test_user_negative_pool[u] = list(set(range(self.n_items)) - set(self.train_user[u]))
-                print("testset {} negative pool exhausted".format(u))
-
-            self.test_user_implicit.extend([u] * num_neg)
-            self.test_item_implicit.extend(item_neg)
-            self.test_label_implicit.extend([0.0] * num_neg)
-        '''
+        self.test_label_implicit, \
+        self.test_timestamp = neg(mode="test")
 
 
     def load_tf_trainset(self, batch_size=1):
