@@ -23,16 +23,19 @@ class negative_sampling:
             user_indices = self.dataset.train_user_indices
             item_indices = self.dataset.train_item_indices
             label_indices = self.dataset.train_labels
+            timestamp_indices = self.dataset.train_timestamp
         elif mode == "test":
             user_indices = self.dataset.test_user_indices
             item_indices = self.dataset.test_item_indices
             label_indices = self.dataset.test_labels
+            timestamp_indices = self.dataset.test_timestamp
 
-        user, item, label = [], [], []
+        user, item, label, timestamp = [], [], [], []
         for i, u in enumerate(user_indices):
             user.append(user_indices[i])
             item.append(item_indices[i])
             label.append(label_indices[i])
+            timestamp.append(timestamp_indices[i])
             for _ in range(self.num_neg):
                 item_neg = np.random.randint(0, self.dataset.n_items - 1)
                 while item_neg in self.dataset.train_user[u]:
@@ -41,7 +44,12 @@ class negative_sampling:
                 user.append(u)
                 item.append(item_neg)
                 label.append(0.0)
-        return user, item, label
+                timestamp.append(timestamp_indices[i])
+        return np.array(user), \
+               np.array(item), \
+               np.array(label), \
+               np.array(timestamp)
+
 
 
     def next_batch_99(self):
