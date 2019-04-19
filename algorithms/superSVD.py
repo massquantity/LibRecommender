@@ -3,7 +3,7 @@ from operator import itemgetter
 import numpy as np
 from ..evaluate import rmse_svd
 from ..utils.similarities import *
-from ..utils.intersect import get_intersect
+from ..utils.intersect import get_intersect, get_intersect_tf
 from ..utils.baseline_estimates import baseline_als, baseline_sgd
 try:
     import tensorflow as tf
@@ -362,7 +362,138 @@ class superSVD_tf:
 
 
 
+class superSVD_tf_test:
+    def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=5.0,
+                 batch_training=True, k=50, min_support=1,
+                 sim_option="pearson", seed=42):
+        self.n_factors = n_factors
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.reg = reg
+        self.batch_training = batch_training
+        self.seed = seed
+        self.k = k
+        self.min_support = min_support
+        if sim_option == "cosine":
+            self.sim_option = cosine_sim
+        elif sim_option == "msd":
+            self.sim_option = msd_sim
+        elif sim_option == "pearson":
+            self.sim_option = pearson_sim
+        else:
+            raise ValueError("sim_option %s not allowed" % sim_option)
 
+    def fit(self, dataset):
+        start_time = time.time()
+        tf.set_random_seed(self.seed)
+        train_user_indices = dataset.train_user_indices
+        train_item_indices = dataset.train_item_indices
+        test_user_indices = dataset.test_user_indices
+        test_item_indices = dataset.test_item_indices
+        train_ratings = dataset.train_ratings
+        test_ratings = dataset.test_ratings
+        global_mean = dataset.global_mean
+
+        bu = tf.Variable(tf.zeros([dataset.n_users]))
+        bi = tf.Variable(tf.zeros([dataset.n_items]))
+        pu = tf.Variable(tf.random_normal([dataset.n_users, self.n_factors], 0.0, 0.01))
+        qi = tf.Variable(tf.random_normal([dataset.n_items, self.n_factors], 0.0, 0.01))
+        yj = tf.Variable(tf.random_normal([dataset.n_items, self.n_factors], 0.0, 0.01))
+        w = tf.Variable(tf.random_normal([dataset.n_items * dataset.n_items, 1], 0.0, 0.01))
+        c = tf.Variable(tf.random_normal([dataset.n_items * dataset.n_items, 1], 0.0, 0.01))
+    #    bbu, bbi = baseline_als(dataset)
+
+        ratings = tf.placeholder(tf.int32, shape=[None])
+        user_indices = tf.placeholder(tf.int32, shape=[None])
+        item_indices = tf.placeholder(tf.int32, shape=[None])
+        bias_user = tf.nn.embedding_lookup(bu, user_indices)
+        bias_item = tf.nn.embedding_lookup(bi, item_indices)
+
+        user_split_items = [[] for u in range(dataset.n_users)]
+        for u, i in zip(train_user_indices, train_item_indices):
+            user_split_items[u].append(i)
+
+        sparse_dict = {'indices': [], 'values': []}
+        for i, user in enumerate(user_split_items):
+            for j, item in enumerate(user):
+                sparse_dict['indices'].append((i, j))
+                sparse_dict['values'].append(item)
+        sparse_dict['dense_shape'] = (dataset.n_users, dataset.n_items)
+        implicit_feedback = tf.SparseTensor(**sparse_dict)
+        yjs = tf.nn.embedding_lookup_sparse(yj, implicit_feedback, sp_weights=None, combiner="sqrtn")
+        nu = tf.gather(yjs, np.arange(dataset.n_users))
+
+        wc_sparse, sparse_weight = get_intersect_tf(dataset)
+        ws = tf.nn.embedding_lookup_sparse(w, wc_sparse, sp_weights=sparse_weight, combiner="sqrtn")
+        cs = tf.nn.embedding_lookup_sparse(c, wc_sparse, sp_weights=None, combiner="sqrtn")
+
+        pn = pu + nu
+        embed_user = tf.nn.embedding_lookup(pn, user_indices)
+        embed_item = tf.nn.embedding_lookup(qi, item_indices)
+        embed_w = tf.nn.embedding_lookup(ws, user_indices)
+        embed_c = tf.nn.embedding_lookup(cs, user_indices)
+
+        pred = global_mean + bias_user + bias_item + \
+               tf.reduce_sum(tf.multiply(embed_user, embed_item), axis=1) + \
+               embed_w + embed_c
+
+        loss = tf.reduce_sum(
+            tf.square(
+                tf.subtract(
+                    tf.cast(ratings, tf.float32), pred)))
+
+        reg_pu = tf.contrib.layers.l2_regularizer(self.reg)(pu)
+        reg_qi = tf.contrib.layers.l2_regularizer(self.reg)(qi)
+        reg_bu = tf.contrib.layers.l2_regularizer(self.reg)(bu)
+        reg_bi = tf.contrib.layers.l2_regularizer(self.reg)(bi)
+        total_loss = tf.add_n([loss, reg_pu, reg_qi, reg_bu, reg_bi])
+
+        optimizer = tf.train.AdamOptimizer(self.lr)
+        #    optimizer = tf.train.GradientDescentOptimizer(self.lr)
+        training_op = optimizer.minimize(total_loss)
+        init = tf.global_variables_initializer()
+
+        self.sess = tf.Session()
+        self.sess.run(init)
+        for epoch in range(self.n_epochs):
+            t0 = time.time()
+            self.sess.run(training_op, feed_dict={ratings: train_ratings,
+                                                  user_indices: train_user_indices,
+                                                  item_indices: train_item_indices})
+
+            train_loss = self.sess.run(total_loss,
+                                       feed_dict={ratings: train_ratings,
+                                                  user_indices: train_user_indices,
+                                                  item_indices: train_item_indices})
+            print("Epoch: ", epoch + 1, "\ttrain loss: {}".format(train_loss))
+            print("Epoch {}, training time: {:.4f}".format(epoch + 1, time.time() - t0))
+
+    def predict(self, u, i):
+        try:
+            u_items = list(self.dataset.train_user[u].keys())
+            nui = np.sum(self.yj[u_items], axis=0) / np.sqrt(len(u_items))
+            pred = self.global_mean + self.bu[u] + self.bi[i] + np.dot(self.pu[u] + nui, self.qi[i])
+
+            try:
+                intersect_items, index_u = self.intersect_user_item_train[(u, i)]
+            except KeyError:
+                intersect_items, index_u = [], -1
+
+            if len(intersect_items) == 0:
+                pass
+            else:
+                u_ratings = np.array(list(self.dataset.train_user[u].values()))[index_u]
+                base_neighbor = self.global_mean + self.bbu[u] + self.bbi[intersect_items]
+                user_sqrt = np.sqrt(len(intersect_items))
+                ru = np.sum((u_ratings - base_neighbor) * self.w[i][intersect_items]) / user_sqrt
+                nu = np.sum(self.c[i][intersect_items]) / user_sqrt
+                pred += (ru + nu)
+
+            pred = np.clip(pred, 1, 5)
+
+        except IndexError:
+            pred = self.global_mean
+        return pred
 
 
 
