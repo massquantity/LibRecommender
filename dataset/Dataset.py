@@ -86,7 +86,7 @@ class Dataset:
         self.train_ratings = np.array(self.train_ratings)
         self.train_timestamp = np.array(self.train_timestamp)
 
-        self.kb = KBinsDiscretizer(n_bins=10, encode="ordinal", strategy="quantile")
+        self.kb = KBinsDiscretizer(n_bins=10, encode="ordinal", strategy="uniform")  #### quantile
         self.train_timestamp = self.kb.fit_transform(self.train_timestamp.reshape(-1, 1))
         self.train_timestamp = self.train_timestamp.astype(int)
 
