@@ -520,10 +520,8 @@ class WideDeepCustom(estimator.Estimator):
         timestamps_onehot = tf.feature_column.categorical_column_with_vocabulary_list(
             "timestamp", np.arange(dataset.kb.n_bins_))
         #    timestamps_numeric = tf.feature_column.numeric_column("timestamp")
-        wide_cols = [tf.feature_column.crossed_column([users, items, timestamps_onehot], hash_bucket_size=1000),
-                     timestamps_onehot]
-        #    wide_cols = [tf.feature_column.crossed_column([users, items, timestamps_onehot], hash_bucket_size=1000),
-        #                 users, items, timestamps_onehot]
+        wide_cols = [tf.feature_column.crossed_column([users, items, timestamps_onehot], hash_bucket_size=8000)]
+    #    wide_cols = [tf.feature_column.crossed_column([users, items, timestamps_onehot], hash_bucket_size=1000)]
         deep_cols = [tf.feature_column.embedding_column(users, dimension=self.embed_size),
                      tf.feature_column.embedding_column(items, dimension=self.embed_size),
                      tf.feature_column.indicator_column(timestamps_onehot)]  ### timestamps_onehot
@@ -593,7 +591,7 @@ class WideDeepCustom(estimator.Estimator):
 
         assert mode == tf.estimator.ModeKeys.TRAIN
 
-
+        '''
         train_op = []
         optimizer2 = tf.train.AdamOptimizer(learning_rate=0.01)
         training_op2 = optimizer2.minimize(loss, global_step=tf.train.get_global_step())
@@ -603,13 +601,13 @@ class WideDeepCustom(estimator.Estimator):
         train_op.append(training_op)
         return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=tf.group(*train_op))
         '''
-    #    optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3)
+        optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3)
     #    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
     #    optimizer = tf.train.AdagradOptimizer(learning_rate=0.01)
     #    optimizer = tf.train.ProximalAdagradOptimizer(learning_rate=0.01)
         training_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
         return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=training_op)
-        '''
+
     @staticmethod
     def input_fn(data, repeat=10, batch=256, mode="train", task="rating", user=1):
         if mode == "train":
