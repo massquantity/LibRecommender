@@ -100,13 +100,13 @@ if __name__ == "__main__":
 #    print(rmse_tf(ncf, dataset, mode="train"))
 #    print(rmse_tf(ncf, dataset, mode="test"))
 
-#    wd = wide_deep.WideDeep(embed_size=16, n_epochs=1, batch_size=256, task="rating")
-#    wd.fit(dataset)
+    wd = wide_deep.WideDeep(embed_size=16, n_epochs=1, batch_size=256, task="rating")
+    wd.fit(dataset)
 #    print(wd.predict(1, 2, "2001-1-8"))
 #    print(wd.predict_user(1))
 
-    wdc = wide_deep.WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="rating")
-    wdc.fit(dataset)
+#    wdc = wide_deep.WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="rating")
+#    wdc.fit(dataset)
 #    print(wdc.predict_ui(1, 2, "2001-1-8"))
 #    print(wdc.predict_user(1))
 

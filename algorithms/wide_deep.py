@@ -376,9 +376,10 @@ class WideDeep:
         timestamps_onehot = tf.feature_column.categorical_column_with_vocabulary_list(
             "timestamp", np.arange(dataset.kb.n_bins_))
     #    timestamps_numeric = tf.feature_column.numeric_column("timestamp")
-        wide_cols = tf.feature_column.crossed_column([users, items, timestamps_onehot], hash_bucket_size=1000)
-    #    wide_cols = [tf.feature_column.crossed_column([users, items, timestamps_onehot], hash_bucket_size=1000),
-    #                 users, items, timestamps_onehot]
+    #    wide_cols = tf.feature_column.crossed_column([users, items, timestamps_onehot], hash_bucket_size=1000)
+
+        wide_cols = [tf.feature_column.crossed_column([users, items], hash_bucket_size=1000),
+                    timestamps_onehot]
         deep_cols = [tf.feature_column.embedding_column(users, dimension=self.embed_size),
                      tf.feature_column.embedding_column(items, dimension=self.embed_size),
                      tf.feature_column.indicator_column(timestamps_onehot)]  ### timestamps_onehot
@@ -469,7 +470,7 @@ class WideDeep:
     def fit(self, dataset):
         self.dataset = dataset
         self.build_model(dataset)
-        for epoch in range(1, 3):  # epoch_per_eval
+        for epoch in range(1, 3000):  # epoch_per_eval
             t0 = time.time()
             self.model.train(input_fn=lambda: WideDeep.input_fn(
                 data=dataset, repeat=self.n_epochs, batch=self.batch_size, mode="train", task=self.task))
@@ -520,7 +521,8 @@ class WideDeepCustom(estimator.Estimator):
         timestamps_onehot = tf.feature_column.categorical_column_with_vocabulary_list(
             "timestamp", np.arange(dataset.kb.n_bins_))
         #    timestamps_numeric = tf.feature_column.numeric_column("timestamp")
-        wide_cols = [tf.feature_column.crossed_column([users, items, timestamps_onehot], hash_bucket_size=8000)]
+        wide_cols = [tf.feature_column.crossed_column([users, items], hash_bucket_size=1000),
+                     timestamps_onehot]
     #    wide_cols = [tf.feature_column.crossed_column([users, items, timestamps_onehot], hash_bucket_size=1000)]
         deep_cols = [tf.feature_column.embedding_column(users, dimension=self.embed_size),
                      tf.feature_column.embedding_column(items, dimension=self.embed_size),
