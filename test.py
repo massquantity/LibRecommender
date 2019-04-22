@@ -13,8 +13,8 @@ if __name__ == "__main__":
     t0 = time.time()
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     dataset = Dataset()
-    dataset.build_dataset(data_path="ml-1m/ratings.dat",
-                          length="all", shuffle=True, implicit=True)
+    dataset.build_dataset(data_path="ml-1m/ratings.dat", time_bin=10,
+                          length=10000, shuffle=True, implicit=True, num_neg=4)
 #    dataset.build_trainset_implicit(4)
 #    dataset.build_testset_implicit(4)
 
@@ -100,15 +100,15 @@ if __name__ == "__main__":
 #    print(rmse_tf(ncf, dataset, mode="train"))
 #    print(rmse_tf(ncf, dataset, mode="test"))
 
-    wd = wide_deep.WideDeep(embed_size=16, n_epochs=1, batch_size=256, task="rating")
-    wd.fit(dataset)
+#    wd = wide_deep.WideDeep(embed_size=16, n_epochs=1, batch_size=256, task="ranking")
+#    wd.fit(dataset)
 #    print(wd.predict(1, 2, "2001-1-8"))
 #    print(wd.predict_user(1))
 
-#    wdc = wide_deep.WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="rating")
-#    wdc.fit(dataset)
-#    print(wdc.predict_ui(1, 2, "2001-1-8"))
-#    print(wdc.predict_user(1))
+    wdc = wide_deep.WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking")
+    wdc.fit(dataset)
+    print(wdc.predict_ui(1, 2, "2001-1-8"))
+    print(wdc.predict_user(1))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 
