@@ -40,7 +40,7 @@ class Dataset:
         return loaded_data
 
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
-                      train_frac=0.8, implicit=False, batch_size=256, seed=42):
+                      train_frac=0.8, implicit=False, batch_size=256, seed=42, time_bin=0, num_neg=None):
         np.random.seed(seed)
         self.batch_size = batch_size
         index_user = 0
@@ -86,12 +86,14 @@ class Dataset:
         self.train_ratings = np.array(self.train_ratings)
         self.train_timestamp = np.array(self.train_timestamp)
 
-        self.kb = KBinsDiscretizer(n_bins=10, encode="ordinal", strategy="uniform")  #### quantile
-        self.train_timestamp = self.kb.fit_transform(self.train_timestamp.reshape(-1, 1))
-        self.train_timestamp = self.train_timestamp.astype(int)
+        if time_bin > 0:
+            self.kb = KBinsDiscretizer(n_bins=time_bin, encode="ordinal", strategy="uniform")  #### quantile
+            self.train_timestamp_bin = self.kb.fit_transform(self.train_timestamp.reshape(-1, 1))
+            self.train_timestamp_bin = self.train_timestamp_bin.astype(int)
 
         if implicit:
             self.train_labels = np.ones(len(self.train_ratings), dtype=np.float32)
+            self.build_trainset_implicit(num_neg)
 
     #    self.test_user_indices = np.array(self.test_user_indices)
     #    self.test_item_indices = np.array(self.test_item_indices)
@@ -109,11 +111,13 @@ class Dataset:
         self.test_ratings = test_safe[:, 2]
         self.test_timestamp = test_safe[:, 3]
 
-        self.test_timestamp = self.kb.transform(self.test_timestamp.reshape(-1, 1))
-        self.test_timestamp = self.test_timestamp.astype(int)
+        if time_bin > 0:
+            self.test_timestamp_bin = self.kb.transform(self.test_timestamp.reshape(-1, 1))
+            self.test_timestamp_bin = self.test_timestamp_bin.astype(int)
 
         if implicit:
             self.test_labels = np.ones(len(self.test_ratings), dtype=np.float32)
+            self.build_testset_implicit(num_neg)
     #        self.neg = negative_sampling(self, 4, self.batch_size)
         #    self.build_trainset_implicit()
         #    self.build_testset_implicit()
