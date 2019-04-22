@@ -23,12 +23,12 @@ class negative_sampling:
             user_indices = self.dataset.train_user_indices
             item_indices = self.dataset.train_item_indices
             label_indices = self.dataset.train_labels
-            timestamp_indices = self.dataset.train_timestamp
+            timestamp_indices = self.dataset.train_timestamp_bin
         elif mode == "test":
             user_indices = self.dataset.test_user_indices
             item_indices = self.dataset.test_item_indices
             label_indices = self.dataset.test_labels
-            timestamp_indices = self.dataset.test_timestamp
+            timestamp_indices = self.dataset.test_timestamp_bin
 
         user, item, label, timestamp = [], [], [], []
         for i, u in enumerate(user_indices):
