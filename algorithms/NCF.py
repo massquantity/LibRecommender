@@ -101,13 +101,13 @@ class NCF_9999:
                                          self.ratings: r})
 
                 train_loss = self.sess.run(self.metrics,
-                                       feed_dict={self.user_indices: dataset.train_user_indices,
-                                                  self.item_indices: dataset.train_item_indices,
-                                                  self.ratings: dataset.train_ratings})
+                                           feed_dict={self.user_indices: dataset.train_user_indices,
+                                                      self.item_indices: dataset.train_item_indices,
+                                                      self.ratings: dataset.train_ratings})
                 test_loss = self.sess.run(self.metrics,
-                                           feed_dict={self.user_indices: dataset.test_user_indices,
-                                                      self.item_indices: dataset.test_item_indices,
-                                                      self.ratings: dataset.test_ratings})
+                                          feed_dict={self.user_indices: dataset.test_user_indices,
+                                                     self.item_indices: dataset.test_item_indices,
+                                                     self.ratings: dataset.test_ratings})
                 print("Epoch: {}\ttrain loss: {:.4f}\ttest loss: {:.4f}".format(epoch, train_loss, test_loss))
                 print("Epoch {}, training time: {:.4f}".format(epoch, time.time() - t0))
 
