@@ -2,7 +2,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from libreco.dataset.Dataset import Dataset
-from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF, wide_deep
+from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF, wide_deep, FM
 from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
 from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
 from libreco.utils.negative_sampling import negative_sampling
@@ -14,7 +14,7 @@ if __name__ == "__main__":
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     dataset = Dataset()
     dataset.build_dataset(data_path="ml-1m/ratings.dat", time_bin=10,
-                          length=10000, shuffle=True, implicit=True, num_neg=4)
+                          length=10000, shuffle=True, implicit=False, num_neg=4)
 #    dataset.build_trainset_implicit(4)
 #    dataset.build_testset_implicit(4)
 
@@ -105,10 +105,13 @@ if __name__ == "__main__":
 #    print(wd.predict(1, 2, "2001-1-8"))
 #    print(wd.predict_user(1))
 
-    wdc = wide_deep.WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking")
-    wdc.fit(dataset)
-    print(wdc.predict_ui(1, 2, "2001-1-8"))
-    print(wdc.predict_user(1))
+#    wdc = wide_deep.WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking")
+#    wdc.fit(dataset)
+#    print(wdc.predict_ui(1, 2, "2001-1-8"))
+#    print(wdc.predict_user(1))
+
+    fm = FM.FM(lr=0.05, n_epochs=5000, reg=0.0)
+    fm.fit(dataset)
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 
