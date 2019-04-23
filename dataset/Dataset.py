@@ -189,6 +189,10 @@ class Dataset:
         self.test_label_implicit, \
         self.test_timestamp = neg(mode="test")
 
+    # TODO
+    def build_tf_sparse(self):
+        pass
+
 
     def load_tf_trainset(self, batch_size=1):
         trainset_tf = tf.data.Dataset.from_tensor_slices({'user': self.train_user_indices,
