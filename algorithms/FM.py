@@ -7,7 +7,7 @@ class FM:
     def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=64, seed=42):
         self.lr = lr
         self.n_epochs = n_epochs
-        self.n_factors = n_factors
+        self.n_factors = n_factors  ########## 8
         self.reg = reg
         self.batch_size = batch_size
         self.seed = seed
