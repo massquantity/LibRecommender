@@ -12,13 +12,13 @@ class FM:
         self.batch_size = batch_size
         self.seed = seed
 
-    # TODO
-    def build_sparse(self, dataset):
-        first_dim = tf.reshape(tf.constant(np.tile(np.arange(len(dataset.train_ratings)), 2)), [-1, 1])
-        second_dim = tf.reshape(tf.concat(self.user_indices, self.item_indices + dataset.n_users), [-1, 1])
-        indices = tf.concat([first_dim, second_dim], axis=1)
-        values = tf.ones(len(dataset.train_ratings) * 2)
-        shape = [len(dataset.train_ratings), dataset.n_users + dataset.n_items]
+    @staticmethod
+    def build_sparse(data, user_indices, item_indices):
+        first_dim = tf.reshape(tf.constant(np.tile(np.arange(user_indices.shape[0])), 2), [-1, 1])
+        second_dim = tf.reshape(tf.concat([user_indices, item_indices + data.n_users], axis=0), [-1, 1])
+        indices = tf.concat([first_dim, tf.cast(second_dim, tf.int64)], axis=1)
+        values = tf.ones(user_indices.shape[0] * 2)
+        shape = [user_indices.shape[0], data.n_users + data.n_items]
         return tf.sparse.SparseTensor(indices, values, shape)
 
     def build_model(self, dataset):
@@ -32,14 +32,21 @@ class FM:
         self.w = tf.Variable(tf.truncated_normal([self.dim], 0.0, 0.1))
         self.v = tf.Variable(tf.truncated_normal([self.dim, self.n_factors], 0.0, 0.1))
 
-        self.user_onehot = tf.one_hot(self.user_indices, dataset.n_users)
-        self.item_onehot = tf.one_hot(self.item_indices, dataset.n_items)
-        self.x = tf.concat([self.user_onehot, self.item_onehot], axis=1)
-        self.linear_term = tf.reduce_sum(tf.multiply(self.w, self.x), axis=1, keepdims=True)
+    #    self.user_onehot = tf.one_hot(self.user_indices, dataset.n_users)
+    #    self.item_onehot = tf.one_hot(self.item_indices, dataset.n_items)
+    #    self.x = tf.concat([self.user_onehot, self.item_onehot], axis=1)
+
+
+        self.x = FM.build_sparse(dataset, self.user_indices, self.item_indices)
+        self.w = tf.reshape(self.w, [-1, 1])
+    #    self.linear_term = tf.reduce_sum(tf.multiply(self.w, self.x), axis=1, keepdims=True)
+        self.linear_term = tf.sparse_tensor_dense_matmul(self.x, self.w)
+        print("linear", self.linear_term.shape)
+    #    self.linear_term = tf.reduce_sum(self.x.__mul__(self.w), axis=1, keepdims=True)
         self.pairwise_term = 0.5 * tf.reduce_sum(
             tf.subtract(
-                tf.square(tf.matmul(self.x, self.v)),
-                tf.matmul(tf.square(self.x), tf.square(self.v))), axis=1, keepdims=True)
+                tf.square(tf.sparse_tensor_dense_matmul(self.x, self.v)),
+                tf.sparse_tensor_dense_matmul(tf.square(self.x), tf.square(self.v))), axis=1, keepdims=True)
 
         self.pred = tf.add(self.linear_term, self.pairwise_term)
         self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.ratings, [-1,1]),
