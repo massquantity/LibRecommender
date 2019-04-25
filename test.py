@@ -110,8 +110,9 @@ if __name__ == "__main__":
 #    print(wdc.predict_ui(1, 2, "2001-1-8"))
 #    print(wdc.predict_user(1))
 
-    fm = FM.FM(lr=0.001, n_epochs=5000, reg=0.0, n_factors=8)
+    fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=4096)
     fm.fit(dataset)
+    print(fm.predict(1, 2))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 
