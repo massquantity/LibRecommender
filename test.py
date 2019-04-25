@@ -14,7 +14,7 @@ if __name__ == "__main__":
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     dataset = Dataset()
     dataset.build_dataset(data_path="ml-1m/ratings.dat", time_bin=10,
-                          length=10000, shuffle=True, implicit=False, num_neg=4)
+                          length="all", shuffle=True, implicit=False, num_neg=4)
 #    dataset.build_trainset_implicit(4)
 #    dataset.build_testset_implicit(4)
 
@@ -110,7 +110,7 @@ if __name__ == "__main__":
 #    print(wdc.predict_ui(1, 2, "2001-1-8"))
 #    print(wdc.predict_user(1))
 
-    fm = FM.FM(lr=0.05, n_epochs=5000, reg=0.0, n_factors=8)
+    fm = FM.FM(lr=0.001, n_epochs=5000, reg=0.0, n_factors=8)
     fm.fit(dataset)
 
     print("train + test time: {:.4f}".format(time.time() - t0))
