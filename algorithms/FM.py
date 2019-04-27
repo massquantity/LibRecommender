@@ -156,7 +156,7 @@ class FM:
     #    self.shape = tf.placeholder(tf.int64, shape=[2], name="shape")
     #    self.ratings = tf.placeholder(tf.float32, shape=[None], name="ratings")
 
-        self.w = tf.Variable(tf.truncated_normal([self.dim], 0.0, 0.01))
+        self.w = tf.Variable(tf.truncated_normal([self.dim, 1], 0.0, 0.01))
         self.v = tf.Variable(tf.truncated_normal([self.dim, self.n_factors], 0.0, 0.01))
 
         #    self.user_onehot = tf.one_hot(self.user_indices, dataset.n_users)
@@ -165,7 +165,6 @@ class FM:
 
         self.x = tf.sparse_placeholder(tf.float32, [None, self.dim])
         self.ratings = tf.placeholder(tf.float32, shape=[None], name="ratings")
-        self.w = tf.reshape(self.w, [-1, 1])
     #    self.linear_term = tf.reduce_sum(tf.multiply(self.w, self.x), axis=1, keepdims=True)
     #    self.linear_term = tf.reduce_sum(self.x.__mul__(self.w), axis=1, keepdims=True)
         self.linear_term = tf.sparse_tensor_dense_matmul(self.x, self.w)
@@ -245,9 +244,7 @@ class FM:
     def predict(self, u, i):
         index, value, shape = FM.build_sparse_data(self.dataset, np.array([u]), np.array([i]))
         try:
-            pred = self.sess.run(self.pred, feed_dict={self.indices: index,
-                                                       self.values: value,
-                                                       self.shape: shape})
+            pred = self.sess.run(self.pred, feed_dict={self.x: (index, value, shape)})
             pred = np.clip(pred, 1, 5)
         except tf.errors.InvalidArgumentError:
             pred = self.dataset.global_mean
