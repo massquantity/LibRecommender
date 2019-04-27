@@ -2,7 +2,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from libreco.dataset.Dataset import Dataset
-from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF, wide_deep, FM
+from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF, wide_deep, FM, DeepFM
 from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
 from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
 from libreco.utils.negative_sampling import negative_sampling
@@ -110,9 +110,13 @@ if __name__ == "__main__":
 #    print(wdc.predict_ui(1, 2, "2001-1-8"))
 #    print(wdc.predict_user(1))
 
-    fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=4096)
-    fm.fit(dataset)
-    print(fm.predict(1, 2))
+#    fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=4096)
+#    fm.fit(dataset)
+#    print(fm.predict(1, 2))
+
+#    dfm = DeepFM.DeepFM(lr=0.001, n_epochs=20000, reg=0.0, embed_size=8, batch_size=1024, dropout=0.0)
+#    dfm.fit(dataset)
+#    print(dfm.predict(1, 2))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 
