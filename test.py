@@ -114,9 +114,9 @@ if __name__ == "__main__":
 #    fm.fit(dataset)
 #    print(fm.predict(1, 2))
 
-#    dfm = DeepFM.DeepFM(lr=0.001, n_epochs=20000, reg=0.0, embed_size=8, batch_size=1024, dropout=0.0)
-#    dfm.fit(dataset)
-#    print(dfm.predict(1, 2))
+    dfm = DeepFM.DeepFM(lr=0.0001, n_epochs=20000, reg=0.0, embed_size=8, batch_size=1024, dropout=0.0)
+    dfm.fit(dataset)
+    print(dfm.predict(1, 2))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 
