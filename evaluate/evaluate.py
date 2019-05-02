@@ -62,6 +62,7 @@ def precision_tf(pred, y):
     precision = tf.reduce_sum(y_chosen) / tf.cast(tf.shape(y_chosen), tf.float32)
     return precision[0]
 
+
 def AP_at_k(model, dataset, u, k):
     ranklist = model.predict_user(u)
     top_k = np.argsort(ranklist)[::-1][:k]

@@ -215,7 +215,7 @@ class NCF:
             for epoch in range(1, self.n_epochs + 1):
                 t0 = time.time()
                 neg = negative_sampling(dataset, 4, self.batch_size)
-                n_batches = len(dataset.train_ratings) // self.batch_size
+                n_batches = len(dataset.train_label_implicit) // self.batch_size
                 for n in range(n_batches):
                     u, i, r = neg.next_batch()
                     self.sess.run([self.training_op],

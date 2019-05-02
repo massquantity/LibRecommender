@@ -14,7 +14,7 @@ if __name__ == "__main__":
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     dataset = Dataset()
     dataset.build_dataset(data_path="ml-1m/ratings.dat", time_bin=10,
-                          length="all", shuffle=True, implicit=False, num_neg=4)
+                          length="all", shuffle=True, implicit=True, num_neg=4)
 #    dataset.build_trainset_implicit(4)
 #    dataset.build_testset_implicit(4)
 
@@ -113,10 +113,12 @@ if __name__ == "__main__":
 #    fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=4096)
 #    fm.fit(dataset)
 #    print(fm.predict(1, 2))
-
-    dfm = DeepFM.DeepFM(lr=0.0001, n_epochs=20000, reg=0.0, embed_size=8, batch_size=1024, dropout=0.0)
+    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
+    dfm = DeepFM.DeepFM(lr=0.0001, n_epochs=20000, reg=0.0, embed_size=8,
+                        batch_size=1024, dropout=0.0, task="ranking")
     dfm.fit(dataset)
     print(dfm.predict(1, 2))
+    print(dfm.predict_user(1))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 
