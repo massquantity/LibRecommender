@@ -209,19 +209,19 @@ class DeepFM:
                 tf.reduce_sum(tf.square(self.FM_embedding), axis=1))
 
         self.MLP_layer1 = tf.layers.dense(inputs=self.MLP_embedding,
-                                          units=200,   # self.embed_size * 2,
+                                          units=8,   # self.embed_size * 2,
                                           activation=tf.nn.relu,
                                           kernel_initializer=tf.variance_scaling_initializer,
                                           kernel_regularizer=regularizer)
         self.MLP_layer1 = tf.layers.dropout(self.MLP_layer1, rate=self.dropout)
         self.MLP_layer2 = tf.layers.dense(inputs=self.MLP_layer1,
-                                          units=200,   # self.embed_size,
+                                          units=8,   # self.embed_size,
                                           activation=tf.nn.relu,
                                           kernel_initializer=tf.variance_scaling_initializer,
                                           kernel_regularizer=regularizer)
         self.MLP_layer2 = tf.layers.dropout(self.MLP_layer2, rate=self.dropout)
         self.MLP_layer3 = tf.layers.dense(inputs=self.MLP_layer2,
-                                          units=200,   # self.embed_size,
+                                          units=8,   # self.embed_size,
                                           activation=tf.nn.relu,
                                           kernel_initializer=tf.variance_scaling_initializer,
                                           kernel_regularizer=regularizer)
@@ -240,7 +240,7 @@ class DeepFM:
                                                              predictions=tf.clip_by_value(self.pred, 1, 5)))
         elif self.task == "ranking":
             self.logits = tf.layers.dense(inputs=self.concat_layer, units=1, name="logits")
-        #    self.logits = tf.reshape(self.logits, [-1])
+            self.logits = tf.reshape(self.logits, [-1])
             self.loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=self.logits))
 
@@ -252,57 +252,110 @@ class DeepFM:
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.pred, self.labels), tf.float32))
             self.precision = precision_tf(self.pred, self.labels)
 
-
-            accuracy = tf.metrics.accuracy(labels=self.labels, predictions=self.pred)
-            precision = tf.metrics.precision(labels=self.labels, predictions=self.pred)
-            recall = tf.metrics.recall(labels=self.labels, predictions=self.pred)
-            f1 = tf.contrib.metrics.f1_score(labels=self.labels, predictions=self.pred)
-            auc_roc = tf.metrics.auc(labels=self.labels, predictions=self.pred, curve="ROC",
-                                     summation_method='careful_interpolation')
-            auc_pr = tf.metrics.auc(labels=self.labels, predictions=self.pred, curve="PR",
-                                    summation_method='careful_interpolation')
-
-
-    def fit(self, dataset):
+    def fit(self, dataset, verbose=1):
         self.build_model(dataset)
         self.optimizer = tf.train.AdamOptimizer(self.lr)
     #   self.optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3)
         self.training_op = self.optimizer.minimize(self.loss)
-        init = tf.global_variables_initializer()
+    #    init = tf.global_variables_initializer()
+        init = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
         self.sess = tf.Session()
         self.sess.run(init)
         with self.sess.as_default():
-            for epoch in range(1, self.n_epochs + 1):
-                t0 = time.time()
-                n_batches = len(dataset.train_ratings) // self.batch_size
-                for n in range(n_batches):
-                    end = min(len(dataset.train_ratings), (n + 1) * self.batch_size)
-                    user_batch = dataset.train_user_indices[n * self.batch_size: end]
-                    item_batch = dataset.train_item_indices[n * self.batch_size: end]
-                    rating_batch = dataset.train_ratings[n * self.batch_size: end]
+            if self.task == "rating":
+                for epoch in range(1, self.n_epochs + 1):
+                    t0 = time.time()
+                    n_batches = len(dataset.train_ratings) // self.batch_size
+                    for n in range(n_batches):
+                        end = min(len(dataset.train_ratings), (n + 1) * self.batch_size)
+                        user_batch = dataset.train_user_indices[n * self.batch_size: end]
+                        item_batch = dataset.train_item_indices[n * self.batch_size: end]
+                        rating_batch = dataset.train_ratings[n * self.batch_size: end]
 
-                    self.sess.run(self.training_op, feed_dict={self.user_indices: user_batch,
-                                                               self.item_indices: item_batch,
-                                                               self.labels: rating_batch})
-                if epoch % 1 == 0:
-                    train_rmse = self.sess.run(self.rmse, feed_dict={self.user_indices: dataset.train_user_indices,
-                                                                     self.item_indices: dataset.train_item_indices,
-                                                                     self.labels: dataset.train_ratings})
+                        self.sess.run(self.training_op, feed_dict={self.user_indices: user_batch,
+                                                                   self.item_indices: item_batch,
+                                                                   self.labels: rating_batch})
+                    if epoch % 1 == 0:
+                        train_rmse = self.sess.run(self.rmse, feed_dict={self.user_indices: dataset.train_user_indices,
+                                                                         self.item_indices: dataset.train_item_indices,
+                                                                         self.labels: dataset.train_ratings})
 
-                    test_rmse = self.sess.run(self.rmse, feed_dict={self.user_indices: dataset.test_user_indices,
-                                                                    self.item_indices: dataset.test_item_indices,
-                                                                    self.labels: dataset.test_ratings})
+                        test_rmse = self.sess.run(self.rmse, feed_dict={self.user_indices: dataset.test_user_indices,
+                                                                        self.item_indices: dataset.test_item_indices,
+                                                                        self.labels: dataset.test_ratings})
 
-                    print("Epoch {}, train_rmse: {:.4f}, training_time: {:.2f}".format(
-                        epoch, train_rmse, time.time() - t0))
-                    print("Epoch {}, test_rmse: {:.4f}".format(epoch, test_rmse))
-                    print()
+                        print("Epoch {}, train_rmse: {:.4f}, training_time: {:.2f}".format(
+                            epoch, train_rmse, time.time() - t0))
+                        print("Epoch {}, test_rmse: {:.4f}".format(epoch, test_rmse))
+                        print()
+
+            elif self.task == "ranking":
+                for epoch in range(1, self.n_epochs + 1):
+                    t0 = time.time()
+                    neg = negative_sampling(dataset, 4, self.batch_size)
+                    n_batches = len(dataset.train_label_implicit) // self.batch_size
+                    for n in range(n_batches):
+                        user_batch, item_batch, label_batch = neg.next_batch()
+                        self.sess.run(self.training_op, feed_dict={self.user_indices: user_batch,
+                                                                   self.item_indices: item_batch,
+                                                                   self.labels: label_batch})
+
+                    if epoch % 1 == 0 and verbose > 0:
+                        train_acc, train_precision = self.sess.run([self.accuracy, self.precision],
+                                                      feed_dict={self.user_indices: dataset.train_user_implicit,
+                                                                 self.item_indices: dataset.train_item_implicit,
+                                                                 self.labels: dataset.train_label_implicit})
+
+                        test_acc, test_precision = self.sess.run([self.accuracy, self.precision],
+                                                     feed_dict={self.user_indices: dataset.test_user_implicit,
+                                                                self.item_indices: dataset.test_item_implicit,
+                                                                self.labels: dataset.test_label_implicit})
+                        print("Epoch {}, training time:{:.2f}".format(epoch, time.time() - t0))
+                        print("train accuracy: {:.4f}, precision: {:.4f}".format(train_acc, train_precision))
+                        print("test accuracy: {:.4f}, precision: {:.4f}".format(test_acc, test_precision))
+                        print()
+
+                        t4 = time.time()
+                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10)
+                        print("\t MAP @ {}: {:.4f}".format(10, mean_average_precision_10))
+                        print("\t MAP @ 10 time: {:.4f}".format(time.time() - t4))
+
+                        t5 = time.time()
+                        mean_average_precision_100 = MAP_at_k(self, self.dataset, 100)
+                        print("\t MAP @ {}: {:.4f}".format(100, mean_average_precision_100))
+                        print("\t MAP @ 100 time: {:.4f}".format(time.time() - t5))
+
+                        t6 = time.time()
+                        HitRatio = HitRatio_at_k(self, self.dataset, 10)
+                        print("\t HitRatio @ {}: {:.4f}".format(10, HitRatio))
+                        print("\t HitRatio time: {:.4f}".format(time.time() - t6))
+
+                        t7 = time.time()
+                        NDCG = NDCG_at_k(self, self.dataset, 10)
+                        print("\t NDCG @ {}: {:.4f}".format(10, NDCG))
+                        print("\t NDCG time: {:.4f}".format(time.time() - t7))
 
     def predict(self, u, i):
-        try:
-            pred = self.sess.run(self.pred, feed_dict={self.user_indices: np.array([u]),
-                                                       self.item_indices: np.array([i])})
-            pred = np.clip(pred, 1, 5)
-        except tf.errors.InvalidArgumentError:
-            pred = self.dataset.global_mean
-        return pred
+        if self.task == "rating":
+            try:
+                pred = self.sess.run(self.pred, feed_dict={self.user_indices: np.array([u]),
+                                                           self.item_indices: np.array([i])})
+                pred = np.clip(pred, 1, 5)
+            except tf.errors.InvalidArgumentError:
+                pred = self.dataset.global_mean
+            return pred
+        elif self.task == "ranking":
+            try:
+                y_prob, y_pred = self.sess.run([self.y_prob, self.pred],
+                                               feed_dict={self.user_indices: np.array([u]),
+                                                          self.item_indices: np.array([i])})
+            except tf.errors.InvalidArgumentError:
+                y_prob, y_pred = [0.0], [0.0]
+            return y_prob[0], y_pred[0]
+
+    def predict_user(self, u):
+        user_indices = np.full(self.n_items, u)
+        item_indices = np.arange(self.n_items)
+        item_ranklist = self.sess.run(self.y_prob, feed_dict={self.user_indices: user_indices,
+                                                              self.item_indices: item_indices})
+        return item_ranklist
