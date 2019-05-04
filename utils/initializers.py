@@ -13,7 +13,7 @@ def truncated_normal_slow(mean, scale, shape):
     return array
 
 
-def truncated_normal(shape, mean=0.0, scale=0.01):
+def truncated_normal(shape, mean=0.0, scale=0.05):
     total_num = np.multiply(*shape)
     array = np.random.normal(mean, scale, total_num)
     for i, sample in enumerate(array):
