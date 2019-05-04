@@ -134,6 +134,18 @@ def NDCG_at_k_tf(labels, predictions, k):
     return tf.metrics.mean(NDCG)
 
 
+def binary_cross_entropy(model, user, item, label):
+    ce = []
+    probs = []
+    for u, i, l in zip(user, item, label):
+        prob, _ = model.predict(u, i)
+        probs.append(prob)
+        if l == 1.0:
+            ce.append(-np.log(prob))
+        elif l == 0.0:
+            ce.append(-np.log(1.0 - prob))
+    return np.mean(ce), probs
+
 
 # TODO
 # def recall
