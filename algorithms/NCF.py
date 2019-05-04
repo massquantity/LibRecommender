@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import tensorflow as tf
-from ..utils.negative_sampling import negative_sampling
+from ..utils.sampling import negative_sampling
 from ..evaluate.evaluate import precision_tf, AP_at_k, MAP_at_k, HitRatio_at_k, NDCG_at_k
 
 
