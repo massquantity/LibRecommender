@@ -8,7 +8,7 @@ import pandas as pd
 from math import sqrt
 import tensorflow as tf
 from sklearn.preprocessing import KBinsDiscretizer
-from ..utils.negative_sampling import negative_sampling
+from ..utils.sampling import negative_sampling
 
 
 class Dataset:
@@ -40,7 +40,8 @@ class Dataset:
         return loaded_data
 
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
-                      train_frac=0.8, implicit=False, batch_size=256, seed=42, time_bin=0, num_neg=None):
+                      train_frac=0.8, implicit=False, build_negative=False, batch_size=256,
+                      seed=42, time_bin=0, num_neg=None):
         np.random.seed(seed)
         self.batch_size = batch_size
         index_user = 0
@@ -87,12 +88,15 @@ class Dataset:
         self.train_timestamp = np.array(self.train_timestamp)
 
         if time_bin > 0:
+            assert type(time_bin) == int
             self.kb = KBinsDiscretizer(n_bins=time_bin, encode="ordinal", strategy="uniform")  #### quantile
             self.train_timestamp_bin = self.kb.fit_transform(self.train_timestamp.reshape(-1, 1))
             self.train_timestamp_bin = self.train_timestamp_bin.astype(int)
 
         if implicit:
             self.train_labels = np.ones(len(self.train_ratings), dtype=np.float32)
+
+        if build_negative:
             self.build_trainset_implicit(num_neg)
 
     #    self.test_user_indices = np.array(self.test_user_indices)
@@ -117,6 +121,8 @@ class Dataset:
 
         if implicit:
             self.test_labels = np.ones(len(self.test_ratings), dtype=np.float32)
+
+        if build_negative:
             self.build_testset_implicit(num_neg)
     #        self.neg = negative_sampling(self, 4, self.batch_size)
         #    self.build_trainset_implicit()
