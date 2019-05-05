@@ -10,13 +10,13 @@ from pprint import pprint
 
 
 if __name__ == "__main__":
-    t0 = time.time()
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     t0 = time.time()
     dataset = Dataset()
     dataset.build_dataset(data_path="ml-1m/ratings.dat", time_bin=10,
                           length="all", shuffle=True, implicit=True, build_negative=False, num_neg=4)
     print("data processing time: {:.2f}".format(time.time() - t0))
+#    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
     print()
 #    dataset.build_trainset_implicit(4)
 #    dataset.build_testset_implicit(4)
@@ -32,18 +32,7 @@ if __name__ == "__main__":
 #    pprint(neg.next_batch())
 #    pprint(neg.next_batch())
 #    pprint(neg.next_batch())
-    '''
-    with tf.Session() as sess:
-        dataset.load_tf_dataset(batch_size=len(dataset.train_ratings))
-        iterator = dataset.dataset_tf.make_one_shot_iterator()
-        one_element = iterator.get_next()
-        try:
-            while True:
-                print(sess.run(one_element))
-        except tf.errors.OutOfRangeError:
-            pass
-    print("dddd")
-    '''
+
 #    with tf.Session() as sess:
 #    dataset.load_tf_trainset(batch_size=2048)
 
@@ -117,7 +106,6 @@ if __name__ == "__main__":
 #    fm.fit(dataset)
 #    print(fm.predict(1, 2))
 
-#    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
 #    dfm = DeepFM.DeepFM(lr=0.0001, n_epochs=20000, reg=0.0, embed_size=8,
 #                        batch_size=1024, dropout=0.0, task="ranking")
 #    dfm.fit(dataset)
@@ -128,7 +116,7 @@ if __name__ == "__main__":
 #    bpr.fit(dataset, mode="bootstrap")
 #    print(bpr.predict(1, 2))
 
-    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.007)
+    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.0, n_factors=16)
     bpr.fit(dataset, mode="sgd")
     print(bpr.predict(1, 2))
 
