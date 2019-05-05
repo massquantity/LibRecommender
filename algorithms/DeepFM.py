@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 from ..utils.sampling import negative_sampling
 from ..evaluate.evaluate import precision_tf, AP_at_k, MAP_at_k, HitRatio_at_k, NDCG_at_k
+from sklearn.metrics import roc_auc_score, precision_recall_curve, average_precision_score, auc
 
 
 class DeepFM_sparse:
@@ -301,12 +302,16 @@ class DeepFM:
                                                                    self.labels: label_batch})
 
                     if epoch % 1 == 0 and verbose > 0:
-                        train_acc, train_precision = self.sess.run([self.accuracy, self.precision],
+                        train_acc, train_precision, train_prob = self.sess.run([self.accuracy,
+                                                                                self.precision,
+                                                                                self.y_prob],
                                                       feed_dict={self.user_indices: dataset.train_user_implicit,
                                                                  self.item_indices: dataset.train_item_implicit,
                                                                  self.labels: dataset.train_label_implicit})
 
-                        test_acc, test_precision = self.sess.run([self.accuracy, self.precision],
+                        test_acc, test_precision, test_prob = self.sess.run([self.accuracy,
+                                                                             self.precision,
+                                                                             self.y_prob],
                                                      feed_dict={self.user_indices: dataset.test_user_implicit,
                                                                 self.item_indices: dataset.test_item_implicit,
                                                                 self.labels: dataset.test_label_implicit})
@@ -314,6 +319,23 @@ class DeepFM:
                         print("train accuracy: {:.4f}, precision: {:.4f}".format(train_acc, train_precision))
                         print("test accuracy: {:.4f}, precision: {:.4f}".format(test_acc, test_precision))
                         print()
+
+                        t1 = time.time()
+                        train_auc = roc_auc_score(dataset.train_label_implicit, train_prob)
+                        test_auc = roc_auc_score(dataset.test_label_implicit, test_prob)
+                        train_ap = average_precision_score(dataset.train_label_implicit, train_prob)
+                        test_ap = average_precision_score(dataset.test_label_implicit, test_prob)
+                        precision_train, recall_train, _ = precision_recall_curve(dataset.train_label_implicit,
+                                                                                  train_prob)
+                        train_pr_auc = auc(recall_train, precision_train)
+                        precision_test, recall_test, _ = precision_recall_curve(dataset.test_label_implicit,
+                                                                                test_prob)
+                        test_pr_auc = auc(recall_test, precision_test)
+                        print("\t train roc auc: {:.2f}, test roc auc: {:.2f} "
+                              "\n\t train average precision: {:.2f}, test average precision: {:.2f}"
+                              "\n\t train pr auc: {:.2f}, test pr auc: {:.2f}".format(
+                            train_auc, test_auc, train_ap, test_ap, train_pr_auc, test_pr_auc))
+                        print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
 
                         t4 = time.time()
                         mean_average_precision_10 = MAP_at_k(self, self.dataset, 10)
@@ -334,6 +356,7 @@ class DeepFM:
                         NDCG = NDCG_at_k(self, self.dataset, 10)
                         print("\t NDCG @ {}: {:.4f}".format(10, NDCG))
                         print("\t NDCG time: {:.4f}".format(time.time() - t7))
+                        print()
 
     def predict(self, u, i):
         if self.task == "rating":
