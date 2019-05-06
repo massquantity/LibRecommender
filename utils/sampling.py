@@ -230,6 +230,19 @@ class pairwise_sampling:
         else:
             raise ValueError("either use bootstrap or batch size must be positive integer.")
 
+    def next_mf_tf(self):
+        batch_item_j, batch_x_uij = [], []
+        end = min(len(self.dataset.train_user_indices), (self.i + 1) * self.batch_size)
+        batch_user = self.dataset.train_user_indices[self.i * self.batch_size: end]
+        batch_item_i = self.dataset.train_item_indices[self.i * self.batch_size: end]
+        for user, item_i in zip(batch_user, batch_item_i):
+            item_j = np.random.randint(0, self.dataset.n_items)
+            while item_j in self.dataset.train_user[user]:
+                item_j = np.random.randint(0, self.dataset.n_items)
+            batch_item_j.append(item_j)
+        self.i += 1
+        return batch_user, batch_item_i, np.array(batch_item_j)
+
 
 
 
