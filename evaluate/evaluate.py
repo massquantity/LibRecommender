@@ -153,4 +153,4 @@ def binary_cross_entropy(model, user, item, label):
 # def f1
 
 
-
+# def evaluate in fit

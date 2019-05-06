@@ -112,13 +112,18 @@ if __name__ == "__main__":
 #    print(dfm.predict(1, 2))
 #    print(dfm.predict_user(1))
 
-#    bpr = BPR.BPR(lr=0.001, iteration=int(80000 * 2))  # reg
-#    bpr.fit(dataset, mode="bootstrap")
+#    iteration = len(dataset.train_user_indices) * 10000
+#    bpr = BPR.BPR(lr=0.01, iteration=iteration)  # reg
+#    bpr.fit(dataset, sampling_mode="bootstrap")
 #    print(bpr.predict(1, 2))
 
-    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.0, n_factors=16)
-    bpr.fit(dataset, mode="sgd")
-    print(bpr.predict(1, 2))
+#    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.0, n_factors=16, batch_size=64)
+#    bpr.fit(dataset, sampling_mode="batch")
+#    print(bpr.predict(1, 2))
+
+    bpr = BPR.BPR_tf(lr=0.001, n_epochs=2000, reg=0.0, n_factors=16, batch_size=64)
+    bpr.fit(dataset)
+#    print(bpr.predict(1, 2))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 
