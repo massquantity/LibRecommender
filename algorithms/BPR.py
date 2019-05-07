@@ -2,36 +2,42 @@ import time
 import numpy as np
 import tensorflow as tf
 from ..utils.sampling import pairwise_sampling
-from ..utils.initializers import truncated_normal
+from ..utils.initializers import truncated_normal, xavier_init
 from ..evaluate.evaluate import precision_tf, AP_at_k, MAP_at_k, HitRatio_at_k, NDCG_at_k, binary_cross_entropy
 from sklearn.metrics import roc_auc_score, average_precision_score
 
 
 class BPR:
     def __init__(self, n_factors=16, lr=0.01, n_epochs=20, reg=0.0,
-                 iteration=1000, batch_size=64, seed=42):
+                 iteration=1000, batch_size=64, k=20, seed=42):
         self.n_factors = n_factors
         self.lr = lr
         self.n_epochs = n_epochs
         self.reg = reg
         self.iteration = iteration
         self.batch_size = batch_size
+        self.k = k
         self.seed = seed
 
-    def build_model(self, dataset):
+    def build_model(self, dataset, method="mf"):
         np.random.seed(self.seed)
-        self.pu = truncated_normal(shape=[dataset.n_users, self.n_factors], mean=0.0, scale=0.05)
-        self.qi = truncated_normal(shape=[dataset.n_items, self.n_factors], mean=0.0, scale=0.05)
+        if method == "mf":
+            self.pu = truncated_normal(shape=[dataset.n_users, self.n_factors], mean=0.0, scale=0.1)
+            self.qi = truncated_normal(shape=[dataset.n_items, self.n_factors], mean=0.0, scale=0.1)
 
-    def fit(self, dataset, sampling_mode="batch", verbose=1):
+        elif method == "knn":
+        #    self.sim_matrix = truncated_normal(shape=[dataset.n_items, dataset.n_items], mean=0.0, scale=0.01)
+            self.sim_matrix = np.zeros((dataset.n_items, dataset.n_items))
+
+    def fit(self, dataset, sampling_mode="batch", method="mf", verbose=1):
         if verbose > 0:
             sampling = pairwise_sampling(dataset)
             train_user, train_item, train_label = sampling(mode="train")
             test_user, test_item, test_label = sampling(mode="test")
 
         self.dataset = dataset
-        self.build_model(self.dataset)
-        if sampling_mode == "bootstrap":
+        self.build_model(self.dataset, method)
+        if sampling_mode == "bootstrap" and method == "mf":
             sampling = pairwise_sampling(self.dataset)
             t0 = time.time()
             for i in range(1, self.iteration + 1):
@@ -58,7 +64,7 @@ class BPR:
                         test_loss, test_roc_auc, test_pr_auc))
                     print()
 
-        elif sampling_mode == "sgd":
+        elif sampling_mode == "sgd" and method == "mf":
             for epoch in range(1, self.n_epochs + 1):
                 t0 = time.time()
                 sampling = pairwise_sampling(self.dataset, batch_size=1)
@@ -85,7 +91,7 @@ class BPR:
                         test_loss, test_roc_auc, test_pr_auc))
                     print()
 
-        elif sampling_mode == "batch":
+        elif sampling_mode == "batch" and method == "mf":
             for epoch in range(1, self.n_epochs + 1):
                 t0 = time.time()
                 sampling = pairwise_sampling(self.dataset, batch_size=self.batch_size)
@@ -122,12 +128,51 @@ class BPR:
                         test_loss, test_roc_auc, test_pr_auc))
                     print()
 
-        else:
-            raise ValueError("Sampling Mode must be one of these: bootstrap, sgd, batch")
+        elif method == "knn":
+            for epoch in range(1, self.n_epochs + 1):
+                t0 = time.time()
+                sampling = pairwise_sampling(self.dataset, batch_size=1)
+                for _ in range(len(self.dataset.train_user_indices)):
+                    user, item_i, item_i_neg, item_j, item_j_neg, x_uij = sampling.next_knn(self.sim_matrix,
+                                                                                            k=self.k)
 
-    def predict(self, u, i):
+                    sigmoid = 1.0 / (1.0 + np.exp(x_uij))
+                    self.sim_matrix[item_i][item_i_neg] += self.lr * (
+                            sigmoid + self.reg * self.sim_matrix[item_i][item_i_neg])
+                    self.sim_matrix[item_i_neg, item_i] = self.sim_matrix[item_i, item_i_neg]
+                    self.sim_matrix[item_j][item_j_neg] += self.lr * (
+                            - sigmoid + self.reg * self.sim_matrix[item_j][item_j_neg])
+                    self.sim_matrix[item_j_neg, item_j] = self.sim_matrix[item_j, item_j_neg]
+
+                if verbose > 0:
+
+                    print("Epoch {}, fit time: {:.2f}".format(epoch, time.time() - t0))
+                    '''
+                    train_loss, train_prob = binary_cross_entropy(self, train_user, train_item, train_label, "knn")
+                    train_roc_auc = roc_auc_score(train_label, train_prob)
+                    train_pr_auc = average_precision_score(train_label, train_prob)
+                    print("train loss: {:.4f}, train roc auc: {:.4f}, train pr auc: {:.4f}".format(
+                        train_loss, train_roc_auc, train_pr_auc))
+                    '''
+                    test_loss, test_prob = binary_cross_entropy(self, test_user, test_item, test_label, "knn")
+                    test_roc_auc = roc_auc_score(test_label, test_prob)
+                    test_pr_auc = average_precision_score(test_label, test_prob)
+                    print("test loss: {:.4f}, test auc: {:.4f}, test pr auc: {:.4f}".format(
+                        test_loss, test_roc_auc, test_pr_auc))
+                    print()
+
+        else:
+            raise ValueError("Sampling Mode must be one of these: bootstrap, sgd, batch, "
+                             "Method must be one of these: mf, knn")
+
+    def predict(self, u, i, method="mf"):
         try:
-            logits = np.dot(self.pu[u], self.qi[i])
+            if method == "mf":
+                logits = np.dot(self.pu[u], self.qi[i])
+            elif method == "knn":
+                k_neighbors = np.sort(
+                    [self.sim_matrix[i, n] for n in self.dataset.train_user[u] if n != i])[::-1][:self.k] #  if n != i
+                logits = np.sum(k_neighbors)
             prob = 1.0 / (1.0 + np.exp(-logits))
             pred = float(np.where(prob >= 0.5, 1.0, 0.0))
         except IndexError:
@@ -204,7 +249,7 @@ class BPR_tf:
 
                 if verbose > 0:
                     print("Epoch {}, fit time: {:.2f}".format(epoch, time.time() - t0))
-                    '''
+
                     train_loss, train_prob = self.sess.run([self.loss, self.prob],
                                                            feed_dict={self.user: train_user,
                                                                       self.item_t: train_item,
@@ -214,7 +259,7 @@ class BPR_tf:
                     train_pr_auc = average_precision_score(train_label, train_prob)
                     print("train loss: {:.2f}, train roc auc: {:.2f}, train pr auc: {:.2f}".format(
                         train_loss, train_roc_auc, train_pr_auc))
-                    '''
+
                     test_loss, test_prob = self.sess.run([self.loss, self.prob],
                                                            feed_dict={self.user: test_user,
                                                                       self.item_t: test_item,
