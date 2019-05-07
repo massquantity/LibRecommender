@@ -182,8 +182,8 @@ class BPR_tf:
             test_user, test_item, test_label = sampling(mode="test")
 
         self.build_model(dataset)
-        self.optimizer = tf.train.AdamOptimizer(self.lr)
-    #    self.optimizer = tf.train.GradientDescentOptimizer(self.lr)
+    #    self.optimizer = tf.train.AdamOptimizer(self.lr)
+        self.optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3)
         self.training_op = self.optimizer.minimize(self.loss)
         init = tf.global_variables_initializer()
         self.sess = tf.Session()
@@ -204,6 +204,7 @@ class BPR_tf:
 
                 if verbose > 0:
                     print("Epoch {}, fit time: {:.2f}".format(epoch, time.time() - t0))
+                    '''
                     train_loss, train_prob = self.sess.run([self.loss, self.prob],
                                                            feed_dict={self.user: train_user,
                                                                       self.item_t: train_item,
@@ -213,7 +214,7 @@ class BPR_tf:
                     train_pr_auc = average_precision_score(train_label, train_prob)
                     print("train loss: {:.2f}, train roc auc: {:.2f}, train pr auc: {:.2f}".format(
                         train_loss, train_roc_auc, train_pr_auc))
-
+                    '''
                     test_loss, test_prob = self.sess.run([self.loss, self.prob],
                                                            feed_dict={self.user: test_user,
                                                                       self.item_t: test_item,
@@ -221,7 +222,7 @@ class BPR_tf:
                                                                       self.item_j: np.zeros(test_item.shape)})
                     test_roc_auc = roc_auc_score(test_label, test_prob)
                     test_pr_auc = average_precision_score(test_label, test_prob)
-                    print("test loss: {:.2f}, test auc: {:.2f}, test pr auc: {:.2f}".format(
+                    print("test loss: {:.2f}, test auc: {:.4f}, test pr auc: {:.4f}".format(
                         test_loss, test_roc_auc, test_pr_auc))
                     print()
 
