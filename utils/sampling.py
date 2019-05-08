@@ -249,54 +249,21 @@ class pairwise_sampling:
         item_j = np.random.randint(0, self.dataset.n_items)
         while item_j in self.dataset.train_user[user]:
             item_j = np.random.randint(0, self.dataset.n_items)
-        '''
-        item_i_neighbors = [n for n in self.dataset.train_user[user] if n != item_i]
-        x_ui = np.sum([sim_matrix[item_i, n] for n in item_i_neighbors])
-        item_j_neighbors = [n for n in self.dataset.train_user[user] if n != item_j]
-        x_uj = np.sum([sim_matrix[item_j, n] for n in item_j_neighbors])
-        x_uij = x_ui - x_uj
-        self.i += 1
-        return user, item_i, item_i_neighbors, item_j, item_j_neighbors, x_uij
-        '''
 
-        '''
-        item_i_neighbors_sim = [(n, sim_matrix[item_i, n]) for n in self.dataset.train_user[user] if n != item_i]
-        k_neighbors = sorted(item_i_neighbors_sim, key=lambda x: x[1], reverse=True)[:k]
-        item_i_neighbors = [n[0] for n in k_neighbors]
-        x_ui = np.sum([n[1]for n in k_neighbors])
-
-        item_j_neighbors_sim = [(n, sim_matrix[item_j, n]) for n in self.dataset.train_user[user] if n != item_j]
-        k_neighbors = sorted(item_j_neighbors_sim, key=lambda x: x[1], reverse=True)[:k]
-        item_j_neighbors = [n[0] for n in k_neighbors]
-        x_uj = np.sum([n[1] for n in k_neighbors])
-        x_uij = x_ui - x_uj
-        self.i += 1
-        return user, item_i, item_i_neighbors, item_j, item_j_neighbors, x_uij
-        '''
-
-        item_i_neighbors = np.array([n for n in self.dataset.train_user[user]])  # if n != item_i
-    #    if len(item_i_neighbors) == 0:
-    #        return -1, -1, -1, -1, -1, -1
-
-        item_i_neighbors_sim = \
-            np.array([sim_matrix[item_i, n] for n in self.dataset.train_user[user]])  #  if n != item_i
+        u_items = np.array(list(self.dataset.train_user[user]))
+        item_i_neighbors_sim = sim_matrix[item_i, u_items]
         indices = np.argsort(item_i_neighbors_sim)[::-1][:k]
-        i_k_neighbors = item_i_neighbors[indices]
+        i_k_neighbors = u_items[indices]
         x_ui = np.sum(item_i_neighbors_sim[indices])
 
-        item_j_neighbors = np.array([n for n in self.dataset.train_user[user]])  # if n != item_j
-        item_j_neighbors_sim = \
-            np.array([sim_matrix[item_j, n] for n in self.dataset.train_user[user]])  #  if n != item_j
+        item_j_neighbors_sim = sim_matrix[item_j, u_items]
         indices = np.argsort(item_j_neighbors_sim)[::-1][:k]
-        j_k_neighbors = item_j_neighbors[indices]
+        j_k_neighbors = u_items[indices]
         x_uj = np.sum(item_j_neighbors_sim[indices])
 
         x_uij = x_ui - x_uj
         self.i += 1
         return user, item_i, i_k_neighbors, item_j, j_k_neighbors, x_uij
-
-
-
 
 
 
