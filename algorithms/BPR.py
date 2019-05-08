@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 from ..utils.sampling import pairwise_sampling
 from ..utils.initializers import truncated_normal, xavier_init
+from ..utils.similarities import get_sim, cosine_sim, pearson_sim
 from ..evaluate.evaluate import precision_tf, AP_at_k, MAP_at_k, HitRatio_at_k, NDCG_at_k, binary_cross_entropy
 from sklearn.metrics import roc_auc_score, average_precision_score
 
@@ -37,6 +38,7 @@ class BPR:
 
         self.dataset = dataset
         self.build_model(self.dataset, method)
+
         if sampling_mode == "bootstrap" and method == "mf":
             sampling = pairwise_sampling(self.dataset)
             t0 = time.time()
@@ -133,19 +135,20 @@ class BPR:
                 t0 = time.time()
                 sampling = pairwise_sampling(self.dataset, batch_size=1)
                 for _ in range(len(self.dataset.train_user_indices)):
-                    user, item_i, item_i_neg, item_j, item_j_neg, x_uij = sampling.next_knn(self.sim_matrix,
+                    user, item_i, item_i_nei, item_j, item_j_nei, x_uij = sampling.next_knn(self.sim_matrix,
                                                                                             k=self.k)
 
                     sigmoid = 1.0 / (1.0 + np.exp(x_uij))
-                    self.sim_matrix[item_i][item_i_neg] += self.lr * (
-                            sigmoid + self.reg * self.sim_matrix[item_i][item_i_neg])
-                    self.sim_matrix[item_i_neg, item_i] = self.sim_matrix[item_i, item_i_neg]
-                    self.sim_matrix[item_j][item_j_neg] += self.lr * (
-                            - sigmoid + self.reg * self.sim_matrix[item_j][item_j_neg])
-                    self.sim_matrix[item_j_neg, item_j] = self.sim_matrix[item_j, item_j_neg]
+                    self.sim_matrix[item_i][item_i_nei] += self.lr * (
+                            sigmoid + self.reg * self.sim_matrix[item_i][item_i_nei])
+                    self.sim_matrix[item_i_nei, item_i] = self.sim_matrix[item_i, item_i_nei]
+                    self.sim_matrix[item_i, item_i] = 1.0
+                    self.sim_matrix[item_j][item_j_nei] += self.lr * (
+                            - sigmoid + self.reg * self.sim_matrix[item_j][item_j_nei])
+                    self.sim_matrix[item_j_nei, item_j] = self.sim_matrix[item_j, item_j_nei]
+                    self.sim_matrix[item_j, item_j] = 1.0
 
                 if verbose > 0:
-
                     print("Epoch {}, fit time: {:.2f}".format(epoch, time.time() - t0))
                     '''
                     train_loss, train_prob = binary_cross_entropy(self, train_user, train_item, train_label, "knn")
@@ -154,9 +157,11 @@ class BPR:
                     print("train loss: {:.4f}, train roc auc: {:.4f}, train pr auc: {:.4f}".format(
                         train_loss, train_roc_auc, train_pr_auc))
                     '''
+                    t1 = time.time()
                     test_loss, test_prob = binary_cross_entropy(self, test_user, test_item, test_label, "knn")
                     test_roc_auc = roc_auc_score(test_label, test_prob)
                     test_pr_auc = average_precision_score(test_label, test_prob)
+                    print("evaluate time: {:.2f}".format(time.time() - t1))
                     print("test loss: {:.4f}, test auc: {:.4f}, test pr auc: {:.4f}".format(
                         test_loss, test_roc_auc, test_pr_auc))
                     print()
@@ -170,8 +175,8 @@ class BPR:
             if method == "mf":
                 logits = np.dot(self.pu[u], self.qi[i])
             elif method == "knn":
-                k_neighbors = np.sort(
-                    [self.sim_matrix[i, n] for n in self.dataset.train_user[u] if n != i])[::-1][:self.k] #  if n != i
+                u_items = np.array(list(self.dataset.train_user[u]))
+                k_neighbors = self.sim_matrix[i, u_items]
                 logits = np.sum(k_neighbors)
             prob = 1.0 / (1.0 + np.exp(-logits))
             pred = float(np.where(prob >= 0.5, 1.0, 0.0))
