@@ -73,10 +73,10 @@ class BPR:
                 for _ in range(len(self.dataset.train_user_indices)):
                     user, item_i, item_j, x_uij = sampling.next_mf(self.pu, self.qi, bootstrap=False)
                     sigmoid = 1.0 / (1.0 + np.exp(x_uij))
-                    self.pu[user] += self.lr * (sigmoid * (self.qi[item_i] - self.qi[item_j]) +
+                    self.pu[user] += self.lr * (sigmoid * (self.qi[item_i] - self.qi[item_j]) -
                                                 self.reg * self.pu[user])
-                    self.qi[item_i] += self.lr * (sigmoid * self.pu[user] + self.reg * self.qi[item_i])
-                    self.qi[item_j] += self.lr * (sigmoid * (-self.pu[user]) + self.reg * self.qi[item_j])
+                    self.qi[item_i] += self.lr * (sigmoid * self.pu[user] - self.reg * self.qi[item_i])
+                    self.qi[item_j] += self.lr * (sigmoid * (-self.pu[user]) - self.reg * self.qi[item_j])
 
                 if verbose > 0:
                     print("Epoch {}, fit time: {:.2f}".format(epoch, time.time() - t0))
@@ -140,11 +140,11 @@ class BPR:
 
                     sigmoid = 1.0 / (1.0 + np.exp(x_uij))
                     self.sim_matrix[item_i][item_i_nei] += self.lr * (
-                            sigmoid + self.reg * self.sim_matrix[item_i][item_i_nei])
+                            sigmoid - self.reg * self.sim_matrix[item_i][item_i_nei])
                     self.sim_matrix[item_i_nei, item_i] = self.sim_matrix[item_i, item_i_nei]
                     self.sim_matrix[item_i, item_i] = 1.0
                     self.sim_matrix[item_j][item_j_nei] += self.lr * (
-                            - sigmoid + self.reg * self.sim_matrix[item_j][item_j_nei])
+                            - sigmoid - self.reg * self.sim_matrix[item_j][item_j_nei])
                     self.sim_matrix[item_j_nei, item_j] = self.sim_matrix[item_j, item_j_nei]
                     self.sim_matrix[item_j, item_j] = 1.0
 

@@ -14,7 +14,7 @@ if __name__ == "__main__":
     t0 = time.time()
     dataset = Dataset()
     dataset.build_dataset(data_path="ml-1m/ratings.dat", time_bin=10,
-                          length=100000, shuffle=True, implicit=True, build_negative=False, num_neg=4)
+                          length="all", shuffle=True, implicit=True, build_negative=False, num_neg=4)
     print("data processing time: {:.2f}".format(time.time() - t0))
 #    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
     print()
@@ -117,17 +117,17 @@ if __name__ == "__main__":
 #    bpr.fit(dataset, sampling_mode="bootstrap")
 #    print(bpr.predict(1, 2))
 
-    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.0, n_factors=16, batch_size=64)
-    bpr.fit(dataset, sampling_mode="sgd")
-    print(bpr.predict(1, 2))
+#    bpr = BPR.BPR(lr=0.03, n_epochs=2000, reg=0.01, n_factors=64, batch_size=64)
+#    bpr.fit(dataset, sampling_mode="sgd")
+#    print(bpr.predict(1, 2))
 
 #    bpr = BPR.BPR_tf(lr=0.001, n_epochs=2000, reg=0.0, n_factors=16, batch_size=64)
 #    bpr.fit(dataset)
 #    print(bpr.predict(1, 2))
 
-#    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.0, k=100)
-#    bpr.fit(dataset, method="knn")
-#    print(bpr.predict(1, 2, method="knn"))
+    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.01, k=100)
+    bpr.fit(dataset, method="knn")
+    print(bpr.predict(1, 2, method="knn"))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 
