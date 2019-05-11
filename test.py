@@ -125,7 +125,7 @@ if __name__ == "__main__":
 #    bpr.fit(dataset)
 #    print(bpr.predict(1, 2))
 
-    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.01, k=100)
+    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.0, k=100)
     bpr.fit(dataset, method="knn")
     print(bpr.predict(1, 2, method="knn"))
 

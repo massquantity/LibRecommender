@@ -29,6 +29,8 @@ class BPR:
         elif method == "knn":
         #    self.sim_matrix = truncated_normal(shape=[dataset.n_items, dataset.n_items], mean=0.0, scale=0.01)
             self.sim_matrix = np.zeros((dataset.n_items, dataset.n_items))
+        #    self.sim_matrix = get_sim(dataset.train_item, cosine_sim, dataset.n_items,
+        #                              list(dataset.train_item), 10)
 
     def fit(self, dataset, sampling_mode="batch", method="mf", verbose=1):
         if verbose > 0:
