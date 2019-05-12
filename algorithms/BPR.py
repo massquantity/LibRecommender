@@ -5,7 +5,7 @@ from ..utils.sampling import pairwise_sampling
 from ..utils.initializers import truncated_normal, xavier_init
 from ..utils.similarities import get_sim, cosine_sim, pearson_sim
 from ..evaluate.evaluate import precision_tf, AP_at_k, MAP_at_k, HitRatio_at_k, NDCG_at_k, binary_cross_entropy
-from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.metrics import roc_auc_score, average_precision_score, log_loss
 
 
 class BPR:
@@ -64,7 +64,7 @@ class BPR:
                     test_loss, test_prob = binary_cross_entropy(self, test_user, test_item, test_label)
                     test_roc_auc = roc_auc_score(test_label, test_prob)
                     test_pr_auc = average_precision_score(test_label, test_prob)
-                    print("test loss: {:.2f}, test auc: {:.2f}, test pr auc: {:.2f}".format(
+                    print("test loss: {:.2f}, test rov auc: {:.2f}, test pr auc: {:.2f}".format(
                         test_loss, test_roc_auc, test_pr_auc))
                     print()
 
@@ -82,16 +82,24 @@ class BPR:
 
                 if verbose > 0:
                     print("Epoch {}, fit time: {:.2f}".format(epoch, time.time() - t0))
-                    train_loss, train_prob = binary_cross_entropy(self, train_user, train_item, train_label)
+                    train_prob = []
+                    for u, i, l in zip(train_user, train_item, train_label):
+                        prob, _ = self.predict(u, i, method)
+                        train_prob.append(prob)
+                    train_loss = log_loss(train_label, train_prob)
                     train_roc_auc = roc_auc_score(train_label, train_prob)
                     train_pr_auc = average_precision_score(train_label, train_prob)
                     print("train loss: {:.2f}, train roc auc: {:.2f}, train pr auc: {:.2f}".format(
                         train_loss, train_roc_auc, train_pr_auc))
 
-                    test_loss, test_prob = binary_cross_entropy(self, test_user, test_item, test_label)
+                    test_prob = []
+                    for u, i, l in zip(test_user, test_item, test_label):
+                        prob, _ = self.predict(u, i, method)
+                        test_prob.append(prob)
+                    test_loss = log_loss(test_label, test_prob)
                     test_roc_auc = roc_auc_score(test_label, test_prob)
                     test_pr_auc = average_precision_score(test_label, test_prob)
-                    print("test loss: {:.2f}, test auc: {:.2f}, test pr auc: {:.2f}".format(
+                    print("test loss: {:.2f}, test roc auc: {:.2f}, test pr auc: {:.2f}".format(
                         test_loss, test_roc_auc, test_pr_auc))
                     print()
 
@@ -128,7 +136,7 @@ class BPR:
                     test_loss, test_prob = binary_cross_entropy(self, test_user, test_item, test_label)
                     test_roc_auc = roc_auc_score(test_label, test_prob)
                     test_pr_auc = average_precision_score(test_label, test_prob)
-                    print("test loss: {:.2f}, test auc: {:.2f}, test pr auc: {:.2f}".format(
+                    print("test loss: {:.2f}, test roc auc: {:.2f}, test pr auc: {:.2f}".format(
                         test_loss, test_roc_auc, test_pr_auc))
                     print()
 
@@ -274,7 +282,7 @@ class BPR_tf:
                                                                       self.item_j: np.zeros(test_item.shape)})
                     test_roc_auc = roc_auc_score(test_label, test_prob)
                     test_pr_auc = average_precision_score(test_label, test_prob)
-                    print("test loss: {:.2f}, test auc: {:.4f}, test pr auc: {:.4f}".format(
+                    print("test loss: {:.2f}, test roc auc: {:.4f}, test pr auc: {:.4f}".format(
                         test_loss, test_roc_auc, test_pr_auc))
                     print()
 
