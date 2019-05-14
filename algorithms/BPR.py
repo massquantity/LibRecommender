@@ -234,6 +234,9 @@ class BPR_tf:
         self.embed_item_t = tf.nn.embedding_lookup(self.qi, self.item_t)
         self.logits = tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item_t), axis=1)
         self.prob = tf.sigmoid(self.logits)
+        self.pred = tf.where(self.prob >= 0.5,
+                             tf.fill(tf.shape(self.logits), 1.0),
+                             tf.fill(tf.shape(self.logits), 0.0))
 
     def fit(self, dataset, verbose=1):
         if verbose > 0:
@@ -286,7 +289,14 @@ class BPR_tf:
                         test_loss, test_roc_auc, test_pr_auc))
                     print()
 
-
+    def predict(self, u, i):
+        try:
+            y_prob, y_pred = self.sess.run([self.prob, self.pred],
+                                           feed_dict={self.user: np.array([u]),
+                                                      self.item_t: np.array([i])})
+        except tf.errors.InvalidArgumentError:
+            y_prob, y_pred = [0.0], [0.0]
+        return y_prob[0], y_pred[0]
 
 
 

@@ -117,13 +117,13 @@ if __name__ == "__main__":
 #    bpr.fit(dataset, sampling_mode="bootstrap")
 #    print(bpr.predict(1, 2))
 
-    bpr = BPR.BPR(lr=0.03, n_epochs=2000, reg=0.0, n_factors=16, batch_size=64)
-    bpr.fit(dataset, sampling_mode="sgd")
-    print(bpr.predict(1, 2))
-
-#    bpr = BPR.BPR_tf(lr=0.001, n_epochs=2000, reg=0.0, n_factors=16, batch_size=64)
-#    bpr.fit(dataset)
+#    bpr = BPR.BPR(lr=0.03, n_epochs=2, reg=0.0, n_factors=16, batch_size=64)
+#    bpr.fit(dataset, sampling_mode="sgd")
 #    print(bpr.predict(1, 2))
+
+    bpr = BPR.BPR_tf(lr=0.001, n_epochs=20, reg=0.0, n_factors=16, batch_size=64)
+    bpr.fit(dataset)
+    print(bpr.predict(1, 2))
 
 #    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.0, k=100)
 #    bpr.fit(dataset, method="knn")
