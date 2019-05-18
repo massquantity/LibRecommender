@@ -2,9 +2,9 @@ import time
 import numpy as np
 import tensorflow as tf
 from ..utils.sampling import pairwise_sampling
-from ..utils.initializers import truncated_normal, xavier_init
+from ..utils.initializers import truncated_normal
 from ..utils.similarities import get_sim, cosine_sim, pearson_sim
-from ..evaluate.evaluate import precision_tf, AP_at_k, MAP_at_k, HitRatio_at_k, NDCG_at_k, binary_cross_entropy
+from ..evaluate.evaluate import binary_cross_entropy
 from sklearn.metrics import roc_auc_score, average_precision_score, log_loss
 
 
