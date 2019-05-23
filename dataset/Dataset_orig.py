@@ -69,12 +69,12 @@ class Dataset:
                 self.test_labels.append(int(label))
 
             if categorical_pos is not None:
-                for feat in categorical_pos:
-                    self.categorical_features[feat].append(line[feat])
+                for cat_feat in categorical_pos:
+                    self.categorical_features[cat_feat].append(line[cat_feat])
 
             if numerical_pos is not None:
-                for feat in numerical_pos:
-                    self.numerical_features[feat].append(line[feat])
+                for num_feat in numerical_pos:
+                    self.numerical_features[num_feat].append(line[num_feat])
 
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
