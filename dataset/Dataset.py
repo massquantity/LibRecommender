@@ -38,6 +38,8 @@ class Dataset:
 
 #    def build_data(self, data_path=..., user_pos=0, item_pos=1, label_pos=2, numerical_pos=None, categorical_pos=None):
 
+#    def build_data_with_feature
+
     @classmethod
     def load_dataset(cls, data_path="../ml-1m/ratings.dat", shuffle=False):
         loaded_data = open(data_path, 'r').readlines()
