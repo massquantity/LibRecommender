@@ -5,7 +5,7 @@ import time
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from sklearn.preprocessing import KBinsDiscretizer
+from .preprocessing import build_features
 from ..utils.sampling import negative_sampling
 
 
@@ -24,8 +24,8 @@ class Dataset:
         self.test_item_indices = list()
         self.test_labels = list()
         if include_features:
-            self.categorical_features = dict()
-            self.numerical_features = dict()
+            self.categorical_features = defaultdict(list)
+            self.numerical_features = defaultdict(list)
 
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
                       train_frac=0.8, implicit_label=False, build_negative=False, seed=42,
@@ -68,7 +68,7 @@ class Dataset:
                 self.test_item_indices.append(item_id)
                 self.test_labels.append(int(label))
 
-            if categorical_pos is not None:
+            if categorical_pos is not None:  # train test split
                 for cat_feat in categorical_pos:
                     self.categorical_features[cat_feat].append(line[cat_feat])
 
@@ -79,9 +79,13 @@ class Dataset:
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_labels = np.array(self.train_labels)
-        self.features = build_feaures(self.categorical_features, self.numerical_features)
+        self.train_features = build_features(self.categorical_features,
+                                             self.numerical_features,
+                                             len(self.train_labels))
         # user_embedding, item_embedding, feature_embedding
-        # np.unique(return_inverse)
+        # np.unique(return_inverse=True)
+        # numerical min_max_scale
+        # min_occurance
 
         if implicit_label:
             self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
