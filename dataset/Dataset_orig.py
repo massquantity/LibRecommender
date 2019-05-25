@@ -5,7 +5,7 @@ import time
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from .preprocessing import build_features
+from .preprocessing import FeatureBuilder
 from ..utils.sampling import negative_sampling
 
 
@@ -23,14 +23,17 @@ class Dataset:
         self.test_user_indices = list()
         self.test_item_indices = list()
         self.test_labels = list()
-        if include_features:
-            self.categorical_features = defaultdict(list)
-            self.numerical_features = defaultdict(list)
+        self.include_features = include_features
+        if self.include_features:
+            self.train_categorical_features = defaultdict(list)
+            self.train_numerical_features = defaultdict(list)
+            self.test_categorical_features = defaultdict(list)
+            self.test_numerical_features = defaultdict(list)
 
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
                       train_frac=0.8, implicit_label=False, build_negative=False, seed=42,
-                      num_neg=None, sep=",", user_pos=None, item_pos=None, label_pos=None,
-                      numerical_pos=None, categorical_pos=None):  # numerical feature 不做 embedding
+                      num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
+                      numerical_col=None, categorical_col=None):  # numerical feature 不做 embedding
         np.random.seed(seed)
         loaded_data = open(data_path, 'r').readlines()
         index_user = 0
@@ -41,9 +44,9 @@ class Dataset:
             length = len(loaded_data)
         for i, data in enumerate(loaded_data[:length]):
             line = data.split(sep)
-            user = line[user_pos]
-            item = line[item_pos]
-            label = line[label_pos]
+            user = line[user_col]
+            item = line[item_col]
+            label = line[label_col]
             try:
                 user_id = self.user2id[user]
             except KeyError:
@@ -63,25 +66,40 @@ class Dataset:
                 self.train_labels.append(int(label))
                 self.train_user[user_id].update(dict(zip([item_id], [int(label)])))
                 self.train_item[item_id].update(dict(zip([user_id], [int(label)])))
+
+                if categorical_col is not None and self.include_features:
+                    for cat_feat in categorical_col:
+                        self.train_categorical_features[cat_feat].append(line[cat_feat])
+
+                if numerical_col is not None and self.include_features:
+                    for num_feat in numerical_col:
+                        self.train_numerical_features[num_feat].append(line[num_feat])
+
             else:
                 self.test_user_indices.append(user_id)
                 self.test_item_indices.append(item_id)
                 self.test_labels.append(int(label))
 
-            if categorical_pos is not None:  # train test split
-                for cat_feat in categorical_pos:
-                    self.categorical_features[cat_feat].append(line[cat_feat])
+                if categorical_col is not None and self.include_features:
+                    for cat_feat in categorical_col:
+                        self.test_categorical_features[cat_feat].append(line[cat_feat])
 
-            if numerical_pos is not None:
-                for num_feat in numerical_pos:
-                    self.numerical_features[num_feat].append(line[num_feat])
+                if numerical_col is not None and self.include_features:
+                    for num_feat in numerical_col:
+                        self.test_numerical_features[num_feat].append(line[num_feat])
 
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_labels = np.array(self.train_labels)
-        self.train_features = build_features(self.categorical_features,
-                                             self.numerical_features,
-                                             len(self.train_labels))
+        if self.include_features:
+            fb = FeatureBuilder(include_user_item=True, n_users=self.n_users, n_items=self.n_items)
+            self.train_feat_indices, self.train_feat_values, self.feature_size = \
+                fb.fit(self.train_categorical_features,
+                       self.train_numerical_features,
+                       len(self.train_labels),
+                       self.train_user_indices,
+                       self.train_item_indices)
+
         # user_embedding, item_embedding, feature_embedding
         # np.unique(return_inverse=True)
         # numerical min_max_scale
@@ -102,6 +120,14 @@ class Dataset:
         self.test_user_indices = test_safe[:, 0]
         self.test_item_indices = test_safe[:, 1]
         self.test_labels = test_safe[:, 2]
+
+        if self.include_features:
+            self.test_feat_indices, self.test_feat_values = \
+                fb.transform(self.test_categorical_features,
+                       self.test_numerical_features,
+                       len(self.test_labels),
+                       self.test_user_indices,
+                       self.test_item_indices)
 
         if implicit_label:
             self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
@@ -130,10 +156,10 @@ class Dataset:
         train_data = defaultdict(dict)
         test_data = defaultdict(dict)
 
-        _, user_position, user_counts = np.unique(self.user_indices,
+        _, user_colition, user_counts = np.unique(self.user_indices,
                                                   return_inverse=True,
                                                   return_counts=True)
-        user_indices = np.split(np.argsort(user_position, kind="mergesort"),
+        user_indices = np.split(np.argsort(user_colition, kind="mergesort"),
                                 np.cumsum(user_counts)[:-1])
 
         for u in self.data.keys():
