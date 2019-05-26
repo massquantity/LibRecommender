@@ -1,7 +1,8 @@
 import time
 import numpy as np
 import tensorflow as tf
-from libreco.dataset.Dataset import Dataset
+# from libreco.dataset.Dataset import Dataset
+from libreco.dataset.Dataset_orig import Dataset
 from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF, wide_deep, FM, DeepFM, BPR
 from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
 from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
@@ -12,11 +13,14 @@ from pprint import pprint
 if __name__ == "__main__":
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     t0 = time.time()
-    dataset = Dataset()
-    dataset.build_dataset(data_path="ml-1m/ratings.dat", time_bin=10,
-                          length="all", shuffle=True, implicit=True, build_negative=False, num_neg=4)
-    print("data processing time: {:.2f}".format(time.time() - t0))
+#    dataset = Dataset()
+#    dataset.build_dataset(data_path="ml-1m/ratings.dat", time_bin=10,
+#                          length="all", shuffle=True, implicit=True, build_negative=False, num_neg=4)
+#    print("data processing time: {:.2f}".format(time.time() - t0))
 #    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
+    dataset = Dataset(include_features=True)
+    dataset.build_dataset("ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
+                        numerical_col=[4], categorical_col=[3,5,6,7,8,9])  # numerical age is categorical
     print()
 #    dataset.build_trainset_implicit(4)
 #    dataset.build_testset_implicit(4)
