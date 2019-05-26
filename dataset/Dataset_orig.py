@@ -30,16 +30,40 @@ class Dataset:
             self.test_categorical_features = defaultdict(list)
             self.test_numerical_features = defaultdict(list)
 
+    def _get_pool(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
+                    train_frac=0.8, sep=",", user_col=None, item_col=None, seed=42):
+        np.random.seed(seed)
+        user_pool = set()
+        item_pool = set()
+        loaded_data = open(data_path, 'r').readlines()
+        if shuffle:
+            loaded_data = np.random.permutation(loaded_data)
+        if length == "all":
+            length = len(loaded_data)
+        for i, data in enumerate(loaded_data[:length]):
+            line = data.split(sep)
+            user = line[user_col]
+            item = line[item_col]
+            if i <= int(train_frac * length):
+                user_pool.add(user)
+                item_pool.add(item)
+        return user_pool, item_pool, loaded_data
+
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
                       train_frac=0.8, implicit_label=False, build_negative=False, seed=42,
                       num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
                       numerical_col=None, categorical_col=None):  # numerical feature 不做 embedding
-        np.random.seed(seed)
-        loaded_data = open(data_path, 'r').readlines()
+        user_pool, item_pool, loaded_data = self._get_pool(data_path=data_path,
+                                                             shuffle=shuffle,
+                                                             length=length,
+                                                             train_frac=train_frac,
+                                                             sep=sep,
+                                                             user_col=user_col,
+                                                             item_col=item_col,
+                                                             seed=seed)
+
         index_user = 0
         index_item = 0
-        if shuffle:
-            loaded_data = np.random.permutation(loaded_data)
         if length == "all":
             length = len(loaded_data)
         for i, data in enumerate(loaded_data[:length]):
@@ -60,7 +84,10 @@ class Dataset:
                 self.item2id[item] = index_item
                 index_item += 1
 
-            if i <= int(train_frac * length):
+            if user not in user_pool or item not in item_pool:
+                continue
+
+            elif i <= int(train_frac * length):
                 self.train_user_indices.append(user_id)
                 self.train_item_indices.append(item_id)
                 self.train_labels.append(int(label))
@@ -88,6 +115,7 @@ class Dataset:
                     for num_feat in numerical_col:
                         self.test_numerical_features[num_feat].append(line[num_feat])
 
+        print(len(np.unique(np.array(self.train_categorical_features[6]))))
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_labels = np.array(self.train_labels)
@@ -112,15 +140,19 @@ class Dataset:
             self.build_trainset_implicit(num_neg)
 
         print("testset size before: ", len(self.test_labels))
-        test_all = np.concatenate([np.expand_dims(self.test_user_indices, 1),
-                                   np.expand_dims(self.test_item_indices, 1),
-                                   np.expand_dims(self.test_labels, 1)], axis=1)
-        test_safe = test_all[(test_all[:, 0] < self.n_users) & (test_all[:, 1] < self.n_items)]
-        test_danger = test_all[(test_all[:, 0] >= self.n_users) & (test_all[:, 1] >= self.n_items)]
-        self.test_user_indices = test_safe[:, 0]
-        self.test_item_indices = test_safe[:, 1]
-        self.test_labels = test_safe[:, 2]
+    #    test_all = np.concatenate([np.expand_dims(self.test_user_indices, 1),
+    #                               np.expand_dims(self.test_item_indices, 1),
+    #                               np.expand_dims(self.test_labels, 1)],
+    #                               axis=1)
+    #    test_safe = test_all[(test_all[:, 0] < self.n_users) & (test_all[:, 1] < self.n_items)]
+    #    test_danger = test_all[(test_all[:, 0] >= self.n_users) & (test_all[:, 1] >= self.n_items)]
+    #    self.test_user_indices = test_safe[:, 0]
+    #    self.test_item_indices = test_safe[:, 1]
+    #    self.test_labels = test_safe[:, 2]
 
+        self.test_user_indices = np.array(self.test_user_indices)
+        self.test_item_indices = np.array(self.test_item_indices)
+        self.test_labels = np.array(self.test_labels)
         if self.include_features:
             self.test_feat_indices, self.test_feat_values = \
                 fb.transform(self.test_categorical_features,
@@ -140,7 +172,6 @@ class Dataset:
         print("testset size after: ", len(self.test_labels))
         return self
 
-
     # TODO: split k test sample from each user
     def train_test_split_LOOV(self, k):
         """
@@ -156,10 +187,10 @@ class Dataset:
         train_data = defaultdict(dict)
         test_data = defaultdict(dict)
 
-        _, user_colition, user_counts = np.unique(self.user_indices,
+        _, user_position, user_counts = np.unique(self.user_indices,
                                                   return_inverse=True,
                                                   return_counts=True)
-        user_indices = np.split(np.argsort(user_colition, kind="mergesort"),
+        user_indices = np.split(np.argsort(user_position, kind="mergesort"),
                                 np.cumsum(user_counts)[:-1])
 
         for u in self.data.keys():
