@@ -32,7 +32,7 @@ class FeatureBuilder:
             feature_values.append([1.0] * train_size)
             self.total_count += unique_vals_length
 
-        self.feature_size = self.total_count
+        self.feature_size = self.total_count  # preserve total_count for transform function
         if self.include_user_item:
             feature_indices.append(user_features + self.feature_size)
             self.feature_size += self.n_users
