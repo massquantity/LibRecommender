@@ -1,8 +1,8 @@
 import time
 import numpy as np
 import tensorflow as tf
-# from libreco.dataset.Dataset import Dataset
-from libreco.dataset.Dataset_orig import Dataset
+from libreco.dataset.Dataset import Dataset
+from libreco.dataset.Dataset_orig import Dataset as Dataset_feat
 from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF, wide_deep, FM, DeepFM, BPR
 from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
 from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
@@ -18,9 +18,11 @@ if __name__ == "__main__":
 #                          length="all", shuffle=True, implicit=True, build_negative=False, num_neg=4)
 #    print("data processing time: {:.2f}".format(time.time() - t0))
 #    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
-    dataset = Dataset(include_features=True)
+
+    dataset = Dataset_feat(include_features=True)
     dataset.build_dataset("ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
                         numerical_col=[4], categorical_col=[3,5,6,7,8,9])  # numerical age is categorical
+    print("data processing time: {:.2f}".format(time.time() - t0))
     print()
 #    dataset.build_trainset_implicit(4)
 #    dataset.build_testset_implicit(4)
@@ -106,9 +108,9 @@ if __name__ == "__main__":
 #    print(wdc.predict_ui(1, 2, "2001-1-8"))
 #    print(wdc.predict_user(1))
 
-#    fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=4096)
-#    fm.fit(dataset)
-#    print(fm.predict(1, 2))
+    fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=1024)  # 0.8650  0.8867
+    fm.fit(dataset)
+    print(fm.predict(1, 2))
 
 #    dfm = DeepFM.DeepFM(lr=0.0001, n_epochs=20000, reg=0.0, embed_size=8,
 #                        batch_size=1024, dropout=0.0, task="ranking")
@@ -125,9 +127,9 @@ if __name__ == "__main__":
 #    bpr.fit(dataset, sampling_mode="sgd")
 #    print(bpr.predict(1, 2))
 
-    bpr = BPR.BPR_tf(lr=0.001, n_epochs=20, reg=0.0, n_factors=16, batch_size=64)
-    bpr.fit(dataset)
-    print(bpr.predict(1, 2))
+#    bpr = BPR.BPR_tf(lr=0.001, n_epochs=20, reg=0.0, n_factors=16, batch_size=64)
+#    bpr.fit(dataset)
+#    print(bpr.predict(1, 2))
 
 #    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.0, k=100)
 #    bpr.fit(dataset, method="knn")
