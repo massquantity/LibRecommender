@@ -115,7 +115,6 @@ class Dataset:
                     for num_feat in numerical_col:
                         self.test_numerical_features[num_feat].append(line[num_feat])
 
-        print(len(np.unique(np.array(self.train_categorical_features[6]))))
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_labels = np.array(self.train_labels)
