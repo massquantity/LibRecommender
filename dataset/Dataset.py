@@ -29,8 +29,8 @@ class Dataset:
         self.test_user_indices = list()
         self.test_item_indices = list()
         self.test_ratings = list()
-#        self.train_timestamp = list()
-#        self.test_timestamp = list()
+        self.train_timestamp = list()
+        self.test_timestamp = list()
 
 #    TODO
 #    @classmethod
