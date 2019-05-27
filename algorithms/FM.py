@@ -128,7 +128,7 @@ class FM_747:
         return pred
 
 
-class FM_6786:
+class FM_898:
     def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256, seed=42):
         self.lr = lr
         self.n_epochs = n_epochs
@@ -293,9 +293,9 @@ class FM:
         self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
                                                          predictions=tf.clip_by_value(self.pred, 1, 5)))
 
-        reg_w = self.reg * tf.nn.l2_loss(self.w)
+    #    reg_w = self.reg * tf.nn.l2_loss(self.w)
         reg_v = self.reg * tf.nn.l2_loss(self.v)
-        self.total_loss = tf.add_n([self.loss, reg_w, reg_v])
+        self.total_loss = tf.add_n([self.loss, reg_v])  # reg_w
 
     def fit(self, dataset):
         self.build_model(dataset)
@@ -321,17 +321,21 @@ class FM:
                                                                self.labels: labels_batch})
 
                 if epoch % 1 == 0:
-                    train_rmse = self.rmse.eval(feed_dict={self.feature_indices: dataset.train_feat_indices,
-                                                           self.feature_values: dataset.train_feat_values,
-                                                           self.labels: dataset.train_labels})
+                #    train_rmse = self.rmse.eval(feed_dict={self.feature_indices: dataset.train_feat_indices,
+                #                                           self.feature_values: dataset.train_feat_values,
+                #                                           self.labels: dataset.train_labels})
 
-                    test_rmse = self.rmse.eval(feed_dict={self.feature_indices: dataset.test_feat_indices,
-                                                          self.feature_values: dataset.test_feat_values,
-                                                          self.labels: dataset.test_labels})
+                    test_loss, test_rmse = self.sess.run([self.total_loss, self.rmse],
+                                                          feed_dict={
+                                                              self.feature_indices: dataset.test_feat_indices,
+                                                              self.feature_values: dataset.test_feat_values,
+                                                              self.labels: dataset.test_labels})
 
-                    print("Epoch {}, train_rmse: {:.4f}, training_time: {:.2f}".format(
-                            epoch, train_rmse, time.time() - t0))
-                    print("Epoch {}, test_rmse: {:.4f}".format(epoch, test_rmse))
+                #    print("Epoch {}, train_rmse: {:.4f}, training_time: {:.2f}".format(
+                #            epoch, train_rmse, time.time() - t0))
+                    print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
+                    print("Epoch {}, test_loss: {:.4f}, test_rmse: {:.4f}".format(
+                        epoch, test_loss, test_rmse))
                     print()
 
     def predict(self, feat_ind, feat_val):
