@@ -109,7 +109,8 @@ if __name__ == "__main__":
 #    print(wdc.predict_user(1))
 
     # reg=0.001, n_factors=32 0.8586
-    fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0001, n_factors=16, batch_size=1024)  # orig 0.8650  0.8634
+    # reg=0.0003, n_factors=64, 0.8488
+    fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0003, n_factors=64, batch_size=1024)  # orig 0.8650  0.8634
     fm.fit(dataset)
     print(fm.predict(1, 2))
 
