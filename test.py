@@ -13,16 +13,16 @@ from pprint import pprint
 if __name__ == "__main__":
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     t0 = time.time()
-#    dataset = Dataset()
-#    dataset.build_dataset(data_path="ml-1m/ratings.dat", time_bin=10,
-#                          length="all", shuffle=True, implicit=True, build_negative=False, num_neg=4)
-#    print("data processing time: {:.2f}".format(time.time() - t0))
-#    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
-
-    dataset = Dataset_feat(include_features=True)
-    dataset.build_dataset("ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
-                        numerical_col=None, categorical_col=[3,4,5,6,7,8,9])  # numerical age is categorical
+    dataset = Dataset()
+    dataset.build_dataset(data_path="ml-1m/ratings.dat", time_bin=10,
+                          length="all", shuffle=True, implicit=True, build_negative=False, num_neg=4)
     print("data processing time: {:.2f}".format(time.time() - t0))
+#    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
+#
+#    dataset = Dataset_feat(include_features=True)
+#    dataset.build_dataset("ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
+#                        numerical_col=None, categorical_col=[3,4,5,6,7,8,9])  # numerical age is categorical
+#    print("data processing time: {:.2f}".format(time.time() - t0))
     print()
 #    dataset.build_trainset_implicit(4)
 #    dataset.build_testset_implicit(4)
@@ -109,8 +109,8 @@ if __name__ == "__main__":
 #    print(wdc.predict_user(1))
 
     # reg=0.001, n_factors=32 0.8586
-    # reg=0.0003, n_factors=64, 0.8488
-    fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0003, n_factors=64, batch_size=1024)  # orig 0.8650  0.8634
+    # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
+    fm = FM.FM(lr=0.0001, n_epochs=20000, reg=1e-5, n_factors=64, batch_size=256)  # orig 0.8650  0.8634
     fm.fit(dataset)
     print(fm.predict(1, 2))
 
