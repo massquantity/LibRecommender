@@ -29,6 +29,8 @@ class Dataset:
             self.train_numerical_features = defaultdict(list)
             self.test_categorical_features = defaultdict(list)
             self.test_numerical_features = defaultdict(list)
+            self.train_mergecat_features = defaultdict(list)
+            self.test_mergecat_features = defaultdict(list)
 
     def _get_pool(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
                     train_frac=0.8, sep=",", user_col=None, item_col=None, seed=42):
@@ -52,7 +54,7 @@ class Dataset:
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
                       train_frac=0.8, implicit_label=False, build_negative=False, seed=42,
                       num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
-                      numerical_col=None, categorical_col=None):  # numerical feature 不做 embedding
+                      numerical_col=None, categorical_col=None, merged_categorical_col=None):  # numerical feature 不做 embedding
         user_pool, item_pool, loaded_data = self._get_pool(data_path=data_path,
                                                              shuffle=shuffle,
                                                              length=length,
@@ -102,6 +104,12 @@ class Dataset:
                     for num_feat in numerical_col:
                         self.train_numerical_features[num_feat].append(line[num_feat])
 
+                if merged_categorical_col is not None and self.include_features:
+                    for merge_feat in merged_categorical_col:
+                        merge_col_index = merge_feat[0]
+                        for mft in merge_feat:
+                            self.train_mergecat_features[merge_col_index].extend(line[mft])
+
             else:
                 self.test_user_indices.append(user_id)
                 self.test_item_indices.append(item_id)
@@ -115,6 +123,12 @@ class Dataset:
                     for num_feat in numerical_col:
                         self.test_numerical_features[num_feat].append(line[num_feat])
 
+                if merged_categorical_col is not None and self.include_features:
+                    for merge_feat in merged_categorical_col:
+                        merge_col_index = merge_feat[0]
+                        for mft in merge_feat:
+                            self.test_mergecat_features[merge_col_index].extend(line[mft])
+
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_labels = np.array(self.train_labels)
@@ -123,6 +137,7 @@ class Dataset:
             self.train_feat_indices, self.train_feat_values, self.feature_size = \
                 fb.fit(self.train_categorical_features,
                        self.train_numerical_features,
+                       self.train_mergecat_features,
                        len(self.train_labels),
                        self.train_user_indices,
                        self.train_item_indices)
@@ -155,10 +170,11 @@ class Dataset:
         if self.include_features:
             self.test_feat_indices, self.test_feat_values = \
                 fb.transform(self.test_categorical_features,
-                       self.test_numerical_features,
-                       len(self.test_labels),
-                       self.test_user_indices,
-                       self.test_item_indices)
+                             self.test_numerical_features,
+                             self.test_mergecat_features,
+                             len(self.test_labels),
+                             self.test_user_indices,
+                             self.test_item_indices)
 
         if implicit_label:
             self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
@@ -227,18 +243,12 @@ class Dataset:
         self.train_label_implicit, \
         self.train_timestamp = neg(mode="train")
 
-
     def build_testset_implicit(self, num_neg):
         neg = negative_sampling(self, num_neg)
         self.test_user_implicit, \
         self.test_item_implicit, \
         self.test_label_implicit, \
         self.test_timestamp = neg(mode="test")
-
-    # TODO
-    def build_tf_sparse(self):
-        pass
-
 
     def load_tf_trainset(self, batch_size=1):
         trainset_tf = tf.data.Dataset.from_tensor_slices({'user': self.train_user_indices,
