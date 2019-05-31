@@ -21,7 +21,8 @@ if __name__ == "__main__":
 #
     dataset = Dataset_feat(include_features=True)
     dataset.build_dataset("ml-1m/merged_data_no_title.csv", length="all", user_col=0, item_col=1, label_col=2,
-                          numerical_col=None, categorical_col=[3, 4, 5], merged_categorical_col=[[6, 7, 8]])
+    #                      numerical_col=None, categorical_col=[3, 4, 5], merged_categorical_col=[[6, 7, 8]])
+                            numerical_col=None, categorical_col=[3, 4, 5, 6, 7, 8], merged_categorical_col=None)
     print("data processing time: {:.2f}".format(time.time() - t0))
     print()
 #    dataset.build_trainset_implicit(4)
@@ -108,7 +109,7 @@ if __name__ == "__main__":
 #    print(wdc.predict_ui(1, 2, "2001-1-8"))
 #    print(wdc.predict_user(1))
 
-    # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515
+    # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
     fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0001, n_factors=32, batch_size=256)  # orig 0.8650  0.8634 0.8591
     fm.fit(dataset)
