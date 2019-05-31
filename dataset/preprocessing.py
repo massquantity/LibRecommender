@@ -114,8 +114,7 @@ class FeatureBuilder:
                     feature_values.append([1.0] * train_size)
                 self.total_count += unique_vals_length
             else:
-                print("feature total length must be integral multiple of train data size")
-                break
+                raise ValueError("feature total length must be integral multiple of train data size")
 
         self.feature_size = self.total_count  # preserve total_count for transform function
         if self.include_user_item:
@@ -156,8 +155,7 @@ class FeatureBuilder:
                     test_feature_indices.append(indices.tolist()[test_size * i: test_size * (i + 1)])
                     test_feature_values.append([1.0] * test_size)
             else:
-                print("feature total length must be integral multiple of test data size")
-                break
+                raise ValueError("feature total length must be integral multiple of test data size")
 
         if self.include_user_item:
             test_feature_indices.append(test_user_features + self.total_count)
