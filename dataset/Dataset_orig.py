@@ -98,17 +98,17 @@ class Dataset:
 
                 if categorical_col is not None and self.include_features:
                     for cat_feat in categorical_col:
-                        self.train_categorical_features[cat_feat].append(line[cat_feat])
+                        self.train_categorical_features[cat_feat].append(line[cat_feat].strip())
 
                 if numerical_col is not None and self.include_features:
                     for num_feat in numerical_col:
-                        self.train_numerical_features[num_feat].append(line[num_feat])
+                        self.train_numerical_features[num_feat].append(line[num_feat].strip())
 
                 if merged_categorical_col is not None and self.include_features:
                     for merge_feat in merged_categorical_col:
                         merge_col_index = merge_feat[0]
                         for mft in merge_feat:
-                            self.train_mergecat_features[merge_col_index].extend(line[mft])
+                            self.train_mergecat_features[merge_col_index].extend([line[mft].strip()])
 
             else:
                 self.test_user_indices.append(user_id)
@@ -117,17 +117,17 @@ class Dataset:
 
                 if categorical_col is not None and self.include_features:
                     for cat_feat in categorical_col:
-                        self.test_categorical_features[cat_feat].append(line[cat_feat])
+                        self.test_categorical_features[cat_feat].append(line[cat_feat].strip())
 
                 if numerical_col is not None and self.include_features:
                     for num_feat in numerical_col:
-                        self.test_numerical_features[num_feat].append(line[num_feat])
+                        self.test_numerical_features[num_feat].append(line[num_feat].strip())
 
                 if merged_categorical_col is not None and self.include_features:
                     for merge_feat in merged_categorical_col:
                         merge_col_index = merge_feat[0]
                         for mft in merge_feat:
-                            self.test_mergecat_features[merge_col_index].extend(line[mft])
+                            self.test_mergecat_features[merge_col_index].extend([line[mft].strip()])
 
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
