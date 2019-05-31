@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 
-class FM_747:
+class FM_675:
     def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256, seed=42):
         self.lr = lr
         self.n_epochs = n_epochs
@@ -128,7 +128,7 @@ class FM_747:
         return pred
 
 
-class FM_898:
+class FM_678678:
     def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256, seed=42):
         self.lr = lr
         self.n_epochs = n_epochs
@@ -250,8 +250,7 @@ class FM_898:
             pred = self.dataset.global_mean
         return pred
 
-
-class FM_8965:
+class FM_67876:
     def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256, seed=42):
         self.lr = lr
         self.n_epochs = n_epochs
@@ -357,10 +356,10 @@ class FM:
         self.batch_size = batch_size
         self.seed = seed
 
-    def build_sparse_indices(self, indices):
+    def build_sparse_indices(self, m, n):  # [[0],[0],[0],[1],[1],[1]...[n],[n],[n]] -> m * n, sample_size * feature_size
         si = []
-        for i in range(indices.shape[0]):
-            si.append(np.zeros([indices.shape[1], 1], dtype=np.int64) + i)
+        for i in range(m):
+            si.append(np.zeros([n, 1], dtype=np.int64) + i)
         return np.concatenate(si)
 
     def build_model(self, dataset):
@@ -431,13 +430,13 @@ class FM:
             for epoch in range(1, self.n_epochs + 1):
                 t0 = time.time()
                 n_batches = len(dataset.train_labels) // self.batch_size
+                m, n = self.batch_size, dataset.train_feat_indices.shape[1]
+                sparse_batch = self.build_sparse_indices(m, n)
                 for n in range(n_batches):
                     end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
                     indices_batch = dataset.train_feat_indices[n * self.batch_size: end]
                     values_batch = dataset.train_feat_values[n * self.batch_size: end]
                     labels_batch = dataset.train_labels[n * self.batch_size: end]
-
-                    sparse_batch = self.build_sparse_indices(indices_batch)
 
                     self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
                                                                self.feature_values: values_batch,
@@ -449,7 +448,8 @@ class FM:
                 #                                           self.feature_values: dataset.train_feat_values,
                 #                                           self.labels: dataset.train_labels})
 
-                    test_sparse_indices = self.build_sparse_indices(dataset.test_feat_indices)
+                    test_m, test_n = dataset.test_feat_indices.shape[0], dataset.test_feat_indices.shape[1]
+                    test_sparse_indices = self.build_sparse_indices(test_m, test_n)
 
                     test_loss, test_rmse = self.sess.run([self.total_loss, self.rmse],
                                                           feed_dict={
