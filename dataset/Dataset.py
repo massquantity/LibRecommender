@@ -140,49 +140,226 @@ class Dataset:
 
 
     # TODO: split k test sample from each user
-    def train_test_split_LOOV(self, k):
+    def train_test_split_LOOV_898(self, k, data_path, length="all", sep=","):
         """
         leave-last-k-out-split
         :return: train - test, user - item - ratings
         """
-        train_user_indices = []
-        test_user_indices = []
-        train_item_indices = []
-        test_item_indices = []
-        train_ratings = []
-        test_ratings = []
-        train_data = defaultdict(dict)
-        test_data = defaultdict(dict)
+        self.user_indices = []
+        self.item_indices = []
+        self.ratings = []
+        index_user = 0
+        index_item = 0
+        loaded_data = open(data_path, 'r').readlines()
+        if length == "all":
+            length = len(loaded_data)
+        for i, line in enumerate(loaded_data[:length]):
+            user = line.split(sep)[0]
+            item = line.split(sep)[1]
+            rating = line.split(sep)[2]
 
-        _, user_position, user_counts = np.unique(self.user_indices,
-                                                  return_inverse=True,
-                                                  return_counts=True)
-        user_indices = np.split(np.argsort(user_position, kind="mergesort"),
-                                np.cumsum(user_counts)[:-1])
+            try:
+                user_id = self.user2id[user]
+            except KeyError:
+                user_id = index_user
+                self.user2id[user] = index_user
+                index_user += 1
+            try:
+                item_id = self.item2id[item]
+            except KeyError:
+                item_id = index_item
+                self.item2id[item] = index_item
+                index_item += 1
 
-        for u in self.data.keys():
-            user_length = len(user_indices[u])
-            if user_length <= k:
+            self.user_indices.append(user_id)
+            self.item_indices.append(item_id)
+            self.ratings.append(int(rating))
+
+        self.user_indices = np.array(self.user_indices)
+        self.item_indices = np.array(self.item_indices)
+        self.ratings = np.array(self.ratings)
+
+        users, user_position, user_counts = np.unique(self.user_indices,
+                                                      return_inverse=True,
+                                                      return_counts=True)
+        user_split_indices = np.split(np.argsort(user_position, kind="mergesort"),
+                                      np.cumsum(user_counts)[:-1])
+
+        test_user_temp = []
+        test_item_temp = []
+        test_rating_temp = []
+
+        for u in users:
+            user_length = len(user_split_indices[u])
+            if user_length <= 1 or k == 0:
+                train_indices = user_split_indices[u]
+                test_indices = []
+            elif user_length <= k:
                 p = 1
+                train_indices = user_split_indices[u][:-p]
+                test_indices = user_split_indices[u][-p:]
             else:
                 p = k
-            train_indices = user_indices[u][:-p]
-            test_indices = user_indices[u][-p:]
+                train_indices = user_split_indices[u][:-p]
+                test_indices = user_split_indices[u][-p:]
+
+            self.train_user_indices.extend(self.user_indices[train_indices])
+            self.train_item_indices.extend(self.item_indices[train_indices])
+            self.train_ratings.extend(self.ratings[train_indices])
+
+            test_user_temp.extend(self.user_indices[test_indices])
+            test_item_temp.extend(self.item_indices[test_indices])
+            test_rating_temp.extend(self.ratings[test_indices])
+
+        print("item before: ", len(test_item_temp))
+        train_item_pool = np.unique(self.train_item_indices)
+        for user, item, rating in zip(test_user_temp, test_item_temp, test_rating_temp):
+        #    if item in train_item_pool:
+            self.test_user_indices.append(user)
+            self.test_item_indices.append(item)
+            self.test_ratings.append(rating)
+        print("item after: ", len(self.test_item_indices))
+
+        self.train_user_indices = np.array(self.train_user_indices)
+        self.train_item_indices = np.array(self.train_item_indices)
+        self.train_ratings = np.array(self.train_ratings)
+        self.test_user_indices = np.array(self.test_user_indices)
+        self.test_item_indices = np.array(self.test_item_indices)
+        self.test_ratings = np.array(self.test_ratings)
+
+        for u, i, r in zip(self.train_user_indices, self.train_item_indices, self.train_ratings):
+            self.train_user[u].update(dict(zip([i], [r])))
+            self.train_item[i].update(dict(zip([u], [r])))
+        return self
+
+
+    def train_test_split_LOOV(self, k, data_path, length="all", sep=","):
+        """
+        leave-last-k-out-split
+        :return: train - test, user - item - ratings
+        """
+        self.user_indices = []
+        self.item_indices = []
+        self.ratings = []
+        user2id = dict()
+        item2id = dict()
+        train_user_indices = list()
+        train_item_indices = list()
+        train_ratings = list()
+        test_user_indices = list()
+        test_item_indices = list()
+        test_ratings = list()
+
+        index_user = 0
+        index_item = 0
+        loaded_data = open(data_path, 'r').readlines()
+        if length == "all":
+            length = len(loaded_data)
+        for i, line in enumerate(loaded_data[:length]):
+            user = line.split(sep)[0]
+            item = line.split(sep)[1]
+            rating = line.split(sep)[2]
+
+            try:
+                user_id = user2id[user]
+            except KeyError:
+                user_id = index_user
+                user2id[user] = index_user
+                index_user += 1
+            try:
+                item_id = item2id[item]
+            except KeyError:
+                item_id = index_item
+                item2id[item] = index_item
+                index_item += 1
+
+            self.user_indices.append(user_id)
+            self.item_indices.append(item_id)
+            self.ratings.append(int(rating))
+
+        self.user_indices = np.array(self.user_indices)
+        self.item_indices = np.array(self.item_indices)
+        self.ratings = np.array(self.ratings)
+
+        users, user_position, user_counts = np.unique(self.user_indices,
+                                                      return_inverse=True,
+                                                      return_counts=True)
+        user_split_indices = np.split(np.argsort(user_position, kind="mergesort"),
+                                      np.cumsum(user_counts)[:-1])
+
+        test_user_temp = []
+        test_item_temp = []
+        test_rating_temp = []
+
+        for u in users:
+            user_length = len(user_split_indices[u])
+            if user_length <= 1 or k == 0:
+                train_indices = user_split_indices[u]
+                test_indices = []
+            elif user_length <= k:
+                p = 1
+                train_indices = user_split_indices[u][:-p]
+                test_indices = user_split_indices[u][-p:]
+            else:
+                p = k
+                train_indices = user_split_indices[u][:-p]
+                test_indices = user_split_indices[u][-p:]
 
             train_user_indices.extend(self.user_indices[train_indices])
-            test_user_indices.extend(self.user_indices[test_indices])
             train_item_indices.extend(self.item_indices[train_indices])
-            test_item_indices.extend(self.item_indices[test_indices])
             train_ratings.extend(self.ratings[train_indices])
-            test_ratings.extend(self.ratings[test_indices])
 
-        for u, i, r in zip(train_user_indices, train_item_indices, train_ratings):
-            train_data[u].update(dict(zip([i], [r])))
-        for u, i, r in zip(test_user_indices, test_item_indices, test_ratings):
-            test_data[u].update(dict(zip([i], [r])))
+            test_user_temp.extend(self.user_indices[test_indices])
+            test_item_temp.extend(self.item_indices[test_indices])
+            test_rating_temp.extend(self.ratings[test_indices])
 
-        return (train_user_indices, train_item_indices, train_ratings, train_data), \
-               (test_user_indices, test_item_indices, test_ratings, test_data)
+        print("item before: ", len(test_item_temp))
+        train_item_pool = np.unique(train_item_indices)
+        for user, item, rating in zip(test_user_temp, test_item_temp, test_rating_temp):
+            if item in train_item_pool:
+                test_user_indices.append(user)
+                test_item_indices.append(item)
+                test_ratings.append(rating)
+        print("item after: ", len(test_item_indices))
+
+        index_user_new = 0
+        index_item_new = 0
+        for user, item, rating in zip(train_user_indices, train_item_indices, train_ratings):
+            try:
+                user_id = self.user2id[user]
+            except KeyError:
+                user_id = index_user_new
+                self.user2id[user] = index_user_new
+                index_user_new += 1
+            try:
+                item_id = self.item2id[item]
+            except KeyError:
+                item_id = index_item_new
+                self.item2id[item] = index_item_new
+                index_item_new += 1
+
+            self.train_user_indices.append(user_id)
+            self.train_item_indices.append(item_id)
+            self.train_ratings.append(rating)
+
+        for test_u, test_i, test_r in zip(test_user_indices, test_item_indices, test_ratings):
+            self.test_user_indices.append(self.user2id[test_u])
+            self.test_item_indices.append(self.item2id[test_i])
+            self.test_ratings.append(test_r)
+
+        self.train_user_indices = np.array(self.train_user_indices)
+        self.train_item_indices = np.array(self.train_item_indices)
+        self.train_ratings = np.array(self.train_ratings)
+        self.test_user_indices = np.array(self.test_user_indices)
+        self.test_item_indices = np.array(self.test_item_indices)
+        self.test_ratings = np.array(self.test_ratings)
+
+        for u, i, r in zip(self.train_user_indices, self.train_item_indices, self.train_ratings):
+            self.train_user[u].update(dict(zip([i], [r])))
+            self.train_item[i].update(dict(zip([u], [r])))
+        return self
+
+
 
 
 #   TODO
@@ -238,7 +415,9 @@ class Dataset:
     @property
     def n_users(self):
         return len(self.train_user)
+    #    return len(np.unique(self.train_user_indices))
 
     @property
     def n_items(self):
         return len(self.train_item)
+    #    return len(np.unique(self.train_item_indices))
