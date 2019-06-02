@@ -128,7 +128,7 @@ class FM_675:
         return pred
 
 
-class FM_678678:
+class FM:
     def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256, seed=42):
         self.lr = lr
         self.n_epochs = n_epochs
@@ -347,7 +347,7 @@ class FM_67876:
         return pred
 
 
-class FM:
+class FM_899:
     def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256, seed=42):
         self.lr = lr
         self.n_epochs = n_epochs
