@@ -73,6 +73,10 @@ class Dataset:
             user = line[user_col]
             item = line[item_col]
             label = line[label_col]
+
+            if user not in user_pool or item not in item_pool:
+                continue
+
             try:
                 user_id = self.user2id[user]
             except KeyError:
@@ -86,10 +90,7 @@ class Dataset:
                 self.item2id[item] = index_item
                 index_item += 1
 
-            if user not in user_pool or item not in item_pool:
-                continue
-
-            elif i <= int(train_frac * length):
+            if i <= int(train_frac * length):
                 self.train_user_indices.append(user_id)
                 self.train_item_indices.append(item_id)
                 self.train_labels.append(int(label))
