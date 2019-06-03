@@ -233,11 +233,12 @@ class Dataset:
         return self
 
 
-    def train_test_split_LOOV(self, k, data_path, length="all", sep=","):
+    def train_test_split_LOOV(self, k, data_path, length="all", sep=",", shuffle=True, seed=42):
         """
         leave-last-k-out-split
         :return: train - test, user - item - ratings
         """
+        np.random.seed(seed)
         self.user_indices = []
         self.item_indices = []
         self.ratings = []
@@ -350,9 +351,16 @@ class Dataset:
             self.test_item_indices.append(item_mapping[test_i])
             self.test_ratings.append(test_r)
 
-        self.train_user_indices = np.array(self.train_user_indices)
-        self.train_item_indices = np.array(self.train_item_indices)
-        self.train_ratings = np.array(self.train_ratings)
+        if shuffle:
+            random_mask = np.random.choice(len(self.train_user_indices), len(self.train_user_indices), replace=False)
+            self.train_user_indices = np.array(self.train_user_indices)[random_mask]
+            self.train_item_indices = np.array(self.train_item_indices)[random_mask]
+            self.train_ratings = np.array(self.train_ratings)[random_mask]
+        else:
+            self.train_user_indices = np.array(self.train_user_indices)
+            self.train_item_indices = np.array(self.train_item_indices)
+            self.train_ratings = np.array(self.train_ratings)
+
         self.test_user_indices = np.array(self.test_user_indices)
         self.test_item_indices = np.array(self.test_item_indices)
         self.test_ratings = np.array(self.test_ratings)
