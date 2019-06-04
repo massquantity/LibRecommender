@@ -228,25 +228,9 @@ class Dataset:
                 test_ratings.append(rating)
         print("item after: ", len(test_item_indices))
 
-    #    index_user_new = 0
-    #    index_item_new = 0
         user_mapping = dict(zip(set(train_user_indices), np.arange(len(set(train_user_indices)))))
         item_mapping = dict(zip(set(train_item_indices), np.arange(len(set(train_item_indices)))))
         for user, item, rating in zip(train_user_indices, train_item_indices, train_ratings):
-            '''
-            try:
-                user_id = self.user2id[user]
-            except KeyError:
-                user_id = index_user_new
-                self.user2id[user] = index_user_new
-                index_user_new += 1
-            try:
-                item_id = self.item2id[item]
-            except KeyError:
-                item_id = index_item_new
-                self.item2id[item] = index_item_new
-                index_item_new += 1
-            '''
             self.train_user_indices.append(user_mapping[user])
             self.train_item_indices.append(item_mapping[item])
             self.train_ratings.append(rating)
@@ -274,8 +258,6 @@ class Dataset:
             self.train_user[u].update(dict(zip([i], [r])))
             self.train_item[i].update(dict(zip([u], [r])))
         return self
-
-
 
 
 #   TODO
