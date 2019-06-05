@@ -7,18 +7,13 @@ import numpy as np
 import pandas as pd
 from math import sqrt
 import tensorflow as tf
-from sklearn.preprocessing import KBinsDiscretizer
 from ..utils.sampling import negative_sampling
 
 
 class Dataset:
     def __init__(self):
-    #    self.data_user = defaultdict(dict)
-    #    self.data_item = defaultdict(dict)
         self.train_user = defaultdict(dict)
         self.train_item = defaultdict(dict)
-    #    self.test_user = defaultdict(dict)
-    #    self.test_item = defaultdict(dict)
         self.user2id = dict()
         self.item2id = dict()
         self.id2user = dict()
@@ -36,20 +31,16 @@ class Dataset:
 #    @classmethod
 #    def load_builtin_dataset(cls, data_path="../ml-1m/ratings"):
 
-#    def build_data(self, data_path=..., user_pos=0, item_pos=1, label_pos=2, numerical_pos=None, categorical_pos=None):
-
-#    def build_data_with_feature
-
     @classmethod
-    def load_dataset(cls, data_path="../ml-1m/ratings.dat", shuffle=False):
+    def load_builtin_dataset(cls, data_path="../ml-1m/ratings.dat", shuffle=False):
         loaded_data = open(data_path, 'r').readlines()
         if shuffle:
             loaded_data = np.random.permutation(loaded_data)
         return loaded_data
 
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
-                      train_frac=0.8, implicit=False, build_negative=False, batch_size=256,
-                      seed=42, time_bin=0, num_neg=None):
+                      train_frac=0.8, convert_implicit=False, build_negative=False, batch_size=256,
+                      seed=42, num_neg=None):
         np.random.seed(seed)
         self.batch_size = batch_size
         index_user = 0
@@ -63,7 +54,6 @@ class Dataset:
             user = line.split("::")[0]
             item = line.split("::")[1]
             rating = line.split("::")[2]
-            timestamp = line.split("::")[3]
             try:
                 user_id = self.user2id[user]
             except KeyError:
@@ -81,35 +71,22 @@ class Dataset:
                 self.train_user_indices.append(user_id)
                 self.train_item_indices.append(item_id)
                 self.train_ratings.append(int(rating))
-                self.train_timestamp.append(int(timestamp))
                 self.train_user[user_id].update(dict(zip([item_id], [int(rating)])))
                 self.train_item[item_id].update(dict(zip([user_id], [int(rating)])))
             else:
                 self.test_user_indices.append(user_id)
                 self.test_item_indices.append(item_id)
                 self.test_ratings.append(int(rating))
-                self.test_timestamp.append(int(timestamp))
 
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_ratings = np.array(self.train_ratings)
-        self.train_timestamp = np.array(self.train_timestamp)
 
-        if time_bin > 0:
-            assert type(time_bin) == int
-            self.kb = KBinsDiscretizer(n_bins=time_bin, encode="ordinal", strategy="uniform")  #### quantile
-            self.train_timestamp_bin = self.kb.fit_transform(self.train_timestamp.reshape(-1, 1))
-            self.train_timestamp_bin = self.train_timestamp_bin.astype(int)
-
-        if implicit:
+        if convert_implicit:
             self.train_labels = np.ones(len(self.train_ratings), dtype=np.float32)
 
         if build_negative:
             self.build_trainset_implicit(num_neg)
-
-    #    self.test_user_indices = np.array(self.test_user_indices)
-    #    self.test_item_indices = np.array(self.test_item_indices)
-    #    self.test_ratings = np.array(self.test_ratings)
 
         print("testset size before: ", len(self.test_ratings))
         test_all = np.concatenate([np.expand_dims(self.test_user_indices, 1),
@@ -123,11 +100,7 @@ class Dataset:
         self.test_ratings = test_safe[:, 2]
         self.test_timestamp = test_safe[:, 3]
 
-        if time_bin > 0:
-            self.test_timestamp_bin = self.kb.transform(self.test_timestamp.reshape(-1, 1))
-            self.test_timestamp_bin = self.test_timestamp_bin.astype(int)
-
-        if implicit:
+        if convert_implicit:
             self.test_labels = np.ones(len(self.test_ratings), dtype=np.float32)
 
         if build_negative:
@@ -297,8 +270,8 @@ class Dataset:
         self.testset_tf = testset_tf.filter(lambda x: (x['user'] < self.n_users) & (x['item'] < self.n_items))
         return self
 
-    def ratings(dataset):
-        for user, r in dataset.items():
+    def ratings(self):
+        for user, r in self.train_user:
             for item, rating in r.items():
                 yield user, item, rating
 
