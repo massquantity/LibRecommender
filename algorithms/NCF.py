@@ -74,7 +74,7 @@ class NCF_9999:
                                     name="pred")
     #    self.loss = tf.reduce_sum(tf.square(tf.cast(self.ratings, tf.float32) - self.pred)) / \
     #                tf.cast(tf.size(self.ratings), tf.float32)
-        self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.ratings, [-1,1]), predictions=self.pred)
+        self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.ratings, [-1, 1]), predictions=self.pred)
         self.metrics = tf.sqrt(
             tf.losses.mean_squared_error(labels=tf.reshape(self.ratings, [-1, 1]),
                                          predictions=tf.clip_by_value(self.pred, 1, 5))
@@ -214,7 +214,7 @@ class NCF:
         with self.sess.as_default():
             for epoch in range(1, self.n_epochs + 1):
                 t0 = time.time()
-                neg = negative_sampling(dataset, 4, self.batch_size)
+                neg = NegativeSampling(dataset, dataset.num_neg, self.batch_size)
                 n_batches = len(dataset.train_label_implicit) // self.batch_size
                 for n in range(n_batches):
                     u, i, r = neg.next_batch()

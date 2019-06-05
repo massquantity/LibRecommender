@@ -29,7 +29,7 @@ class FM_675:
         self.indices = tf.placeholder(tf.int64, shape=[None, 2], name="indices")
         self.values = tf.placeholder(tf.float32, shape=[None], name="values")
         self.shape = tf.placeholder(tf.int64, shape=[2], name="shape")
-        self.ratings = tf.placeholder(tf.float32, shape=[None], name="ratings")
+        self.labels = tf.placeholder(tf.float32, shape=[None], name="labels")
 
         self.w = tf.Variable(tf.truncated_normal([self.dim], 0.0, 0.01))
         self.v = tf.Variable(tf.truncated_normal([self.dim, self.n_factors], 0.0, 0.01))
@@ -50,16 +50,16 @@ class FM_675:
                 tf.sparse_tensor_dense_matmul(tf.square(self.x), tf.square(self.v))), axis=1, keepdims=True)
 
         self.pred = tf.add(self.linear_term, self.pairwise_term)
-        self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.ratings, [-1, 1]),
+        self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
                                                  predictions=self.pred)
 
-        self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=tf.reshape(self.ratings, [-1, 1]),
+        self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
                                                          predictions=tf.clip_by_value(self.pred, 1, 5)))
 
-    #    self.metrics = tf.metrics.root_mean_squared_error(labels=tf.reshape(tf.cast(self.ratings, tf.float32), [-1,1]),
+    #    self.metrics = tf.metrics.root_mean_squared_error(labels=tf.reshape(tf.cast(self.labels, tf.float32), [-1,1]),
     #                                                      predictions=self.pred)
                                                         # tf.clip_by_value(self.pred, 1, 5)
-                                                        # labels=tf.reshape(self.ratings, [-1,1]),
+                                                        # labels=tf.reshape(self.labels, [-1,1]),
 
         reg_w = self.reg * tf.nn.l2_loss(self.w)
         reg_v = self.reg * tf.nn.l2_loss(self.v)
@@ -77,12 +77,12 @@ class FM_675:
         with self.sess.as_default():
             for epoch in range(1, self.n_epochs + 1):
                 t0 = time.time()
-                n_batches = len(dataset.train_ratings) // self.batch_size
+                n_batches = len(dataset.train_labels) // self.batch_size
                 for n in range(n_batches):
-                    end = min(len(dataset.train_ratings), (n + 1) * self.batch_size)
+                    end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
                     user_batch = dataset.train_user_indices[n * self.batch_size: end]
                     item_batch = dataset.train_item_indices[n * self.batch_size: end]
-                    rating_batch = dataset.train_ratings[n * self.batch_size: end]
+                    label_batch = dataset.train_labels[n * self.batch_size: end]
 
                     indices_batch, values_batch, shape_batch = FM.build_sparse_data(dataset,
                                                                                     user_batch,
@@ -90,7 +90,7 @@ class FM_675:
                     self.sess.run(self.training_op, feed_dict={self.indices: indices_batch,
                                                                self.values: values_batch,
                                                                self.shape: shape_batch,
-                                                               self.ratings: rating_batch})
+                                                               self.labels: label_batch})
 
                 if epoch % 1 == 0:
                     indices_train, values_train, shape_train = FM.build_sparse_data(
@@ -100,7 +100,7 @@ class FM_675:
                     train_rmse = self.sess.run(self.rmse, feed_dict={self.indices: indices_train,
                                                                      self.values: values_train,
                                                                      self.shape: shape_train,
-                                                                     self.ratings: dataset.train_ratings})
+                                                                     self.labels: dataset.train_labels})
 
                     indices_test, values_test, shape_test = FM.build_sparse_data(
                                                                 dataset,
@@ -109,7 +109,7 @@ class FM_675:
                     test_rmse = self.sess.run(self.rmse, feed_dict={self.indices: indices_test,
                                                                     self.values: values_test,
                                                                     self.shape: shape_test,
-                                                                    self.ratings: dataset.test_ratings})
+                                                                    self.labels: dataset.test_labels})
 
                     print("Epoch {}, train_rmse: {:.4f}, training_time: {:.2f}".format(
                             epoch, train_rmse, time.time() - t0))
@@ -154,7 +154,7 @@ class FM:
     #    self.indices = tf.placeholder(tf.int64, shape=[None, 2], name="indices")
     #    self.values = tf.placeholder(tf.float32, shape=[None], name="values")
     #    self.shape = tf.placeholder(tf.int64, shape=[2], name="shape")
-    #    self.ratings = tf.placeholder(tf.float32, shape=[None], name="ratings")
+    #    self.labels = tf.placeholder(tf.float32, shape=[None], name="labels")
 
         self.w = tf.Variable(tf.truncated_normal([self.dim, 1], 0.0, 0.01))
         self.v = tf.Variable(tf.truncated_normal([self.dim, self.n_factors], 0.0, 0.01))
@@ -164,7 +164,7 @@ class FM:
         #    self.x = tf.concat([self.user_onehot, self.item_onehot], axis=1)
 
         self.x = tf.sparse_placeholder(tf.float32, [None, self.dim])
-        self.ratings = tf.placeholder(tf.float32, shape=[None], name="ratings")
+        self.labels = tf.placeholder(tf.float32, shape=[None], name="labels")
     #    self.linear_term = tf.reduce_sum(tf.multiply(self.w, self.x), axis=1, keepdims=True)
     #    self.linear_term = tf.reduce_sum(self.x.__mul__(self.w), axis=1, keepdims=True)
         self.linear_term = tf.sparse_tensor_dense_matmul(self.x, self.w)
@@ -175,16 +175,16 @@ class FM:
                 tf.sparse_tensor_dense_matmul(tf.square(self.x), tf.square(self.v))), axis=1, keepdims=True)
 
         self.pred = tf.add(self.linear_term, self.pairwise_term)
-        self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.ratings, [-1, 1]),
+        self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
                                                  predictions=self.pred)
 
-        self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=tf.reshape(self.ratings, [-1, 1]),
+        self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
                                                          predictions=tf.clip_by_value(self.pred, 1, 5)))
 
-    #    self.metrics = tf.metrics.root_mean_squared_error(labels=tf.reshape(tf.cast(self.ratings, tf.float32), [-1,1]),
+    #    self.metrics = tf.metrics.root_mean_squared_error(labels=tf.reshape(tf.cast(self.labels, tf.float32), [-1,1]),
     #                                                      predictions=self.pred)
                                                         # tf.clip_by_value(self.pred, 1, 5)
-                                                        # labels=tf.reshape(self.ratings, [-1,1]),
+                                                        # labels=tf.reshape(self.labels, [-1,1]),
 
         reg_w = self.reg * tf.nn.l2_loss(self.w)
         reg_v = self.reg * tf.nn.l2_loss(self.v)
@@ -202,12 +202,12 @@ class FM:
         with self.sess.as_default():
             for epoch in range(1, self.n_epochs + 1):
                 t0 = time.time()
-                n_batches = len(dataset.train_ratings) // self.batch_size
+                n_batches = len(dataset.train_labels) // self.batch_size
                 for n in range(n_batches):
-                    end = min(len(dataset.train_ratings), (n + 1) * self.batch_size)
+                    end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
                     user_batch = dataset.train_user_indices[n * self.batch_size: end]
                     item_batch = dataset.train_item_indices[n * self.batch_size: end]
-                    rating_batch = dataset.train_ratings[n * self.batch_size: end]
+                    label_batch = dataset.train_labels[n * self.batch_size: end]
 
                     indices_batch, values_batch, shape_batch = FM.build_sparse_data(dataset,
                                                                                     user_batch,
@@ -215,7 +215,7 @@ class FM:
                     self.sess.run(self.training_op, feed_dict={self.x: tf.SparseTensorValue(indices_batch,
                                                                                             values_batch,
                                                                                             shape_batch),
-                                                               self.ratings: rating_batch})
+                                                               self.labels: label_batch})
 
                 if epoch % 1 == 0:
                     indices_train, values_train, shape_train = FM.build_sparse_data(
@@ -225,7 +225,7 @@ class FM:
                     train_rmse = self.sess.run(self.rmse, feed_dict={self.x: (indices_train,
                                                                               values_train,
                                                                               shape_train),
-                                                                     self.ratings: dataset.train_ratings})
+                                                                     self.labels: dataset.train_labels})
 
                     indices_test, values_test, shape_test = FM.build_sparse_data(
                                                                 dataset,
@@ -234,7 +234,7 @@ class FM:
                     test_rmse = self.sess.run(self.rmse, feed_dict={self.x: (indices_test,
                                                                              values_test,
                                                                              shape_test),
-                                                                    self.ratings: dataset.test_ratings})
+                                                                    self.labels: dataset.test_labels})
 
                     print("Epoch {}, train_rmse: {:.4f}, training_time: {:.2f}".format(
                             epoch, train_rmse, time.time() - t0))
