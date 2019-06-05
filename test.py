@@ -1,32 +1,37 @@
 import time
 import numpy as np
 import tensorflow as tf
-from libreco.dataset.Dataset import Dataset
-from libreco.dataset.Dataset_orig import Dataset as Dataset_feat
+from libreco.dataset.DatasetPure import DatasetPure
+from libreco.dataset.DatasetFeat import DatasetFeat
 from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF, wide_deep, FM, DeepFM, BPR
 from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
 from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
-from libreco.utils.sampling import negative_sampling
+from libreco.utils.sampling import NegativeSampling
 from pprint import pprint
 
 
 if __name__ == "__main__":
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     t0 = time.time()
-    dataset = Dataset()
-#    dataset.build_dataset(data_path="ml-1m/ratings.dat", time_bin=10,
-#                          length="all", shuffle=True, implicit=True, build_negative=False, num_neg=4)
-    dataset.train_test_split_LOOV(4, data_path="ml-1m/ratings.dat", length="all", sep="::")
-    print("data processing time: {:.2f}".format(time.time() - t0))
-    print(dataset.train_item_indices.max(), len(dataset.train_item))
+#    dataset = DatasetPure()
+#    dataset.build_dataset(data_path="ml-1m/ratings.dat", sep="::", length=100000, shuffle=True,
+#                          convert_implicit=True, build_negative=True, num_neg=1, batch_size=256)
+#    dataset.leave_k_out_split(4, data_path="ml-1m/ratings.dat", length=100000, sep="::",
+#                              convert_implicit=True, build_negative=True, batch_size=256, num_neg=1)
+#    print("data processing time: {:.2f}".format(time.time() - t0))
+
 #    print(dataset.train_item_indices.max(), len(dataset.train_item), len(dataset.train_user),
 #          len(np.unique(dataset.train_item_indices)), len(np.unique(dataset.train_user_indices)))
 #    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
 #
-#    dataset = Dataset_feat(include_features=True)
-#    dataset.build_dataset("ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
-    #                      numerical_col=None, categorical_col=[3, 4, 5], merged_categorical_col=[[6, 7, 8]])
+    dataset = DatasetFeat(include_features=True)
+    dataset.build_dataset("ml-1m/merged_data.csv", length=100000, user_col=0, item_col=1, label_col=2,
+                          numerical_col=None, categorical_col=[3, 4, 5], merged_categorical_col=[[6, 7, 8]],
+                          convert_implicit=True, build_negative=True, num_neg=1, batch_size=256)
 #                            numerical_col=None, categorical_col=[3, 4, 5, 6, 7, 8], merged_categorical_col=None)
+#    dataset.leave_k_out_split(4, data_path="ml-1m/merged_data.csv", length="all", sep=",", shuffle=True,
+#                              user_col=0, item_col=1, label_col=2, numerical_col=None, categorical_col=[3, 4, 5],
+#                              merged_categorical_col=[[6, 7, 8]])
 #    print("data processing time: {:.2f}".format(time.time() - t0))
     print()
 #    dataset.build_trainset_implicit(4)
@@ -96,7 +101,8 @@ if __name__ == "__main__":
 #    print(rmse_svd(superSVD, dataset, mode="test"))
 
 #    ncf = NCF.NCF(embed_size=32, lr=0.0007, batch_size=256, n_epochs=500)
-#    ncf.fit(dataset)
+    ncf = NCF.NCF(embed_size=16, lr=0.001, batch_size=256, n_epochs=500)
+    ncf.fit(dataset)
 #    print(ncf.predict(1,2))
 #    print(AP_at_k(ncf, dataset, 1, 10))
 #    print(MAP_at_k(ncf, dataset, 10))
@@ -115,9 +121,9 @@ if __name__ == "__main__":
 
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
-    fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256)  # orig 0.8650  0.8634 0.8591
-    fm.fit(dataset)
-    print(fm.predict(1, 2))
+#    fm = FM.FM(lr=0.001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256)  # orig 0.8650  0.8634 0.8591
+#    fm.fit(dataset)
+#    print(fm.predict(1, 2))
 
 #    dfm = DeepFM.DeepFM(lr=0.0001, n_epochs=20000, reg=0.0, embed_size=8,
 #                        batch_size=1024, dropout=0.0, task="ranking")
