@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import tensorflow as tf
-from ..utils.sampling import negative_sampling
+from ..utils.sampling import NegativeSampling
 from ..evaluate.evaluate import precision_tf, MAP_at_k, HitRatio_at_k, NDCG_at_k
 from sklearn.metrics import roc_auc_score, precision_recall_curve, average_precision_score, auc
 
