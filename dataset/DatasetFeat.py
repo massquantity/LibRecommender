@@ -51,10 +51,16 @@ class DatasetFeat:
                 item_pool.add(item)
         return user_pool, item_pool, loaded_data
 
-    def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
-                      train_frac=0.8, implicit_label=False, build_negative=False, seed=42,
+    def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all", batch_size=256,
+                      train_frac=0.8, convert_implicit=False, build_negative=False, seed=42,
                       num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
                       numerical_col=None, categorical_col=None, merged_categorical_col=None):  # numerical feature 不做 embedding
+
+        np.random.seed(seed)
+        self.batch_size = batch_size
+        if num_neg is not None:
+            self.num_neg = num_neg
+
         user_pool, item_pool, loaded_data = self._get_pool(data_path=data_path,
                                                              shuffle=shuffle,
                                                              length=length,
@@ -148,12 +154,6 @@ class DatasetFeat:
         # numerical min_max_scale
         # min_occurance
 
-        if implicit_label:
-            self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
-
-        if build_negative:
-            self.build_trainset_implicit(num_neg)
-
         print("testset size before: ", len(self.test_labels))
         self.test_user_indices = np.array(self.test_user_indices)
         self.test_item_indices = np.array(self.test_item_indices)
@@ -167,14 +167,14 @@ class DatasetFeat:
                              self.test_user_indices,
                              self.test_item_indices)
 
-        if implicit_label:
+        if convert_implicit:
+            self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
             self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
 
         if build_negative:
+            self.build_trainset_implicit(num_neg)
             self.build_testset_implicit(num_neg)
-    #        self.neg = negative_sampling(self, 4, self.batch_size)
-        #    self.build_trainset_implicit()
-        #    self.build_testset_implicit()
+
         print("testset size after: ", len(self.test_labels))
         return self
 
@@ -428,18 +428,16 @@ class DatasetFeat:
 #   def load_pandas
 
     def build_trainset_implicit(self, num_neg):
-        neg = negative_sampling(self, num_neg)
+        neg = NegativeSampling(self, num_neg, self.batch_size, replacement_sampling=True)
         self.train_user_implicit, \
         self.train_item_implicit, \
-        self.train_label_implicit, \
-        self.train_timestamp = neg(mode="train")
+        self.train_label_implicit = neg(mode="train")
 
     def build_testset_implicit(self, num_neg):
-        neg = negative_sampling(self, num_neg)
+        neg = NegativeSampling(self, num_neg, self.batch_size, replacement_sampling=True)
         self.test_user_implicit, \
         self.test_item_implicit, \
-        self.test_label_implicit, \
-        self.test_timestamp = neg(mode="test")
+        self.test_label_implicit = neg(mode="test")
 
     def load_tf_trainset(self, batch_size=1):
         trainset_tf = tf.data.Dataset.from_tensor_slices({'user': self.train_user_indices,
