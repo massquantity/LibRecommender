@@ -3,11 +3,12 @@ from collections import defaultdict
 import numpy as np
 
 
-class negative_sampling:
+class NegativeSampling:
     def __init__(self, dataset, num_neg, batch_size=64, seed=42, replacement_sampling=False):
         self.dataset = dataset
         self.num_neg = num_neg
         self.batch_size = batch_size
+        self.seed = seed
         self.i = 0
         self.item_pool = defaultdict(set)
         if not replacement_sampling:
@@ -23,19 +24,16 @@ class negative_sampling:
             user_indices = self.dataset.train_user_indices
             item_indices = self.dataset.train_item_indices
             label_indices = self.dataset.train_labels
-            timestamp_indices = self.dataset.train_timestamp_bin
         elif mode == "test":
             user_indices = self.dataset.test_user_indices
             item_indices = self.dataset.test_item_indices
             label_indices = self.dataset.test_labels
-            timestamp_indices = self.dataset.test_timestamp_bin
 
-        user, item, label, timestamp = [], [], [], []
+        user, item, label = [], [], []
         for i, u in enumerate(user_indices):
             user.append(user_indices[i])
             item.append(item_indices[i])
             label.append(label_indices[i])
-            timestamp.append(timestamp_indices[i])
             for _ in range(self.num_neg):
                 item_neg = np.random.randint(0, self.dataset.n_items)
                 while item_neg in self.dataset.train_user[u]:
@@ -44,12 +42,7 @@ class negative_sampling:
                 user.append(u)
                 item.append(item_neg)
                 label.append(0.0)
-                timestamp.append(timestamp_indices[i])
-        return np.array(user), \
-               np.array(item), \
-               np.array(label), \
-               np.array(timestamp)
-
+        return np.array(user), np.array(item), np.array(label)
 
 
     def next_batch_99(self):
@@ -149,7 +142,7 @@ class negative_sampling:
                np.array(batch_label_indices)[indices]
 
 
-class pairwise_sampling:
+class PairwiseSampling:
     def __init__(self, dataset, batch_size=None):
         self.dataset = dataset
         self.batch_size = batch_size
