@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import tensorflow as tf
-from ..utils.sampling import pairwise_sampling
+from ..utils.sampling import PairwiseSampling
 from ..utils.initializers import truncated_normal
 from ..utils.similarities import get_sim, cosine_sim, pearson_sim
 from ..evaluate.evaluate import binary_cross_entropy
