@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from .preprocessing import FeatureBuilder
-from ..utils.sampling import NegativeSampling
+from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 
 class DatasetFeat:
@@ -428,16 +428,16 @@ class DatasetFeat:
 #   def load_pandas
 
     def build_trainset_implicit(self, num_neg):
-        neg = NegativeSampling(self, num_neg, self.batch_size, replacement_sampling=True)
-        self.train_user_implicit, \
-        self.train_item_implicit, \
-        self.train_label_implicit = neg(mode="train")
+        neg = NegativeSamplingFeat(self, num_neg, self.batch_size, replacement_sampling=True)
+        self.train_indices_implicit, \
+        self.train_values_implicit, \
+        self.train_labels_implicit = neg(mode="train")
 
     def build_testset_implicit(self, num_neg):
-        neg = NegativeSampling(self, num_neg, self.batch_size, replacement_sampling=True)
-        self.test_user_implicit, \
-        self.test_item_implicit, \
-        self.test_label_implicit = neg(mode="test")
+        neg = NegativeSamplingFeat(self, num_neg, self.batch_size, replacement_sampling=True)
+        self.test_indices_implicit, \
+        self.test_values_implicit, \
+        self.test_labels_implicit = neg(mode="test")
 
     def load_tf_trainset(self, batch_size=1):
         trainset_tf = tf.data.Dataset.from_tensor_slices({'user': self.train_user_indices,
