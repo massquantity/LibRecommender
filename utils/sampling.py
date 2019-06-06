@@ -29,6 +29,7 @@ class NegativeSampling:
             item_indices = self.dataset.test_item_indices
             label_indices = self.dataset.test_labels
 
+        '''
         user, item, label = [], [], []
         for i, u in enumerate(user_indices):
             user.append(user_indices[i])
@@ -43,16 +44,31 @@ class NegativeSampling:
                 item.append(item_neg)
                 label.append(0.0)
         return np.array(user), np.array(item), np.array(label)
+        '''
 
 
-    def next_batch_99(self):
+        user_implicit = np.tile(user_indices, self.num_neg + 1)
+        label_negative = np.zeros(len(user_indices) * self.num_neg, dtype=np.float32)
+        label_implicit = np.concatenate([label_indices, label_negative])
+        item_negative = []
+        for u, i in zip(user_indices, item_indices):
+            for _ in range(self.num_neg):
+                item_neg = np.random.randint(0, self.dataset.n_items)
+                while item_neg in self.dataset.train_user[u]:
+                    item_neg = np.random.randint(0, self.dataset.n_items)
+
+                item_negative.append(item_neg)
+        item_implicit = np.concatenate([item_indices, item_negative])
+        return user_implicit, item_implicit, label_implicit
+
+
+    def next_batch_without_replacement(self):
         end = min(len(self.dataset.train_user_indices), (self.i + 1) * self.batch_size)
         batch_pos_user = self.dataset.train_user_indices[self.i * self.batch_size: end]
         batch_pos_item = self.dataset.train_item_indices[self.i * self.batch_size: end]
         batch_pos_label = self.dataset.train_labels[self.i * self.batch_size: end]
 
         batch_user_indices, batch_item_indices, batch_label_indices = [], [], []
-        t0 = time.time()
         for i, u in enumerate(batch_pos_user):
             batch_user_indices.append(batch_pos_user[i])
             batch_item_indices.append(batch_pos_item[i])
@@ -66,51 +82,12 @@ class NegativeSampling:
             if len(self.user_negative_pool[u]) < self.num_neg + 1:
                 self.user_negative_pool[u] = list(set(range(self.dataset.n_items)) - set(self.dataset.train_user[u]))
                 print("negative pool exhausted")
-    #    print("batch time: {:.4f}".format(time.time() - t0))
-
-        self.i += 1
-    #    print("orig: {} \n {} \n {}".format(batch_user_indices, batch_item_indices, batch_label_indices))
-    #    np.random.seed(42)
-        indices = np.random.permutation(len(batch_user_indices))
-        return np.array(batch_user_indices)[indices], \
-               np.array(batch_item_indices)[indices], \
-               np.array(batch_label_indices)[indices]
-
-
-    def next_batch_67876(self):
-        end = min(len(self.dataset.train_user_indices), (self.i + 1) * self.batch_size)
-        batch_pos_user = self.dataset.train_user_indices[self.i * self.batch_size: end]
-        batch_pos_item = self.dataset.train_item_indices[self.i * self.batch_size: end]
-        batch_pos_label = self.dataset.train_labels[self.i * self.batch_size: end]
-
-        batch_user_indices, batch_item_indices, batch_label_indices = [], [], []
-        t0 = time.time()
-        for i, u in enumerate(batch_pos_user):
-            batch_user_indices.append(batch_pos_user[i])
-            batch_item_indices.append(batch_pos_item[i])
-            batch_label_indices.append(batch_pos_label[i])
-
-            for _ in range(self.num_neg):
-                item_neg = np.random.randint(0, self.dataset.n_items - 1)
-        #        while item_neg in self.dataset.train_user[u]:
-                while self.dataset.train_user[u].__contains__(item_neg) or item_neg in self.item_pool[u]:
-                    item_neg = np.random.randint(0, self.dataset.n_items - 1)  # resample
-                self.item_pool[u].add(item_neg)
-                if len(self.item_pool[u]) > (len(self.dataset.train_user[u]) * 0.75):
-                    self.item_pool[u].clear()
-                #    print("negative pool exhausted")
-
-                batch_user_indices.append(u)
-                batch_item_indices.append(item_neg)
-                batch_label_indices.append(0.0)
-    #    print("batch time: {:.4f}".format(time.time() - t0))
 
         self.i += 1
         indices = np.random.permutation(len(batch_user_indices))
         return np.array(batch_user_indices)[indices], \
                np.array(batch_item_indices)[indices], \
                np.array(batch_label_indices)[indices]
-
 
     def next_batch(self):
         end = min(len(self.dataset.train_user_indices), (self.i + 1) * self.batch_size)
@@ -133,13 +110,121 @@ class NegativeSampling:
                 batch_user_indices.append(u)
                 batch_item_indices.append(item_neg)
                 batch_label_indices.append(0.0)
-    #    print("batch time: {:.4f}".format(time.time() - t0))
 
         self.i += 1
         indices = np.random.permutation(len(batch_user_indices))
         return np.array(batch_user_indices)[indices], \
                np.array(batch_item_indices)[indices], \
                np.array(batch_label_indices)[indices]
+
+
+class NegativeSamplingFeat:
+    def __init__(self, dataset, num_neg, batch_size=64, seed=42, replacement_sampling=False):
+        self.dataset = dataset
+        self.num_neg = num_neg
+        self.batch_size = batch_size
+        self.seed = seed
+        self.i = 0
+        self.item_pool = defaultdict(set)
+        if not replacement_sampling:
+            self.__init_sampling()
+
+    def __init_sampling(self):
+        self.user_negative_pool = {}
+        for u in self.dataset.train_user:
+            self.user_negative_pool[u] = list(set(range(self.dataset.n_items)) - set(self.dataset.train_user[u]))
+
+    def __call__(self, mode):
+        if mode == "train":
+            feat_indices = self.dataset.train_feat_indices
+            feat_values = self.dataset.train_feat_values
+            feat_labels = self.dataset.train_labels
+        elif mode == "test":
+            feat_indices = self.dataset.test_feat_indices
+            feat_values = self.dataset.test_feat_values
+            feat_labels = self.dataset.test_labels
+
+        indices, values, labels = [], [], []
+        for i, sample in enumerate(feat_indices):
+            user = sample[-2]
+            indices.append(feat_indices[i])
+            values.append(feat_values[i])
+            labels.append(feat_labels[i])
+            for _ in range(self.num_neg):
+                item_neg = np.random.randint(0, self.dataset.n_items)
+                while item_neg in self.dataset.train_user[user]:
+                    item_neg = np.random.randint(0, self.dataset.n_items)
+
+                sample[-1] = item_neg
+                indices.append(sample)
+                values.append(feat_values[i])
+                labels.append(0.0)
+        return np.array(indices), np.array(values), np.array(labels)
+
+    def next_batch_without_replacement(self):  # change to feat version
+        end = min(len(self.dataset.train_user_indices), (self.i + 1) * self.batch_size)
+        batch_pos_user = self.dataset.train_user_indices[self.i * self.batch_size: end]
+        batch_pos_item = self.dataset.train_item_indices[self.i * self.batch_size: end]
+        batch_pos_label = self.dataset.train_labels[self.i * self.batch_size: end]
+
+        batch_user_indices, batch_item_indices, batch_label_indices = [], [], []
+        for i, u in enumerate(batch_pos_user):
+            batch_user_indices.append(batch_pos_user[i])
+            batch_item_indices.append(batch_pos_item[i])
+            batch_label_indices.append(batch_pos_label[i])
+
+            batch_user_indices.extend([u] * self.num_neg)
+            item_neg = np.random.choice(self.user_negative_pool[u], self.num_neg, replace=False)
+            batch_item_indices.extend(item_neg)
+            batch_label_indices.extend([0.0] * self.num_neg)
+            self.user_negative_pool[u] = list(set(self.user_negative_pool[u]) - set(item_neg))
+            if len(self.user_negative_pool[u]) < self.num_neg + 1:
+                self.user_negative_pool[u] = list(set(range(self.dataset.n_items)) - set(self.dataset.train_user[u]))
+                print("negative pool exhausted")
+
+        self.i += 1
+        indices = np.random.permutation(len(batch_user_indices))
+        return np.array(batch_user_indices)[indices], \
+               np.array(batch_item_indices)[indices], \
+               np.array(batch_label_indices)[indices]
+
+    def next_batch(self):
+        end = min(len(self.dataset.train_user_indices), (self.i + 1) * self.batch_size)
+        batch_pos_user = self.dataset.train_user_indices[self.i * self.batch_size: end]
+        batch_pos_item = self.dataset.train_item_indices[self.i * self.batch_size: end]
+        batch_pos_label = self.dataset.train_labels[self.i * self.batch_size: end]
+
+        batch_user_indices, batch_item_indices, batch_label_indices = [], [], []
+        for i, u in enumerate(batch_pos_user):
+            batch_user_indices.append(batch_pos_user[i])
+            batch_item_indices.append(batch_pos_item[i])
+            batch_label_indices.append(batch_pos_label[i])
+
+            for _ in range(self.num_neg):
+                item_neg = np.random.randint(0, self.dataset.n_items)
+        #        while item_neg in self.dataset.train_user[u]:
+                while self.dataset.train_user[u].__contains__(item_neg):
+                    item_neg = np.random.randint(0, self.dataset.n_items)  # resample
+
+                batch_user_indices.append(u)
+                batch_item_indices.append(item_neg)
+                batch_label_indices.append(0.0)
+
+        self.i += 1
+        indices = np.random.permutation(len(batch_user_indices))
+        return np.array(batch_user_indices)[indices], \
+               np.array(batch_item_indices)[indices], \
+               np.array(batch_label_indices)[indices]
+
+
+
+
+
+
+
+
+
+
 
 
 class PairwiseSampling:
