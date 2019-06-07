@@ -4,7 +4,7 @@ import numpy as np
 
 
 class NegativeSampling:
-    def __init__(self, dataset, num_neg, batch_size=64, seed=42, replacement_sampling=False):
+    def __init__(self, dataset, num_neg, batch_size=64, seed=42, replacement_sampling=True):
         self.dataset = dataset
         self.num_neg = num_neg
         self.batch_size = batch_size
@@ -119,7 +119,7 @@ class NegativeSampling:
 
 
 class NegativeSamplingFeat:
-    def __init__(self, dataset, num_neg, batch_size=64, seed=42, replacement_sampling=False):
+    def __init__(self, dataset, num_neg, batch_size=64, seed=42, replacement_sampling=True):
         self.dataset = dataset
         self.num_neg = num_neg
         self.batch_size = batch_size
@@ -146,7 +146,7 @@ class NegativeSamplingFeat:
 
         indices, values, labels = [], [], []
         for i, sample in enumerate(feat_indices):
-            user = sample[-2]
+            user = sample[-2] - FeatureBuilder.total_count  ####################
             indices.append(feat_indices[i])
             values.append(feat_values[i])
             labels.append(feat_labels[i])
@@ -189,42 +189,37 @@ class NegativeSamplingFeat:
                np.array(batch_label_indices)[indices]
 
     def next_batch(self):
-        end = min(len(self.dataset.train_user_indices), (self.i + 1) * self.batch_size)
-        batch_pos_user = self.dataset.train_user_indices[self.i * self.batch_size: end]
-        batch_pos_item = self.dataset.train_item_indices[self.i * self.batch_size: end]
-        batch_pos_label = self.dataset.train_labels[self.i * self.batch_size: end]
+        end = min(len(self.dataset.train_feat_indices), (self.i + 1) * self.batch_size)
+        batch_feat_indices = self.dataset.train_feat_indices[self.i * self.batch_size: end]  # train_indices_implicit
+        batch_feat_values = self.dataset.train_feat_values[self.i * self.batch_size: end]  # train_values_implicit
+        batch_feat_labels = self.dataset.train_labels[self.i * self.batch_size: end]  # train_labels_implicit
 
-        batch_user_indices, batch_item_indices, batch_label_indices = [], [], []
-        for i, u in enumerate(batch_pos_user):
-            batch_user_indices.append(batch_pos_user[i])
-            batch_item_indices.append(batch_pos_item[i])
-            batch_label_indices.append(batch_pos_label[i])
-
+        indices, values, labels = [], [], []
+        for i, sample in enumerate(batch_feat_indices):
+            user = sample[-2]
+            indices.append(batch_feat_indices[i])
+            values.append(batch_feat_values[i])
+            labels.append(batch_feat_labels[i])
             for _ in range(self.num_neg):
                 item_neg = np.random.randint(0, self.dataset.n_items)
         #        while item_neg in self.dataset.train_user[u]:
-                while self.dataset.train_user[u].__contains__(item_neg):
+                while item_neg in self.dataset.train_user[user]:
                     item_neg = np.random.randint(0, self.dataset.n_items)  # resample
 
-                batch_user_indices.append(u)
-                batch_item_indices.append(item_neg)
-                batch_label_indices.append(0.0)
+                sample[-1] = item_neg
+                indices.append(sample)
+                values.append(batch_feat_values[i])
+                labels.append(0.0)
+            print("aaa: ", user, item_neg, self.dataset.train_user[user])
+            #    aa = np.random.random()
+            #    if aa >= 0.5:
+            #        labels.append(1.0)
+            #    else:
+            #        labels.append(0.0)
 
         self.i += 1
-        indices = np.random.permutation(len(batch_user_indices))
-        return np.array(batch_user_indices)[indices], \
-               np.array(batch_item_indices)[indices], \
-               np.array(batch_label_indices)[indices]
-
-
-
-
-
-
-
-
-
-
+        random_mask = np.random.permutation(len(batch_feat_indices))
+        return np.array(indices)[random_mask], np.array(values)[random_mask], np.array(labels)[random_mask]
 
 
 class PairwiseSampling:
