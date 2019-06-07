@@ -2,7 +2,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from ..evaluate.evaluate import precision_tf
-from ..utils.sampling import NegativeSampling
+from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 
 class FmPure:
@@ -127,7 +127,7 @@ class FmPure:
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
                     neg = NegativeSampling(dataset, dataset.num_neg, self.batch_size)
-                    n_batches = len(dataset.train_label_implicit) // self.batch_size
+                    n_batches = len(dataset.train_user_indices) // self.batch_size
                     for n in range(n_batches):
                         user_batch, item_batch, label_batch = neg.next_batch()
                         indices_batch, values_batch, shape_batch = FmPure.build_sparse_data(dataset,
@@ -286,13 +286,20 @@ class FmFeat:
             elif self.task == "ranking":
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
-                    neg = NegativeSamplingFeat(dataset, dataset.num_neg, self.batch_size)
-                    n_batches = len(dataset.train_label_implicit) // self.batch_size
+                    neg = NegativeSamplingFeat(dataset, dataset.num_neg, self.batch_size)  #### total_count !!!!
+                    n_batches = len(dataset.train_feat_indices) // self.batch_size
                     for n in range(n_batches):
                         indices_batch, values_batch, labels_batch = neg.next_batch()
                         self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch})
+
+                #        logits, loss, acc, pre = self.sess.run([self.logits, self.loss, self.accuracy, self.precision],
+                #                                       feed_dict={self.feature_indices: indices_batch,
+                #                                                   self.feature_values: values_batch,
+                #                                                   self.labels: labels_batch})
+                #        if n % 100 == 0:
+                #            print("mm: ", logits[:5], loss, acc, pre)
 
                     if verbose > 0:
                         train_loss, train_accuracy, train_precision = \
