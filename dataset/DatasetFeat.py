@@ -148,6 +148,13 @@ class DatasetFeat:
                        len(self.train_labels),
                        self.train_user_indices,
                        self.train_item_indices)
+            self.user_offset = fb.total_count
+            print("offset: ", self.user_offset)
+            print(self.train_feat_indices[:, 0])
+            print(self.train_feat_indices[:, 1] - 5892)
+            print("n_users: {}, feature_size: {}".format(self.n_users, self.feature_size))
+        #    print(self.train_feat_indices.shape)
+        #    print(min(self.train_feat_indices[:, 6]))
 
         # user_embedding, item_embedding, feature_embedding
         # np.unique(return_inverse=True)
@@ -166,6 +173,8 @@ class DatasetFeat:
                              len(self.test_labels),
                              self.test_user_indices,
                              self.test_item_indices)
+            print(self.test_feat_indices[:, 0])
+            print(self.test_feat_indices[:, 1] - 5892)
 
         if convert_implicit:
             self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)

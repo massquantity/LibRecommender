@@ -81,6 +81,9 @@ class DatasetPure:
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_labels = np.array(self.train_labels)
+        print(self.train_user_indices)
+        print(self.train_item_indices)
+        print(self.n_users + self.n_items)
 
         print("testset size before: ", len(self.test_labels))
         test_all = np.concatenate([np.expand_dims(self.test_user_indices, 1),
@@ -91,6 +94,8 @@ class DatasetPure:
         self.test_user_indices = test_safe[:, 0]
         self.test_item_indices = test_safe[:, 1]
         self.test_labels = test_safe[:, 2]
+        print(self.test_user_indices)
+        print(self.test_item_indices)
 
         if convert_implicit:
             self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
