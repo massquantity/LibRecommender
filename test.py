@@ -26,8 +26,9 @@ if __name__ == "__main__":
 #    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
 
     dataset = DatasetFeat(include_features=True)
-    dataset.build_dataset("ml-1m/merged_data.csv", length=100000, user_col=0, item_col=1, label_col=2,
-                          numerical_col=None, categorical_col=None, merged_categorical_col=None,
+    dataset.build_dataset("ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
+                          numerical_col=None, categorical_col=[3, 4, 5, 6], merged_categorical_col=[[7, 8, 9]],
+                          item_sample_col=[6, 7, 8, 9],  #####################################################
                           convert_implicit=True, build_negative=True, num_neg=1, batch_size=256)
 #                         numerical_col=None, categorical_col=[3, 4, 5, 6, 7, 8], merged_categorical_col=None)
 #    dataset.leave_k_out_split(4, data_path="ml-1m/merged_data.csv", length="all", sep=",", shuffle=True,
@@ -35,6 +36,8 @@ if __name__ == "__main__":
 #                              merged_categorical_col=[[6, 7, 8]])
     print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
     print("data processing time: {:.2f}".format(time.time() - t0))
+    dt = dataset.train_feat_indices
+    print("9781: \n", dt[dt[:, -1] == 9781][:5])
     print()
 #    dataset.build_trainset_implicit(4)
 #    dataset.build_testset_implicit(4)
