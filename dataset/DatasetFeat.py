@@ -31,6 +31,8 @@ class DatasetFeat:
             self.test_numerical_features = defaultdict(list)
             self.train_mergecat_features = defaultdict(list)
             self.test_mergecat_features = defaultdict(list)
+            self.train_merge_list = defaultdict(list)
+            self.test_merge_list = defaultdict(list)
 
     def _get_pool(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
                     train_frac=0.8, sep=",", user_col=None, item_col=None, seed=42):
@@ -54,7 +56,8 @@ class DatasetFeat:
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all", batch_size=256,
                       train_frac=0.8, convert_implicit=False, build_negative=False, seed=42,
                       num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
-                      numerical_col=None, categorical_col=None, merged_categorical_col=None):  # numerical feature 不做 embedding
+                      numerical_col=None, categorical_col=None, merged_categorical_col=None,
+                      item_sample_col=None):  # numerical feature 不做 embedding
 
         np.random.seed(seed)
         self.batch_size = batch_size
@@ -74,6 +77,7 @@ class DatasetFeat:
         index_item = 0
         if length == "all":
             length = len(loaded_data)
+
         for i, data in enumerate(loaded_data[:length]):
             line = data.split(sep)
             user = line[user_col]
@@ -113,9 +117,12 @@ class DatasetFeat:
 
                 if merged_categorical_col is not None and self.include_features:
                     for merge_feat in merged_categorical_col:
-                        merge_col_index = merge_feat[0]
+                    #    merge_list = [[] for _ in range(len(merge_feat))]
                         for mft in merge_feat:
-                            self.train_mergecat_features[merge_col_index].extend([line[mft].strip()])
+                            self.train_merge_list[mft].append(line[mft].strip())
+                    #    merge_col_index = merge_feat[0]
+                    #    for ml in merge_list:
+                    #        self.train_mergecat_features[merge_col_index].extend(ml)
 
             else:
                 self.test_user_indices.append(user_id)
@@ -132,9 +139,15 @@ class DatasetFeat:
 
                 if merged_categorical_col is not None and self.include_features:
                     for merge_feat in merged_categorical_col:
-                        merge_col_index = merge_feat[0]
                         for mft in merge_feat:
-                            self.test_mergecat_features[merge_col_index].extend([line[mft].strip()])
+                            self.test_merge_list[mft].append(line[mft].strip())
+
+        if merged_categorical_col is not None and self.include_features:
+            for merge_feat in merged_categorical_col:
+                merge_col_index = merge_feat[0]
+                for mft in merge_feat:
+                    self.train_mergecat_features[merge_col_index].extend(self.train_merge_list[mft])
+                    self.test_mergecat_features[merge_col_index].extend(self.test_merge_list[mft])
 
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
@@ -149,10 +162,8 @@ class DatasetFeat:
                        self.train_user_indices,
                        self.train_item_indices)
             self.user_offset = fb.total_count
-            print("offset: ", self.user_offset)
-            print(self.train_feat_indices[:, 0])
-            print(self.train_feat_indices[:, 1] - 5892)
-            print("n_users: {}, feature_size: {}".format(self.n_users, self.feature_size))
+            print("offset: {}, n_users: {}, feature_size: {}".format(
+                self.user_offset, self.n_users, self.feature_size))
         #    print(self.train_feat_indices.shape)
         #    print(min(self.train_feat_indices[:, 6]))
 
@@ -173,12 +184,12 @@ class DatasetFeat:
                              len(self.test_labels),
                              self.test_user_indices,
                              self.test_item_indices)
-            print(self.test_feat_indices[:, 0])
-            print(self.test_feat_indices[:, 1] - 5892)
 
         if convert_implicit:
             self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
             self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
+        #    self.item_sample_col = np.array(item_sample_col) - 3
+            self.item_sample_col = [(i - 3) for i in item_sample_col]  # remove user item label column
 
         if build_negative:
             self.build_trainset_implicit(num_neg)
