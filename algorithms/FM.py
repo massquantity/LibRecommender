@@ -294,14 +294,15 @@ class FmFeat:
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch})
 
-                        pred, logits, loss, acc, pre = self.sess.run([self.pred, self.logits, self.loss, self.accuracy, self.precision],
-                                                       feed_dict={self.feature_indices: indices_batch,
-                                                                   self.feature_values: values_batch,
-                                                                   self.labels: labels_batch})
-                        if n % 100 == 0:
+                #        pred, logits, loss, acc, pre = self.sess.run([self.pred, self.logits, self.loss, self.accuracy, self.precision],
+                #                                       feed_dict={self.feature_indices: indices_batch,
+                #                                                   self.feature_values: values_batch,
+                #                                                   self.labels: labels_batch})
+                #        if n % 100 == 0:
                         #    print("mm: ", pred[:10], loss, acc, pre)
-                            print("batch pred: ", pred[:10])
-                            print("batch labe: ", labels_batch[:10])
+                #            print("batch pred: ", pred[:10])
+                #            print("batch labe: ", labels_batch[:10])
+                #            print("accuracy: ", acc, pre)
 
                     if verbose > 0:
                         train_loss, train_accuracy, train_precision = \
@@ -316,8 +317,6 @@ class FmFeat:
                                                      self.feature_values: dataset.test_values_implicit,
                                                      self.labels: dataset.test_labels_implicit})
 
-                        print("test pred: ", test_pred[:10])
-                        print("test true: ", dataset.test_labels_implicit[:10])
                         print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
                         print("Epoch {}, train loss: {:.4f}, train accuracy: {:.4f}, train precision: {:.4f}".format(
                             epoch, train_loss, train_accuracy, train_precision))
@@ -335,116 +334,3 @@ class FmFeat:
         return pred
 
 
-
-
-class FmFeat_898:
-    def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256, seed=42, task="rating"):
-        self.lr = lr
-        self.n_epochs = n_epochs
-        self.n_factors = n_factors
-        self.reg = reg
-        self.batch_size = batch_size
-        self.seed = seed
-        self.task = task
-
-    def build_model(self, dataset):
-        tf.set_random_seed(self.seed)
-        self.dataset = dataset
-        self.field_size = dataset.train_feat_indices.shape[1]
-        self.feature_size = dataset.feature_size
-        self.n_users = dataset.n_users
-        self.n_items = dataset.n_items
-
-        self.feature_indices = tf.placeholder(tf.int32, shape=[None, self.field_size])
-        self.labels = tf.placeholder(tf.float32, shape=[None])
-
-        self.w = tf.Variable(tf.truncated_normal([self.feature_size, 1], 0.0, 0.01))  # feature_size + 1####
-        self.v = tf.Variable(tf.truncated_normal([self.feature_size, self.n_factors], 0.0, 0.01))
-
-        self.linear_embedding = tf.nn.embedding_lookup(self.w, self.feature_indices)   # N * F * 1
-        self.linear_term = tf.reduce_sum(self.linear_embedding, 2)
-
-        self.feature_embedding = tf.nn.embedding_lookup(self.v, self.feature_indices)  # N * F * K
-
-        self.pairwise_term = 0.5 * tf.subtract(
-            tf.square(tf.reduce_sum(self.feature_embedding, axis=1)),
-            tf.reduce_sum(tf.square(self.feature_embedding), axis=1))
-
-        self.concat = tf.concat([self.linear_term, self.pairwise_term], axis=1)
-
-        if self.task == "rating":
-            self.pred = tf.layers.dense(inputs=self.concat, units=1)
-            self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
-                                                     predictions=self.pred)
-            self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
-                                                             predictions=tf.clip_by_value(self.pred, 1, 5)))
-
-        #    reg_w = self.reg * tf.nn.l2_loss(self.w)
-            reg_v = self.reg * tf.nn.l2_loss(self.v)
-            self.total_loss = tf.add_n([self.loss, reg_v])  # reg_w
-
-        elif self.task == "ranking":
-            self.logits = tf.layers.dense(inputs=self.concat, units=1, name="logits")
-            self.logits = tf.reshape(self.logits, [-1])
-            self.loss = tf.reduce_mean(
-                tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=self.logits))
-
-            self.y_prob = tf.sigmoid(self.logits)
-            self.pred = tf.where(self.y_prob >= 0.5,
-                                 tf.fill(tf.shape(self.logits), 1.0),
-                                 tf.fill(tf.shape(self.logits), 0.0))
-            self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.pred, self.labels), tf.float32))
-            self.precision = precision_tf(self.pred, self.labels)
-
-        #    reg_w = self.reg * tf.nn.l2_loss(self.w)
-            reg_v = self.reg * tf.nn.l2_loss(self.v)
-            self.total_loss = tf.add_n([self.loss, reg_v])
-
-    def fit(self, dataset, verbose=1):
-        self.build_model(dataset)
-        self.optimizer = tf.train.AdamOptimizer(self.lr)
-    #    self.optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3)
-        self.training_op = self.optimizer.minimize(self.total_loss)
-        init = tf.global_variables_initializer()
-        self.sess = tf.Session()
-        self.sess.run(init)
-        self.sess.run(tf.local_variables_initializer())
-        with self.sess.as_default():
-            if self.task == "ranking":
-                for epoch in range(1, self.n_epochs + 1):
-                    t0 = time.time()
-                 #   neg = NegativeSamplingFeat(dataset, dataset.num_neg, self.batch_size)
-                    neg = NegativeSampling(dataset, dataset.num_neg, self.batch_size)
-                    n_batches = len(dataset.train_indices_implicit) // self.batch_size
-                    for n in range(n_batches):
-                        indices_batch, values_batch, labels_batch = neg.next_batch()
-                        self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
-                                                                   self.labels: labels_batch})
-
-                        pred, logits, loss, acc, pre = self.sess.run([self.pred, self.logits, self.loss, self.accuracy, self.precision],
-                                                       feed_dict={self.feature_indices: indices_batch,
-                                                                   self.labels: labels_batch})
-                        if n % 100 == 0:
-                        #    print("mm: ", pred[:10], loss, acc, pre)
-                            print("batch pred: ", pred[:10])
-                            print("batch labe: ", labels_batch[:10])
-
-                    if verbose > 0:
-                        train_loss, train_accuracy, train_precision = \
-                            self.sess.run([self.loss, self.accuracy, self.precision],
-                                          feed_dict={self.feature_indices: dataset.train_indices_implicit,
-                                                     self.labels: dataset.train_labels_implicit})
-
-                        test_pred, test_loss, test_accuracy, test_precision = \
-                            self.sess.run([self.pred, self.loss, self.accuracy, self.precision],
-                                          feed_dict={self.feature_indices: dataset.test_indices_implicit,
-                                                     self.labels: dataset.test_labels_implicit})
-
-                        print("test pred: ", test_pred[:10])
-                        print("test true: ", dataset.test_labels_implicit[:10])
-                        print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
-                        print("Epoch {}, train loss: {:.4f}, train accuracy: {:.4f}, train precision: {:.4f}".format(
-                            epoch, train_loss, train_accuracy, train_precision))
-                        print("Epoch {}, test loss: {:.4f}, test accuracy: {:.4f}, test precision: {:.4f}".format(
-                            epoch, test_loss, test_accuracy, test_precision))
-                        print()
