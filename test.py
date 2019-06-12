@@ -25,11 +25,28 @@ if __name__ == "__main__":
 #          len(np.unique(dataset.train_item_indices)), len(np.unique(dataset.train_user_indices)))
 #    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
 
+    conf = {
+        "data_path": "ml-1m/merged_data.csv",
+        "length": "all",
+        "user_col": 0,
+        "item_col": 1,
+        "label_col": 2,
+        "numerical_col": None,
+        "categorical_col": [3, 4, 5, 6],
+        "merged_categorical_col": [[7, 8, 9]],
+        "item_sample_col": [6, 7, 8, 9],
+        "convert_implicit": True,
+        "build_negative": True,
+        "num_neg": 4,
+        "batch_size": 256,
+    }
+
     dataset = DatasetFeat(include_features=True)
-    dataset.build_dataset("ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
-                          numerical_col=None, categorical_col=[3, 4, 5, 6], merged_categorical_col=[[7, 8, 9]],
-                          item_sample_col=[6, 7, 8, 9],  #####################################################
-                          convert_implicit=True, build_negative=True, num_neg=1, batch_size=256)
+    dataset.build_dataset(**conf)
+#    dataset.build_dataset(data_path="ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
+#                          numerical_col=None, categorical_col=[3, 4, 5, 6], merged_categorical_col=[[7, 8, 9]],
+#                          item_sample_col=[6, 7, 8, 9],  #####################################################
+#                          convert_implicit=True, build_negative=True, num_neg=1, batch_size=256)
 #                         numerical_col=None, categorical_col=[3, 4, 5, 6, 7, 8], merged_categorical_col=None)
 #    dataset.leave_k_out_split(4, data_path="ml-1m/merged_data.csv", length="all", sep=",", shuffle=True,
 #                              user_col=0, item_col=1, label_col=2, numerical_col=None, categorical_col=[3, 4, 5],
