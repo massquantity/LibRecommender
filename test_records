@@ -1,0 +1,34 @@
+data size:  11001903
+data processing time: 36.83
+
+Epoch 1, training time: 98.15
+Epoch 1, train loss: 0.2347, train accuracy: 0.9112, train precision: 0.5552
+Epoch 1, test loss: 0.2353, test accuracy: 0.9112, test precision: 0.5563
+
+Epoch 2, training time: 93.16
+Epoch 2, train loss: 0.2317, train accuracy: 0.9118, train precision: 0.5720
+Epoch 2, test loss: 0.2325, test accuracy: 0.9118, test precision: 0.5722
+
+Epoch 3, training time: 99.84
+Epoch 3, train loss: 0.2310, train accuracy: 0.9121, train precision: 0.5820
+Epoch 3, test loss: 0.2318, test accuracy: 0.9120, test precision: 0.5802
+
+Epoch 4, training time: 91.43
+Epoch 4, train loss: 0.2304, train accuracy: 0.9122, train precision: 0.5855
+Epoch 4, test loss: 0.2313, test accuracy: 0.9121, test precision: 0.5851
+
+Epoch 5, training time: 94.82
+Epoch 5, train loss: 0.2289, train accuracy: 0.9123, train precision: 0.5863
+Epoch 5, test loss: 0.2300, test accuracy: 0.9123, test precision: 0.5858
+
+Epoch 6, training time: 95.09
+Epoch 6, train loss: 0.2249, train accuracy: 0.9127, train precision: 0.5854
+Epoch 6, test loss: 0.2262, test accuracy: 0.9127, test precision: 0.5867
+
+Epoch 7, training time: 91.13
+Epoch 7, train loss: 0.2200, train accuracy: 0.9127, train precision: 0.5678
+Epoch 7, test loss: 0.2219, test accuracy: 0.9126, test precision: 0.5675
+
+Epoch 8, training time: 91.60
+Epoch 8, train loss: 0.2167, train accuracy: 0.9126, train precision: 0.5535
+Epoch 8, test loss: 0.2190, test accuracy: 0.9124, test precision: 0.5514
