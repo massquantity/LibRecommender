@@ -266,9 +266,9 @@ class FmFeat:
                                                                    self.labels: labels_batch})
 
                     if verbose > 0:
-                        train_rmse = self.rmse.eval(feed_dict={self.feature_indices: dataset.train_feat_indices,
-                                                               self.feature_values: dataset.train_feat_values,
-                                                               self.labels: dataset.train_labels})
+               #         train_rmse = self.rmse.eval(feed_dict={self.feature_indices: dataset.train_feat_indices,
+                #                                               self.feature_values: dataset.train_feat_values,
+                #                                               self.labels: dataset.train_labels})
 
                         test_loss, test_rmse = self.sess.run([self.total_loss, self.rmse],
                                                               feed_dict={
@@ -276,8 +276,8 @@ class FmFeat:
                                                                   self.feature_values: dataset.test_feat_values,
                                                                   self.labels: dataset.test_labels})
 
-                        print("Epoch {}, train_rmse: {:.4f}, training_time: {:.2f}".format(
-                                epoch, train_rmse, time.time() - t0))
+                #        print("Epoch {}, train_rmse: {:.4f}, training_time: {:.2f}".format(
+                #                epoch, train_rmse, time.time() - t0))
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
                         print("Epoch {}, test_loss: {:.4f}, test_rmse: {:.4f}".format(
                             epoch, test_loss, test_rmse))
@@ -305,11 +305,11 @@ class FmFeat:
                 #            print("accuracy: ", acc, pre)
 
                     if verbose > 0:
-                        train_loss, train_accuracy, train_precision = \
-                            self.sess.run([self.loss, self.accuracy, self.precision],
-                                          feed_dict={self.feature_indices: dataset.train_indices_implicit,
-                                                     self.feature_values: dataset.train_values_implicit,
-                                                     self.labels: dataset.train_labels_implicit})
+                #        train_loss, train_accuracy, train_precision = \
+                #            self.sess.run([self.loss, self.accuracy, self.precision],
+                #                          feed_dict={self.feature_indices: dataset.train_indices_implicit,
+                #                                     self.feature_values: dataset.train_values_implicit,
+                #                                     self.labels: dataset.train_labels_implicit})
 
                         test_pred, test_loss, test_accuracy, test_precision = \
                             self.sess.run([self.pred, self.loss, self.accuracy, self.precision],
@@ -318,8 +318,8 @@ class FmFeat:
                                                      self.labels: dataset.test_labels_implicit})
 
                         print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
-                        print("Epoch {}, train loss: {:.4f}, train accuracy: {:.4f}, train precision: {:.4f}".format(
-                            epoch, train_loss, train_accuracy, train_precision))
+                #        print("Epoch {}, train loss: {:.4f}, train accuracy: {:.4f}, train precision: {:.4f}".format(
+                 #           epoch, train_loss, train_accuracy, train_precision))
                         print("Epoch {}, test loss: {:.4f}, test accuracy: {:.4f}, test precision: {:.4f}".format(
                             epoch, test_loss, test_accuracy, test_precision))
                         print()
