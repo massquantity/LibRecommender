@@ -32,3 +32,37 @@ Epoch 7, test loss: 0.2219, test accuracy: 0.9126, test precision: 0.5675
 Epoch 8, training time: 91.60
 Epoch 8, train loss: 0.2167, train accuracy: 0.9126, train precision: 0.5535
 Epoch 8, test loss: 0.2190, test accuracy: 0.9124, test precision: 0.5514
+
+---------------------------------------------------------------------------
+
+offset: 3757, n_users: 6040, feature_size: 13472
+testset size before:  200005
+testset size after:  200005
+data size:  11001903
+data processing time: 85.10
+9781:
+ []
+
+Epoch 1, training time: 181.86
+Epoch 1, test loss: 0.2469, test accuracy: 0.9067, test precision: 0.4731
+
+Epoch 2, training time: 181.86
+Epoch 2, test loss: 0.2438, test accuracy: 0.9065, test precision: 0.4705
+
+Epoch 3, training time: 189.39
+Epoch 3, test loss: 0.2418, test accuracy: 0.9079, test precision: 0.4853
+
+Epoch 4, training time: 185.86
+Epoch 4, test loss: 0.2403, test accuracy: 0.9093, test precision: 0.5027
+
+Epoch 5, training time: 181.35
+Epoch 5, test loss: 0.2401, test accuracy: 0.9087, test precision: 0.4954
+
+Epoch 6, training time: 177.51
+Epoch 6, test loss: 0.2372, test accuracy: 0.9105, test precision: 0.5193
+
+Epoch 7, training time: 188.36
+Epoch 7, test loss: 0.2367, test accuracy: 0.9105, test precision: 0.5180
+
+Epoch 8, training time: 187.82
+Epoch 8, test loss: 0.2357, test accuracy: 0.9109, test precision: 0.5247
