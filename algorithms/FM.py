@@ -338,7 +338,7 @@ class FmFeat:
 
     def export_model(self, version, simple_save=False):
         model_base_path = os.path.realpath(".")
-        export_path = os.path.join(model_base_path, "serving", "models", version)
+        export_path = os.path.join(model_base_path, "serving", "FM", version)
         if os.path.isdir(export_path):
             logging.warning("\tModel path \"%s\" already exists, removing..." % export_path)
             shutil.rmtree(export_path)
