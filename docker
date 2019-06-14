@@ -1,0 +1,9 @@
+sudo docker run -p 8501:8501 --mount type=bind,source=/home/ubuntu/libreco/serving/FM,target=/models/FM \
+-e MODEL_NAME=FM -t tensorflow/serving
+
+
+curl -d '{"signature_name": "predict", "instances": [
+                                        {"fi": [1, 7, 17, 1087, 3272, 3304, 3323, 4008, 9781],
+                                         "fv": [1, 1, 1, 1, 1, 1, 1, 1, 1]}
+                                      ]
+                                 }' -X POST http://localhost:8501/v1/models/FM:predict
