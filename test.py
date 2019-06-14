@@ -146,7 +146,7 @@ if __name__ == "__main__":
 #    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")  # orig 0.8650  0.8634 0.8591
     fm = FM.FmFeat(lr=0.0001, n_epochs=2, reg=0.0, n_factors=16, batch_size=256, task="ranking")
     fm.fit(dataset)
-    fm.export_model(version="v1", simple_save=False)
+    fm.export_model(version="1", simple_save=False)
 #    print(fm.predict(1, 2))
 
 #    dfm = DeepFM.DeepFM(lr=0.0001, n_epochs=20000, reg=0.0, embed_size=8,
