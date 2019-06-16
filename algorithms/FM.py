@@ -244,7 +244,7 @@ class FmFeat:
             reg_v = self.reg * tf.nn.l2_loss(self.v)
             self.total_loss = tf.add_n([self.loss, reg_v])
 
-    def fit(self, dataset, verbose=1):
+    def fit(self, dataset, verbose=1, pre_sampling=True):
         self.build_model(dataset)
         self.optimizer = tf.train.AdamOptimizer(self.lr)
     #    self.optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3)
@@ -289,7 +289,7 @@ class FmFeat:
             elif self.task == "ranking":
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
-                    neg = NegativeSamplingFeat(dataset, dataset.num_neg, self.batch_size)
+                    neg = NegativeSamplingFeat(dataset, dataset.num_neg, self.batch_size, pre_sampling=pre_sampling)
                     n_batches = len(dataset.train_indices_implicit) // self.batch_size
                     for n in range(n_batches):
                         indices_batch, values_batch, labels_batch = neg.next_batch()
@@ -322,7 +322,7 @@ class FmFeat:
 
                         print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
                 #        print("Epoch {}, train loss: {:.4f}, train accuracy: {:.4f}, train precision: {:.4f}".format(
-                 #           epoch, train_loss, train_accuracy, train_precision))
+                #            epoch, train_loss, train_accuracy, train_precision))
                         print("Epoch {}, test loss: {:.4f}, test accuracy: {:.4f}, test precision: {:.4f}".format(
                             epoch, test_loss, test_accuracy, test_precision))
                         print()
@@ -371,4 +371,3 @@ class FmFeat:
 
             builder.save()
         logging.warning('\tDone exporting!')
-
