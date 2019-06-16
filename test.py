@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     conf = {
         "data_path": "ml-1m/merged_data.csv",
-        "length": 100000,
+        "length": "all",
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         "item_sample_col": [6, 7, 8, 9],
         "convert_implicit": True,
         "build_negative": True,
-        "num_neg": 1,
+        "num_neg": 2,
         "batch_size": 256,
     }
 
@@ -53,8 +53,8 @@ if __name__ == "__main__":
 #                              merged_categorical_col=[[6, 7, 8]])
     print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
     print("data processing time: {:.2f}".format(time.time() - t0))
-    dt = dataset.train_feat_indices
-    print("9781: \n", dt[dt[:, -1] == 9781][:5])
+#    dt = dataset.train_feat_indices
+#    print("9781: \n", dt[dt[:, -1] == 9781][:5])
     print()
 #    dataset.build_trainset_implicit(4)
 #    dataset.build_testset_implicit(4)
@@ -144,9 +144,9 @@ if __name__ == "__main__":
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")  # orig 0.8650  0.8634 0.8591
-    fm = FM.FmFeat(lr=0.0001, n_epochs=2, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-    fm.fit(dataset)
-    fm.export_model(version="1", simple_save=False)
+    fm = FM.FmFeat(lr=0.00001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
+    fm.fit(dataset, pre_sampling=True)
+#    fm.export_model(version="1", simple_save=False)
 #    print(fm.predict(1, 2))
 
 #    dfm = DeepFM.DeepFM(lr=0.0001, n_epochs=20000, reg=0.0, embed_size=8,
