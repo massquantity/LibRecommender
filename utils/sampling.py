@@ -284,21 +284,15 @@ class NegativeSamplingFeat:
         self.seed = seed
         self.i = 0
         self.item_pool = defaultdict(set)
-    #    self.item_cols = item_cols
         self.neg_dict = self.__neg_feat_dict()
         self.pre_sampling = pre_sampling
         if not replacement_sampling:
             self.__init_sampling()
-        if pre_sampling:
-            random_mask = np.random.permutation(range(len(dataset.train_indices_implicit)))
-            self.train_indices_implicit = dataset.train_indices_implicit[random_mask]
-            self.train_values_implicit = dataset.train_values_implicit[random_mask]
-            self.train_labels_implicit = dataset.train_labels_implicit[random_mask]
-        else:
+        if not pre_sampling:
             random_mask = np.random.permutation(range(len(dataset.train_feat_indices)))
-            self.train_feat_indices = dataset.train_feat_indices[random_mask]
-            self.train_feat_values = dataset.train_feat_values[random_mask]
-            self.train_labels = dataset.train_labels[random_mask]
+            dataset.train_feat_indices = dataset.train_feat_indices[random_mask]
+            dataset.train_feat_values = dataset.train_feat_values[random_mask]
+            dataset.train_labels = dataset.train_labels[random_mask]
 
     def __init_sampling(self):
         self.user_negative_pool = {}
@@ -351,22 +345,22 @@ class NegativeSamplingFeat:
                 indices.append(ss)
                 values.append(feat_values[i])
                 labels.append(0.0)
-
-        return np.array(indices), np.array(values), np.array(labels)
+        random_mask = np.random.permutation(range(len(indices)))
+        return np.array(indices)[random_mask], np.array(values)[random_mask], np.array(labels)[random_mask]
 
     def next_batch(self):
         if self.pre_sampling:
-            end = min(len(self.train_indices_implicit), (self.i + 1) * self.batch_size)
-            batch_feat_indices = self.train_indices_implicit[self.i * self.batch_size: end]
-            batch_feat_values = self.train_values_implicit[self.i * self.batch_size: end]
-            batch_labels = self.train_labels_implicit[self.i * self.batch_size: end]
+            end = min(len(self.dataset.train_indices_implicit), (self.i + 1) * self.batch_size)
+            batch_feat_indices = self.dataset.train_indices_implicit[self.i * self.batch_size: end]
+            batch_feat_values = self.dataset.train_values_implicit[self.i * self.batch_size: end]
+            batch_labels = self.dataset.train_labels_implicit[self.i * self.batch_size: end]
             return batch_feat_indices, batch_feat_values, batch_labels
         else:
-            batch_size = int(self.batch_size / (self.num_neg + 1))
+            batch_size = int(self.batch_size / (self.num_neg + 1))  # positive samples in one batch
             end = min(len(self.dataset.train_feat_indices), (self.i + 1) * batch_size)
-            batch_feat_indices = self.train_feat_indices[self.i * batch_size: end]
-            batch_feat_values = self.train_feat_values[self.i * batch_size: end]
-            batch_feat_labels = self.train_labels[self.i * batch_size: end]
+            batch_feat_indices = self.dataset.train_feat_indices[self.i * batch_size: end]
+            batch_feat_values = self.dataset.train_feat_values[self.i * batch_size: end]
+            batch_feat_labels = self.dataset.train_labels[self.i * batch_size: end]
 
         #    end = min(len(self.dataset.train_feat_indices), (self.i + 1) * self.batch_size)  # bs = self.batch_size // 2
         #    batch_feat_indices = self.dataset.train_feat_indices[self.i * self.batch_size: end]  # train_indices_implicit
@@ -519,9 +513,6 @@ class PairwiseSampling:
         x_uij = x_ui - x_uj
         self.i += 1
         return user, item_i, i_k_neighbors, item_j, j_k_neighbors, x_uij
-
-
-
 
 
 
