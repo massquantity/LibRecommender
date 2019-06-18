@@ -209,6 +209,7 @@ class NegativeSamplingFeat_67876:
         return np.array(indices), np.array(values), np.array(labels)
 
     def next_batch_without_replacement(self):  # change to feat version
+        # {i: list(train_user[i].keys()) for i in train_user}
         end = min(len(self.dataset.train_user_indices), (self.i + 1) * self.batch_size)
         batch_pos_user = self.dataset.train_user_indices[self.i * self.batch_size: end]
         batch_pos_item = self.dataset.train_item_indices[self.i * self.batch_size: end]
