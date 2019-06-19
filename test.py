@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     conf = {
         "data_path": "ml-1m/merged_data.csv",
-        "length": "all",
+        "length": 100000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -144,8 +144,15 @@ if __name__ == "__main__":
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")  # orig 0.8650  0.8634 0.8591
-    fm = FM.FmFeat(lr=0.00001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
+    fm = FM.FmFeat(lr=0.00001, n_epochs=2, reg=0.0, n_factors=16, batch_size=256, task="ranking")
     fm.fit(dataset, pre_sampling=True)
+
+    num = {}
+    cat = {3: 'F', 4: 1, 5: 10, 6: 2452.0}
+    merge = {7: ["Drama", "missing", "missing"]}
+    indices, values = fm.dataset.fb.transform(cat, num, merge, 1, np.array([1]), np.array([1193]))
+    print(indices)
+    print(values)
 #    fm.export_model(version="1", simple_save=False)
 #    print(fm.predict(1, 2))
 
