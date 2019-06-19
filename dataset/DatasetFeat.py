@@ -153,15 +153,15 @@ class DatasetFeat:
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_labels = np.array(self.train_labels)
         if self.include_features:
-            fb = FeatureBuilder(include_user_item=True, n_users=self.n_users, n_items=self.n_items)
+            self.fb = FeatureBuilder(include_user_item=True, n_users=self.n_users, n_items=self.n_items)
             self.train_feat_indices, self.train_feat_values, self.feature_size = \
-                fb.fit(self.train_categorical_features,
+                self.fb.fit(self.train_categorical_features,
                        self.train_numerical_features,
                        self.train_mergecat_features,
                        len(self.train_labels),
                        self.train_user_indices,
                        self.train_item_indices)
-            self.user_offset = fb.total_count
+            self.user_offset = self.fb.total_count
             print("offset: {}, n_users: {}, feature_size: {}".format(
                 self.user_offset, self.n_users, self.feature_size))
         #    print(self.train_feat_indices.shape)
@@ -178,7 +178,7 @@ class DatasetFeat:
         self.test_labels = np.array(self.test_labels)
         if self.include_features:
             self.test_feat_indices, self.test_feat_values = \
-                fb.transform(self.test_categorical_features,
+                self.fb.transform(self.test_categorical_features,
                              self.test_numerical_features,
                              self.test_mergecat_features,
                              len(self.test_labels),
