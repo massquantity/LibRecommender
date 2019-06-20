@@ -13,36 +13,33 @@ from pprint import pprint
 if __name__ == "__main__":
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     t0 = time.time()
-#    dataset = DatasetPure()
-#    dataset.build_dataset(data_path="ml-1m/ratings.dat", sep="::", length="all", shuffle=True,
-#                          convert_implicit=True, build_negative=True, num_neg=10, batch_size=256)
+    dataset = DatasetPure()
+    dataset.build_dataset(data_path="ml-1m/ratings.dat", sep="::", length="all", shuffle=True,
+                          convert_implicit=False, build_negative=False, num_neg=10, batch_size=256)
 #    dataset.leave_k_out_split(4, data_path="ml-1m/ratings.dat", length=100000, sep="::",
 #                              convert_implicit=True, build_negative=True, batch_size=256, num_neg=1)
 #   print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit))
-#    print("data processing time: {:.2f}".format(time.time() - t0))
+    print("data processing time: {:.2f}".format(time.time() - t0))
 
-#    print(dataset.train_item_indices.max(), len(dataset.train_item), len(dataset.train_user),
-#          len(np.unique(dataset.train_item_indices)), len(np.unique(dataset.train_user_indices)))
-#    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit), "\n")
 
-    conf = {
-        "data_path": "ml-1m/merged_data.csv",
-        "length": 100000,
-        "user_col": 0,
-        "item_col": 1,
-        "label_col": 2,
-        "numerical_col": None,
-        "categorical_col": [3, 4, 5, 6],
-        "merged_categorical_col": [[7, 8, 9]],
-        "item_sample_col": [6, 7, 8, 9],
-        "convert_implicit": True,
-        "build_negative": True,
-        "num_neg": 2,
-        "batch_size": 256,
-    }
+#    conf = {
+#        "data_path": "ml-1m/merged_data.csv",
+#        "length": 100000,
+#        "user_col": 0,
+#        "item_col": 1,
+#        "label_col": 2,
+#        "numerical_col": None,
+#        "categorical_col": [3, 4, 5, 6],
+#        "merged_categorical_col": [[7, 8, 9]],
+#        "item_sample_col": [6, 7, 8, 9],
+#        "convert_implicit": True,
+#        "build_negative": True,
+#        "num_neg": 2,
+#        "batch_size": 256,
+#    }
 
-    dataset = DatasetFeat(include_features=True)
-    dataset.build_dataset(**conf)
+#    dataset = DatasetFeat(include_features=True)
+#    dataset.build_dataset(**conf)
 #    dataset.build_dataset(data_path="ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
 #                          numerical_col=None, categorical_col=[3, 4, 5, 6], merged_categorical_col=[[7, 8, 9]],
 #                          item_sample_col=[6, 7, 8, 9],  #####################################################
@@ -51,35 +48,46 @@ if __name__ == "__main__":
 #    dataset.leave_k_out_split(4, data_path="ml-1m/merged_data.csv", length="all", sep=",", shuffle=True,
 #                              user_col=0, item_col=1, label_col=2, numerical_col=None, categorical_col=[3, 4, 5],
 #                              merged_categorical_col=[[6, 7, 8]])
-    print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
-    print("data processing time: {:.2f}".format(time.time() - t0))
+#    print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
+#    print("data processing time: {:.2f}".format(time.time() - t0))
 #    dt = dataset.train_feat_indices
 #    print("9781: \n", dt[dt[:, -1] == 9781][:5])
     print()
-#    dataset.build_trainset_implicit(4)
-#    dataset.build_testset_implicit(4)
 
-#    print(dataset.train_user_implicit[:10])
-#    print(dataset.train_item_implicit[:10])
-#    print(dataset.train_label_implict[:10])
-#    print(dataset.test_user_implicit[:10])
-#    print(dataset.test_item_implicit[:10])
-#    print(dataset.test_label_implict[:10])
 
-#    neg = negative_sampling(dataset, 4, 8)
-#    pprint(neg.next_batch())
-#    pprint(neg.next_batch())
-#    pprint(neg.next_batch())
+    user_knn = user_KNN.userKNN(sim_option="cosine", k=40, min_support=5, baseline=False)
+    user_knn.fit(dataset)
+    print("rmse train:", rmse_knn(user_knn, dataset, mode="train"))
+    print("rmse test: ", rmse_knn(user_knn, dataset, mode="test"))
+    print(user_knn.topN(1, 10, 5, random_rec=False))
+    print(user_knn.topN(1, 10, 5, random_rec=True))
 
-#    with tf.Session() as sess:
-#    dataset.load_tf_trainset(batch_size=2048)
+#    print("training end...")
+#    t1 = time.time()
+#    import pickle
+#    with open("user_knn.pkl", 'wb') as f:
+#        pickle.dump(user_knn, f)
+#    with open("user_knn.pkl", 'rb') as f:
+#        model = pickle.load(f)
+#    print(model.topN(1, 10, 5, random_rec=False))
+#    print(model.topN(1, 10, 5, random_rec=True))
+#    print("pickle time: ", time.time() - t1)
 
-#    user_knn = user_KNN.userKNN(sim_option="pearson", k=40, min_support=5, baseline=True)
-#    user_knn.fit(dataset)
-#    print(rmse_knn(user_knn, dataset, mode="train"))
-#    print(rmse_knn(user_knn, dataset, mode="test"))
-#    print(user_knn.topN(1, 10, 5, random_rec=False))
-#    print(user_knn.topN(1, 10, 5, random_rec=True))
+#    t2 = time.time()
+#    import joblib
+#    with open("user_knn.compressed", 'wb') as f:
+#        joblib.dump(user_knn, f, compress=True)
+#    with open("user_knn.compressed", 'rb') as f:
+#        model = joblib.load(f)
+#    print("joblib time: ", time.time() - t2)
+
+#    t3 = time.time()
+#    from sklearn.externals import joblib as joblib_sk
+#    with open("user_knn.sklearn", 'wb') as f:
+#        joblib_sk.dump(user_knn, f, compress=True)
+#    with open("user_knn.sklearn", 'rb') as f:
+#        model = joblib_sk.load(f)
+#    print("sk-joblib time: ", time.time() - t3)
 
 #    svd = SVD.SVD(n_factors=10, n_epochs=200, reg=10.0)
 #    svd.fit(dataset)
@@ -143,16 +151,16 @@ if __name__ == "__main__":
 
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
-#    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")  # orig 0.8650  0.8634 0.8591
-    fm = FM.FmFeat(lr=0.00001, n_epochs=2, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-    fm.fit(dataset, pre_sampling=True)
+#    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
+#    fm = FM.FmFeat(lr=0.00001, n_epochs=2, reg=0.0, n_factors=16, batch_size=256, task="ranking")
+#    fm.fit(dataset, pre_sampling=True)
 
-    num = {}
-    cat = {3: 'F', 4: 1, 5: 10, 6: 2452.0}
-    merge = {7: ["Drama", "missing", "missing"]}
-    indices, values = fm.dataset.fb.transform(cat, num, merge, 1, np.array([1]), np.array([1193]))
-    print(indices)
-    print(values)
+#    num = {}
+#    cat = {3: 'F', 4: 1, 5: 10, 6: 2452.0}
+#    merge = {7: ["Drama", "missing", "missing"]}
+#    indices, values = fm.dataset.fb.transform(cat, num, merge, 1, np.array([1]), np.array([1193]))
+#    print(indices)
+#    print(values)
 #    fm.export_model(version="1", simple_save=False)
 #    print(fm.predict(1, 2))
 
