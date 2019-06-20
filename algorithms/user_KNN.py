@@ -1,3 +1,4 @@
+import time
 from operator import itemgetter
 import numpy as np
 from ..utils.similarities import *
@@ -25,7 +26,12 @@ class userKNN:
         self.train_item = dataset.train_item
         n = len(self.train_user)
         ids = list(self.train_user.keys())
-        self.sim = get_sim(self.train_user, self.sim_option, n, ids, min_support=self.min_support)
+        t0 = time.time()
+    #    self.sim = get_sim(self.train_user, self.sim_option, n, ids, min_support=self.min_support)
+        self.sim = invert_sim(self.train_item, n, min_support=self.min_support)
+    #    self.sim = sk_sim(self.train_item, dataset.n_users, dataset.n_items,
+    #                      min_support=self.min_support, sparse=True)
+        print("sim time: ", time.time() - t0)
         if self.baseline:
             self.bu, self.bi = baseline_als(dataset)
         return self
@@ -74,9 +80,9 @@ class userKNN:
                 return self.default_prediction
 
     def topN(self, u, k, n_rec, random_rec=False):
-        rank = []
+        rank = set()
         neighbors = [(self.sim[u, v], v) for v in range(len(self.sim))]
-        k_neighbors = sorted(neighbors, key=itemgetter(0), reverse=True)[1:k+1] # exclude u
+        k_neighbors = sorted(neighbors, key=itemgetter(0), reverse=True)[1:k+1]  # exclude u
         for _, n in k_neighbors:
             n_items = np.array(list(self.train_user[n].items()))
             n_items = [(j, r) for j, r in n_items if r > 3]
@@ -84,16 +90,20 @@ class userKNN:
                 if j in self.train_user[u]:
                     continue
                 pred = self.predict(u, j)
-                rank.append((j, pred))
+                rank.add((j, pred))
+        rank = list(rank)
 
         if random_rec:
             item_pred_dict = {j: pred for j, pred in rank if pred >= 4}
             if len(item_pred_dict) == 0:
-                return "not enough neighbors"
+                return "not enough candidates"
             item_list = list(item_pred_dict.keys())
             pred_list = list(item_pred_dict.values())
             p = [p / np.sum(pred_list) for p in pred_list]
-            item_candidates = np.random.choice(item_list, n_rec, replace=False, p=p)
+            if len(item_list) < n_rec:
+                item_candidates = item_list
+            else:
+                item_candidates = np.random.choice(item_list, n_rec, replace=False, p=p)
             reco = [(item, item_pred_dict[item]) for item in item_candidates]
             return reco
         else:
