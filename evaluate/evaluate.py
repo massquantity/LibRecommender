@@ -7,11 +7,11 @@ def rmse_knn(model, dataset, mode="train"):
     if mode == "train":
         user_indices = dataset.train_user_indices
         item_indices = dataset.train_item_indices
-        ratings = dataset.train_ratings
+        ratings = dataset.train_labels
     elif mode == "test":
         user_indices = dataset.test_user_indices
         item_indices = dataset.test_item_indices
-        ratings = dataset.test_ratings
+        ratings = dataset.test_labels
 
     pred = []
     for j, (u, i) in enumerate(zip(user_indices, item_indices)):
