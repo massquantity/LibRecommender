@@ -34,7 +34,7 @@ def msd_sim(dicts, x1, x2, min_support=5):
     for i in dicts[x1]:
         if i in dicts[x2]:
             num += 1
-            sq_diff = (dicts[x1][i] - dicts[x2][i]) ** 2
+            sq_diff += (dicts[x1][i] - dicts[x2][i]) ** 2
 
     if num < min_support:
         return 0
@@ -108,14 +108,14 @@ def invert_sim(data, n_users, min_support=5):
 
     t0 = time.time()
     for i, u_labels in data.items():
-        start_time = time.time()
+    #    start_time = time.time()
         for ui, li in u_labels.items():
             for uj, lj in u_labels.items():
                 num[ui, uj] += 1
                 prods[ui, uj] += li * lj
                 denom1[ui, uj] += li * li
                 denom2[ui, uj] += lj * lj
-        print("item time: {:.2f}".format(time.time() - start_time))
+    #    print("item time: {:.2f}".format(time.time() - start_time))
     print("time1: ", time.time() - t0)
 
 
