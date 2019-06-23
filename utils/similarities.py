@@ -38,7 +38,10 @@ def msd_sim(dicts, x1, x2, min_support=5):
 
     if num < min_support:
         return 0
-    return 1 / (sq_diff / num + 1)
+    try:
+        return 1 / (sq_diff / num + 1)
+    except ZeroDivisionError:
+        return 0
 
 
 def pearson_sim(dicts, x1, x2, min_support=5, shrunk=10):
