@@ -45,7 +45,11 @@ class DatasetPure:
             self.num_neg = num_neg
         index_user = 0
         index_item = 0
-        loaded_data = open(data_path, 'r').readlines()
+        with open(data_path, 'r') as f:
+            loaded_data = f.readlines()
+    #    f = open(data_path, 'r')
+    #    loaded_data = f.readlines()
+    #    f.close()
         if shuffle:
             loaded_data = np.random.permutation(loaded_data)
         if length == "all":
