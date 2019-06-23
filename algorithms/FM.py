@@ -343,6 +343,7 @@ class FmFeat:
             logging.warning("\tModel path \"%s\" already exists, removing..." % export_path)
             shutil.rmtree(export_path)
         if simple_save:
+            print("simple_save is deprecated, it will be removed in tensorflow xxx...")
             tf.saved_model.simple_save(self.sess, export_path,
                                        inputs={'fi': self.feature_indices,
                                                'fv': self.feature_values},
