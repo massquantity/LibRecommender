@@ -55,12 +55,25 @@ if __name__ == "__main__":
     print()
 
 
-    user_knn = user_KNN.userKNN(sim_option="cosine", k=40, min_support=5, baseline=False)
+    user_knn = user_KNN.userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
     user_knn.fit(dataset)
-    print("rmse train:", rmse_knn(user_knn, dataset, mode="train"))
-    print("rmse test: ", rmse_knn(user_knn, dataset, mode="test"))
+    t1 = time.time()
+    print("predict: ", user_knn.predict(0, 5))
+    print("predict time: ", time.time() - t1)
+
+    t2 = time.time()
+    print("rmse: ", user_knn.evaluate(dataset, 1000000))
+    print("evaluate time: ", time.time() - t2)
+
+#    t4 = time.time()
+#    print("rmse train:", rmse_knn(user_knn, dataset, mode="train"))
+#    print("rmse train time: ", time.time() - t4)
+#    print("rmse test: ", rmse_knn(user_knn, dataset, mode="test"))
+
+    t3 = time.time()
     print(user_knn.topN(1, 10, 5, random_rec=False))
     print(user_knn.topN(1, 10, 5, random_rec=True))
+    print("topN time: ", time.time() - t3)
 
 #    print("training end...")
 #    t1 = time.time()
