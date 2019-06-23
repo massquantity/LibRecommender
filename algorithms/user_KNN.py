@@ -7,7 +7,7 @@ from ..utils.similarities import *
 from ..utils.baseline_estimates import baseline_als, baseline_sgd
 
 
-class userKNN_687:
+class userKNN_567:
     def __init__(self, sim_option="pearson", k=50, min_support=1, baseline=True):
         self.k = k
         self.min_support = min_support
@@ -245,8 +245,18 @@ class userKNN:
                 pred.append(self.default_prediction)
                 continue
             sims = sims[sim_indices]
-            sims = sims / max(sims)
+        #    sims = 1.0 - sims / max(sims)
+        #    sims = 1 / (sims / len(sims))  # use L2 norm  Sklearn normalize
+        #   sims_all, neighbors_indices_all = self.sim_model.search(np.zeros(self.m.shape[0]), self.n_users)
+
             neighbors_indices = neighbors_indices[sim_indices]
+            for j, (sim, vser) in enumerate(zip(sims, neighbors_indices)):
+            #    u_rating_index = np.where(self.m[user] != 0)[0]
+            #    v_rating_index = np.where(self.m[vser] != 0)[0]
+            #    num = len(np.intersect1d(u_rating_index, v_rating_index))
+                num = len(self.train_user[user]) + len(self.train_user[vser])
+                sims[j] = 1 / (sims[j] / num)
+
             neighbors_ratings = self.m[neighbors_indices, item]
 
             p = np.sum(np.multiply(sims, neighbors_ratings)) / np.sum(sims)
