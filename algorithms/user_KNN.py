@@ -2,12 +2,12 @@ import time, os
 import pickle
 from operator import itemgetter
 import numpy as np
-import faiss
+# import faiss
 from ..utils.similarities import *
 from ..utils.baseline_estimates import baseline_als, baseline_sgd
 
 
-class userKNN_567:
+class userKNN:
     def __init__(self, sim_option="pearson", k=50, min_support=1, baseline=True):
         self.k = k
         self.min_support = min_support
@@ -119,8 +119,9 @@ class userKNN_567:
 
 
 
-class userKNN:
+class userKNN_67876:
     def __init__(self, sim_option="pearson", k=50, min_support=1, baseline=True):
+        import faiss
         self.k = k
         self.min_support = min_support
         self.baseline = baseline
