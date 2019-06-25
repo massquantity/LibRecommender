@@ -1,20 +1,22 @@
-import time
+import os, time, sys
 import numpy as np
 import tensorflow as tf
-from libreco.dataset.DatasetPure import DatasetPure
-from libreco.dataset.DatasetFeat import DatasetFeat
-from libreco.algorithms import user_KNN, item_KNN, SVD, SVDpp, NCF, wide_deep, FM, DeepFM, BPR
+from pathlib import Path
+from libreco.dataset import DatasetPure
+from libreco.dataset import DatasetFeat
+from libreco.algorithms import userKNN
 from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
-from libreco.utils.baseline_estimates import baseline_als, baseline_sgd
-from libreco.utils.sampling import NegativeSampling
-from pprint import pprint
+from libreco import baseline_als
+from libreco import NegativeSampling
+from libreco.utils import export_model_pickle, export_model_joblib
 
 
 if __name__ == "__main__":
 #    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     t0 = time.time()
     dataset = DatasetPure()
-    dataset.build_dataset(data_path="ml-1m/ratings.dat", sep="::", length="all", shuffle=True,
+    path = str(Path.joinpath(Path(__file__).parent, "ml-1m", "ratings.dat"))
+    dataset.build_dataset(data_path=path, sep="::", length=10000, shuffle=True,
                           convert_implicit=False, build_negative=False, num_neg=10, batch_size=256)
 #    dataset.leave_k_out_split(4, data_path="ml-1m/ratings.dat", length=100000, sep="::",
 #                              convert_implicit=True, build_negative=True, batch_size=256, num_neg=1)
@@ -55,53 +57,56 @@ if __name__ == "__main__":
     print()
 
 
-    user_knn = user_KNN.userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
+    user_knn = userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
     user_knn.fit(dataset)
     t1 = time.time()
     print("predict: ", user_knn.predict(0, 5))
     print("predict time: ", time.time() - t1)
+    joblib_path = str(Path.joinpath(Path("."), "serving/models/user_knn.jb"))
+    export_model_joblib(joblib_path, user_knn)
 
-    t2 = time.time()
-    print("rmse: ", user_knn.evaluate(dataset, 1000000))
-    print("evaluate time: ", time.time() - t2)
+#    t2 = time.time()
+#    print("rmse: ", user_knn.evaluate(dataset, 1000000))
+#    print("evaluate time: ", time.time() - t2)
 
 #    t4 = time.time()
 #    print("rmse train:", rmse_knn(user_knn, dataset, mode="train"))
 #    print("rmse train time: ", time.time() - t4)
 #    print("rmse test: ", rmse_knn(user_knn, dataset, mode="test"))
 
+    """
     t3 = time.time()
     print(user_knn.topN(1, 10, 5, random_rec=False))
     print(user_knn.topN(1, 10, 5, random_rec=True))
     print("topN time: ", time.time() - t3)
 
-#    print("training end...")
-#    t1 = time.time()
-#    import pickle
-#    with open("user_knn.pkl", 'wb') as f:
-#        pickle.dump(user_knn, f)
-#    with open("user_knn.pkl", 'rb') as f:
-#        model = pickle.load(f)
-#    print(model.topN(1, 10, 5, random_rec=False))
-#    print(model.topN(1, 10, 5, random_rec=True))
-#    print("pickle time: ", time.time() - t1)
+    print("training end...")
+    t1 = time.time()
+    import pickle
+    with open("user_knn.pkl", 'wb') as f:
+        pickle.dump(user_knn, f)
+    with open("user_knn.pkl", 'rb') as f:
+        model = pickle.load(f)
+    print(model.topN(1, 10, 5, random_rec=False))
+    print(model.topN(1, 10, 5, random_rec=True))
+    print("pickle time: ", time.time() - t1)
 
-#    t2 = time.time()
-#    import joblib
-#    with open("user_knn.compressed", 'wb') as f:
-#        joblib.dump(user_knn, f, compress=True)
-#    with open("user_knn.compressed", 'rb') as f:
-#        model = joblib.load(f)
-#    print("joblib time: ", time.time() - t2)
+    t2 = time.time()
+    import joblib
+    with open("user_knn.compressed", 'wb') as f:
+        joblib.dump(user_knn, f, compress=True)
+    with open("user_knn.compressed", 'rb') as f:
+        model = joblib.load(f)
+    print("joblib time: ", time.time() - t2)
 
-#    t3 = time.time()
-#    from sklearn.externals import joblib as joblib_sk
-#    with open("user_knn.sklearn", 'wb') as f:
-#        joblib_sk.dump(user_knn, f, compress=True)
-#    with open("user_knn.sklearn", 'rb') as f:
-#        model = joblib_sk.load(f)
-#    print("sk-joblib time: ", time.time() - t3)
-
+    t3 = time.time()
+    from sklearn.externals import joblib as joblib_sk
+    with open("user_knn.sklearn", 'wb') as f:
+        joblib_sk.dump(user_knn, f, compress=True)
+    with open("user_knn.sklearn", 'rb') as f:
+        model = joblib_sk.load(f)
+    print("sk-joblib time: ", time.time() - t3)
+    """
 #    svd = SVD.SVD(n_factors=10, n_epochs=200, reg=10.0)
 #    svd.fit(dataset)
 #    print(rmse_svd(svd, dataset, mode="train"))
