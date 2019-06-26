@@ -6,8 +6,11 @@ from sklearn.externals import joblib
 import tensorflow as tf
 
 
-def export_feature_transform():
-    pass #############
+def export_feature_transform(fb_path, conf_path, feat_builder, conf):
+    with open(fb_path, 'wb') as f:
+        joblib.dump(feat_builder, f)
+    with open(conf_path, 'wb') as f:
+        joblib.dump(conf, f)
 
 
 def export_model_pickle(path, model):
