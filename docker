@@ -1,6 +1,10 @@
 sudo docker run -p 8501:8501 --mount type=bind,source=/home/ubuntu/libreco/serving/FM,target=/models/FM \
 -e MODEL_NAME=FM -t tensorflow/serving
 
+sudo docker run -p 8501:8501 --mount type=bind,source=/home/massquantity/Workspace/LibRecommender/serving/models/FM,\
+target=/models/FM -e MODEL_NAME=FM -t tensorflow/serving
+
+version="1"
 
 curl -d '{"signature_name": "predict", "instances": [
                                         {"fi": [1, 7, 17, 1087, 3272, 3304, 3323, 4008, 9781],
