@@ -1,8 +1,10 @@
 import os
 import pickle
+import json
 from collections import defaultdict
 import numpy as np
 import pandas as pd
+import requests
 from sklearn.externals import joblib
 from flask import Flask, jsonify, request
 import sys
@@ -20,34 +22,19 @@ def api_call(algo):
     test_data = pd.DataFrame(test_json)
     orig_cols = ["user", "item", "sex", "age", "occupation", "title", "genre1", "genre2", "genre3"]
     test_data = test_data.reindex(columns=orig_cols)
+    feature_builder_path = os.path.join(os.curdir, "models/others/feature_builder.jb")
+    conf_path = os.path.join(os.curdir, "models/others/conf.jb")
+    feat_indices, feat_values = feature_transform(test_data, feature_builder_path, conf_path)
 
+    samples = []
+    for fi, fv in zip(feat_indices, feat_values):
+        samples.append({"fi": fi.tolist(), "fv": fv.tolist()})
 
-    for col in test_data.columns:
-        if col in ['u', 'user']:
-            u = test_data[col][0]
-        elif col in ['i', 'item']:
-            i = test_data[col][0]
-    try:
-        n_rec = test_data["n_rec"][0]
-        k = test_data["k"][0]
-    except KeyError:
-        n_rec = k = None
-
-    if algo in ["user_knn", "userKNN"]:
-        algo = "user_knn"
-    model_path = os.path.join(os.getcwd(), "models", "%s.jb" % algo)
-    with open(model_path, 'rb') as f:
-        model = joblib.load(f)
-
-    if n_rec and k:
-        reco_list = model.topN(u, k, n_rec)
-        response = jsonify({'user': str(u), 'recommend list': str(reco_list)})
-    elif u and i:
-        pred = model.predict(u, i)
-        response = jsonify({'user': str(u), 'item': str(i), 'pred': str(pred)})
-    else:
-        return bad_request()
-    return response
+    data = {"signature_name": "predict", "instances": samples}
+    if algo in ['fm', 'FM']:
+        model = algo
+    response = requests.post("http://localhost:8501/v1/models/%s:predict" % model, data=json.dumps(data))
+    return response.text
 
 
 @app.errorhandler(400)
@@ -70,22 +57,27 @@ def feature_transform(data, feat_builder_path, conf_path):
     categorical_features = dict()
     numerical_features = dict()
     merge_cat_features = defaultdict(list)
-    merge_list = list()
+    merge_list = dict()
     data_size = len(data)
     user_indices = data['user'].values
     item_indices = data['item'].values
 
-    for cat_feat in conf['categorical_col']:
-        categorical_features[cat_feat] = data.iloc[:, cat_feat - 1]  # doesn't include label col
-    for num_feat in conf['numerical_col']:
-        numerical_features[num_feat] = data.iloc[:, num_feat - 1]
-    for merge_feat in conf['merged_categorical_col']:
-        for mft in merge_feat:
-            merge_list[mft] = data.iloc[:, mft - 1]
-    for merge_feat in conf['merged_categorical_col']:
-        merge_col_index = merge_feat[0]
-        for mft in merge_feat:
-            merge_cat_features[merge_col_index].extend(merge_list[mft])
+    if conf['categorical_col'] is not None:
+        for cat_feat in conf['categorical_col']:
+            categorical_features[cat_feat] = data.iloc[:, cat_feat - 1]  # doesn't include label col
+
+    if conf['numerical_col'] is not None:
+        for num_feat in conf['numerical_col']:
+            numerical_features[num_feat] = data.iloc[:, num_feat - 1]
+
+    if conf['merged_categorical_col'] is not None:
+        for merge_feat in conf['merged_categorical_col']:
+            for mft in merge_feat:
+                merge_list[mft] = data.iloc[:, mft - 1]
+        for merge_feat in conf['merged_categorical_col']:
+            merge_col_index = merge_feat[0]
+            for mft in merge_feat:
+                merge_cat_features[merge_col_index].extend(merge_list[mft])
 
     feat_indices, feat_values = feat_builder.transform(categorical_features,
                                                        numerical_features,
