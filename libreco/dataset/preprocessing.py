@@ -73,7 +73,7 @@ class FeatureBuilder:
 
         for k, v in test_cat_feat.items():
             indices = pd.Series(v).map(self.val_index_dict[k])
-            indices = indices.fillna(self.feature_size)
+            indices = indices.fillna(self.feature_size)  # fillna with last single index
             test_feature_indices.append(indices.tolist())
             test_feature_values.append([1.0] * test_size)
 
