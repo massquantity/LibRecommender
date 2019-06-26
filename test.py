@@ -2,46 +2,46 @@ import os, time, sys
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-from libreco.dataset import DatasetPure
-from libreco.dataset import DatasetFeat
-from libreco.algorithms import userKNN
-from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
-from libreco import baseline_als
-from libreco import NegativeSampling
-from libreco.utils import export_model_pickle, export_model_joblib
+from LibRecommender.libreco.dataset import DatasetPure
+from LibRecommender.libreco.dataset import DatasetFeat
+from LibRecommender.libreco.algorithms import userKNN, FmFeat
+from LibRecommender.libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
+from LibRecommender.libreco import baseline_als
+from LibRecommender.libreco import NegativeSampling
+from LibRecommender.libreco.utils import export_model_pickle, export_model_joblib, export_model_tf
+# from libreco.utils import export_model_pickle, export_model_joblib
 
 
 if __name__ == "__main__":
-#    loaded_data = Dataset.load_dataset(data_path="ml-1m/ratings.dat")
     t0 = time.time()
-    dataset = DatasetPure()
-    path = str(Path.joinpath(Path(__file__).parent, "ml-1m", "ratings.dat"))
-    dataset.build_dataset(data_path=path, sep="::", length=10000, shuffle=True,
-                          convert_implicit=False, build_negative=False, num_neg=10, batch_size=256)
+#    dataset = DatasetPure()
+#    path = str(Path.joinpath(Path(__file__).parent, "ml-1m", "ratings.dat"))
+#    dataset.build_dataset(data_path=path, sep="::", length=10000, shuffle=True,
+#                          convert_implicit=False, build_negative=False, num_neg=10, batch_size=256)
 #    dataset.leave_k_out_split(4, data_path="ml-1m/ratings.dat", length=100000, sep="::",
 #                              convert_implicit=True, build_negative=True, batch_size=256, num_neg=1)
 #   print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit))
-    print("data processing time: {:.2f}".format(time.time() - t0))
+#    print("data processing time: {:.2f}".format(time.time() - t0))
 
 
-#    conf = {
-#        "data_path": "ml-1m/merged_data.csv",
-#        "length": 100000,
-#        "user_col": 0,
-#        "item_col": 1,
-#        "label_col": 2,
-#        "numerical_col": None,
-#        "categorical_col": [3, 4, 5, 6],
-#        "merged_categorical_col": [[7, 8, 9]],
-#        "item_sample_col": [6, 7, 8, 9],
-#        "convert_implicit": True,
-#        "build_negative": True,
-#        "num_neg": 2,
-#        "batch_size": 256,
-#    }
+    conf = {
+        "data_path": "ml-1m/merged_data.csv",
+        "length": 100000,
+        "user_col": 0,
+        "item_col": 1,
+        "label_col": 2,
+        "numerical_col": None,
+        "categorical_col": [3, 4, 5, 6],
+        "merged_categorical_col": [[7, 8, 9]],
+        "item_sample_col": [6, 7, 8, 9],
+        "convert_implicit": True,
+        "build_negative": True,
+        "num_neg": 2,
+        "batch_size": 256,
+    }
 
-#    dataset = DatasetFeat(include_features=True)
-#    dataset.build_dataset(**conf)
+    dataset = DatasetFeat(include_features=True)
+    dataset.build_dataset(**conf)
 #    dataset.build_dataset(data_path="ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
 #                          numerical_col=None, categorical_col=[3, 4, 5, 6], merged_categorical_col=[[7, 8, 9]],
 #                          item_sample_col=[6, 7, 8, 9],  #####################################################
@@ -50,20 +50,18 @@ if __name__ == "__main__":
 #    dataset.leave_k_out_split(4, data_path="ml-1m/merged_data.csv", length="all", sep=",", shuffle=True,
 #                              user_col=0, item_col=1, label_col=2, numerical_col=None, categorical_col=[3, 4, 5],
 #                              merged_categorical_col=[[6, 7, 8]])
-#    print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
-#    print("data processing time: {:.2f}".format(time.time() - t0))
-#    dt = dataset.train_feat_indices
-#    print("9781: \n", dt[dt[:, -1] == 9781][:5])
+    print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
+    print("data processing time: {:.2f}".format(time.time() - t0))
     print()
 
-
-    user_knn = userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
-    user_knn.fit(dataset)
-    t1 = time.time()
-    print("predict: ", user_knn.predict(0, 5))
-    print("predict time: ", time.time() - t1)
-    joblib_path = str(Path.joinpath(Path("."), "serving/models/user_knn.jb"))
-    export_model_joblib(joblib_path, user_knn)
+#    user_knn = userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
+#    user_knn.fit(dataset)
+#    t1 = time.time()
+#    print("predict: ", user_knn.predict(0, 5))
+#    print("predict time: ", time.time() - t1)
+#    current_path = Path(".").resolve()
+#    joblib_path = str(Path.joinpath(current_path, "serving/models/user_knn.jb"))
+#    export_model_joblib(joblib_path, user_knn)
 
 #    t2 = time.time()
 #    print("rmse: ", user_knn.evaluate(dataset, 1000000))
@@ -74,39 +72,6 @@ if __name__ == "__main__":
 #    print("rmse train time: ", time.time() - t4)
 #    print("rmse test: ", rmse_knn(user_knn, dataset, mode="test"))
 
-    """
-    t3 = time.time()
-    print(user_knn.topN(1, 10, 5, random_rec=False))
-    print(user_knn.topN(1, 10, 5, random_rec=True))
-    print("topN time: ", time.time() - t3)
-
-    print("training end...")
-    t1 = time.time()
-    import pickle
-    with open("user_knn.pkl", 'wb') as f:
-        pickle.dump(user_knn, f)
-    with open("user_knn.pkl", 'rb') as f:
-        model = pickle.load(f)
-    print(model.topN(1, 10, 5, random_rec=False))
-    print(model.topN(1, 10, 5, random_rec=True))
-    print("pickle time: ", time.time() - t1)
-
-    t2 = time.time()
-    import joblib
-    with open("user_knn.compressed", 'wb') as f:
-        joblib.dump(user_knn, f, compress=True)
-    with open("user_knn.compressed", 'rb') as f:
-        model = joblib.load(f)
-    print("joblib time: ", time.time() - t2)
-
-    t3 = time.time()
-    from sklearn.externals import joblib as joblib_sk
-    with open("user_knn.sklearn", 'wb') as f:
-        joblib_sk.dump(user_knn, f, compress=True)
-    with open("user_knn.sklearn", 'rb') as f:
-        model = joblib_sk.load(f)
-    print("sk-joblib time: ", time.time() - t3)
-    """
 #    svd = SVD.SVD(n_factors=10, n_epochs=200, reg=10.0)
 #    svd.fit(dataset)
 #    print(rmse_svd(svd, dataset, mode="train"))
@@ -170,8 +135,9 @@ if __name__ == "__main__":
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-#    fm = FM.FmFeat(lr=0.00001, n_epochs=2, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-#    fm.fit(dataset, pre_sampling=True)
+    fm = FmFeat(lr=0.00001, n_epochs=2, reg=0.0, n_factors=16, batch_size=256, task="ranking")
+    fm.fit(dataset, pre_sampling=True)
+    export_model_tf(fm, "FM", "v1", simple_save=False)
 
 #    num = {}
 #    cat = {3: 'F', 4: 1, 5: 10, 6: 2452.0}
