@@ -2,13 +2,12 @@ import os, time, sys
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
-from LibRecommender.libreco.dataset import DatasetPure
-from LibRecommender.libreco.dataset import DatasetFeat
-from LibRecommender.libreco.algorithms import userKNN, FmFeat
-from LibRecommender.libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
-from LibRecommender.libreco import baseline_als
-from LibRecommender.libreco import NegativeSampling
-from LibRecommender.libreco.utils import export_model_pickle, export_model_joblib, export_model_tf
+from libreco.dataset import DatasetPure, DatasetFeat
+from libreco.algorithms import userKNN, FmFeat
+from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
+from libreco import baseline_als
+from libreco import NegativeSampling
+from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf
 # from libreco.utils import export_model_pickle, export_model_joblib
 
 
