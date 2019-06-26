@@ -118,10 +118,8 @@ class userKNN:
             return rank[:n_rec]
 
 
-
 class userKNN_67876:
     def __init__(self, sim_option="pearson", k=50, min_support=1, baseline=True):
-        import faiss
         self.k = k
         self.min_support = min_support
         self.baseline = baseline
@@ -135,6 +133,7 @@ class userKNN_67876:
             raise ValueError("sim_option %s not allowed" % sim_option)
 
     def fit(self, dataset):
+        import faiss
         self.global_mean = dataset.global_mean
         self.default_prediction = dataset.global_mean
         self.train_user = dataset.train_user
@@ -152,6 +151,7 @@ class userKNN_67876:
         return self
 
     def predict(self, u, i):
+        import faiss
         i_users = np.array(list(set(self.train_item[i]) - set([u])))  # exclude u
         index_dict = dict(zip(np.arange(len(i_users)), i_users))
         sim_model = faiss.IndexFlatL2(self.n_items)
