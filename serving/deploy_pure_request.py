@@ -27,5 +27,5 @@ if __name__ == "__main__":
     except json.decoder.JSONDecodeError:
         print("Oh noooooooooooooo, you should choose algorithm wisely...")
 
-#  python deploy_request.py --user 1 --item 3 -k 10 -n 10
+#  python deploy_pure_request.py --user 1 --item 3 -k 10 -n 10
 
