@@ -48,8 +48,15 @@ def bad_request(error=None):
     return resp
 
 
-def feature_transform(data, feat_builder_path, conf_path):
-    with open(feat_builder_path, 'rb') as f:
+def feature_transform(data, fb_path, conf_path):
+    """
+    transform data into model input format
+    :param data: original data
+    :param feat_builder_path: saved feature_builder object path
+    :param conf_path: saved configure file path
+    :return: feature indices, feature values
+    """
+    with open(fb_path, 'rb') as f:
         feat_builder = joblib.load(f)
     with open(conf_path, 'rb') as f:
         conf = joblib.load(f)
@@ -89,6 +96,7 @@ def feature_transform(data, feat_builder_path, conf_path):
     return feat_indices, feat_values
 
 
-
 if __name__ == "__main__":
     app.run(debug=True, port=5000)  #  host="0.0.0.0"
+    # export FLASK_APP=deploy_feat_flask.py | export FLASK_ENV=development | flask run
+
