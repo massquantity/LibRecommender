@@ -34,7 +34,7 @@ if __name__ == "__main__":
     except json.decoder.JSONDecodeError:
         print("Oh noooooooooooooo, you should choose algorithm wisely...")
 
-#  python deploy_request.py --user 1 --item 3 -k 10 -n 10
+#  python deploy_pure_request.py --user 1 --item 3 -k 10 -n 10
 
-#  python deploy_FM_request.py --data '{"user": 1, "item": 1193, "sex": "F", "age": 1,
+#  python deploy_feat_request.py --data '{"user": 1, "item": 1193, "sex": "F", "age": 1,
 #  "occupation": 10, "title": 2452.0, "genre1": "Drama", "genre2": "missing", "genre3": "missing"}' --algo FM
