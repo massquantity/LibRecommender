@@ -17,6 +17,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()         # http://127.0.0.1:5000/predict
     url = "http://{host}:{port}/{algo}".format(host=args.host, port=args.port, algo=args.algo)
+    # if os.path.isfile(args.data)  elif isinstance(args.data, str)
     data_dict = json.loads(args.data)
     data = {"user": [data_dict["user"]],
             "item": [data_dict["item"]],
