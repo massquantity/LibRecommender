@@ -43,7 +43,7 @@ if __name__ == "__main__":
     dataset.build_dataset(**conf)
 #    dataset.build_dataset(data_path="ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
 #                          numerical_col=None, categorical_col=[3, 4, 5, 6], merged_categorical_col=[[7, 8, 9]],
-#                          item_sample_col=[6, 7, 8, 9],  #####################################################
+#                          item_sample_col=[6, 7, 8, 9],
 #                          convert_implicit=True, build_negative=True, num_neg=1, batch_size=256)
 #                         numerical_col=None, categorical_col=[3, 4, 5, 6, 7, 8], merged_categorical_col=None)
 #    dataset.leave_k_out_split(4, data_path="ml-1m/merged_data.csv", length="all", sep=",", shuffle=True,
