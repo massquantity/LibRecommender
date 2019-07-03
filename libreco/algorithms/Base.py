@@ -15,7 +15,3 @@ class Base(object):
     @abstractmethod
     def predict(self):
         raise NotImplementedError
-
-#    @abstractmethod
-#    def export_model(self):
-#        raise NotImplementedError
