@@ -109,20 +109,14 @@ def invert_sim(data, n_users, min_support=5):
     denom2 = np.zeros((n_users, n_users))
     sim = np.zeros((n_users, n_users))
 
-    t0 = time.time()
     for i, u_labels in data.items():
-    #    start_time = time.time()
         for ui, li in u_labels.items():
             for uj, lj in u_labels.items():
                 num[ui, uj] += 1
                 prods[ui, uj] += li * lj
                 denom1[ui, uj] += li * li
                 denom2[ui, uj] += lj * lj
-    #    print("item time: {:.2f}".format(time.time() - start_time))
-    print("time1: ", time.time() - t0)
 
-
-    t1 = time.time()
     for ui in range(n_users):
         sim[ui, ui] = 1.0
         for uj in range(ui + 1, n_users):
@@ -135,7 +129,6 @@ def invert_sim(data, n_users, min_support=5):
                 except ZeroDivisionError:
                     sim[ui, uj] = 0.0
             sim[uj, ui] = sim[ui, uj]
-    print("time2: ", time.time() - t1)
     return sim
 
 
