@@ -74,13 +74,13 @@ class DatasetPure:
             if i <= int(train_frac * length):
                 self.train_user_indices.append(user_id)
                 self.train_item_indices.append(item_id)
-                self.train_labels.append(int(label))
-                self.train_user[user_id].update(dict(zip([item_id], [int(label)])))
-                self.train_item[item_id].update(dict(zip([user_id], [int(label)])))
+                self.train_labels.append(float(label))
+                self.train_user[user_id].update(dict(zip([item_id], [float(label)])))  ### convert to float
+                self.train_item[item_id].update(dict(zip([user_id], [float(label)])))
             else:
                 self.test_user_indices.append(user_id)
                 self.test_item_indices.append(item_id)
-                self.test_labels.append(int(label))
+                self.test_labels.append(float(label))
 
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
@@ -92,8 +92,8 @@ class DatasetPure:
                                    np.expand_dims(self.test_labels, 1)], axis=1)
         test_safe = test_all[(test_all[:, 0] < self.n_users) & (test_all[:, 1] < self.n_items)]
         test_danger = test_all[(test_all[:, 0] >= self.n_users) & (test_all[:, 1] >= self.n_items)]
-        self.test_user_indices = test_safe[:, 0]
-        self.test_item_indices = test_safe[:, 1]
+        self.test_user_indices = test_safe[:, 0].astype(int)
+        self.test_item_indices = test_safe[:, 1].astype(int)
         self.test_labels = test_safe[:, 2]
 
         if convert_implicit:
