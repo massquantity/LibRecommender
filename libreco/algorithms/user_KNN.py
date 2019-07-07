@@ -4,7 +4,7 @@ from operator import itemgetter
 import numpy as np
 # import faiss
 from ..utils.similarities import *
-from ..utils.similarities_cy import cosine_cy, cosine
+from ..utils.similarities_cy import cosine_cy, cosine_cym
 from ..utils.baseline_estimates import baseline_als, baseline_sgd
 
 
@@ -31,14 +31,18 @@ class userKNN:
         ids = list(self.train_user.keys())
         item_user_list = {k: list(v.items()) for k, v in dataset.train_item.items()}
         t0 = time.time()
-        self.sim = cosine_cy(dataset.n_users, item_user_list, min_support=self.min_support)
-    #    self.sim = cosine(dataset.n_users, item_user_list, min_support=self.min_support)
+    #    self.sim = cosine_cy(dataset.n_users, item_user_list, min_support=self.min_support)
+    #    self.sim = cosine_cym(dataset.n_users, item_user_list, min_support=self.min_support)
 
 
     #    self.sim = get_sim(self.train_user, self.sim_option, n, ids, min_support=self.min_support)
     #    with open(os.path.join(os.path.abspath(os.path.pardir), "sim_matrix.pkl")) as f:
     #        pickle.dump(self.sim, f)
     #    self.sim = invert_sim(self.train_item, n, min_support=self.min_support)
+
+        self.sim = sk_sim_cy(self.train_item, dataset.n_users, dataset.n_items,
+                          min_support=self.min_support, sparse=True)
+
     #    self.sim = sk_sim(self.train_item, dataset.n_users, dataset.n_items,
     #                      min_support=self.min_support, sparse=True)
         print("sim time: ", time.time() - t0)
