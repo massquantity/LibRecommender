@@ -166,5 +166,32 @@ def sk_sim(data, n_users, n_items, min_support=5, sparse=True):
     return sim
 
 
+from .similarities_cy import sk_num
+def sk_sim_cy(data, n_users, n_items, min_support=5, sparse=True):
+    if sparse:
+        user_indices = []
+        item_indices = []
+        values = []
+        for i, u_ratings in data.items():
+            for u, r in u_ratings.items():
+                user_indices.append(u)
+                item_indices.append(i)
+                values.append(r)
+        m = csr_matrix((np.array(values), (np.array(user_indices), np.array(item_indices))))
+        assert issparse(m)
+    else:
+        m = np.zeros((n_users, n_items))
+        for i, u_ratings in data.items():
+            for u, r in u_ratings.items():
+                m[u, i] = r
 
+    sim = cosine_similarity(m)
 
+    if min_support > 0:
+        item_user_sklearn = {k: list(v.keys()) for k, v in data.items()}
+        num = sk_num(n_users, item_user_sklearn)
+        indices = np.where(num < min_support)
+        sim[indices[0], indices[1]] = 0.0
+        print("diag sim, ", min(np.diag(sim)))
+
+    return sim
