@@ -166,7 +166,7 @@ def sk_sim(data, n_users, n_items, min_support=5, sparse=True):
     return sim
 
 
-from .similarities_cy import sk_num
+# from .similarities_cy import sk_num
 def sk_sim_cy(data, n_users, n_items, min_support=5, sparse=True):
     if sparse:
         user_indices = []
