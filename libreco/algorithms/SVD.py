@@ -1,7 +1,8 @@
 import time
 from operator import itemgetter
 import numpy as np
-from ..evaluate import rmse_svd
+from ..evaluate import rmse, MAP_at_k
+from ..utils.initializers import truncated_normal
 try:
     import tensorflow as tf
 except ModuleNotFoundError:
@@ -9,20 +10,21 @@ except ModuleNotFoundError:
 
 
 class SVD:
-    def __init__(self, n_factors=100, n_epochs=20, reg=5.0, seed=42):
+    def __init__(self, n_factors=100, n_epochs=20, reg=5.0, task="rating", seed=42):
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.reg = reg
+        self.task = task
         self.seed = seed
 
-    def fit(self, dataset):
+    def fit(self, dataset, verbose=1):
         np.random.seed(self.seed)
         self.dataset = dataset
         self.default_prediction = dataset.global_mean
-        self.pu = np.random.normal(loc=0.0, scale=0.1,
-                                   size=(dataset.n_users, self.n_factors))
-        self.qi = np.random.normal(loc=0.0, scale=0.1,
-                                   size=(dataset.n_items, self.n_factors))
+        self.pu = truncated_normal(shape=(dataset.n_users, self.n_factors),
+                                   mean=0.0, scale=0.05)
+        self.qi = truncated_normal(shape=(dataset.n_items, self.n_factors),
+                                   mean=0.0, scale=0.05)
 
         for epoch in range(1, self.n_epochs + 1):
             t0 = time.time()
@@ -37,7 +39,6 @@ class SVD:
 
             for i in dataset.train_item:
                 i_users = np.array(list(dataset.train_item[i].keys()))
-            #    if len(i_users) == 0: continue
                 i_ratings = np.array(list(dataset.train_item[i].values()))
                 i_ratings_expand = np.expand_dims(i_ratings, axis=1)
                 xx_reg = self.pu[i_users].T.dot(self.pu[i_users]) + \
@@ -45,11 +46,14 @@ class SVD:
                 r_x = np.sum(np.multiply(i_ratings_expand, self.pu[i_users]), axis=0)
                 self.qi[i] = np.linalg.inv(xx_reg).dot(r_x)
 
-
-            if epoch % 5 == 0:
+            if verbose > 0 and epoch % 5 == 0 and self.task == "rating":
                 print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
-                print("training rmse: ", self.rmse(dataset, "train"))
-                print("test rmse: ", self.rmse(dataset, "test"))
+                print("training rmse: ", rmse(self, dataset, "train"))
+                print("test rmse: ", rmse(self, dataset, "test"))
+            elif verbose > 0 and epoch % 5 == 0 and self.task == "ranking":
+                print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
+                print("MAP@{}: {:.4f}".format(5, MAP_at_k(self, dataset, 5)))
+
         return self
 
     def predict(self, u, i):
@@ -61,8 +65,15 @@ class SVD:
         return pred
 
     def topN(self, u, n_rec, random_rec=False):
-        rank = [(j, self.predict(u, j)) for j in range(len(self.qi))
-                if j not in self.dataset.train_user[u]]
+        unlabled_items = list(set(range(self.dataset.n_items)) - set(self.dataset.train_user[u]))
+        if np.any(np.array(unlabled_items) > self.dataset.n_items):
+            rank = [(j, self.predict(u, j)) for j in range(len(self.qi))
+                    if j not in self.dataset.train_user[u]]
+        else:
+            pred = np.dot(self.pu[u], self.qi[unlabled_items].T)
+            pred = np.clip(pred, 1, 5)
+            rank = list(zip(unlabled_items, pred))
+
         if random_rec:
             item_pred_dict = {j: r for j, r in rank if r >= 4}
             item_list = list(item_pred_dict.keys())
@@ -74,23 +85,6 @@ class SVD:
         else:
             rank.sort(key=itemgetter(1), reverse=True)
             return rank[:n_rec]
-
-    def rmse(self, dataset, mode="train"):
-        if mode == "train":
-            user_indices = dataset.train_user_indices
-            item_indices = dataset.train_item_indices
-            ratings = dataset.train_ratings
-        elif mode == "test":
-            user_indices = dataset.test_user_indices
-            item_indices = dataset.test_item_indices
-            ratings = dataset.test_ratings
-
-        pred = []
-        for u, i in zip(user_indices, item_indices):
-            p = self.predict(u, i)
-            pred.append(p)
-        score = np.sqrt(np.mean(np.power(pred - ratings, 2)))
-        return score
 
 
 class SVDBaseline:
@@ -104,7 +98,7 @@ class SVDBaseline:
         self.batch_training = batch_training
         self.seed = seed
 
-    def fit(self, dataset):
+    def fit(self, dataset, verbose=1):
         np.random.seed(self.seed)
         self.dataset = dataset
         self.global_mean = dataset.global_mean
@@ -120,7 +114,7 @@ class SVDBaseline:
                 t0 = time.time()
                 for u, i, r in zip(dataset.train_user_indices,
                                    dataset.train_item_indices,
-                                   dataset.train_ratings):
+                                   dataset.train_labels):
                     dot = np.dot(self.qi[i], self.pu[u])
                     err = r - (self.global_mean + self.bu[u] + self.bi[i] + dot)
                     self.bu[u] += self.lr * (err - self.reg * self.bu[u])
@@ -128,19 +122,20 @@ class SVDBaseline:
                     self.pu[u] += self.lr * (err * self.qi[i] - self.reg * self.pu[u])
                     self.qi[i] += self.lr * (err * self.pu[u] - self.reg * self.qi[i])
 
-                if epoch % 1 == 0:
+                if verbose > 0:
                     print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
-                    print("training rmse: ", self.rmse(dataset, "train"))
-                    print("test rmse: ", self.rmse(dataset, "test"))
+                    print("training rmse: ", rmse(self, dataset, "train"))
+                    print("test rmse: ", rmse(self, dataset, "test"))
+
         else:
             for epoch in range(1, self.n_epochs + 1):
                 t0 = time.time()
-                n_batches = len(dataset.train_ratings) // self.batch_size
+                n_batches = len(dataset.train_labels) // self.batch_size
                 for n in range(n_batches):
-                    end = min(len(dataset.train_ratings), (n + 1) * self.batch_size)
+                    end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
                     u = dataset.train_user_indices[n * self.batch_size: end]
                     i = dataset.train_item_indices[n * self.batch_size: end]
-                    r = dataset.train_ratings[n * self.batch_size: end]
+                    r = dataset.train_labels[n * self.batch_size: end]
 
                     dot = np.sum(np.multiply(self.pu[u], self.qi[i]), axis=1)
                     err = r - (self.global_mean + self.bu[u] + self.bi[i] + dot)
@@ -149,10 +144,10 @@ class SVDBaseline:
                     self.pu[u] += self.lr * (err.reshape(-1, 1) * self.qi[i] - self.reg * self.pu[u])
                     self.qi[i] += self.lr * (err.reshape(-1, 1) * self.pu[u] - self.reg * self.qi[i])
 
-                if epoch % 10 == 0:
+                if verbose > 0 and epoch % 10 == 0:
                     print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
-                    print("training rmse: ", self.rmse(dataset, "train"))
-                    print("test rmse: ", self.rmse(dataset, "test"))
+                    print("training rmse: ", rmse(self, dataset, "train"))
+                    print("test rmse: ", rmse(self, dataset, "test"))
 
 
     def predict(self, u, i):
@@ -162,23 +157,6 @@ class SVDBaseline:
         except IndexError:
             pred = self.global_mean
         return pred
-
-    def rmse(self, dataset, mode="train"):
-        if mode == "train":
-            user_indices = dataset.train_user_indices
-            item_indices = dataset.train_item_indices
-            ratings = dataset.train_ratings
-        elif mode == "test":
-            user_indices = dataset.test_user_indices
-            item_indices = dataset.test_item_indices
-            ratings = dataset.test_ratings
-
-        pred = []
-        for u, i in zip(user_indices, item_indices):
-            p = self.predict(u, i)
-            pred.append(p)
-        score = np.sqrt(np.mean(np.power(pred - ratings, 2)))
-        return score
 
 
 class SVD_tf:
