@@ -276,7 +276,7 @@ class DeepFM:
                         self.sess.run(self.training_op, feed_dict={self.user_indices: user_batch,
                                                                    self.item_indices: item_batch,
                                                                    self.labels: rating_batch})
-                    if epoch % 1 == 0:
+                    if epoch % 1 == 0 and verbose > 0:
                         train_rmse = self.sess.run(self.rmse, feed_dict={self.user_indices: dataset.train_user_indices,
                                                                          self.item_indices: dataset.train_item_indices,
                                                                          self.labels: dataset.train_ratings})
