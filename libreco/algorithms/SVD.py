@@ -30,20 +30,20 @@ class SVD:
             t0 = time.time()
             for u in dataset.train_user:
                 u_items = np.array(list(dataset.train_user[u].keys()))
-                u_ratings = np.array(list(dataset.train_user[u].values()))
-                u_ratings_expand = np.expand_dims(u_ratings, axis=1)
+                u_labelss = np.array(list(dataset.train_user[u].values()))
+                u_labelss_expand = np.expand_dims(u_labelss, axis=1)
                 yy_reg = self.qi[u_items].T.dot(self.qi[u_items]) + \
                          self.reg * np.eye(self.n_factors)
-                r_y = np.sum(np.multiply(u_ratings_expand, self.qi[u_items]), axis=0)
+                r_y = np.sum(np.multiply(u_labelss_expand, self.qi[u_items]), axis=0)
                 self.pu[u] = np.linalg.inv(yy_reg).dot(r_y)
 
             for i in dataset.train_item:
                 i_users = np.array(list(dataset.train_item[i].keys()))
-                i_ratings = np.array(list(dataset.train_item[i].values()))
-                i_ratings_expand = np.expand_dims(i_ratings, axis=1)
+                i_labelss = np.array(list(dataset.train_item[i].values()))
+                i_labelss_expand = np.expand_dims(i_labelss, axis=1)
                 xx_reg = self.pu[i_users].T.dot(self.pu[i_users]) + \
                          self.reg * np.eye(self.n_factors)
-                r_x = np.sum(np.multiply(i_ratings_expand, self.pu[i_users]), axis=0)
+                r_x = np.sum(np.multiply(i_labelss_expand, self.pu[i_users]), axis=0)
                 self.qi[i] = np.linalg.inv(xx_reg).dot(r_x)
 
             if verbose > 0 and epoch % 5 == 0 and self.task == "rating":
@@ -64,7 +64,7 @@ class SVD:
             pred = self.default_prediction
         return pred
 
-    def topN(self, u, n_rec, random_rec=False):
+    def recommend_user(self, u, n_rec, random_rec=False):
         unlabled_items = list(set(range(self.dataset.n_items)) - set(self.dataset.train_user[u]))
         if np.any(np.array(unlabled_items) > self.dataset.n_items):
             rank = [(j, self.predict(u, j)) for j in range(len(self.qi))
@@ -159,7 +159,7 @@ class SVDBaseline:
         return pred
 
 
-class SVD_tf:
+class SVD_tf_78987:
     def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=1e-3,
                  batch_size=256, batch_training=True, seed=42):
         self.n_factors = n_factors
@@ -187,7 +187,7 @@ class SVD_tf:
         self.loss = tf.reduce_sum(
                         tf.square(
                             tf.subtract(
-                                tf.cast(self.ratings, tf.float32), self.pred)))
+                                tf.cast(self.labels, tf.float32), self.pred)))
 
         self.reg_pu = tf.contrib.layers.l2_regularizer(self.reg)(self.pu)
         self.reg_qi = tf.contrib.layers.l2_regularizer(self.reg)(self.qi)
@@ -210,27 +210,27 @@ class SVD_tf:
         if data_mode == "placeholder":
             self.user_indices = tf.placeholder(tf.int32, shape=[None])
             self.item_indices = tf.placeholder(tf.int32, shape=[None])
-            self.ratings = tf.placeholder(tf.int32, shape=[None])
+            self.labels = tf.placeholder(tf.int32, shape=[None])
         elif data_mode == "structure":
             iterator = tf.data.Iterator.from_structure(dataset.trainset_tf.output_types,
                                                        dataset.trainset_tf.output_shapes)
             sample = iterator.get_next()
             self.user_indices = sample['user']
             self.item_indices = sample['item']
-            self.ratings = sample['rating']
+            self.labels = sample['labels']
             iterator_init = iterator.make_initializer(dataset.trainset_tf)
         elif data_mode == "repeat":
             iterator = dataset.trainset_tf.repeat(self.n_epochs).make_one_shot_iterator()
             sample = iterator.get_next()
             self.user_indices = sample['user']
             self.item_indices = sample['item']
-            self.ratings = sample['rating']
+            self.labels = sample['labels']
         elif data_mode == "make":
             iterator = dataset.trainset_tf.make_initializable_iterator()
             sample = iterator.get_next()
             self.user_indices = sample['user']
             self.item_indices = sample['item']
-            self.ratings = sample['rating']
+            self.labels = sample['labels']
             iterator_init = iterator.initializer
         else:
             raise ValueError("data_mode must be one of these: {}".format(
@@ -245,22 +245,22 @@ class SVD_tf:
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
                     if not self.batch_training:
-                        self.sess.run(self.training_op, feed_dict={self.ratings: dataset.train_ratings,
+                        self.sess.run(self.training_op, feed_dict={self.labels: dataset.train_labels,
                                                                    self.user_indices: dataset.train_user_indices,
                                                                    self.item_indices: dataset.train_item_indices})
                     else:
-                        n_batches = len(dataset.train_ratings) // self.batch_size
+                        n_batches = len(dataset.train_labels) // self.batch_size
                         for n in range(n_batches):  # batch training
-                            end = min(len(dataset.train_ratings), (n + 1) * self.batch_size)
-                            r = dataset.train_ratings[n * self.batch_size: end]
+                            end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
+                            r = dataset.train_labels[n * self.batch_size: end]
                             u = dataset.train_user_indices[n * self.batch_size: end]
                             i = dataset.train_item_indices[n * self.batch_size: end]
-                            self.sess.run([self.training_op], feed_dict={self.ratings: r,
+                            self.sess.run([self.training_op], feed_dict={self.labels: r,
                                                                          self.user_indices: u,
                                                                          self.item_indices: i})
 
                         train_loss = self.sess.run(self.total_loss,
-                                                   feed_dict={self.ratings: dataset.train_ratings,
+                                                   feed_dict={self.labels: dataset.train_labels,
                                                               self.user_indices: dataset.train_user_indices,
                                                               self.item_indices: dataset.train_item_indices})
                     print("Epoch: ", epoch, "\ttrain loss: {}".format(train_loss))
@@ -273,7 +273,7 @@ class SVD_tf:
                     sample = iterator.get_next()
                     self.user_indices = sample['user']
                     self.item_indices = sample['item']
-                    self.ratings = sample['rating']
+                    self.labels = sample['labels']
                     try:
                         while True:
                             train_loss, _ = self.sess.run([self.total_loss, self.training_op])
@@ -319,10 +319,157 @@ class SVD_tf:
             pred = self.global_mean
         return pred
 
-#    def predict(self, u, i):
-#        r = np.zeros(len(u))
-#        pred = self.sess.run(self.pred, feed_dict={self.ratings: r,
-#                                                   self.user_indices: u,
-#                                                   self.item_indices: i})
-#        pred = np.clip(pred, 1, 5)
-#        return pred
+    def predict_2(self, u, i):
+        r = np.zeros(len(u))
+        pred = self.sess.run(self.pred, feed_dict={self.labels: r,
+                                                   self.user_indices: u,
+                                                   self.item_indices: i})
+        pred = np.clip(pred, 1, 5)
+        return pred
+
+
+class SVD_tf:
+    def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=1e-3,
+                 batch_size=256, seed=42):
+        self.n_factors = n_factors
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.reg = reg
+        self.batch_size = batch_size
+        self.seed = seed
+
+    def build_model(self, dataset):
+        self.bu = tf.Variable(tf.zeros([dataset.n_users]))
+        self.bi = tf.Variable(tf.zeros([dataset.n_items]))
+        self.pu = tf.Variable(tf.random_normal([dataset.n_users, self.n_factors], 0.0, 0.01))
+        self.qi = tf.Variable(tf.random_normal([dataset.n_items, self.n_factors], 0.0, 0.01))
+
+        self.bias_user = tf.nn.embedding_lookup(self.bu, self.user_indices)
+        self.bias_item = tf.nn.embedding_lookup(self.bi, self.item_indices)
+        self.embed_user = tf.nn.embedding_lookup(self.pu, self.user_indices)
+        self.embed_item = tf.nn.embedding_lookup(self.qi, self.item_indices)
+
+        self.pred = self.global_mean + self.bias_user + self.bias_item + \
+                    tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item), axis=1)
+
+        self.loss = tf.reduce_sum(
+                        tf.square(
+                            tf.subtract(
+                                tf.cast(self.labels, tf.float32), self.pred)))
+
+        self.reg_pu = tf.contrib.layers.l2_regularizer(self.reg)(self.pu)
+        self.reg_qi = tf.contrib.layers.l2_regularizer(self.reg)(self.qi)
+        self.reg_bu = tf.contrib.layers.l2_regularizer(self.reg)(self.bu)
+        self.reg_bi = tf.contrib.layers.l2_regularizer(self.reg)(self.bi)
+        self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi])
+
+        self.optimizer = tf.train.AdamOptimizer(self.lr)
+    #    self.optimizer = tf.train.GradientDescentOptimizer(self.lr)
+        self.training_op = self.optimizer.minimize(self.total_loss)
+
+    def fit(self, dataset, data_mode="placeholder"):
+        """
+        :param dataset:
+        :param mode: either "placeholder", "structure", "repeat" or "make"
+        :return:
+        """
+        tf.set_random_seed(self.seed)
+        self.global_mean = dataset.global_mean
+        if data_mode == "placeholder":
+            self.user_indices = tf.placeholder(tf.int32, shape=[None])
+            self.item_indices = tf.placeholder(tf.int32, shape=[None])
+            self.labels = tf.placeholder(tf.int32, shape=[None])
+        elif data_mode == "make":
+            trainset_tf = dataset.trainset_tf.batch(self.batch_size)
+            iterator = trainset_tf.make_initializable_iterator()
+            sample = iterator.get_next()
+            self.user_indices = sample['user']
+            self.item_indices = sample['item']
+            self.labels = sample['label']
+            iterator_init = iterator.initializer
+        else:
+            raise ValueError("data_mode must be one of these: {}".format(
+                "placeholder", "structure", "repeat", "make"))
+
+        self.build_model(dataset)
+        init = tf.global_variables_initializer()
+        self.sess = tf.Session()
+        self.sess.run(init)
+        with self.sess.as_default():
+            if data_mode == "placeholder":
+                for epoch in range(1, self.n_epochs + 1):
+                    t0 = time.time()
+                    n_batches = int(np.ceil(len(dataset.train_labels) / self.batch_size))
+                    for n in range(n_batches):  # batch training
+                        end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
+                        r = dataset.train_labels[n * self.batch_size: end]
+                        u = dataset.train_user_indices[n * self.batch_size: end]
+                        i = dataset.train_item_indices[n * self.batch_size: end]
+                        self.sess.run([self.training_op], feed_dict={self.labels: r,
+                                                                     self.user_indices: u,
+                                                                     self.item_indices: i})
+
+                    train_loss = self.sess.run(self.total_loss,
+                                               feed_dict={self.labels: dataset.train_labels,
+                                                          self.user_indices: dataset.train_user_indices,
+                                                          self.item_indices: dataset.train_item_indices})
+                    print("Epoch: ", epoch, "\ttrain loss: {}".format(train_loss))
+                    print("Epoch {}, training time: {:.4f}".format(epoch + 1, time.time() - t0))
+
+            elif data_mode == "make":
+                for epoch in range(1, self.n_epochs + 1):
+                    t0 = time.time()
+                    self.sess.run(iterator_init)
+                    while True:
+                        try:
+                            self.sess.run(self.training_op)
+                        except tf.errors.OutOfRangeError:
+                            break
+                    #    train_loss = sess.run(self.total_loss)
+                    train_loss = self.evaluate(dataset.train_user_indices,
+                                               dataset.train_item_indices,
+                                               dataset.train_labels)
+                    print("Epoch: ", epoch, "\ttrain loss: {}".format(train_loss))
+                    print("Epoch {}, training time: {:.4f}".format(epoch + 1, time.time() - t0))
+
+            self.pu = self.pu.eval()
+            self.qi = self.qi.eval()
+            self.bu = self.bu.eval()
+            self.bi = self.bi.eval()
+
+
+    def predict(self, u, i):
+        try:
+            pred = np.dot(self.pu[u], self.qi[i]) + \
+                   self.global_mean + \
+                   self.bu[u] + \
+                   self.bi[i]
+            pred = np.clip(pred, 1, 5)
+        except IndexError:
+            pred = self.global_mean
+        return pred
+
+    def predict_2(self, u, i):
+        r = np.zeros(len(u))
+        pred = self.sess.run(self.pred, feed_dict={self.labels: r,
+                                                   self.user_indices: u,
+                                                   self.item_indices: i})
+        pred = np.clip(pred, 1, 5)
+        return pred
+
+    def recommend_user(self, u):
+        pass
+
+    def evaluate(self, user, item, label):
+        iterator = tf.data.Dataset.from_tensor_slices(
+            {'user': user, 'item': item, 'label': label}).make_one_shot_iterator()
+        sample = iterator.get_next()
+        self.user_indices = sample['user']
+        self.item_indices = sample['item']
+        self.labels = sample['label']
+        while True:
+            try:
+                evaluate_loss, _ = self.sess.run([self.total_loss, self.training_op])
+            except tf.errors.OutOfRangeError:
+                break
+        return evaluate_loss
