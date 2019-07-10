@@ -4,7 +4,7 @@ from operator import itemgetter
 import numpy as np
 # import faiss
 from ..utils.similarities import *
-from ..utils.similarities_cy import cosine_cy, cosine_cym
+# from ..utils.similarities_cy import cosine_cy, cosine_cym
 from ..utils.baseline_estimates import baseline_als, baseline_sgd
 
 
@@ -96,7 +96,7 @@ class userKNN:
                 print("zero")
                 return self.default_prediction
 
-    def topN(self, u, k, n_rec, random_rec=False):
+    def recommend_user(self, u, k, n_rec, random_rec=False):
         rank = set()
     #    neighbors = [(self.sim[u, v], v) for v in range(len(self.sim))]
     #    k_neighbors = sorted(neighbors, key=itemgetter(0), reverse=True)[1:k+1]  # exclude u

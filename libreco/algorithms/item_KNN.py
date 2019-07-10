@@ -74,7 +74,7 @@ class itemKNN:
             except ZeroDivisionError:
                 return self.default_prediction
 
-    def topN(self, u, k, n_rec, random_rec=False):
+    def recommend_user(self, u, k, n_rec, random_rec=False):
         rank = []
         u_items = np.array(list(self.train_user[u].items()))
         u_items = [(i, r) for i, r in u_items if r > 3]
