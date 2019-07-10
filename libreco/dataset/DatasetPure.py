@@ -37,11 +37,11 @@ class DatasetPure:
         return loaded_data
 
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all", sep=",",
-                      train_frac=0.8, convert_implicit=False, build_negative=False, batch_size=256,
-                      seed=42, num_neg=None):
+                      train_frac=0.8, convert_implicit=False, build_negative=False, build_tf_dataset=False,
+                      batch_size=256, seed=42, num_neg=None):
         np.random.seed(seed)
         self.batch_size = batch_size
-        if num_neg is not None:
+        if isinstance(num_neg, int) and num_neg > 0:
             self.num_neg = num_neg
         index_user = 0
         index_item = 0
@@ -103,6 +103,10 @@ class DatasetPure:
         if build_negative:
             self.build_trainset_implicit(num_neg)
             self.build_testset_implicit(num_neg)
+
+        if build_tf_dataset:
+            self.load_tf_trainset(batch_size=self.batch_size)
+            self.load_tf_testset()
 
         print("testset size after: ", len(self.test_labels))
         return self
@@ -268,14 +272,14 @@ class DatasetPure:
     def load_tf_trainset(self, batch_size=1):
         trainset_tf = tf.data.Dataset.from_tensor_slices({'user': self.train_user_indices,
                                                           'item': self.train_item_indices,
-                                                          'rating': self.train_labels})
-        self.trainset_tf = trainset_tf.shuffle(len(self.train_labels)).batch(batch_size)
+                                                          'label': self.train_labels})
+        self.trainset_tf = trainset_tf.shuffle(len(self.train_labels))  #  .batch(batch_size)
         return self
 
     def load_tf_testset(self):
         testset_tf = tf.data.Dataset.from_tensor_slices({'user': self.test_user_indices,
                                                          'item': self.test_item_indices,
-                                                         'rating': self.test_labels})
+                                                         'label': self.test_labels})
         self.testset_tf = testset_tf.filter(lambda x: (x['user'] < self.n_users) & (x['item'] < self.n_items))
         return self
 
