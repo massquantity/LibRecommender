@@ -6,7 +6,7 @@ class Base(object):
 
     @abstractmethod
     def build_model(self):
-        raise NotImplementedError
+        pass
 
     @abstractmethod
     def fit(self):
