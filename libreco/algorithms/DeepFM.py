@@ -293,7 +293,7 @@ class DeepFM:
             elif self.task == "ranking":
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
-                    neg = negative_sampling(dataset, 4, self.batch_size)
+                    neg = NegativeSampling(dataset, 4, self.batch_size)
                     n_batches = len(dataset.train_label_implicit) // self.batch_size
                     for n in range(n_batches):
                         user_batch, item_batch, label_batch = neg.next_batch()
