@@ -20,6 +20,24 @@ def rmse(model, dataset, mode="train"):
     score = np.sqrt(np.mean(np.power(pred - labels, 2)))
     return score
 
+def accuracy(model, dataset, mode="train"):
+    if mode == "train":
+        user_indices = dataset.train_user_implicit
+        item_indices = dataset.train_item_implicit
+        labels = dataset.train_label_implicit
+    elif mode == "test":
+        user_indices = dataset.test_user_implicit
+        item_indices = dataset.test_item_implicit
+        labels = dataset.test_label_implicit
+
+    pred = []
+    for j, (u, i) in enumerate(zip(user_indices, item_indices)):
+        p = model.predict(u, i)
+        pred.append(p)
+   # print(pred[:10], pred[-10:])
+   # print(labels[:10], labels[-10:])
+    score = np.sum(labels == np.array(pred)) / len(labels)
+    return score
 
 def rmse_tf(model, dataset, mode="train"):
     if mode == "train":
