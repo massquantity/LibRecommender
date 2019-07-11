@@ -148,7 +148,7 @@ class SVD_tf:
     def fit(self, dataset, verbose=1):
         """
         :param dataset:
-        :param mode: either "placeholder", "structure", "repeat" or "make"
+        :param verbose: whether to print train & test metrics, could be slow...
         :return:
         """
         self.build_model(dataset)
@@ -240,8 +240,19 @@ class SVD_tf:
 
     def recommend_user(self, u, n_rec):
         items = np.arange(self.dataset.n_items)
-        preds = self.sess.run(self.pred, feed_dict={self.user_indices: [u],
-                                                     self.item_indices: items})
-        rank = list(zip(items, preds))
-        rank.sort(key=itemgetter(1), reverse=True)
-        return rank[:n_rec]
+        if self.task == "rating":
+            target = self.pred
+        elif self.task == "ranking":
+            target = self.y_prob
+
+        preds = self.sess.run(target, feed_dict={self.user_indices: [u],
+                                                 self.item_indices: items})
+        rank = np.argpartition(preds, -n_rec)[-n_rec:]
+        return sorted(zip(rank, preds[rank]), key=lambda x: -x[1])
+
+
+
+
+
+
+
