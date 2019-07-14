@@ -42,6 +42,7 @@ def cosine_cy(n, data, min_support=5):
 
 
 cimport cython
+from libc.math cimport sqrt, pow
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def cosine_cym(n, data, min_support=5):
@@ -60,8 +61,8 @@ def cosine_cym(n, data, min_support=5):
             for xj, rj in v:
                 freq[xi, xj] += 1
                 prods[xi, xj] += ri * rj
-                sqi[xi, xj] += ri**2
-                sqj[xi, xj] += rj**2
+                sqi[xi, xj] += pow(ri, 2)
+                sqj[xi, xj] += pow(rj, 2)
 
     for xi in range(n):
         sim[xi, xi] = 1
@@ -69,7 +70,7 @@ def cosine_cym(n, data, min_support=5):
             if freq[xi, xj] < min_sup:
                 sim[xi, xj] = 0
             else:
-                denum = np.sqrt(sqi[xi, xj] * sqj[xi, xj])
+                denum = sqrt(sqi[xi, xj] * sqj[xi, xj])
                 sim[xi, xj] = prods[xi, xj] / denum
                 
             sim[xj, xi] = sim[xi, xj]
