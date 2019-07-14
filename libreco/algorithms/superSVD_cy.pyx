@@ -53,14 +53,16 @@ class superSVD_cy:
         time_sim = time.time()
     #    self.intersect_user_item_train = get_intersect(dataset, self.sim_option,
     #                                                   self.min_support, self.k, load=True)
-        self.intersect_items_all, self.intersect_indices_all, self.u_labels_all, self.base_neighbor_all = \
-            get_intersect(dataset, self.sim_option, self.min_support, self.k, load=True, 
-                          baseline_user=self.bbu, baseline_item=self.bbi)
+        self.intersect_items_all, self.intersect_indices_all, self.u_labels_all = \
+            get_intersect(dataset, self.sim_option, self.min_support, self.k, load=True)
         print("sim intersect time: {:.4f}".format(time.time() - time_sim))
 
         self.u_items_all = []
         for u in self.train_user_indices:
             self.u_items_all.append(list(dataset.train_user[u]))
+
+    #    self.bbu = list(self.bbu)
+    #    self.bbi = list(self.bbi)
 
         self.sgd(dataset)
 
@@ -79,8 +81,8 @@ class superSVD_cy:
         cdef double lr = self.lr
         cdef double reg = self.reg
 
-#        cdef np.ndarray[np.double_t] bbu = self.bbu
-#        cdef np.ndarray[np.double_t] bbi = self.bbi
+        cdef np.ndarray[np.double_t] bbu = self.bbu
+        cdef np.ndarray[np.double_t] bbi = self.bbi
         cdef np.ndarray[np.double_t] bu
         cdef np.ndarray[np.double_t] bi
         cdef np.ndarray[np.double_t, ndim=2] pu
@@ -162,12 +164,13 @@ class superSVD_cy:
                 #    base_neighbor = np.zeros((self.n_items,), np.double)
                 #    user_values = [v for v in self.train_user[u].values()]
                     u_labels = self.u_labels_all[p]
-                    base_neighbor = self.base_neighbor_all[p]
+                #    base_neighbor = self.base_neighbor_all[p]
                     ru = 0.0
                     nu = 0.0
                     for j in range(len(intersect_items)):
                         iis = intersect_items[j]
-                        ru += (u_labels[j] - base_neighbor[j]) * w[i, iis]
+                        base_neighbor = global_mean + bbu[u] + bbi[iis]
+                        ru += (u_labels[j] - base_neighbor) * w[i, iis]
                         nu += c[i, iis]
                     #    u_labels[intersect_items[j]] = user_values[index_u[j]]
                     #    base_neighbor[j] = global_mean + bbu[u] + bbi[intersect_items[j]]
@@ -197,7 +200,8 @@ class superSVD_cy:
 
                     for j in range(len(intersect_items)):
                         iis = intersect_items[j]
-                        w[i, iis] += lr * (err * (u_labels[j] - base_neighbor[j]) / user_sqrt - reg * w[i, iis])
+                        base_neighbor = global_mean + bbu[u] + bbi[iis]
+                        w[i, iis] += lr * (err * (u_labels[j] - base_neighbor) / user_sqrt - reg * w[i, iis])
                         c[i, iis] += lr * (err / user_sqrt - reg * c[i, iis])
 
 

@@ -1,8 +1,10 @@
 import time
+import math
 from operator import itemgetter
 import numpy as np
-from ..evaluate import rmse_svd
+from ..evaluate import rmse
 from ..utils.similarities import *
+from ..utils.similarities_cy import cosine_cy, cosine_cym
 from ..utils.intersect import get_intersect, get_intersect_tf
 from ..utils.baseline_estimates import baseline_als, baseline_sgd
 try:
@@ -13,7 +15,7 @@ except ModuleNotFoundError:
     print("you need tensorflow-eager for tf-version of this model")
 
 
-class superSVD:
+class superSVD_909:
     def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=5.0,
                  batch_training=True, k=50, min_support=1,
                  sim_option="pearson", seed=42):
@@ -45,10 +47,10 @@ class superSVD:
         self.train_item = dataset.train_item
         self.train_user_indices = dataset.train_user_indices
         self.train_item_indices = dataset.train_item_indices
-        self.train_ratings = dataset.train_ratings
+        self.train_labels = dataset.train_labels
         self.test_user_indices = dataset.test_user_indices
         self.test_item_indices = dataset.test_item_indices
-        self.test_ratings = dataset.test_ratings
+        self.test_labels = dataset.test_labels
         self.bbu, self.bbi = baseline_als(dataset)
 
         self.bu = np.zeros((self.n_users,))
@@ -65,16 +67,16 @@ class superSVD:
                                   size=(self.n_items, self.n_items))
         time_sim = time.time()
         self.intersect_user_item_train = get_intersect(dataset, self.sim_option,
-                                                       self.min_support, self.k)
+                                                       self.min_support, self.k, load=True)
         print("sim intersect time: {:.4f}".format(time.time() - time_sim))
         if not self.batch_training:
             for epoch in range(1, self.n_epochs + 1):
                 t0 = time.time()
                 for u, i, r in zip(self.train_user_indices,
                                    self.train_item_indices,
-                                   self.train_ratings):
+                                   self.train_labels):
                     u_items = list(self.train_user[u].keys())
-                    nu_sqrt = np.sqrt(len(u_items))
+                    nu_sqrt = math.sqrt(len(u_items))
                     nui = np.sum(self.yj[u_items], axis=0) / nu_sqrt
                     dot = np.dot(self.qi[i], self.pu[u] + nui)
                     intersect_items, index_u = self.intersect_user_item_train[(u, i)]
@@ -89,10 +91,10 @@ class superSVD:
                                                        self.reg * self.yj[u_items])
 
                     else:
-                        u_ratings = np.array(list(self.train_user[u].values()))[index_u]
+                        u_labels = np.array(list(self.train_user[u].values()))[index_u]
                         base_neighbor = self.global_mean + self.bbu[u] + self.bbi[intersect_items]
                         user_sqrt = np.sqrt(len(intersect_items))
-                        ru = np.sum((u_ratings - base_neighbor) * self.w[i][intersect_items]) / user_sqrt
+                        ru = np.sum((u_labels - base_neighbor) * self.w[i][intersect_items]) / user_sqrt
                         nu = np.sum(self.c[i][intersect_items]) / user_sqrt
                         err = r - (self.global_mean + self.bu[u] + self.bi[i] + dot + ru + nu)
 
@@ -103,7 +105,7 @@ class superSVD:
                         self.yj[u_items] += self.lr * (err * self.qi[u_items] / nu_sqrt -
                                                        self.reg * self.yj[u_items])
                         self.w[i][intersect_items] += \
-                            self.lr * (err * (u_ratings - base_neighbor) / user_sqrt -
+                            self.lr * (err * (u_labels - base_neighbor) / user_sqrt -
                                                                  self.reg * self.w[i][intersect_items])
                         self.c[i][intersect_items] += self.lr * (err / user_sqrt -
                                                                  self.reg * self.c[i][intersect_items])
@@ -119,8 +121,8 @@ class superSVD:
                 random_users = np.random.permutation(list(self.train_user.keys()))
                 for u in random_users:
                     u_items = list(self.train_user[u].keys())
-                    u_ratings = np.array(list(self.train_user[u].values()))
-                    nu_sqrt = np.sqrt(len(u_items))
+                    u_labels = np.array(list(self.train_user[u].values()))
+                    nu_sqrt = math.sqrt(len(u_items))
                     nui = np.sum(self.yj[u_items], axis=0) / nu_sqrt
                     dot = np.dot(self.qi[u_items], self.pu[u] + nui)
 
@@ -132,10 +134,10 @@ class superSVD:
                             ru.append(0)
                             nu.append(0)
                         else:
-                            u_ratings_intersect = np.array(list(self.train_user[u].values()))[index_u]
+                            u_labels_intersect = np.array(list(self.train_user[u].values()))[index_u]
                             base_neighbor = self.global_mean + self.bbu[u] + self.bbi[intersect_items]
                             user_sqrt = np.sqrt(len(intersect_items))
-                            ru_single = np.sum((u_ratings_intersect - base_neighbor) *
+                            ru_single = np.sum((u_labels_intersect - base_neighbor) *
                                                self.w[single_item][intersect_items]) / user_sqrt
                             nu_single = np.sum(self.c[single_item][intersect_items]) / user_sqrt
                             ru.append(ru_single)
@@ -143,7 +145,7 @@ class superSVD:
                     ru = np.array(ru)
                     nu = np.array(nu)
 
-                    err = u_ratings - (self.global_mean + self.bu[u] + self.bi[u_items] + dot + ru + nu)
+                    err = u_labels - (self.global_mean + self.bu[u] + self.bi[u_items] + dot + ru + nu)
                     err = err.reshape(len(u_items), 1)
                     self.bu[u] += self.lr * (np.sum(err) - self.reg * self.bu[u])
                     self.bi[u_items] += self.lr * (err.flatten() - self.reg * self.bi[u_items])
@@ -156,11 +158,11 @@ class superSVD:
                         if len(intersect_items) == 0:
                             continue
                         else:
-                            u_ratings = np.array(list(self.train_user[u].values()))[index_u]
+                            u_labels = np.array(list(self.train_user[u].values()))[index_u]
                             base_neighbor = self.global_mean + self.bbu[u] + self.bbi[intersect_items]
                             user_sqrt = np.sqrt(len(intersect_items))
                             self.w[single_item, intersect_items] += self.lr * (
-                                    error.flatten() * (u_ratings - base_neighbor) / user_sqrt -
+                                    error.flatten() * (u_labels - base_neighbor) / user_sqrt -
                                     self.reg * self.w[single_item, intersect_items])
                             self.c[single_item, intersect_items] += self.lr * (error.flatten() / user_sqrt -
                                                                     self.reg * self.c[single_item, intersect_items])
@@ -184,10 +186,10 @@ class superSVD:
             if len(intersect_items) == 0:
                 pass
             else:
-                u_ratings = np.array(list(self.train_user[u].values()))[index_u]
+                u_labels = np.array(list(self.train_user[u].values()))[index_u]
                 base_neighbor = self.global_mean + self.bbu[u] + self.bbi[intersect_items]
                 user_sqrt = np.sqrt(len(intersect_items))
-                ru = np.sum((u_ratings - base_neighbor) * self.w[i][intersect_items]) / user_sqrt
+                ru = np.sum((u_labels - base_neighbor) * self.w[i][intersect_items]) / user_sqrt
                 nu = np.sum(self.c[i][intersect_items]) / user_sqrt
                 pred += (ru + nu)
 
@@ -201,19 +203,18 @@ class superSVD:
         if mode == "train":
             user_indices = dataset.train_user_indices
             item_indices = dataset.train_item_indices
-            ratings = dataset.train_ratings
+            labels = dataset.train_labels
         elif mode == "test":
             user_indices = dataset.test_user_indices
             item_indices = dataset.test_item_indices
-            ratings = dataset.test_ratings
+            labels = dataset.test_labels
 
         pred = []
         for u, i in zip(user_indices, item_indices):
             p = self.predict(u, i)
             pred.append(p)
-        score = np.sqrt(np.mean(np.power(pred - ratings, 2)))
+        score = np.sqrt(np.mean(np.power(pred - labels, 2)))
         return score
-
 
 
 class superSVD_tf:
@@ -244,8 +245,8 @@ class superSVD_tf:
         train_item_indices = dataset.train_item_indices
         test_user_indices = dataset.test_user_indices
         test_item_indices = dataset.test_item_indices
-        train_ratings = dataset.train_ratings
-        test_ratings = dataset.test_ratings
+        train_labels = dataset.train_labels
+        test_labels = dataset.test_labels
         global_mean = dataset.global_mean
 
         bu = tf.Variable(tf.zeros([dataset.n_users]))
@@ -268,7 +269,7 @@ class superSVD_tf:
         #    for u, i in zip(dataset.train_user_indices, dataset.train_item_indices):
             data = tf.data.Dataset.from_tensor_slices((dataset.train_user_indices,
                                                        dataset.train_item_indices,
-                                                       dataset.train_ratings))
+                                                       dataset.train_labels))
             for one_element in tfe.Iterator(data):
                 u = one_element[0].numpy()
                 i = one_element[1].numpy()
@@ -287,18 +288,18 @@ class superSVD_tf:
                 if len(intersect_items) == 0:
                     pass
                 else:
-                    u_ratings = np.array(list(dataset.train_user[u].values()))[index_u]
+                    u_labels = np.array(list(dataset.train_user[u].values()))[index_u]
                     base_neighbor = global_mean + bbu[u] + bbi[intersect_items]
                     user_sqrt = tf.sqrt(tf.cast(tf.size(intersect_items), tf.float32))
                     ru = tf.cast(tf.reduce_sum(
-                            (u_ratings - base_neighbor) *
+                            (u_labels - base_neighbor) *
                                 tf.gather(tf.gather(w, i), intersect_items)), tf.float32) / user_sqrt
                     nu = tf.cast(tf.reduce_sum(tf.gather(tf.gather(c, i), intersect_items)), tf.float32) / user_sqrt
                     pred += ru + nu
                 pred_whole.append(pred)
 
             pred_whole = tf.convert_to_tensor(np.array(pred_whole))
-            score = tf.reduce_sum(tf.pow(pred_whole - dataset.train_ratings, 2)) + \
+            score = tf.reduce_sum(tf.pow(pred_whole - dataset.train_labels, 2)) + \
                         self.reg * (tf.nn.l2_loss(bu) + tf.nn.l2_loss(bi) + tf.nn.l2_loss(pu) +
                            tf.nn.l2_loss(qi) + tf.nn.l2_loss(yj) + tf.nn.l2_loss(w) + tf.nn.l2_loss(c))
             return score
@@ -342,10 +343,10 @@ class superSVD_tf:
             if len(intersect_items) == 0:
                 pass
             else:
-                u_ratings = np.array(list(self.dataset.train_user[u].values()))[index_u]
+                u_labels = np.array(list(self.dataset.train_user[u].values()))[index_u]
                 base_neighbor = self.global_mean + self.bbu[u] + self.bbi[intersect_items]
                 user_sqrt = np.sqrt(len(intersect_items))
-                ru = np.sum((u_ratings - base_neighbor) * self.w[i][intersect_items]) / user_sqrt
+                ru = np.sum((u_labels - base_neighbor) * self.w[i][intersect_items]) / user_sqrt
                 nu = np.sum(self.c[i][intersect_items]) / user_sqrt
                 pred += (ru + nu)
 
@@ -354,13 +355,6 @@ class superSVD_tf:
         except IndexError:
             pred = self.global_mean
         return pred
-
-
-
-
-
-
-
 
 class superSVD_tf_test:
     def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=5.0,
@@ -390,8 +384,8 @@ class superSVD_tf_test:
         train_item_indices = dataset.train_item_indices
         test_user_indices = dataset.test_user_indices
         test_item_indices = dataset.test_item_indices
-        train_ratings = dataset.train_ratings
-        test_ratings = dataset.test_ratings
+        train_labels = dataset.train_labels
+        test_labels = dataset.test_labels
         global_mean = dataset.global_mean
 
         bu = tf.Variable(tf.zeros([dataset.n_users]))
@@ -403,7 +397,7 @@ class superSVD_tf_test:
         c = tf.Variable(tf.random_normal([dataset.n_items * dataset.n_items, 1], 0.0, 0.01))
     #    bbu, bbi = baseline_als(dataset)
 
-        ratings = tf.placeholder(tf.int32, shape=[None])
+        labels = tf.placeholder(tf.int32, shape=[None])
         user_indices = tf.placeholder(tf.int32, shape=[None])
         item_indices = tf.placeholder(tf.int32, shape=[None])
         bias_user = tf.nn.embedding_lookup(bu, user_indices)
@@ -440,7 +434,7 @@ class superSVD_tf_test:
         loss = tf.reduce_sum(
             tf.square(
                 tf.subtract(
-                    tf.cast(ratings, tf.float32), pred)))
+                    tf.cast(labels, tf.float32), pred)))
 
         reg_pu = tf.contrib.layers.l2_regularizer(self.reg)(pu)
         reg_qi = tf.contrib.layers.l2_regularizer(self.reg)(qi)
@@ -457,12 +451,12 @@ class superSVD_tf_test:
         self.sess.run(init)
         for epoch in range(self.n_epochs):
             t0 = time.time()
-            self.sess.run(training_op, feed_dict={ratings: train_ratings,
+            self.sess.run(training_op, feed_dict={labels: train_labels,
                                                   user_indices: train_user_indices,
                                                   item_indices: train_item_indices})
 
             train_loss = self.sess.run(total_loss,
-                                       feed_dict={ratings: train_ratings,
+                                       feed_dict={labels: train_labels,
                                                   user_indices: train_user_indices,
                                                   item_indices: train_item_indices})
             print("Epoch: ", epoch + 1, "\ttrain loss: {}".format(train_loss))
@@ -482,10 +476,10 @@ class superSVD_tf_test:
             if len(intersect_items) == 0:
                 pass
             else:
-                u_ratings = np.array(list(self.dataset.train_user[u].values()))[index_u]
+                u_labels = np.array(list(self.dataset.train_user[u].values()))[index_u]
                 base_neighbor = self.global_mean + self.bbu[u] + self.bbi[intersect_items]
                 user_sqrt = np.sqrt(len(intersect_items))
-                ru = np.sum((u_ratings - base_neighbor) * self.w[i][intersect_items]) / user_sqrt
+                ru = np.sum((u_labels - base_neighbor) * self.w[i][intersect_items]) / user_sqrt
                 nu = np.sum(self.c[i][intersect_items]) / user_sqrt
                 pred += (ru + nu)
 
@@ -495,6 +489,214 @@ class superSVD_tf_test:
             pred = self.global_mean
         return pred
 
+class superSVD:
+    def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=5.0,
+                 batch_training=True, k=50, min_support=1,
+                 sim_option="pearson", seed=42):
+        self.n_factors = n_factors
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.reg = reg
+        self.batch_training = batch_training
+        self.seed = seed
+        self.k = k
+        self.min_support = min_support
+        if sim_option == "cosine":
+            self.sim_option = cosine_sim
+        elif sim_option == "msd":
+            self.sim_option = msd_sim
+        elif sim_option == "pearson":
+            self.sim_option = pearson_sim
+        else:
+            raise ValueError("sim_option %s not allowed" % sim_option)
 
 
+    def fit(self, dataset):
+        np.random.seed(self.seed)
+        self.dataset = dataset
+        self.global_mean = dataset.global_mean
+        self.n_users = dataset.n_users
+        self.n_items = dataset.n_items
+        self.train_user = dataset.train_user
+        self.train_item = dataset.train_item
+        self.train_user_indices = dataset.train_user_indices
+        self.train_item_indices = dataset.train_item_indices
+        self.train_labels = dataset.train_labels
+        self.test_user_indices = dataset.test_user_indices
+        self.test_item_indices = dataset.test_item_indices
+        self.test_labels = dataset.test_labels
+        self.bbu, self.bbi = baseline_als(dataset)
+
+        self.bu = np.zeros((self.n_users,))
+        self.bi = np.zeros((self.n_items,))
+        self.pu = np.random.normal(loc=0.0, scale=0.1,
+                                   size=(self.n_users, self.n_factors))
+        self.qi = np.random.normal(loc=0.0, scale=0.1,
+                                   size=(self.n_items, self.n_factors))
+        self.yj = np.random.normal(loc=0.0, scale=0.1,
+                                   size=(self.n_items, self.n_factors))
+        self.w = np.random.normal(loc=0.0, scale=0.1,
+                                  size=(self.n_items, self.n_items))
+        self.c = np.random.normal(loc=0.0, scale=0.1,
+                                  size=(self.n_items, self.n_items))
+        time_sim = time.time()
+        self.intersect_user_item_train = get_intersect(dataset, self.sim_option,
+                                                       self.min_support, self.k, load=True)
+        print("sim intersect time: {:.4f}".format(time.time() - time_sim))
+        if not self.batch_training:
+            for epoch in range(1, self.n_epochs + 1):
+                t0 = time.time()
+                for u, i, r in zip(self.train_user_indices,
+                                   self.train_item_indices,
+                                   self.train_labels):
+                    u_items = list(self.train_user[u].keys())
+                    nu_sqrt = math.sqrt(len(u_items))
+
+
+            #        nui = np.zeros(self.n_factors)
+            #        for j in u_items:
+            #            for f in range(self.n_factors):
+            #                nui[f] += self.yj[j, f] / nu_sqrt
+
+
+                    nui = np.sum(self.yj[u_items], axis=0) / nu_sqrt
+                    dot = np.dot(self.qi[i], self.pu[u] + nui)
+                    intersect_items, index_u = self.intersect_user_item_train[(u, i)]
+
+                    if len(intersect_items) == 0:
+                        err = r - (self.global_mean + self.bu[u] + self.bi[i] + dot)
+                        self.bu[u] += self.lr * (err - self.reg * self.bu[u])
+                        self.bi[i] += self.lr * (err - self.reg * self.bi[i])
+
+                        for f in range(self.n_factors):
+                            puf = self.pu[u, f]
+                            qif = self.qi[i, f]
+                            self.pu[u, f] += self.lr * (err * qif - self.reg * puf)
+                            self.qi[i, f] += self.lr * (err * (puf + nui[f]) - self.reg * qif)
+                #            for j in u_items:
+                #                self.yj[j, f] += self.lr * (err * qif / nu_sqrt - self.reg * self.yj[j, f])
+
+                #        self.pu[u] += self.lr * (err * self.qi[i] - self.reg * self.pu[u])
+                #        self.qi[i] += self.lr * (err * (self.pu[u] + nui) - self.reg * self.qi[i])
+                        self.yj[u_items] += self.lr * (err * self.qi[u_items] / nu_sqrt -
+                                                       self.reg * self.yj[u_items])
+
+                    else:
+                        u_labels = np.array(list(self.train_user[u].values()))[index_u]
+                        base_neighbor = self.global_mean + self.bbu[u] + self.bbi[intersect_items]
+                        user_sqrt = math.sqrt(len(intersect_items))
+                        ru = np.sum((u_labels - base_neighbor) * self.w[i][intersect_items]) / user_sqrt
+                        nu = np.sum(self.c[i][intersect_items]) / user_sqrt
+                        err = r - (self.global_mean + self.bu[u] + self.bi[i] + dot + ru + nu)
+
+                        self.bu[u] += self.lr * (err - self.reg * self.bu[u])
+                        self.bi[i] += self.lr * (err - self.reg * self.bi[i])
+
+                        for f in range(self.n_factors):
+                            puf = self.pu[u, f]
+                            qif = self.qi[i, f]
+                            self.pu[u, f] += self.lr * (err * qif - self.reg * puf)
+                            self.qi[i, f] += self.lr * (err * (puf + nui[f]) - self.reg * qif)
+                #            for j in u_items:
+                #                self.yj[j, f] += self.lr * (err * qif / nu_sqrt - self.reg * self.yj[j, f])
+
+
+                #        self.pu[u] += self.lr * (err * self.qi[i] - self.reg * self.pu[u])
+                #        self.qi[i] += self.lr * (err * (self.pu[u] + nui) - self.reg * self.qi[i])
+                        self.yj[u_items] += self.lr * (err * self.qi[u_items] / nu_sqrt -
+                                                       self.reg * self.yj[u_items])
+                        self.w[i][intersect_items] += \
+                            self.lr * (err * (u_labels - base_neighbor) / user_sqrt -
+                                                                 self.reg * self.w[i][intersect_items])
+                        self.c[i][intersect_items] += self.lr * (err / user_sqrt -
+                                                                 self.reg * self.c[i][intersect_items])
+
+                if epoch % 1 == 0:
+                    print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
+                    print("training rmse: ", rmse(self, dataset, "train"))
+                    print("test rmse: ", rmse(self, dataset, "test"))
+
+        else:
+            for epoch in range(1, self.n_epochs + 1):
+                t0 = time.time()
+                random_users = np.random.permutation(list(self.train_user.keys()))
+                for u in random_users:
+                    u_items = list(self.train_user[u].keys())
+                    u_labels = np.array(list(self.train_user[u].values()))
+                    nu_sqrt = math.sqrt(len(u_items))
+                    nui = np.sum(self.yj[u_items], axis=0) / nu_sqrt
+                    dot = np.dot(self.qi[u_items], self.pu[u] + nui)
+
+                    ru = []
+                    nu = []
+                    for single_item in u_items:
+                        intersect_items, index_u = self.intersect_user_item_train[(u, single_item)]
+                        if len(intersect_items) == 0:
+                            ru.append(0)
+                            nu.append(0)
+                        else:
+                            u_labels_intersect = np.array(list(self.train_user[u].values()))[index_u]
+                            base_neighbor = self.global_mean + self.bbu[u] + self.bbi[intersect_items]
+                            user_sqrt = math.sqrt(len(intersect_items))
+                            ru_single = np.sum((u_labels_intersect - base_neighbor) *
+                                               self.w[single_item][intersect_items]) / user_sqrt
+                            nu_single = np.sum(self.c[single_item][intersect_items]) / user_sqrt
+                            ru.append(ru_single)
+                            nu.append(nu_single)
+                    ru = np.array(ru)
+                    nu = np.array(nu)
+
+                    err = u_labels - (self.global_mean + self.bu[u] + self.bi[u_items] + dot + ru + nu)
+                    err = err.reshape(len(u_items), 1)
+                    self.bu[u] += self.lr * (np.sum(err) - self.reg * self.bu[u])
+                    self.bi[u_items] += self.lr * (err.flatten() - self.reg * self.bi[u_items])
+                    self.qi[u_items] += self.lr * (err * (self.pu[u] + nui) - self.reg * self.qi[u_items])
+                    self.pu[u] += self.lr * (np.sum(err * self.qi[u_items], axis=0) - self.reg * self.pu[u])
+                    self.yj[u_items] += self.lr * (err * self.qi[u_items] / nu_sqrt - self.reg * self.yj[u_items])
+
+                    for single_item, error in zip(u_items, err):
+                        intersect_items, index_u = self.intersect_user_item_train[(u, single_item)]
+                        if len(intersect_items) == 0:
+                            continue
+                        else:
+                            u_labels = np.array(list(self.train_user[u].values()))[index_u]
+                            base_neighbor = self.global_mean + self.bbu[u] + self.bbi[intersect_items]
+                            user_sqrt = math.sqrt(len(intersect_items))
+                            self.w[single_item, intersect_items] += self.lr * (
+                                    error.flatten() * (u_labels - base_neighbor) / user_sqrt -
+                                    self.reg * self.w[single_item, intersect_items])
+                            self.c[single_item, intersect_items] += self.lr * (error.flatten() / user_sqrt -
+                                                                    self.reg * self.c[single_item, intersect_items])
+
+                if epoch % 1 == 0:
+                    print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
+                    print("training rmse: ", rmse(self, dataset, "train"))
+                    print("test rmse: ", rmse(self, dataset, "test"))
+
+    def predict(self, u, i):
+        try:
+            u_items = list(self.train_user[u].keys())
+            nui = np.sum(self.yj[u_items], axis=0) / np.sqrt(len(u_items))
+            pred = self.global_mean + self.bu[u] + self.bi[i] + np.dot(self.pu[u] + nui, self.qi[i])
+
+            try:
+                intersect_items, index_u = self.intersect_user_item_train[(u, i)]
+            except KeyError:
+                intersect_items, index_u = [], -1
+
+            if len(intersect_items) == 0:
+                pass
+            else:
+                u_labels = np.array(list(self.train_user[u].values()))[index_u]
+                base_neighbor = self.global_mean + self.bbu[u] + self.bbi[intersect_items]
+                user_sqrt = np.sqrt(len(intersect_items))
+                ru = np.sum((u_labels - base_neighbor) * self.w[i][intersect_items]) / user_sqrt
+                nu = np.sum(self.c[i][intersect_items]) / user_sqrt
+                pred += (ru + nu)
+
+            pred = np.clip(pred, 1, 5)
+
+        except IndexError:
+            pred = self.global_mean
+        return pred
 
