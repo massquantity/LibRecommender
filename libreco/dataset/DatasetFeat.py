@@ -83,6 +83,8 @@ class DatasetFeat:
             user = line[user_col]
             item = line[item_col]
             label = line[label_col]
+            if convert_implicit and label != 0:
+                label = 1
 
             if user not in user_pool or item not in item_pool:
                 continue

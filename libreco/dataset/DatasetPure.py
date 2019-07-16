@@ -58,6 +58,8 @@ class DatasetPure:
             user = line.split(sep)[0]
             item = line.split(sep)[1]
             label = line.split(sep)[2]
+            if convert_implicit and label != 0:
+                label = 1
             try:
                 user_id = self.user2id[user]
             except KeyError:
