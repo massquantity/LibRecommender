@@ -84,9 +84,14 @@ def get_intersect_tf(dataset, sim_option="pearson", min_support=1, k=40, load=Fa
     return tf.SparseTensor(**sparse_dict), tf.SparseTensor(**sparse_weight)
 
 
+def get_sim(dataset, k=40):
+    with open(os.path.expanduser("~/Workspace/LibRecommender/sim_item.pkl"), "rb") as f:  # item sim matrix
+        sim_matrix = pickle.load(f)
+    print("similarity matrix shape: ", sim_matrix.shape)
 
+    sim_whole = np.zeros((dataset.n_items, k))
+    for i in range(dataset.n_items):
+        sim_whole[i] = np.argsort(sim_matrix[i])[::-1][:k]
 
-
-
-
+    return sim_whole
 
