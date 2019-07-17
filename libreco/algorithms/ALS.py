@@ -1,5 +1,6 @@
 import time
 from operator import itemgetter
+import functools
 import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix
 from scipy import sparse
@@ -9,6 +10,7 @@ try:
     import tensorflow as tf
 except ModuleNotFoundError:
     print("you need tensorflow for tf-version of this model")
+from tqdm import tqdm, trange
 
 
 class ALS_rating:
@@ -91,7 +93,7 @@ class ALS_rating:
             return rank[:n_rec]
 
 
-class ALS_ranking:
+class ALS_ranking_76897:
     def __init__(self, n_factors=100, n_epochs=20, reg=5.0, task="rating", seed=42):
         self.n_factors = n_factors
         self.n_epochs = n_epochs
@@ -266,7 +268,7 @@ class ALS_ranking_78978:
             return rank[:n_rec]
 
 
-class ALS_ranking:
+class ALS_ranking_56765:
     def __init__(self, n_factors=100, n_epochs=20, reg=5.0, task="rating", seed=42, alpha=10):
         self.n_factors = n_factors
         self.n_epochs = n_epochs
@@ -363,3 +365,134 @@ class ALS_ranking:
         else:
             rank.sort(key=itemgetter(1), reverse=True)
             return rank[:n_rec]
+
+
+class ALS_ranking:
+    def __init__(self, n_factors=100, n_epochs=20, reg=5.0, task="rating", seed=42, alpha=10, cg_steps=3):
+        self.n_factors = n_factors
+        self.n_epochs = n_epochs
+        self.reg = reg
+        self.task = task
+        self.seed = seed
+        self.alpha = alpha
+        self.cg_steps = cg_steps
+
+    @staticmethod
+    def least_squares(dataset, X, Y, reg, n_factors, alpha=10, user=True):
+        if user:
+            data = dataset.train_user
+        else:
+            data = dataset.train_item
+
+        YtY = Y.T.dot(Y)
+        for s in data:
+            A = YtY + reg * np.eye(n_factors)
+            b = np.zeros(n_factors)
+            for item, label in data[s].items():
+                confidence = 1 + alpha * label
+                factor = Y[item]
+                A += (confidence - 1) * np.outer(factor, factor)
+                b += confidence * factor
+            X[s] = np.linalg.solve(A, b)
+
+    @staticmethod
+    def least_squares_cg(dataset, X, Y, reg, n_factors, alpha=10, cg_steps=3, user=True):
+        if user:
+            data = dataset.train_user
+        else:
+            data = dataset.train_item
+
+        YtY = Y.T.dot(Y) + reg * np.eye(n_factors)
+        for s in data:
+            x = X[s]
+
+            r = -YtY.dot(x)
+            for item, label in data[s].items():
+                confidence = 1 + alpha * label
+                r += (confidence - (confidence - 1) * Y[item].dot(x)) * Y[item]
+
+            p = r.copy()
+            rs_old = r.dot(r)
+            if rs_old < 1e-20:
+                continue
+
+            for it in range(cg_steps):
+                Ap = YtY.dot(p)
+                for item, label in data[s].items():
+                    confidence = 1 + alpha * label
+                    Ap += (confidence - 1) * Y[item].dot(p) * Y[item]
+
+                # standard CG update
+                alpha = rs_old / p.dot(Ap)
+                x += alpha * p
+                r -= alpha * Ap
+                rs_new = r.dot(r)
+                if rs_new < 1e-20:
+                    break
+                p = r + (rs_new / rs_old) * p
+                rs_old = rs_new
+            X[s] = x
+
+
+    def fit(self, dataset, verbose=1, use_cg=True):
+        np.random.seed(self.seed)
+        self.dataset = dataset
+        self.default_prediction = dataset.global_mean
+        self.X = truncated_normal(shape=(dataset.n_users, self.n_factors),
+                                   mean=0.0, scale=0.05)
+        self.Y = truncated_normal(shape=(dataset.n_items, self.n_factors),
+                                   mean=0.0, scale=0.05)
+        if use_cg:
+            method = functools.partial(ALS_ranking.least_squares_cg, cg_steps=self.cg_steps)
+        else:
+            method = ALS_ranking.least_squares
+
+        for epoch in range(1, self.n_epochs + 1):
+            t0 = time.time()
+            method(self.dataset, self.X, self.Y, reg=self.reg,
+                    n_factors=self.n_factors, alpha=self.alpha, user=True)
+
+            method(self.dataset, self.Y, self.X, reg=self.reg,
+                    n_factors=self.n_factors, alpha=self.alpha, user=False)
+
+            if verbose > 0 and epoch % 1 == 0 and self.task == "rating":
+                print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
+                print("training rmse: ", rmse(self, dataset, "train"))
+                print("test rmse: ", rmse(self, dataset, "test"))
+            elif verbose > 0 and epoch % 1 == 0 and self.task == "ranking":
+                print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
+            #    print("MAP@{}: {:.4f}".format(5, MAP_at_k(self, dataset, 5)))
+                print("training accuracy: ", accuracy(self, dataset, "train"))
+                print("test accuracy: ", accuracy(self, dataset, "test"))
+
+        return self
+
+    def predict(self, u, i):
+        try:
+            prob = 1 / (1 + np.exp(-np.dot(self.X[u], self.Y[i])))
+            pred = 1.0 if prob >= 0.5 else 0.0
+        except IndexError:
+            pred = self.default_prediction
+        return pred
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
