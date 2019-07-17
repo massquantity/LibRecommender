@@ -58,9 +58,13 @@ class superSVD_cy:
             get_intersect(dataset, self.sim_option, self.min_support, self.k, load=True)
         print("sim intersect time: {:.4f}".format(time.time() - time_sim))
 
-        self.u_items_all = []
-        for u in self.train_user_indices:
-            self.u_items_all.append(list(dataset.train_user[u]))
+        self.user_item_list = []
+        self.user_label_list = []
+        self.user_item_length = []
+        for u in range(dataset.n_users):
+            self.user_item_list.append(list(dataset.train_user[u].keys()))
+            self.user_label_list.append(list(dataset.train_user[u].values()))
+            self.user_item_length.append(len(list(dataset.train_user[u])))
 
     #    self.bbu = list(self.bbu)
     #    self.bbi = list(self.bbi)
@@ -132,11 +136,11 @@ class superSVD_cy:
                 r = self.train_labels[p]
 
             #    u_items = [j for j in dataset.train_user[u]]
-                u_items = self.u_items_all[p]
-                nu_sqrt = sqrt(len(u_items))
+            #    u_items = self.u_items_all[p]
+                nu_sqrt = sqrt(self.user_item_length[u])
 
                 nui = np.zeros((self.n_factors,), np.double)
-                for j in u_items:
+                for j in self.user_item_list[u]:
                     for f in range(self.n_factors):
                         nui[f] += yj[j, f] / nu_sqrt
 
@@ -158,7 +162,7 @@ class superSVD_cy:
                     for f in range(self.n_factors):
                         pu[u, f] += lr * (err * qi[i, f] - reg * pu[u, f])
                         qi[i, f] += lr * (err * (pu[u, f] + nui[f]) - reg * qi[i, f])
-                        for j in u_items:
+                        for j in self.user_item_list[u]:
                             yj[j, f] += lr * (err * qi[i, f] / nu_sqrt - reg * yj[j, f])
 
             #        self.pu[u] += self.lr * (err * self.qi[i] - self.reg * self.pu[u])
@@ -201,7 +205,7 @@ class superSVD_cy:
                     for f in range(self.n_factors):
                         pu[u, f] += lr * (err * qi[i, f] - reg * pu[u, f])
                         qi[i, f] += lr * (err * (pu[u, f] + nui[f]) - reg * qi[i, f])
-                        for j in u_items:
+                        for j in self.user_item_list[u]:
                             yj[j, f] += lr * (err * qi[i, f] / nu_sqrt - reg * yj[j, f])
 
                     for j in range(len(intersect_items)):
