@@ -89,9 +89,9 @@ def get_sim(dataset, k=40):
         sim_matrix = pickle.load(f)
     print("similarity matrix shape: ", sim_matrix.shape)
 
-    sim_whole = np.zeros((dataset.n_items, k))
+    sim_whole = []
     for i in range(dataset.n_items):
-        sim_whole[i] = np.argsort(sim_matrix[i])[::-1][:k]
+        sim_whole.append(np.argsort(sim_matrix[i])[::-1][:k].tolist())
 
     return sim_whole
 
