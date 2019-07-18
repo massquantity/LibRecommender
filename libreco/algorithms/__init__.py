@@ -4,3 +4,4 @@ from .ALS import ALS_rating, ALS_ranking
 from .FM import FmPure, FmFeat
 from .superSVD import superSVD
 from .superSVD_cy import superSVD_cy
+from .superSVD_cys import superSVD_cys

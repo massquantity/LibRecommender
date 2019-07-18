@@ -43,9 +43,9 @@ class superSVD_cys:
         self.n_items = dataset.n_items
         self.train_user = dataset.train_user
         self.train_item = dataset.train_item
-        self.train_user_indices = list(dataset.train_user_indices)
-        self.train_item_indices = list(dataset.train_item_indices)
-        self.train_labels = list(dataset.train_labels)
+        self.train_user_indices = dataset.train_user_indices
+        self.train_item_indices = dataset.train_item_indices
+        self.train_labels = dataset.train_labels
         self.test_user_indices = dataset.test_user_indices
         self.test_item_indices = dataset.test_item_indices
         self.test_labels = dataset.test_labels
@@ -60,12 +60,23 @@ class superSVD_cys:
             self.user_item_list.append(list(dataset.train_user[u].keys()))
             self.user_label_list.append(list(dataset.train_user[u].values()))
             self.user_item_length.append(len(list(dataset.train_user[u])))
-    #    self.user_item_list = {k: list(v.items()) for k, v in dataset.train_user.items()}
 
-    #    self.u_items_all = []
-    #    for u in self.train_user_indices:
-    #        self.u_items_all.append(list(dataset.train_user[u]))
+        '''
+        self.user_item_list = []
+        self.user_item_indices = [0]
+        self.user_label_list = []
+        self.user_item_length = []
+        for u in range(dataset.n_users):
+            self.user_item_list.extend(list(dataset.train_user[u].keys()))
+            self.user_item_indices.append(len(list(dataset.train_user[u])) + self.user_item_indices[-1])
+            self.user_label_list.extend(list(dataset.train_user[u].values()))
+            self.user_item_length.append(len(list(dataset.train_user[u])))
 
+        user_item_list = np.array(self.user_item_list, dtype=np.intc)
+        user_item_indices = np.array(self.user_item_indices, dtype=np.intc)
+        user_label_list = np.array(self.user_label_list, dtype=np.double)
+        user_item_length = np.array(self.user_item_length, dtype=np.intc)
+        '''
         self.sgd(dataset)
 
     @cython.boundscheck(False)
@@ -100,6 +111,7 @@ class superSVD_cys:
 #        cdef np.ndarray[np.double_t] train_labels = self.train_labels
         cdef int hlist[40]
         cdef double rglist[40]
+#        cdef int user_item_list[len(self.user_item_list)]  #######################################
 
         bu = np.zeros((self.n_users,), np.double)
         bi = np.zeros((self.n_items,), np.double)
@@ -122,14 +134,18 @@ class superSVD_cys:
                 i = self.train_item_indices[p]
                 r = self.train_labels[p]
 
-            #    u_items = [j for j in dataset.train_user[u]]
-            #    u_items = self.u_items_all[p]
                 nu_sqrt = sqrt(self.user_item_length[u])
 
                 nui = np.zeros((self.n_factors,), np.double)
                 for j in self.user_item_list[u]:
                     for f in range(self.n_factors):
                         nui[f] += yj[j, f] / nu_sqrt
+
+        #        for j in range(user_item_indices[u], user_item_indices[u+1]):
+        #            h = user_item_list[j]
+        #            for f in range(self.n_factors):
+        #                nui[f] += yj[h, f] / nu_sqrt
+                
 
                 dot = 0.0
                 for f in range(self.n_factors):
@@ -138,14 +154,28 @@ class superSVD_cys:
                 k = 0
                 ru = 0.0
                 nu = 0.0
-                for g, rg in zip(self.user_item_list[u], self.user_label_list[u]):
+                for j in range(len(self.user_item_list[u])):
+                    g = self.user_item_list[u][j]
                     for h in self.sim_matrix[i]:
                         if g == h:
                             hlist[k] = h
+                            rg = self.user_label_list[u][j]
                             rglist[k] = rg - (global_mean + bbu[u] + bbi[h])
                             ru += (rg - (global_mean + bbu[u] + bbi[h])) * w[i, h]
                             nu += c[i, h]
                             k += 1
+
+        #        for j in range(user_item_indices[u], user_item_indices[u+1]):
+        #            g = user_item_list[j]
+        #            for h in self.sim_matrix[i]:
+        #                if g == h:
+        #                    rg = user_label_list[j]
+        #                    hlist[k] = h
+        #                    rglist[k] = rg - (global_mean + bbu[u] + bbi[h])
+        #                    ru += (rg - (global_mean + bbu[u] + bbi[h])) * w[i, h]
+        #                    nu += c[i, h]
+        #                    k += 1
+
 
                 if k == 0:
                     err = r - (global_mean + bu[u] + bi[i] + dot)
@@ -157,6 +187,9 @@ class superSVD_cys:
                         qi[i, f] += lr * (err * (pu[u, f] + nui[f]) - reg * qi[i, f])
                         for j in self.user_item_list[u]:
                             yj[j, f] += lr * (err * qi[i, f] / nu_sqrt - reg * yj[j, f])
+            #            for j in range(user_item_indices[u], user_item_indices[u+1]):
+            #                h = user_item_list[j]
+            #                yj[h, f] += lr * (err * qi[i, f] / nu_sqrt - reg * yj[h, f])
 
                 else:
                     user_sqrt = sqrt(k)
@@ -171,6 +204,9 @@ class superSVD_cys:
                         qi[i, f] += lr * (err * (pu[u, f] + nui[f]) - reg * qi[i, f])
                         for j in self.user_item_list[u]:
                             yj[j, f] += lr * (err * qi[i, f] / nu_sqrt - reg * yj[j, f])
+            #            for j in range(user_item_indices[u], user_item_indices[u+1]):
+            #                h = self.user_item_list[j]
+            #                yj[h, f] += lr * (err * qi[i, f] / nu_sqrt - reg * yj[h, f])
 
             #        for g, rg in zip(self.user_item_list[u], self.user_label_list[u]):
             #            for h in self.sim_matrix[i]:
