@@ -1,6 +1,7 @@
 import time
 from operator import itemgetter
 import functools
+import itertools
 import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix
 from scipy import sparse
@@ -292,9 +293,11 @@ class ALS_ranking:
                 print("test rmse: ", rmse(self, dataset, "test"))
             elif verbose > 0 and epoch % 1 == 0 and self.task == "ranking":
                 print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
-            #    print("MAP@{}: {:.4f}".format(5, MAP_at_k(self, dataset, 5)))
-                print("training accuracy: ", accuracy(self, dataset, "train"))
-                print("test accuracy: ", accuracy(self, dataset, "test"))
+                t1 = time.time()
+                print("MAP@{}: {:.4f}".format(5, MAP_at_k(self, dataset, 5)))
+                print("MAP time: {:.4f}".format(time.time() - t1))
+            #    print("training accuracy: ", accuracy(self, dataset, "train"))
+            #    print("test accuracy: ", accuracy(self, dataset, "test"))
 
         return self
 
@@ -306,9 +309,13 @@ class ALS_ranking:
             pred = self.default_prediction
         return pred
 
-
-
-
+    def recommend_user(self, u, n_rec):
+        consumed = self.dataset.train_user[u]
+        count = n_rec + len(consumed)
+        preds = np.dot(self.X[u], self.Y.T)
+        ids = np.argpartition(preds, -count)[-count:]
+        rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
+        return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
 
 
 
