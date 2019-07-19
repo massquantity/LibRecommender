@@ -63,7 +63,7 @@ def precision_tf(pred, y):
     return precision[0]
 
 
-def AP_at_k(model, dataset, u, k):
+def AP_at_k_78(model, dataset, u, k):
     ranklist = model.predict_user(u)
     top_k = np.argsort(ranklist)[::-1][:k]
     precision_k = 0
@@ -74,6 +74,29 @@ def AP_at_k(model, dataset, u, k):
             count_relevant_k += 1
             for pred in top_k[:i]:
                 if pred in dataset.train_user[u]:
+                    precision_i += 1
+            precision_k += precision_i / i
+        else:
+            continue
+    try:
+        average_precision_at_k = precision_k / count_relevant_k
+    except ZeroDivisionError:
+        average_precision_at_k = 0.0
+    return average_precision_at_k
+
+
+def AP_at_k(model, dataset, u, k):
+    true_items = dataset.test_item_indices[np.where(dataset.test_user_indices == u)]
+    rank_list = model.recommend_user(u, k)
+    top_k = [i[0] for i in rank_list]
+    precision_k = 0
+    count_relevant_k = 0
+    for i in range(1, k + 1):
+        precision_i = 0
+        if top_k[i-1] in true_items:
+            count_relevant_k += 1
+            for pred in top_k[:i]:
+                if pred in true_items:
                     precision_i += 1
             precision_k += precision_i / i
         else:
