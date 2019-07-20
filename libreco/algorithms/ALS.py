@@ -3,10 +3,11 @@ from operator import itemgetter
 import functools
 import itertools
 import numpy as np
-from scipy.sparse import csr_matrix, coo_matrix
+from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 from scipy import sparse
 from ..evaluate import rmse, MAP_at_k, accuracy
 from ..utils.initializers import truncated_normal
+from . import ALS_cy
 try:
     import tensorflow as tf
 except ModuleNotFoundError:
@@ -226,6 +227,8 @@ class ALS_ranking:
             cp = C.dot(pui)
             b = np.dot(Y.T, cp)
             X[s] = np.linalg.solve(A, b)
+        #    from scipy.sparse.linalg import cg
+        #    X[s] = cg(A, b)[0]
 
     @staticmethod
     def least_squares_cg(dataset, X, Y, reg, n_factors, alpha=10, cg_steps=3, user=True):
@@ -245,7 +248,7 @@ class ALS_ranking:
 
             p = r.copy()
             rs_old = r.dot(r)
-            if rs_old < 1e-20:
+            if rs_old < 1e-10:
                 continue
 
             for it in range(cg_steps):
@@ -259,25 +262,34 @@ class ALS_ranking:
                 x += alpha * p
                 r -= alpha * Ap
                 rs_new = r.dot(r)
-                if rs_new < 1e-20:
+                if rs_new < 1e-10:
                     break
                 p = r + (rs_new / rs_old) * p
                 rs_old = rs_new
             X[s] = x
-
 
     def fit(self, dataset, verbose=1, use_cg=True):
         np.random.seed(self.seed)
         self.dataset = dataset
         self.default_prediction = dataset.global_mean
         self.X = truncated_normal(shape=(dataset.n_users, self.n_factors),
-                                   mean=0.0, scale=0.05)
+                                   mean=0.0, scale=0.05).astype(np.float32)
         self.Y = truncated_normal(shape=(dataset.n_items, self.n_factors),
-                                   mean=0.0, scale=0.05)
+                                   mean=0.0, scale=0.05).astype(np.float32)
+        t0 = time.time()
+        confidence_data = dok_matrix((dataset.n_users, dataset.n_items), dtype=np.float32)
+        for u, i, l in zip(dataset.train_user_indices, dataset.train_item_indices, dataset.train_labels):
+            confidence_data[u, i] = self.alpha * l + 1
+        confidence_data = confidence_data.tocsr()
+        print("constrtct time: ", time.time() - t0)
+
         if use_cg:
             method = functools.partial(ALS_ranking.least_squares_cg, cg_steps=self.cg_steps)
+        #    method = functools.partial(ALS_cy.least_squares_cg, cg_steps=self.cg_steps)
         else:
+
             method = ALS_ranking.least_squares
+        #    method = ALS_cy.least_squares
 
         for epoch in range(1, self.n_epochs + 1):
             t0 = time.time()
@@ -286,6 +298,9 @@ class ALS_ranking:
 
             method(self.dataset, self.Y, self.X, reg=self.reg,
                     n_factors=self.n_factors, alpha=self.alpha, user=False)
+
+        #    method(confidence_data, self.X, self.Y, reg=self.reg, user=True, num_threads=0)
+        #    method(confidence_data, self.Y, self.X, reg=self.reg, user=False, num_threads=0)
 
             if verbose > 0 and epoch % 1 == 0 and self.task == "rating":
                 print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
@@ -297,7 +312,7 @@ class ALS_ranking:
                 print("MAP@{}: {:.4f}".format(5, MAP_at_k(self, dataset, 5)))
                 print("MAP time: {:.4f}".format(time.time() - t1))
             #    print("training accuracy: ", accuracy(self, dataset, "train"))
-            #    print("test accuracy: ", accuracy(self, dataset, "test"))
+            #    print("test accuracy: {:.4f}".format(accuracy(self, dataset, "test")))
 
         return self
 
