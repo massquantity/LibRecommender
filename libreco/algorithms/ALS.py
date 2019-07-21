@@ -332,6 +332,11 @@ class ALS_ranking:
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
 
+    def use_qmf(self):
+        import logging
+        np.loadtxt
+        pass
+
 
 
 
