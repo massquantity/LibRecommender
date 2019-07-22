@@ -7,7 +7,10 @@ from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 from scipy import sparse
 from ..evaluate import rmse, MAP_at_k, accuracy
 from ..utils.initializers import truncated_normal
-from . import ALS_cy
+try:
+    from . import ALS_cy
+except ImportError:
+    pass
 try:
     import tensorflow as tf
 except ModuleNotFoundError:
@@ -227,8 +230,8 @@ class ALS_ranking:
             cp = C.dot(pui)
             b = np.dot(Y.T, cp)
             X[s] = np.linalg.solve(A, b)
-        #    from scipy.sparse.linalg import cg
-        #    X[s] = cg(A, b)[0]
+        #    from scipy.sparse.linalg import cg, cgs, bicg
+        #    X[s] = bicg(A, b)[0]
 
     @staticmethod
     def least_squares_cg(dataset, X, Y, reg, n_factors, alpha=10, cg_steps=3, user=True):

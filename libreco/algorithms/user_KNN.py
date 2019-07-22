@@ -4,7 +4,10 @@ from operator import itemgetter
 import numpy as np
 # import faiss
 from ..utils.similarities import *
-from ..utils.similarities_cy import cosine_cy, cosine_cym
+try:
+    from ..utils.similarities_cy import cosine_cy, cosine_cym
+except ImportError:
+    pass
 from ..utils.baseline_estimates import baseline_als, baseline_sgd
 
 
