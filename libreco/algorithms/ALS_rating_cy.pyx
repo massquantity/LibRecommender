@@ -56,6 +56,14 @@ cdef inline void ger(int * m, int * n, floating * alpha, floating * x, int * inc
     else:
         cython_blas.sger(m, n, alpha, x, incx, y, incy, a, lda)
 
+cdef inline void gemm(char * transa, char * transb, int * m, int * n, int * k, 
+                      floating * alpha, floating * a, int * lda, floating * b, 
+                      int * ldb, floating * beta, floating * c, int * ldc) nogil:
+    if floating is double:
+        cython_blas.dgemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
+    else:
+        cython_blas.sgemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
+
 
 def least_squares(data, X, Y, reg, user=True, num_threads=0):
     if user:
@@ -77,7 +85,7 @@ def _least_squares(integral[:] indptr, integral[:] indices, float[:] data,
 
 #    YtY = np.dot(np.transpose(Y), Y)
 
-    cdef floating[:, :] initialA = regularization * np.eye(factors, dtype=dtype) # np.zeros((factors, factors), dtype=dtype)
+    cdef floating[:, :] initialA = regularization * np.eye(10, dtype=dtype) # np.zeros((factors, factors), dtype=dtype)
     cdef floating[:] initialB = np.zeros(factors, dtype=dtype)
 
     cdef floating * A
@@ -95,7 +103,7 @@ def _least_squares(integral[:] indptr, integral[:] indices, float[:] data,
                     continue
 
                 # For each user u calculate
-                # Xu = (YtY + regularization*I)i^-1 * YtRu
+                # Xu = (YtY + regularization*I)i^-1 * YtRuu
 
                 # Build up A = YtY + reg * I and b = YtRu
                 memcpy(A, &initialA[0, 0], sizeof(floating) * factors * factors)
@@ -107,6 +115,7 @@ def _least_squares(integral[:] indptr, integral[:] indices, float[:] data,
                     # A += YtY + reg * I
                     temp = 1.0
                     ger(&factors, &factors, &temp, &Y[i, 0], &one, &Y[i, 0], &one, A, &factors)
+                #    gemm("N", "N", &factors, &factors, &one, &temp, &Y[i, 0], &factors, &Y[i, 0], &factors, &temp, A, &factors)
 
                     # b +=  rY
                     axpy(&factors, &rating, &Y[i, 0], &one, b, &one)
