@@ -5,7 +5,7 @@ import itertools
 import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 from scipy import sparse
-from ..evaluate import rmse, MAP_at_k, accuracy
+from ..evaluate import rmse, MAP_at_k, MAR_at_k, NDCG_at_k, accuracy
 from ..utils.initializers import truncated_normal
 try:
     from . import ALS_cy, ALS_rating_cy
@@ -131,7 +131,7 @@ class ALS_ranking:
         #    X[s] = bicg(A, b)[0]
 
     @staticmethod
-    def least_squares_cg(dataset, X, Y, reg, n_factors, alpha=10, cg_steps=3, user=True):
+    def least_squares_cg(dataset, X, Y, reg, n_factors, alpha=10, cg_steps=3, user=True):  # O(f^3) * m
         if user:
             data = dataset.train_user
         else:
@@ -211,6 +211,13 @@ class ALS_ranking:
                 t1 = time.time()
                 print("MAP@{}: {:.4f}".format(5, MAP_at_k(self, dataset, 5)))
                 print("MAP time: {:.4f}".format(time.time() - t1))
+                t2 = time.time()
+                print("MAR@{}: {:.4f}".format(5, MAR_at_k(self, dataset, 5)))
+                print("MAR time: {:.4f}".format(time.time() - t2))
+                t3 = time.time()
+                print("NDCG@{}: {:.4f}".format(5, NDCG_at_k(self, dataset, 5)))
+                print("NDCG time: {:.4f}".format(time.time() - t3))
+                print()
             #    print("training accuracy: ", accuracy(self, dataset, "train"))
             #    print("test accuracy: {:.4f}".format(accuracy(self, dataset, "test")))
 
