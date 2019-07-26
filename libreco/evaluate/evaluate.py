@@ -116,6 +116,43 @@ def MAP_at_k(model, dataset, k):
     return mean_average_precision_at_k
 
 
+def AR_at_k(model, dataset, u, k):
+    """
+    average recall at k
+    """
+    true_items = dataset.test_item_indices[np.where(dataset.test_user_indices == u)]
+    rank_list = model.recommend_user(u, k)
+    top_k = [i[0] for i in rank_list]
+    recall_k = 0
+    count_relevant_k = 0
+    for i in range(1, k + 1):
+        recall_i = 0
+        if top_k[i-1] in true_items:
+            count_relevant_k += 1
+            for pred in top_k[:i]:
+                if pred in true_items:
+                    recall_i += 1
+            recall_k += recall_i / len(true_items)
+        else:
+            continue
+    try:
+        average_recall_at_k = recall_k / count_relevant_k
+    except ZeroDivisionError:
+        average_recall_at_k = 0.0
+    return average_recall_at_k
+
+
+def MAR_at_k(model, dataset, k):
+    """
+    mean average recall at k
+    """
+    average_recall_at_k = 0
+    for u in dataset.train_user:
+        average_recall_at_k += AR_at_k(model, dataset, u, k)
+    mean_average_precision_at_k = average_recall_at_k / dataset.n_users
+    return mean_average_precision_at_k
+
+
 def HitRatio_at_k(model, dataset, k):
     HitRatio = []
     for u in dataset.train_user:
@@ -129,7 +166,7 @@ def HitRatio_at_k(model, dataset, k):
     return np.mean(HitRatio)
 
 
-def NDCG_at_k(model, dataset, k):
+def NDCG_at_k_090(model, dataset, k):
     NDCG = 0
     for u in dataset.train_user:
         DCG = 0
@@ -140,6 +177,26 @@ def NDCG_at_k(model, dataset, k):
             if item in dataset.train_user[u]:
                 DCG += np.reciprocal(np.log2(n + 2))
         for n in range(k):
+            IDCG += np.reciprocal(np.log2(n + 2))
+        NDCG += DCG / IDCG
+    return NDCG / dataset.n_users
+
+
+def NDCG_at_k(model, dataset, k):
+    NDCG = 0
+    for u in dataset.train_user:
+        DCG = 0
+        IDCG = 0
+        true_items = dataset.test_item_indices[np.where(dataset.test_user_indices == u)]
+        if len(true_items) == 0:
+            continue
+        rank_list = model.recommend_user(u, k)
+        top_k = [i[0] for i in rank_list]
+        for n, item in enumerate(top_k):
+            if item in true_items:
+                DCG += np.reciprocal(np.log2(n + 2))
+        optimal_items = min(len(true_items), k)
+        for n in range(optimal_items):
             IDCG += np.reciprocal(np.log2(n + 2))
         NDCG += DCG / IDCG
     return NDCG / dataset.n_users
