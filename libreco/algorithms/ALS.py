@@ -1,7 +1,21 @@
+"""
+
+References:
+    [1] Haoming Li et al. Matrix Completion via Alternating Least Square(ALS)
+        (https://stanford.edu/~rezab/classes/cme323/S15/notes/lec14.pdf)
+    [2] Yifan Hu et al. Collaborative Filtering for Implicit Feedback Datasets
+        (http://yifanhu.net/PUB/cf.pdf)
+    [3] Gábor Takács et al. Applications of the Conjugate Gradient Method for Implicit Feedback Collaborative Filtering
+        (http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.379.6473&rep=rep1&type=pdf)
+
+author: massquantity
+
+"""
 import time
 from operator import itemgetter
 import functools
 import itertools
+import logging
 import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 from scipy import sparse
@@ -10,11 +24,10 @@ from ..utils.initializers import truncated_normal
 try:
     from . import ALS_cy, ALS_rating_cy
 except ImportError:
+    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+    logging.basicConfig(format=LOG_FORMAT)
+    logging.warn("Cython version is not available")
     pass
-try:
-    import tensorflow as tf
-except ModuleNotFoundError:
-    print("you need tensorflow for tf-version of this model")
 
 
 class ALS_rating:

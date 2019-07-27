@@ -12,8 +12,8 @@ from ..utils.intersect import get_intersect, get_intersect_tf
 from ..utils.baseline_estimates import baseline_als, baseline_sgd
 try:
     import tensorflow as tf
-    tf.enable_eager_execution()
-    tfe = tf.contrib.eager
+#    tf.enable_eager_execution()
+#    tfe = tf.contrib.eager
 except ModuleNotFoundError:
     print("you need tensorflow-eager for tf-version of this model")
 
