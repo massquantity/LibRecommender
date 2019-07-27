@@ -1,29 +1,38 @@
+"""
+
+Reference: Xiangnan He et al. "Neural Collaborative Filtering"  (https://arxiv.org/pdf/1708.05031.pdf)
+
+author: massquantity
+
+"""
 import time
+import itertools
 import numpy as np
 import tensorflow as tf
 from ..utils.sampling import NegativeSampling
 from ..evaluate.evaluate import precision_tf, AP_at_k, MAP_at_k, HitRatio_at_k, NDCG_at_k
 
 
-class NCF_9999:
+class NCF:
     def __init__(self, embed_size, lr, n_epochs=20, reg=0.0,
-                 batch_size=64, dropout=0.0, seed=42):
+                 batch_size=64, dropout_rate=0.0, seed=42, task="rating"):
         self.embed_size = embed_size
         self.lr = lr
         self.n_epochs = n_epochs
         self.reg = reg
         self.batch_size = batch_size
-        self.dropout = dropout
+        self.dropout_rate = dropout_rate
         self.seed = seed
+        self.task = task
 
-    def fit(self, dataset):
+    def build_model(self, dataset):
         tf.set_random_seed(self.seed)
         self.dataset = dataset
         self.n_users = dataset.n_users
         self.n_items = dataset.n_items
         self.global_mean = dataset.global_mean
-        regularizer = tf.contrib.layers.l2_regularizer(0.0)
-    #    self.pu_GMF = tf.get_variable(name="pu_GMF", initializer=tf.glorot_normal_initializer().__call__(shape=[2,2]))
+        regularizer = tf.contrib.layers.l2_regularizer(self.reg)
+        #    self.pu_GMF = tf.get_variable(name="pu_GMF", initializer=tf.glorot_normal_initializer().__call__(shape=[2,2]))
         self.pu_GMF = tf.get_variable(name="pu_GMF", initializer=tf.variance_scaling_initializer,
                                       regularizer=regularizer,
                                       shape=[self.n_users, self.embed_size])
@@ -39,7 +48,7 @@ class NCF_9999:
 
         self.user_indices = tf.placeholder(tf.int32, shape=[None], name="user_indices")
         self.item_indices = tf.placeholder(tf.int32, shape=[None], name="item_indices")
-        self.ratings = tf.placeholder(tf.int32, shape=[None], name="ratings")
+        self.labels = tf.placeholder(tf.float32, shape=[None], name="labels")
 
         self.pu_GMF_embedding = tf.nn.embedding_lookup(self.pu_GMF, self.user_indices)
         self.qi_GMF_embedding = tf.nn.embedding_lookup(self.qi_GMF, self.item_indices)
@@ -52,35 +61,50 @@ class NCF_9999:
         self.MLP_layer1 = tf.layers.dense(inputs=self.MLP_input,
                                           units=self.embed_size * 2,
                                           activation=tf.nn.relu,
-                                          kernel_initializer=tf.variance_scaling_initializer,
+        #                                  kernel_initializer=tf.variance_scaling_initializer,
                                           name="MLP_layer1")
-    #    self.MLP_layer1 = tf.layers.dropout(self.MLP_layer1, rate=self.dropout)
+        self.MLP_layer1 = tf.layers.dropout(self.MLP_layer1, rate=self.dropout_rate)
         self.MLP_layer2 = tf.layers.dense(inputs=self.MLP_layer1,
                                           units=self.embed_size,
                                           activation=tf.nn.relu,
-                                          kernel_initializer=tf.variance_scaling_initializer,
+        #                                  kernel_initializer=tf.variance_scaling_initializer,
                                           name="MLP_layer2")
-    #    self.MLP_layer2 = tf.layers.dropout(self.MLP_layer2, rate=self.dropout)
+        self.MLP_layer2 = tf.layers.dropout(self.MLP_layer2, rate=self.dropout_rate)
         self.MLP_layer3 = tf.layers.dense(inputs=self.MLP_layer2,
                                           units=self.embed_size,
                                           activation=tf.nn.relu,
-                                          kernel_initializer=tf.variance_scaling_initializer,
+        #                                  kernel_initializer=tf.variance_scaling_initializer,
                                           name="MLP_layer3")
-    #    self.MLP_layer3 = tf.layers.dropout(self.MLP_layer3, rate=self.dropout)
 
         self.Neu_layer = tf.concat([self.GMF_layer, self.MLP_layer3], axis=1)
-        self.pred = tf.layers.dense(inputs=self.Neu_layer,
-                                    units=1,
-                                    name="pred")
-    #    self.loss = tf.reduce_sum(tf.square(tf.cast(self.ratings, tf.float32) - self.pred)) / \
-    #                tf.cast(tf.size(self.ratings), tf.float32)
-        self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.ratings, [-1, 1]), predictions=self.pred)
-        self.metrics = tf.sqrt(
-            tf.losses.mean_squared_error(labels=tf.reshape(self.ratings, [-1, 1]),
-                                         predictions=tf.clip_by_value(self.pred, 1, 5))
-        )
 
+        if self.task == "rating":
+            self.pred = tf.layers.dense(inputs=self.Neu_layer, units=1, name="pred")
+            #    self.loss = tf.reduce_sum(tf.square(tf.cast(self.labels, tf.float32) - self.pred)) / \
+            #                tf.cast(tf.size(self.labels), tf.float32)
+            self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]), predictions=self.pred)
+            self.rmse = tf.sqrt(
+                tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
+                                             predictions=tf.clip_by_value(self.pred, 1, 5)))
+
+        elif self.task == "ranking":
+            self.logits = tf.layers.dense(inputs=self.Neu_layer, units=1, name="logits")
+            self.logits = tf.reshape(self.logits, [-1])
+            self.loss = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=self.logits))
+
+            self.y_prob = tf.sigmoid(self.logits)
+            self.pred = tf.where(self.y_prob >= 0.5,
+                                 tf.fill(tf.shape(self.logits), 1.0),
+                                 tf.fill(tf.shape(self.logits), 0.0))
+
+            self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.pred, self.labels), tf.float32))
+            self.precision = precision_tf(self.pred, self.labels)
+
+    def fit(self, dataset):
+        self.build_model(dataset)
         self.optimizer = tf.train.AdamOptimizer(self.lr)
+    #    self.optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3)
         self.training_op = self.optimizer.minimize(self.loss)
         init = tf.global_variables_initializer()
 
@@ -89,33 +113,35 @@ class NCF_9999:
         with self.sess.as_default():
             for epoch in range(1, self.n_epochs + 1):
                 t0 = time.time()
-                n_batches = len(dataset.train_ratings) // self.batch_size
+                n_batches = len(dataset.train_labels) // self.batch_size
                 for n in range(n_batches):
-                    end = min(len(dataset.train_ratings), (n+1) * self.batch_size)
+                    end = min(len(dataset.train_labels), (n+1) * self.batch_size)
                     u = dataset.train_user_indices[n * self.batch_size: end]
                     i = dataset.train_item_indices[n * self.batch_size: end]
-                    r = dataset.train_ratings[n * self.batch_size: end]
+                    r = dataset.train_labels[n * self.batch_size: end]
                     self.sess.run([self.training_op],
                               feed_dict={self.user_indices: u,
                                          self.item_indices: i,
-                                         self.ratings: r})
+                                         self.labels: r})
 
-                train_loss = self.sess.run(self.metrics,
-                                           feed_dict={self.user_indices: dataset.train_user_indices,
-                                                      self.item_indices: dataset.train_item_indices,
-                                                      self.ratings: dataset.train_ratings})
-                test_loss = self.sess.run(self.metrics,
+        #        train_rmse = self.sess.run(self.rmse,
+        #                                   feed_dict={self.user_indices: dataset.train_user_indices,
+        #                                              self.item_indices: dataset.train_item_indices,
+        #                                              self.labels: dataset.train_labels})
+                test_rmse = self.sess.run(self.rmse,
                                           feed_dict={self.user_indices: dataset.test_user_indices,
                                                      self.item_indices: dataset.test_item_indices,
-                                                     self.ratings: dataset.test_ratings})
-                print("Epoch: {}\ttrain loss: {:.4f}\ttest loss: {:.4f}".format(epoch, train_loss, test_loss))
-                print("Epoch {}, training time: {:.4f}".format(epoch, time.time() - t0))
+                                                     self.labels: dataset.test_labels})
+                print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
+        #        print("Epoch {}, train rmse: {:.4f}".format(epoch, train_rmse))
+                print("Epoch {}, test rmse: {:.4f}".format(epoch, test_rmse))
+                print()
 
-    def predict(self, u, i):
+    def predict_789(self, u, i):
     #    r = np.zeros(len(u))
         r = -1
         try:
-            pred = self.sess.run(self.pred, feed_dict={self.ratings: np.array([r]),
+            pred = self.sess.run(self.pred, feed_dict={self.labels: np.array([r]),
                                                        self.user_indices: np.array([u]),
                                                        self.item_indices: np.array([i])})
             pred = np.clip(pred, 1, 5)
@@ -123,10 +149,41 @@ class NCF_9999:
             pred = self.global_mean
         return pred
 
+    def predict(self, u, i):
+        if self.task == "rating":
+            try:
+                pred = self.sess.run(self.pred, feed_dict={self.user_indices: [u],
+                                                           self.item_indices: [i]})
+                pred = np.clip(pred, 1, 5)
+            except tf.errors.InvalidArgumentError:
+                pred = self.global_mean
+            return pred
+
+        elif self.task == "ranking":
+            try:
+                prob, pred = self.sess.run([self.y_prob, self.pred],
+                                            feed_dict={self.user_indices: [u],
+                                                       self.item_indices: [i]})
+            except tf.errors.InvalidArgumentError:
+                prob = 0.5
+                pred = self.global_mean
+            return prob[0], pred[0]
+
+    def recommend_user(self, u, n_rec):
+        user_indices = np.full(self.n_items, u)
+        item_indices = np.arange(self.n_items)
+        target = self.pred if self.task == "rating" else self.y_prob
+        preds = self.sess.run(target, feed_dict={self.user_indices: user_indices,
+                                                 self.item_indices: item_indices})
+        consumed = self.dataset.train_user[u]
+        count = n_rec + len(consumed)
+        ids = np.argpartition(preds, -count)[-count:]
+        rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
+        return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
 
 
 
-class NCF:
+class NCF_ranking:
     def __init__(self, embed_size, lr, n_epochs=20, reg=0.0,
                  batch_size=64, dropout=0.0, seed=42):
         self.embed_size = embed_size
