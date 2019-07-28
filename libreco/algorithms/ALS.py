@@ -11,12 +11,15 @@ References:
 author: massquantity
 
 """
+import os
 import time
+import subprocess
 from operator import itemgetter
 import functools
 import itertools
 import logging
 import numpy as np
+import pandas as pd
 from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 from scipy import sparse
 from ..evaluate import rmse, MAP_at_k, MAR_at_k, NDCG_at_k, accuracy
@@ -107,11 +110,10 @@ class ALS_rating:
 
 
 class ALS_ranking:
-    def __init__(self, n_factors=100, n_epochs=20, reg=5.0, task="rating", seed=42, alpha=10, cg_steps=3):
+    def __init__(self, n_factors=100, n_epochs=20, reg=5.0, seed=42, alpha=10, cg_steps=3):
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.reg = reg
-        self.task = task
         self.seed = seed
         self.alpha = alpha
         self.cg_steps = cg_steps
@@ -176,6 +178,7 @@ class ALS_ranking:
                 r -= alpha * Ap
                 rs_new = r.dot(r)
                 if rs_new < 1e-10:
+                #    print("sample {} converged in step {}!!!".format(s, it + 1))
                     break
                 p = r + (rs_new / rs_old) * p
                 rs_old = rs_new
@@ -189,6 +192,7 @@ class ALS_ranking:
                                    mean=0.0, scale=0.05).astype(np.float32)
         self.Y = truncated_normal(shape=(dataset.n_items, self.n_factors),
                                    mean=0.0, scale=0.05).astype(np.float32)
+
         t0 = time.time()
         confidence_data = dok_matrix((dataset.n_users, dataset.n_items), dtype=np.float32)
         for u, i, l in zip(dataset.train_user_indices, dataset.train_item_indices, dataset.train_labels):
@@ -215,20 +219,16 @@ class ALS_ranking:
         #    method(confidence_data, self.X, self.Y, reg=self.reg, user=True, num_threads=0)
         #    method(confidence_data, self.Y, self.X, reg=self.reg, user=False, num_threads=0)
 
-            if verbose > 0 and epoch % 1 == 0 and self.task == "rating":
-                print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
-                print("training rmse: ", rmse(self, dataset, "train"))
-                print("test rmse: ", rmse(self, dataset, "test"))
-            elif verbose > 0 and epoch % 1 == 0 and self.task == "ranking":
+            if verbose > 0:
                 print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
                 t1 = time.time()
-                print("MAP@{}: {:.4f}".format(5, MAP_at_k(self, dataset, 5)))
+                print("MAP@{}: {:.4f}".format(10, MAP_at_k(self, dataset, 10)))
                 print("MAP time: {:.4f}".format(time.time() - t1))
                 t2 = time.time()
-                print("MAR@{}: {:.4f}".format(5, MAR_at_k(self, dataset, 5)))
+                print("MAR@{}: {:.4f}".format(10, MAR_at_k(self, dataset, 10)))
                 print("MAR time: {:.4f}".format(time.time() - t2))
                 t3 = time.time()
-                print("NDCG@{}: {:.4f}".format(5, NDCG_at_k(self, dataset, 5)))
+                print("NDCG@{}: {:.4f}".format(10, NDCG_at_k(self, dataset, 10)))
                 print("NDCG time: {:.4f}".format(time.time() - t3))
                 print()
             #    print("training accuracy: ", accuracy(self, dataset, "train"))
@@ -252,10 +252,7 @@ class ALS_ranking:
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
 
-    def use_qmf(self):
-        import logging
-        np.loadtxt()
-        pass
+
 
 
 
