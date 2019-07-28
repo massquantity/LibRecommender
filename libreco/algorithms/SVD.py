@@ -240,10 +240,7 @@ class SVD_tf:
 
     def recommend_user(self, u, n_rec):
         items = np.arange(self.dataset.n_items)
-        if self.task == "rating":
-            target = self.pred
-        elif self.task == "ranking":
-            target = self.y_prob
+        target = self.pred if self.task == "rating" else self.y_prob
 
         preds = self.sess.run(target, feed_dict={self.user_indices: [u],
                                                  self.item_indices: items})
