@@ -156,34 +156,21 @@ def MAR_at_k(model, dataset, k):
 def HitRatio_at_k(model, dataset, k):
     HitRatio = []
     for u in dataset.train_user:
+        true_items = dataset.test_item_indices[np.where(dataset.test_user_indices == u)]
+        if len(true_items) == 0:
+            continue
         user_HitRatio = 0
-        ranklist = model.predict_user(u)
-        top_k = np.argsort(ranklist)[::-1][:k]
+        rank_list = model.recommend_user(u, k)
+        top_k = [i[0] for i in rank_list]
         for i in top_k:
-            if i in dataset.train_user[u]:
+            if i in true_items:
                 user_HitRatio += 1
         HitRatio.append(user_HitRatio / k)
     return np.mean(HitRatio)
 
 
-def NDCG_at_k_090(model, dataset, k):
-    NDCG = 0
-    for u in dataset.train_user:
-        DCG = 0
-        IDCG = 0
-        ranklist = model.predict_user(u)
-        top_k = np.argsort(ranklist)[::-1][:k]
-        for n, item in enumerate(top_k):
-            if item in dataset.train_user[u]:
-                DCG += np.reciprocal(np.log2(n + 2))
-        for n in range(k):
-            IDCG += np.reciprocal(np.log2(n + 2))
-        NDCG += DCG / IDCG
-    return NDCG / dataset.n_users
-
-
 def NDCG_at_k(model, dataset, k):
-    NDCG = 0
+    NDCG = []
     for u in dataset.train_user:
         DCG = 0
         IDCG = 0
@@ -198,8 +185,8 @@ def NDCG_at_k(model, dataset, k):
         optimal_items = min(len(true_items), k)
         for n in range(optimal_items):
             IDCG += np.reciprocal(np.log2(n + 2))
-        NDCG += DCG / IDCG
-    return NDCG / dataset.n_users
+        NDCG.append(DCG / IDCG)
+    return np.mean(NDCG)
 
 
 def NDCG_at_k_tf(labels, predictions, k):
