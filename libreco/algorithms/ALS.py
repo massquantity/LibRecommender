@@ -13,13 +13,11 @@ author: massquantity
 """
 import os
 import time
-import subprocess
 from operator import itemgetter
 import functools
 import itertools
 import logging
 import numpy as np
-import pandas as pd
 from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 from scipy import sparse
 from ..evaluate import rmse, MAP_at_k, MAR_at_k, NDCG_at_k, accuracy
