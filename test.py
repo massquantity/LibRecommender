@@ -3,8 +3,7 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path, PurePath
 from libreco.dataset import DatasetPure, DatasetFeat
-from libreco.algorithms import userKNN, FmFeat
-from libreco.evaluate import rmse_knn, rmse_svd, rmse_tf, MAP_at_k, AP_at_k
+from libreco.algorithms import userKNN, FmFeat, WideDeep, WideDeepCustom
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
@@ -22,21 +21,46 @@ if __name__ == "__main__":
 #   print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit))
 #    print("data processing time: {:.2f}".format(time.time() - t0))
 
-
     conf = {
         "data_path": "ml-1m/merged_data.csv",
+        "sep": ",",
+        "header": None,
+        "col_names": ['user', 'item', 'label', 'sex', 'age', 'occupation', 'title', 'genre1', 'genre2', 'genre3'],
         "length": 100000,
+        "user_col": 'user',
+        "item_col": 'item',
+        "label_col": 'label',
+        "user_feature_cols": ["sex", "age", "occupation"],
+        "item_feature_cols": ['title', 'genre1', 'genre2', 'genre3'],
+        "convert_implicit": True,
+        "build_negative": True,
+        "num_neg": 2,
+    }
+
+    dataset = DatasetFeat(include_features=True)
+    dataset.load_pandas(**conf)
+    print("data processing time: {:.2f}".format(time.time() - t0))
+#    import pstats, cProfile
+#    cProfile.run("dataset.load_pandas(**conf)")
+#    s = pstats.Stats("Profile.prof")
+#    s.strip_dirs().sort_stats("time").print_stats()
+
+    '''
+    conf = {
+        "data_path": "ml-1m/merged_data.csv",
+        "length": "all",
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
         "numerical_col": None,
         "categorical_col": [3, 4, 5, 6],
         "merged_categorical_col": [[7, 8, 9]],
-        "item_sample_col": [6, 7, 8, 9],
+        "item_feature_cols": [6, 7, 8, 9],
         "convert_implicit": True,
         "build_negative": True,
         "num_neg": 2,
         "batch_size": 256,
+        "sep": ",",
     }
 
     dataset = DatasetFeat(include_features=True)
@@ -52,7 +76,7 @@ if __name__ == "__main__":
     print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
     print("data processing time: {:.2f}".format(time.time() - t0))
     print()
-
+    '''
 #    user_knn = userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
 #    user_knn.fit(dataset)
 #    t1 = time.time()
@@ -126,21 +150,21 @@ if __name__ == "__main__":
 #    print(wd.predict(1, 2, "2001-1-8"))
 #    print(wd.predict_user(1))
 
-#    wdc = wide_deep.WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking")
-#    wdc.fit(dataset)
-#    print(wdc.predict_ui(1, 2, "2001-1-8"))
-#    print(wdc.predict_user(1))
+    wdc = WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking")
+    wdc.fit(dataset)
+    print(wdc.predict_ui(1, 2, "2001-1-8"))
+    print(wdc.predict_user(1))
 
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-    fm = FmFeat(lr=0.0001, n_epochs=2, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-    fm.fit(dataset, pre_sampling=True)
-    export_model_tf(fm, "FM", "1", simple_save=False)
-    current_path = Path(".").resolve()
-    fb_path = str(Path.joinpath(current_path, "serving/models/others/feature_builder.jb"))
-    conf_path = str(Path.joinpath(current_path, "serving/models/others/conf.jb"))
-    export_feature_transform(fb_path, conf_path, dataset.fb, conf)
+#    fm = FmFeat(lr=0.0001, n_epochs=2, reg=0.0, n_factors=16, batch_size=256, task="ranking")
+#    fm.fit(dataset, pre_sampling=True)
+#    export_model_tf(fm, "FM", "1", simple_save=False)
+#    current_path = Path(".").resolve()
+#    fb_path = str(Path.joinpath(current_path, "serving/models/others/feature_builder.jb"))
+#    conf_path = str(Path.joinpath(current_path, "serving/models/others/conf.jb"))
+#    export_feature_transform(fb_path, conf_path, dataset.fb, conf)
 
 #    num = {}
 #    cat = {3: 'F', 4: 1, 5: 10, 6: 2452.0}
