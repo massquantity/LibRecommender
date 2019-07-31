@@ -124,6 +124,7 @@ class NegativeSampling:
                np.array(batch_item_indices)[indices], \
                np.array(batch_label_indices)[indices]
 
+
 class NegativeSamplingFeat_67876:
     def __init__(self, dataset, num_neg, batch_size=64, seed=42, replacement_sampling=True, item_cols=None):
         self.dataset = dataset
@@ -167,10 +168,10 @@ class NegativeSamplingFeat_67876:
                 item_neg += (self.dataset.user_offset + self.dataset.n_users)
 
                 dt = self.dataset.train_feat_indices.copy()
-                item_cols = dt[dt[:, -1] == item_neg][0, self.dataset.item_sample_col]
+                item_cols = dt[dt[:, -1] == item_neg][0, self.dataset.item_feature_cols]
                 ss = sample.copy()
                 ss[-1] = item_neg
-                ss[self.dataset.item_sample_col] = item_cols.copy()
+                ss[self.dataset.item_feature_cols] = item_cols.copy()
 
             #    ss = sample.copy()
             #    ss[-1] = item_neg
@@ -192,13 +193,13 @@ class NegativeSamplingFeat_67876:
                 item_neg += (self.dataset.user_offset + self.dataset.n_users)
 
                 dt = self.dataset.train_feat_indices[self.dataset.train_feat_indices[:, -1] == item_neg].tolist()[0]
-                for col in self.dataset.item_sample_col:
+                for col in self.dataset.item_feature_cols:
                     ss[col] = dt[col]
 
-            #    item_cols = dt[dt[:, -1] == item_neg][0, self.dataset.item_sample_col]
+            #    item_cols = dt[dt[:, -1] == item_neg][0, self.dataset.item_feature_cols]
             #    ss = sample.copy()
             #    ss[-1] = item_neg
-            #    ss[self.dataset.item_sample_col] = item_cols.copy()
+            #    ss[self.dataset.item_feature_cols] = item_cols.copy()
 
             #    ss = sample.copy()
             #    ss[-1] = item_neg
@@ -264,10 +265,10 @@ class NegativeSamplingFeat_67876:
 
                 item_neg += (self.dataset.user_offset + self.dataset.n_users)  # item offset
                 dt = self.dataset.train_feat_indices.copy()
-                item_cols = dt[dt[:, -1] == item_neg][0, self.dataset.item_sample_col]
+                item_cols = dt[dt[:, -1] == item_neg][0, self.dataset.item_feature_cols]
                 ss = sample.copy()
                 ss[-1] = item_neg
-                ss[self.dataset.item_sample_col] = item_cols.copy()
+                ss[self.dataset.item_feature_cols] = item_cols.copy()
                 indices.append(ss)
                 values.append(batch_feat_values[i])
                 labels.append(0.0)
@@ -275,6 +276,7 @@ class NegativeSamplingFeat_67876:
         self.i += 1
         random_mask = np.random.permutation(len(batch_feat_indices))
         return np.array(indices)[random_mask], np.array(values)[random_mask], np.array(labels)[random_mask]
+
 
 class NegativeSamplingFeat:
     def __init__(self, dataset, num_neg, batch_size=64, seed=42, replacement_sampling=True,
@@ -302,8 +304,8 @@ class NegativeSamplingFeat:
 
     def __neg_feat_dict(self):
         neg_dict = dict()
-        total_items_col = [-1]
-        total_items_col.extend(self.dataset.item_sample_col)  # if item_sample_col is None ###########
+        total_items_col = [-1]  # last col is item
+        total_items_col.extend(self.dataset.item_feature_cols)  # if item_feature_cols is None ###########
         total_items_unique = np.unique(self.dataset.train_feat_indices[:, total_items_col], axis=0)
         total_items = total_items_unique[:, 0]
         total_items_featcol = np.delete(total_items_unique, 0, axis=1)
@@ -339,7 +341,7 @@ class NegativeSamplingFeat:
 
             #    dt = self.dataset.train_feat_indices[self.dataset.train_feat_indices[:, -1] == item_neg][0]
                 dt = self.neg_dict[item_neg]
-                for col, orig_col in enumerate(self.dataset.item_sample_col):
+                for col, orig_col in enumerate(self.dataset.item_feature_cols):
                     ss[orig_col] = dt[col]
                 ss[-1] = item_neg
 
@@ -385,7 +387,7 @@ class NegativeSamplingFeat:
                     item_neg += (self.dataset.user_offset + self.dataset.n_users)  # item offset
                 #    dt = self.dataset.train_feat_indices[self.dataset.train_feat_indices[:, -1] == item_neg].tolist()[0]
                     dt = self.neg_dict[item_neg]
-                    for c, col in enumerate(self.dataset.item_sample_col):
+                    for c, col in enumerate(self.dataset.item_feature_cols):
                         ss[col] = dt[c]
                     ss[-1] = item_neg
 

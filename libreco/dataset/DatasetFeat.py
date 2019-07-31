@@ -58,7 +58,7 @@ class DatasetFeat:
                       train_frac=0.8, convert_implicit=False, build_negative=False, seed=42,
                       num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
                       numerical_col=None, categorical_col=None, merged_categorical_col=None,
-                      item_sample_col=None):  # numerical feature 不做 embedding
+                      item_feature_cols=None):  # numerical feature 不做 embedding
 
         np.random.seed(seed)
         self.batch_size = batch_size
@@ -191,15 +191,15 @@ class DatasetFeat:
         if convert_implicit:
             self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
             self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
-        #    self.item_sample_col = [(i - 3) for i in item_sample_col]  # remove user item label column
-            for i, col in enumerate(item_sample_col):  # remove user item label column
+        #    self.item_feature_cols = [(i - 3) for i in item_feature_cols]  # remove user item label column
+            for i, col in enumerate(item_feature_cols):  # remove user item label column
                 if col > user_col:
-                    item_sample_col[i] -= 1
+                    item_feature_cols[i] -= 1
                 if col > item_col:
-                    item_sample_col[i] -= 1
+                    item_feature_cols[i] -= 1
                 if col > label_col:
-                    item_sample_col[i] -= 1
-            self.item_sample_col = item_sample_col
+                    item_feature_cols[i] -= 1
+            self.item_feature_cols = item_feature_cols
 
         if build_negative:
             self.build_trainset_implicit(num_neg)
@@ -458,74 +458,82 @@ class DatasetFeat:
     def load_pandas(self, data_path="../ml-1m/ratings.dat", header="infer", col_names=None, length="all",
                       train_frac=0.8, convert_implicit=False, build_negative=False, seed=42,
                       num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
-                      item_sample_col=None):
+                      user_feature_cols=None, item_feature_cols=None):
 
-        if isinstance(item_sample_col[0], str) and col_names is None:
-            raise TypeError("user_col, item_col, item_sample_col... must be integer if col_names are not provided")
-        elif isinstance(item_sample_col[0], str) and col_names is not None:
+        np.random.seed(seed)
+        if isinstance(item_feature_cols[0], str) and col_names is None:
+            raise TypeError("user_col, item_col, item_feature_cols... must be integer if col_names are not provided")
+        elif isinstance(item_feature_cols[0], str) and col_names is not None:
             assert isinstance(col_names[0], str), "col_names must be string"
             # extract sample column indices in col_names
             _, user_col, _ = np.intersect1d(col_names, user_col, assume_unique=True, return_indices=True)
             _, item_col, _ = np.intersect1d(col_names, item_col, assume_unique=True, return_indices=True)
             _, label_col, _ = np.intersect1d(col_names, label_col, assume_unique=True, return_indices=True)
-            _, item_sample_col, _ = np.intersect1d(col_names, item_sample_col, assume_unique=True, return_indices=True)
+            _, user_feature_cols, _ = np.intersect1d(col_names, user_feature_cols, assume_unique=True,
+                                                     return_indices=True)
+            _, item_feature_cols, _ = np.intersect1d(col_names, item_feature_cols, assume_unique=True,
+                                                     return_indices=True)
+
             user_col = user_col[0]
             item_col = item_col[0]
             label_col = label_col[0]
-            item_sample_col.sort()
+            item_feature_cols.sort()
+            user_feature_cols.sort()
 
         if length == "all":
             length = None
         loaded_data = pd.read_csv(data_path, sep=sep, header=header, names=col_names, nrows=length)
-        test_size = 1 - train_frac
-        train_data, test_data = train_test_split(loaded_data, test_size=test_size, random_state=2019)
-    #    train_data = pd.DataFrame(train_data)
-    #    test_data = pd.DataFrame(test_data)
+        train_data, test_data = train_test_split(loaded_data, train_size=train_frac, random_state=2019)
         train_data = train_data.values
         test_data = test_data.values
 
-    #    column_names = list(train_data.columns)
-        unique_values = dict()  # unique values of every column
         print("test size before filtering: ", len(test_data))
+        unique_values = dict()  # unique values of every column
         out_of_bounds_indices = set()
         for col in range(train_data.shape[1]):
-            unique_values[col] = np.unique(train_data[:, col])
-            # filter test values that are not in train_data
-        #    test_data = test_data[np.isin(test_data[:, col], unique_values[col])]
-
-            aa = set(unique_values[col])
+            key = col_names[col]
+            unique_values[key] = pd.unique(train_data[:, col])
+            unique_values_set = set(unique_values[key])
             for i, t in enumerate(test_data[:, col]):
-                if t not in aa:
+                if t not in unique_values_set:  # set is much faster for search contains
                     out_of_bounds_indices.add(i)
 
         mask = np.arange(len(test_data))
-        test_data = test_data[~np.isin(mask, list(out_of_bounds_indices))]
+    #    test_data = test_data[~np.isin(mask, list(out_of_bounds_indices))]  # filter test values that are not in train_data
+        test_data = test_data[np.invert(np.isin(mask, list(out_of_bounds_indices), assume_unique=True))]
         print("test size after filtering: ", len(test_data))
+
+        self.user_dict = dict()  # user_dict contains unique users and their features
+        total_users_col = [user_col]
+        total_users_col.extend(user_feature_cols)
+        train_data_items = pd.DataFrame(train_data[:, total_users_col])
+        total_users_unique = train_data_items.drop_duplicates().values
+        total_users = total_users_unique[:, 0]
+        for user, user_columns in zip(total_users, total_users_unique):
+            self.user_dict[user] = user_columns.tolist()
+
+        self.item_dict = dict()  # item_dict contains unique items and their features
+        total_items_col = [item_col]
+        total_items_col.extend(item_feature_cols)
+        train_data_items = pd.DataFrame(train_data[:, total_items_col])
+        total_items_unique = train_data_items.drop_duplicates().values
+        total_items = total_items_unique[:, 0]
+        for item, item_columns in zip(total_items, total_items_unique):
+            self.item_dict[item] = item_columns.tolist()
 
         if convert_implicit:
             train_data[:, label_col] = 1.0
             test_data[:, label_col] = 1.0
 
         if build_negative:   # negative sampling
-            unique_items = unique_values[item_col]
-            unique_indices_items = {i: item for i, item in enumerate(unique_items)}  # this will make random choice a lot faster
-        #    unique_items_indices = {item: i for i, item in enumerate(unique_items)}
-
-            neg_dict = dict()  # neg_dict contains unique items and their features
-            total_items_col = [item_col]
-            total_items_col.extend(item_sample_col)
-            train_data_items = pd.DataFrame(train_data[:, total_items_col])
-            total_items_unique = train_data_items.drop_duplicates().values
-            total_items = total_items_unique[:, 0]
-            for item, item_columns in zip(total_items, total_items_unique):
-                neg_dict[item] = item_columns.tolist()
-
             consumed_items = defaultdict(set)
             for user, item in zip(train_data[:, user_col], train_data[:, item_col]):
                 consumed_items[user].add(item)
 
+            unique_items = unique_values[col_names[item_col]]
+            #   reindexing this will make random choice a lot faster
+            unique_indices_items = {i: item for i, item in enumerate(unique_items)}
             train_negative_samples = []
-            t0 = time.time()
             for s in train_data:
                 sample = s.tolist()
                 u = sample[user_col]
@@ -534,26 +542,21 @@ class DatasetFeat:
                     while item_neg in consumed_items[u]:
                         item_neg = np.random.randint(0, len(unique_items))
 
-                    neg_item = neg_dict[unique_indices_items[item_neg]]
+                    neg_item = self.item_dict[unique_indices_items[item_neg]]
                     for col, orig_col in enumerate(total_items_col):
                         sample[orig_col] = neg_item[col]
 
                     train_negative_samples.append(sample)
-            print("neg time: ", time.time() - t0)
 
-            t3 = time.time()
          #   train_data = np.concatenate([train_data, train_negative_samples], axis=0)
             train_data = pd.concat([pd.DataFrame(train_data), pd.DataFrame(train_negative_samples)], ignore_index=True)
             if col_names is not None:
                 train_data.columns = col_names
-            print("4: ", time.time() - t3)
-        #    if col_names is not None:
-        #        train_data = pd.DataFrame(train_data, columns=col_names)
 
 
-            test_consumed_items = consumed_items.copy()
+        #    test_consumed_items = consumed_items.copy()
             for user, item in zip(test_data[:, user_col], test_data[:, item_col]):
-                test_consumed_items[user].add(item)
+                consumed_items[user].add(item)  # plus test consumed items
 
             test_negative_samples = []
             for s in test_data:
@@ -561,21 +564,45 @@ class DatasetFeat:
                 u = sample[user_col]
                 for _ in range(num_neg):
                     item_neg = np.random.randint(0, len(unique_items))
-                    while item_neg in test_consumed_items[u]:
+                    while item_neg in consumed_items[u]:
                         item_neg = np.random.randint(0, len(unique_items))
 
-                    neg_item = neg_dict[unique_indices_items[item_neg]]
+                    neg_item = self.item_dict[unique_indices_items[item_neg]]
                     for col, orig_col in enumerate(total_items_col):
                         sample[orig_col] = neg_item[col]
 
                     test_negative_samples.append(sample)
-            test_data = np.concatenate([test_data, test_negative_samples], axis=0)
-            print("test data after negative sampling: ", len(test_data))
+
+            test_data = pd.concat([pd.DataFrame(test_data), pd.DataFrame(test_negative_samples)], ignore_index=True)
+            if col_names is not None:
+                test_data.columns = col_names
+            print("test size after negative sampling: {}, all data size: {}".format(
+                len(test_data), len(train_data) + len(test_data)))
+
+        else:
+            train_data = pd.DataFrame(train_data)
+            test_data = pd.DataFrame(test_data)
+            if col_names is not None:
+                train_data.columns = col_names
+                test_data.columns = col_names
 
         self.train_data = train_data
         self.test_data = test_data
-        self.column_names = list(train_data.columns)
+        self.feature_cols = set(list(train_data.columns)) - set(list([col_names[label_col]]))
+        self.user_feature_cols = np.array(col_names)[total_users_col]
+        self.item_feature_cols = np.array(col_names)[total_items_col]
+        self.label_cols = col_names[label_col]
         self.col_unique_values = unique_values
+
+        for col, type in loaded_data.dtypes.items():
+            if type == np.float32 or type == np.float64:
+                self.col_unique_values[col] = self.col_unique_values[col].astype(int)
+                self.train_data[col] = self.train_data[col].astype(int)
+                self.test_data[col] = self.test_data[col].astype(int)
+            else:
+                self.col_unique_values[col] = self.col_unique_values[col].astype(type)
+                self.train_data[col] = self.train_data[col].astype(type)
+                self.test_data[col] = self.test_data[col].astype(type)
 
     def build_trainset_implicit(self, num_neg):
         neg = NegativeSamplingFeat(self, num_neg, self.batch_size, replacement_sampling=True)
