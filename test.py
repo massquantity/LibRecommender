@@ -1,4 +1,5 @@
 import os, time, sys
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import numpy as np
 import tensorflow as tf
 from pathlib import Path, PurePath
@@ -150,7 +151,8 @@ if __name__ == "__main__":
 #    print(wd.predict(1, 2, "2001-1-8"))
 #    print(wd.predict_user(1))
 
-    wdc = WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking")
+#    wdc = WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking", cross_features=False)
+    wdc = WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking", cross_features=True)
     wdc.fit(dataset)
     print(wdc.predict_ui(1, 2, "2001-1-8"))
     print(wdc.predict_user(1))

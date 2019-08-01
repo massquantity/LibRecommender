@@ -546,6 +546,7 @@ class DatasetFeat:
                     for col, orig_col in enumerate(total_items_col):
                         sample[orig_col] = neg_item[col]
 
+                    sample[label_col] = 0.0
                     train_negative_samples.append(sample)
 
          #   train_data = np.concatenate([train_data, train_negative_samples], axis=0)
@@ -588,7 +589,7 @@ class DatasetFeat:
 
         self.train_data = train_data
         self.test_data = test_data
-        self.feature_cols = set(list(train_data.columns)) - set(list([col_names[label_col]]))
+        self.feature_cols = list(set(list(train_data.columns)) - set(list([col_names[label_col]])))
         self.user_feature_cols = np.array(col_names)[total_users_col]
         self.item_feature_cols = np.array(col_names)[total_items_col]
         self.label_cols = col_names[label_col]

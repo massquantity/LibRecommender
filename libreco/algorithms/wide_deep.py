@@ -8,7 +8,7 @@ from tensorflow.python.estimator import estimator
 
 
 class WideDeep:
-    def __init__(self, embed_size, n_epochs=20, reg=0.0,
+    def __init__(self, embed_size, n_epochs=20, reg=0.0, cross_features=False,
                  batch_size=64, dropout=0.0, seed=42, task="rating"):
         self.embed_size = embed_size
         self.n_epochs = n_epochs
@@ -17,30 +17,32 @@ class WideDeep:
         self.dropout = dropout
         self.seed = seed
         self.task = task
+        self.cross_features = cross_features
 
     def build_model(self, dataset):
-        '''
-        users = tf.feature_column.categorical_column_with_vocabulary_list("user", np.arange(dataset.n_users))
-        items = tf.feature_column.categorical_column_with_vocabulary_list("item", np.arange(dataset.n_items))
-        timestamps = tf.feature_column.numeric_column("timestamp")
-        wide_cols = [tf.feature_column.crossed_column([users, items], hash_bucket_size=1000),
-                     tf.feature_column.bucketized_column(timestamps,
-                                                         boundaries=[9.653026e+08, 9.722437e+08, 9.752209e+08])]
-        deep_cols = [tf.feature_column.embedding_column(users, dimension=self.embed_size),
-                     tf.feature_column.embedding_column(items, dimension=self.embed_size),
-                     tf.feature_column.bucketized_column(timestamps,
-                                                         boundaries=[9.653026e+08, 9.722437e+08, 9.752209e+08])]
-        '''
+        wide_cols = []
+        deep_cols = []
+        if self.cross_features:
+            for i in range(len(dataset.feature_cols)):
+                for j in range(i + 1, len(dataset.feature_cols)):
+                    col1 = dataset.feature_cols[i]
+                    col2 = dataset.feature_cols[j]
+                    if col1 not in ["user", "item"] and col2 not in ["user", "item"]:
+                        col1_feat = feat_col.categorical_column_with_vocabulary_list(
+                            col1, dataset.col_unique_values[col1])
+                        col2_feat = feat_col.categorical_column_with_vocabulary_list(
+                            col2, dataset.col_unique_values[col2])
+                        wide_cols.append(feat_col.crossed_column([col1_feat, col2_feat], hash_bucket_size=1000))
 
-        users = tf.feature_column.categorical_column_with_vocabulary_list("user", np.arange(dataset.n_users))
-        items = tf.feature_column.categorical_column_with_vocabulary_list("item", np.arange(dataset.n_items))
-        timestamps_onehot = tf.feature_column.categorical_column_with_vocabulary_list(
-                            "timestamp", np.arange(dataset.kb.n_bins_))
-        wide_cols = [tf.feature_column.crossed_column([users, items], hash_bucket_size=1000),
-                     timestamps_onehot]
-        deep_cols = [tf.feature_column.embedding_column(users, dimension=self.embed_size),
-                     tf.feature_column.embedding_column(items, dimension=self.embed_size),
-                     tf.feature_column.indicator_column(timestamps_onehot)]
+            for col in dataset.feature_cols:
+                col_feat = feat_col.categorical_column_with_vocabulary_list(col, dataset.col_unique_values[col])
+                deep_cols.append(feat_col.embedding_column(col_feat, dimension=self.embed_size))
+
+        else:
+            for col in dataset.feature_cols:
+                col_feat = feat_col.categorical_column_with_vocabulary_list(col, dataset.col_unique_values[col])
+                wide_cols.append(col_feat)
+                deep_cols.append(feat_col.embedding_column(col_feat, dimension=self.embed_size))
 
         config = tf.estimator.RunConfig(log_step_count_steps=1000, save_checkpoints_steps=10000)
         if self.task == "rating":
@@ -73,61 +75,36 @@ class WideDeep:
             raise ValueError("task must be rating or ranking")
 
     @staticmethod
-    def input_fn(data, original_data=None, repeat=10, batch=256, mode="train", task="rating", user=1):
+    def input_fn(data, original_data=None, repeat=10, batch=256, mode="train", task="rating", user=None):
         if mode == "train":
-            if task == "rating":
-                features = {'user': data.train_user_indices,
-                            'item': data.train_item_indices,
-                            'timestamp': data.train_timestamp}
-                labels = data.train_ratings
-            elif task == "ranking":
-                features = {'user': data.train_user_implicit,
-                            'item': data.train_item_implicit,
-                            'timestamp': data.train_timestamp}
-                labels = data.train_label_implicit
+            features = {col: data.train_data[col].values for col in data.feature_cols}
+            labels = data.train_data[data.label_cols].values
 
             train_data = tf.data.Dataset.from_tensor_slices((features, labels))
-            return train_data.shuffle(len(data.train_ratings)).repeat(repeat).batch(batch)
+            return train_data.shuffle(len(labels)).repeat(repeat).batch(batch)
 
         elif mode == "evaluate":
-            if task == "rating":
-                features = {'user': data.test_user_indices.reshape(-1, 1),
-                            'item': data.test_item_indices.reshape(-1, 1),
-                            'timestamp': data.test_timestamp.reshape(-1, 1)}
-                labels = data.test_ratings.reshape(-1, 1)
-            elif task == "ranking":
-                features = {'user': data.test_user_implicit.reshape(-1, 1),
-                            'item': data.test_item_implicit.reshape(-1, 1),
-                            'timestamp': data.test_timestamp.reshape(-1, 1)}
-                labels = data.test_label_implicit.reshape(-1, 1)
+            features = {col: data.test_data[col].values.reshape(-1, 1) for col in data.feature_cols}
+            labels = data.test_data[data.label_cols].values.reshape(-1, 1)
 
             evaluate_data = tf.data.Dataset.from_tensor_slices((features, labels))
             return evaluate_data
 
         elif mode == "test":
-            features = {'user': np.array(data[0]).reshape(-1,1),
-                        'item': np.array(data[1]).reshape(-1,1)}
-            try:
-                ts = time.mktime(time.strptime(data[2][0], "%Y-%m-%d"))
-                ts = np.array(ts).reshape(-1, 1)
-                features['timestamp'] = original_data.kb.transform(ts).astype(int)
-            except IndexError:
-                print("use one day after max timestamp")
-                max_timestamp = float(max(max(data.train_timestamp), max(data.test_timestamp))) + 3600 * 24
-                max_timestamp = np.array(max_timestamp).reshape(-1, 1)
-                features['timestamp'] = original_data.kb.transform(max_timestamp).astype(int)
+            features = {col: data.test_data[col].values for col in data.feature_cols}
             test_data = tf.data.Dataset.from_tensor_slices(features)
             return test_data
 
         elif mode == "rank":
-            max_timestamp = float(max(max(data.train_timestamp), max(data.test_timestamp))) + 3600 * 24
-            max_timestamp = np.array(max_timestamp).reshape(-1, 1)
-            max_timestamp = original_data.kb.transform(max_timestamp).astype(int)
-            features = {'user': np.full(data.n_items, user).reshape(-1, 1),
-                        'item': np.arange(data.n_items).reshape(-1, 1),
-                        'timestamp': np.full(data.n_items, max_timestamp).reshape(-1, 1)}
-            test_data = tf.data.Dataset.from_tensor_slices(features)
-            return test_data
+            n_items = len(data.item_dict)
+            user_part = pd.DataFrame([data.user_dict[user]], columns=data.user_feature_cols)
+            user_part = user_part.reindex(user_part.index.repeat(n_items))
+            item_part = pd.DataFrame(list(data.item_dict.values()), columns=data.item_feature_cols)
+            features = {col: user_part[col].values for col in user_part.columns}
+            features.update({col: item_part[col].values for col in item_part.columns})
+
+            rank_data = tf.data.Dataset.from_tensor_slices(features)
+            return rank_data
 
     def fit(self, dataset):
         self.dataset = dataset
@@ -182,14 +159,19 @@ class WideDeepCustom(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO inh
         wide_cols = []
         deep_cols = []
         if self.cross_features:
-            for col1 in dataset.feature_cols:
-                for col2 in dataset.feature_cols:
-                    if col1 != col2 and col1 != "user" and col1 != "item" and col2 != "user" and col2 != "item":
-                        col1_feat = feat_col.categorical_column_with_vocabulary_list(
-                            col1, dataset.col_unique_values[col1])
-                        col2_feat = feat_col.categorical_column_with_vocabulary_list(
-                            col2, dataset.col_unique_values[col2])
-                        wide_cols.append(feat_col.crossed_column([col1_feat, col2_feat], hash_bucket_size=1000))
+            wide_cols = []
+            deep_cols = []
+            if self.cross_features:
+                for i in range(len(dataset.feature_cols)):
+                    for j in range(i + 1, len(dataset.feature_cols)):
+                        col1 = dataset.feature_cols[i]
+                        col2 = dataset.feature_cols[j]
+                        if col1 not in ["user", "item"] and col2 not in ["user", "item"]:
+                            col1_feat = feat_col.categorical_column_with_vocabulary_list(
+                                col1, dataset.col_unique_values[col1])
+                            col2_feat = feat_col.categorical_column_with_vocabulary_list(
+                                col2, dataset.col_unique_values[col2])
+                            wide_cols.append(feat_col.crossed_column([col1_feat, col2_feat], hash_bucket_size=1000))
 
             for col in dataset.feature_cols:
                 col_feat = feat_col.categorical_column_with_vocabulary_list(col, dataset.col_unique_values[col])
@@ -201,7 +183,7 @@ class WideDeepCustom(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO inh
                 wide_cols.append(col_feat)
                 deep_cols.append(feat_col.embedding_column(col_feat, dimension=self.embed_size))
 
-        config = tf.estimator.RunConfig(log_step_count_steps=1000, save_checkpoints_steps=10000)
+        config = tf.estimator.RunConfig(log_step_count_steps=100000, save_checkpoints_steps=100000)
         model = tf.estimator.Estimator(model_fn=WideDeepCustom.model_func,
                                        model_dir="wide_deep_dir",
                                        config=config,
@@ -289,14 +271,15 @@ class WideDeepCustom(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO inh
     def input_fn(data, original_data=None, repeat=10, batch=256, mode="train", task="rating", user=None):
         if mode == "train":
             features = {col: data.train_data[col].values for col in data.feature_cols}
+        #    features = {"age": data.train_data["age"].values}
             labels = data.train_data[data.label_cols].values
 
             train_data = tf.data.Dataset.from_tensor_slices((features, labels))
             return train_data.shuffle(len(labels)).repeat(repeat).batch(batch)
 
         elif mode == "evaluate":
-            features = {col: data.test_data[col].values for col in data.feature_cols}
-            labels = data.test_data[data.label_cols].values
+            features = {col: data.test_data[col].values.reshape(-1, 1) for col in data.feature_cols}
+            labels = data.test_data[data.label_cols].values.reshape(-1, 1)
 
             evaluate_data = tf.data.Dataset.from_tensor_slices((features, labels))
             return evaluate_data
