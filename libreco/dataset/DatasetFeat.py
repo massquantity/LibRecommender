@@ -510,7 +510,7 @@ class DatasetFeat:
         total_users_unique = train_data_items.drop_duplicates().values
         total_users = total_users_unique[:, 0]
         for user, user_columns in zip(total_users, total_users_unique):
-            self.user_dict[user] = user_columns.tolist()
+            self.user_dict[user] = user_columns
 
         self.item_dict = dict()  # item_dict contains unique items and their features
         total_items_col = [item_col]
@@ -519,7 +519,7 @@ class DatasetFeat:
         total_items_unique = train_data_items.drop_duplicates().values
         total_items = total_items_unique[:, 0]
         for item, item_columns in zip(total_items, total_items_unique):
-            self.item_dict[item] = item_columns.tolist()
+            self.item_dict[item] = item_columns
 
         if convert_implicit:
             train_data[:, label_col] = 1.0
@@ -572,6 +572,7 @@ class DatasetFeat:
                     for col, orig_col in enumerate(total_items_col):
                         sample[orig_col] = neg_item[col]
 
+                    sample[label_col] = 0.0
                     test_negative_samples.append(sample)
 
             test_data = pd.concat([pd.DataFrame(test_data), pd.DataFrame(test_negative_samples)], ignore_index=True)
@@ -589,21 +590,22 @@ class DatasetFeat:
 
         self.train_data = train_data
         self.test_data = test_data
-        self.feature_cols = list(set(list(train_data.columns)) - set(list([col_names[label_col]])))
+        self.feature_cols = sorted(list(set(list(train_data.columns)) - set(list([col_names[label_col]]))))
         self.user_feature_cols = np.array(col_names)[total_users_col]
         self.item_feature_cols = np.array(col_names)[total_items_col]
         self.label_cols = col_names[label_col]
         self.col_unique_values = unique_values
+        self.column_types = list(loaded_data.dtypes.items())
 
-        for col, type in loaded_data.dtypes.items():
-            if type == np.float32 or type == np.float64:
+        for col, col_type in self.column_types:
+            if col_type == np.float32 or col_type == np.float64:
                 self.col_unique_values[col] = self.col_unique_values[col].astype(int)
                 self.train_data[col] = self.train_data[col].astype(int)
                 self.test_data[col] = self.test_data[col].astype(int)
             else:
-                self.col_unique_values[col] = self.col_unique_values[col].astype(type)
-                self.train_data[col] = self.train_data[col].astype(type)
-                self.test_data[col] = self.test_data[col].astype(type)
+                self.col_unique_values[col] = self.col_unique_values[col].astype(col_type)
+                self.train_data[col] = self.train_data[col].astype(col_type)
+                self.test_data[col] = self.test_data[col].astype(col_type)
 
     def build_trainset_implicit(self, num_neg):
         neg = NegativeSamplingFeat(self, num_neg, self.batch_size, replacement_sampling=True)
