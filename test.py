@@ -152,10 +152,12 @@ if __name__ == "__main__":
 #    print(wd.predict_user(1))
 
 #    wdc = WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking", cross_features=False)
-    wdc = WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking", cross_features=True)
+    wdc = WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking", cross_features=False)
     wdc.fit(dataset)
-    print(wdc.predict_ui(1, 2, "2001-1-8"))
-    print(wdc.predict_user(1))
+#    print(wdc.predict_ui(1, 2))
+    t6 = time.time()
+    print(wdc.recommend_user(1, n_rec=10))
+    print("rec time: ", time.time() - t6)
 
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
