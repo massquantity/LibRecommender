@@ -1,3 +1,4 @@
+from collections import defaultdict
 import numpy as np
 import tensorflow as tf
 from sklearn.metrics import precision_score
@@ -169,12 +170,50 @@ def HitRatio_at_k(model, dataset, k):
     return np.mean(HitRatio)
 
 
-def NDCG_at_k(model, dataset, k):
+def NDCG_at_k(model, dataset, k, mode="normal"):
+    if mode.lower() == "wide_deep":
+        test_user_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "user"].values
+        test_item_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "item"].values
+        u_items = dataset.user_dict
+    else:
+        test_user_indices = dataset.test_user_indices
+        test_item_indices = dataset.test_item_indices
+        u_items = dataset.train_user
+
     NDCG = []
-    for u in dataset.train_user:
+    for u in list(u_items.keys())[:5]:
         DCG = 0
         IDCG = 0
-        true_items = dataset.test_item_indices[np.where(dataset.test_user_indices == u)]
+        true_items = test_item_indices[np.where(test_user_indices == u)]
+        if len(true_items) == 0:
+            continue
+        rank_list = model.recommend_user(u, k)
+        top_k = [i[0] for i in rank_list]
+        for n, item in enumerate(top_k):
+            if item in true_items:
+                DCG += np.reciprocal(np.log2(n + 2))
+        optimal_items = min(len(true_items), k)
+        for n in range(optimal_items):
+            IDCG += np.reciprocal(np.log2(n + 2))
+        NDCG.append(DCG / IDCG)
+    return np.mean(NDCG)
+
+
+def NDCG_at_k_wd(model, dataset, k):
+    u_items = defaultdict(list)
+    for u in dataset.user_dict:
+        items = dataset.test_data.loc[(dataset.test_data.user == u) & (dataset.test_data.label == 1.0), "item"].values
+        u_items[u].extend(items)
+
+#    test_user_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "user"].values
+#    test_item_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "item"].values
+    NDCG = []
+    for u in list(dataset.user_dict.keys())[:5]:  ############# [:5]
+        DCG = 0
+        IDCG = 0
+    #    true_items = dataset.test_data.loc[(dataset.test_data.user == u) & (dataset.test_data.label == 1.0), "item"]
+    #    true_items = test_item_indices[np.where(test_user_indices == u)]
+        true_items = u_items[u]
         if len(true_items) == 0:
             continue
         rank_list = model.recommend_user(u, k)
