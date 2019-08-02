@@ -1,5 +1,6 @@
 import time
 from operator import itemgetter
+import itertools
 import numpy as np
 from ..evaluate import rmse, MAP_at_k, accuracy, precision_tf
 from ..utils.initializers import truncated_normal
@@ -240,12 +241,15 @@ class SVD_tf:
 
     def recommend_user(self, u, n_rec):
         items = np.arange(self.dataset.n_items)
+        consumed = self.dataset.train_user[u]
+        count = n_rec + len(consumed)
         target = self.pred if self.task == "rating" else self.y_prob
 
         preds = self.sess.run(target, feed_dict={self.user_indices: [u],
                                                  self.item_indices: items})
-        rank = np.argpartition(preds, -n_rec)[-n_rec:]
-        return sorted(zip(rank, preds[rank]), key=lambda x: -x[1])
+        ids = np.argpartition(preds, -count)[-count:]
+        rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
+        return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
 
 
 
