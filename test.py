@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path, PurePath
 from libreco.dataset import DatasetPure, DatasetFeat
-from libreco.algorithms import userKNN, FmFeat, WideDeep, WideDeepCustom
+from libreco.algorithms import userKNN, FmFeat, WideDeep, WideDeepCustom, WideDeep_tf
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
@@ -21,7 +21,7 @@ if __name__ == "__main__":
 #                              convert_implicit=True, build_negative=True, batch_size=256, num_neg=1)
 #   print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit))
 #    print("data processing time: {:.2f}".format(time.time() - t0))
-
+    '''
     conf = {
         "data_path": "ml-1m/merged_data.csv",
         "sep": ",",
@@ -47,6 +47,7 @@ if __name__ == "__main__":
 #    s.strip_dirs().sort_stats("time").print_stats()
 
     '''
+
     conf = {
         "data_path": "ml-1m/merged_data.csv",
         "length": "all",
@@ -57,8 +58,8 @@ if __name__ == "__main__":
         "categorical_col": [3, 4, 5, 6],
         "merged_categorical_col": [[7, 8, 9]],
         "item_feature_cols": [6, 7, 8, 9],
-        "convert_implicit": True,
-        "build_negative": True,
+        "convert_implicit": False,
+        "build_negative": False,
         "num_neg": 2,
         "batch_size": 256,
         "sep": ",",
@@ -74,10 +75,10 @@ if __name__ == "__main__":
 #    dataset.leave_k_out_split(4, data_path="ml-1m/merged_data.csv", length="all", sep=",", shuffle=True,
 #                              user_col=0, item_col=1, label_col=2, numerical_col=None, categorical_col=[3, 4, 5],
 #                              merged_categorical_col=[[6, 7, 8]])
-    print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
+#    print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
     print("data processing time: {:.2f}".format(time.time() - t0))
     print()
-    '''
+
 #    user_knn = userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
 #    user_knn.fit(dataset)
 #    t1 = time.time()
@@ -151,13 +152,14 @@ if __name__ == "__main__":
 #    print(wd.predict(1, 2, "2001-1-8"))
 #    print(wd.predict_user(1))
 
-#    wdc = WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking", cross_features=False)
-    wdc = WideDeepCustom(embed_size=16, n_epochs=1, batch_size=256, task="ranking", cross_features=False)
+#    wdc = WideDeep(embed_size=16, n_epochs=1, batch_size=256, task="ranking", cross_features=False)
+#    wdc = WideDeepCustom(lr=0.01, embed_size=16, n_epochs=1, batch_size=256, task="ranking", cross_features=False)
+    wdc = WideDeep_tf(lr=0.01, embed_size=16, n_epochs=100, batch_size=256, dropout_rate=0.0, task="rating")
     wdc.fit(dataset)
-#    print(wdc.predict_ui(1, 2))
-    t6 = time.time()
-    print(wdc.recommend_user(1, n_rec=10))
-    print("rec time: ", time.time() - t6)
+    print(wdc.predict(1, 2))
+#    t6 = time.time()
+#    print(wdc.recommend_user(1, n_rec=10))
+#    print("rec time: ", time.time() - t6)
 
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
