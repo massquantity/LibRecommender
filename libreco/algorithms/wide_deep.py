@@ -14,6 +14,7 @@ import tensorflow as tf
 from tensorflow import feature_column as feat_col
 from tensorflow.python.estimator import estimator
 from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, HitRatio_at_k, NDCG_at_k, NDCG_at_k_wd
+from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 
 class WideDeep:
@@ -158,11 +159,11 @@ class WideDeep:
                           key=itemgetter(1), reverse=True)[:10]
 
 
-
 # TODO batch_norm, dropout
 class WideDeepCustom(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO inheritance
-    def __init__(self, embed_size, n_epochs=20, reg=0.0, cross_features=False,
+    def __init__(self, lr, embed_size, n_epochs=20, reg=0.0, cross_features=False,
                  batch_size=64, dropout=0.0, seed=42, task="rating"):
+        self.lr = lr
         self.embed_size = embed_size
         self.n_epochs = n_epochs
         self.reg = reg
@@ -275,18 +276,8 @@ class WideDeepCustom(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO inh
 
         assert mode == tf.estimator.ModeKeys.TRAIN
 
-        '''
-        train_op = []
-        optimizer2 = tf.train.AdamOptimizer(learning_rate=0.01)
-        training_op2 = optimizer2.minimize(loss, global_step=tf.train.get_global_step())
-        train_op.append(training_op2)
-        optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3) ### Adagrad
-        training_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
-        train_op.append(training_op)
-        return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=tf.group(*train_op))
-        '''
     #    optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3)
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.007)
+        optimizer = tf.train.AdamOptimizer(learning_rate=self.lr)
     #    optimizer = tf.train.AdagradOptimizer(learning_rate=0.01)
     #    optimizer = tf.train.ProximalAdagradOptimizer(learning_rate=0.01)
         training_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
@@ -391,6 +382,174 @@ class WideDeepCustom(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO inh
             rank = np.array([res['probabilities'][0] for res in rank_list])
             indices = np.argpartition(rank, -n_rec)[-n_rec:]
             return sorted(zip(items[indices], rank[indices]), key=itemgetter(1), reverse=True)
+
+
+class WideDeep_tf:
+    def __init__(self, lr, n_epochs=20, embed_size=100, reg=0.0, batch_size=256, seed=42, 
+                 dropout_rate=0.0, task="rating"):
+        self.lr = lr
+        self.n_epochs = n_epochs
+        self.embed_size = embed_size
+        self.reg = reg
+        self.batch_size = batch_size
+        self.dropout_rate = dropout_rate
+        self.seed = seed
+        self.task = task
+
+    def build_model(self, dataset):
+        tf.set_random_seed(self.seed)
+        self.dataset = dataset
+        self.field_size = dataset.train_feat_indices.shape[1]
+        self.feature_size = dataset.feature_size
+        self.n_users = dataset.n_users
+        self.n_items = dataset.n_items
+
+        self.feature_indices = tf.placeholder(tf.int32, shape=[None, self.field_size])
+        self.feature_values = tf.placeholder(tf.float32, shape=[None, self.field_size])
+        self.labels = tf.placeholder(tf.float32, shape=[None])
+
+        self.w = tf.Variable(tf.truncated_normal([self.feature_size + 1, 1], 0.0, 0.01))  # feature_size + 1
+        self.v = tf.Variable(tf.truncated_normal([self.feature_size + 1, self.embed_size], 0.0, 0.01))
+        self.feature_values_reshape = tf.reshape(self.feature_values, shape=[-1, self.field_size, 1])
+
+        self.linear_embedding = tf.nn.embedding_lookup(self.w, self.feature_indices)   # N * F * 1
+        self.linear_term = tf.reduce_sum(tf.multiply(self.linear_embedding, self.feature_values_reshape), 2) # axis=1?
+
+        self.MLP_embedding = tf.nn.embedding_lookup(self.v, self.feature_indices)  # N * F * K
+        self.MLP_embedding = tf.multiply(self.MLP_embedding, self.feature_values_reshape)
+        self.MLP_embedding = tf.reshape(self.MLP_embedding, [-1, self.field_size * self.embed_size])
+
+        self.MLP_layer1 = tf.layers.dense(inputs=self.MLP_embedding,
+                                          units=self.embed_size * 2,
+                                          activation=tf.nn.relu,
+                                          kernel_initializer=tf.variance_scaling_initializer)
+        self.MLP_layer1 = tf.layers.dropout(self.MLP_layer1, rate=self.dropout_rate)
+        self.MLP_layer2 = tf.layers.dense(inputs=self.MLP_layer1,
+                                          units=self.embed_size,
+                                          activation=tf.nn.relu,
+                                          kernel_initializer=tf.variance_scaling_initializer)
+        self.MLP_layer2 = tf.layers.dropout(self.MLP_layer2, rate=self.dropout_rate)
+        self.MLP_layer3 = tf.layers.dense(inputs=self.MLP_layer2,
+                                          units=self.embed_size,
+                                          activation=tf.nn.relu,
+                                          kernel_initializer=tf.variance_scaling_initializer)
+        self.MLP_layer3 = tf.layers.dropout(self.MLP_layer3, rate=self.dropout_rate)
+
+        self.concat_layer = tf.concat([self.linear_term, self.MLP_layer3], axis=1)
+
+        if self.task == "rating":
+            self.pred = tf.layers.dense(inputs=self.concat_layer, units=1)
+            self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
+                                                     predictions=self.pred)
+            self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
+                                                             predictions=tf.clip_by_value(self.pred, 1, 5)))
+
+        elif self.task == "ranking":
+            self.logits = tf.layers.dense(inputs=self.concat_layer, units=1, name="logits")
+            self.logits = tf.reshape(self.logits, [-1])
+            self.loss = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=self.logits))
+
+            self.y_prob = tf.sigmoid(self.logits)
+            self.pred = tf.where(self.y_prob >= 0.5,
+                                 tf.fill(tf.shape(self.logits), 1.0),
+                                 tf.fill(tf.shape(self.logits), 0.0))
+            self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.pred, self.labels), tf.float32))
+            self.precision = precision_tf(self.pred, self.labels)
+
+    def fit(self, dataset, verbose=1, pre_sampling=True):
+        self.build_model(dataset)
+        self.optimizer = tf.train.AdamOptimizer(self.lr)
+    #    self.optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3)
+        self.training_op = self.optimizer.minimize(self.loss)
+        init = tf.global_variables_initializer()
+        self.sess = tf.Session()
+        self.sess.run(init)
+        self.sess.run(tf.local_variables_initializer())
+        with self.sess.as_default():
+            if self.task == "rating":
+                for epoch in range(1, self.n_epochs + 1):
+                    t0 = time.time()
+                    n_batches = len(dataset.train_labels) // self.batch_size
+                    for n in range(n_batches):
+                        end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
+                        indices_batch = dataset.train_feat_indices[n * self.batch_size: end]
+                        values_batch = dataset.train_feat_values[n * self.batch_size: end]
+                        labels_batch = dataset.train_labels[n * self.batch_size: end]
+
+                        self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
+                                                                   self.feature_values: values_batch,
+                                                                   self.labels: labels_batch})
+
+                    if verbose > 0:
+               #         train_rmse = self.rmse.eval(feed_dict={self.feature_indices: dataset.train_feat_indices,
+                #                                               self.feature_values: dataset.train_feat_values,
+                #                                               self.labels: dataset.train_labels})
+
+                        test_loss, test_rmse = self.sess.run([self.loss, self.rmse],
+                                                              feed_dict={
+                                                                  self.feature_indices: dataset.test_feat_indices,
+                                                                  self.feature_values: dataset.test_feat_values,
+                                                                  self.labels: dataset.test_labels})
+
+                #        print("Epoch {}, train_rmse: {:.4f}, training_time: {:.2f}".format(
+                #                epoch, train_rmse, time.time() - t0))
+                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
+                        print("Epoch {}, test_loss: {:.4f}, test_rmse: {:.4f}".format(
+                            epoch, test_loss, test_rmse))
+                        print()
+
+            elif self.task == "ranking":
+                for epoch in range(1, self.n_epochs + 1):
+                    t0 = time.time()
+                    neg = NegativeSamplingFeat(dataset, dataset.num_neg, self.batch_size, pre_sampling=pre_sampling)
+                    n_batches = len(dataset.train_indices_implicit) // self.batch_size
+                    for n in range(n_batches):
+                        indices_batch, values_batch, labels_batch = neg.next_batch()
+                        self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
+                                                                   self.feature_values: values_batch,
+                                                                   self.labels: labels_batch})
+
+                #        pred, logits, loss, acc, pre = self.sess.run([self.pred, self.logits, self.loss, self.accuracy, self.precision],
+                #                                       feed_dict={self.feature_indices: indices_batch,
+                #                                                   self.feature_values: values_batch,
+                #                                                   self.labels: labels_batch})
+                #        if n % 100 == 0:
+                        #    print("mm: ", pred[:10], loss, acc, pre)
+                #            print("batch pred: ", pred[:10])
+                #            print("batch labe: ", labels_batch[:10])
+                #            print("accuracy: ", acc, pre)
+
+                    if verbose > 0:
+                #        train_loss, train_accuracy, train_precision = \
+                #            self.sess.run([self.loss, self.accuracy, self.precision],
+                #                          feed_dict={self.feature_indices: dataset.train_indices_implicit,
+                #                                     self.feature_values: dataset.train_values_implicit,
+                #                                     self.labels: dataset.train_labels_implicit})
+
+                        test_pred, test_loss, test_accuracy, test_precision = \
+                            self.sess.run([self.pred, self.loss, self.accuracy, self.precision],
+                                          feed_dict={self.feature_indices: dataset.test_indices_implicit,
+                                                     self.feature_values: dataset.test_values_implicit,
+                                                     self.labels: dataset.test_labels_implicit})
+
+                        print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
+                #        print("Epoch {}, train loss: {:.4f}, train accuracy: {:.4f}, train precision: {:.4f}".format(
+                #            epoch, train_loss, train_accuracy, train_precision))
+                        print("Epoch {}, test loss: {:.4f}, test accuracy: {:.4f}, test precision: {:.4f}".format(
+                            epoch, test_loss, test_accuracy, test_precision))
+                        print()
+
+    def predict(self, feat_ind, feat_val):
+        try:
+            pred = self.sess.run(self.pred, feed_dict={self.feature_indices: feat_ind,
+                                                       self.feature_values: feat_val})
+            pred = np.clip(pred, 1, 5)
+        except tf.errors.InvalidArgumentError:
+            pred = self.dataset.global_mean
+        return pred
+
+
 
 
 

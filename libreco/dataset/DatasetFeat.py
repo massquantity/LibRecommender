@@ -499,7 +499,8 @@ class DatasetFeat:
                     out_of_bounds_indices.add(i)
 
         mask = np.arange(len(test_data))
-    #    test_data = test_data[~np.isin(mask, list(out_of_bounds_indices))]  # filter test values that are not in train_data
+    #    test_data = test_data[~np.isin(mask, list(out_of_bounds_indices))]
+    #    filter test values that are not in train_data
         test_data = test_data[np.invert(np.isin(mask, list(out_of_bounds_indices), assume_unique=True))]
         print("test size after filtering: ", len(test_data))
 
