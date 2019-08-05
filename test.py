@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path, PurePath
 from libreco.dataset import DatasetPure, DatasetFeat
-from libreco.algorithms import userKNN, FmFeat, WideDeep, WideDeepCustom, WideDeep_tf
+from libreco.algorithms import userKNN, FmFeat, WideDeep, WideDeepEstimator, WideDeep
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
@@ -152,9 +152,8 @@ if __name__ == "__main__":
 #    print(wd.predict(1, 2, "2001-1-8"))
 #    print(wd.predict_user(1))
 
-#    wdc = WideDeep(embed_size=16, n_epochs=1, batch_size=256, task="ranking", cross_features=False)
-#    wdc = WideDeepCustom(lr=0.01, embed_size=16, n_epochs=1, batch_size=256, task="ranking", cross_features=False)
-    wdc = WideDeep_tf(lr=0.01, embed_size=16, n_epochs=100, batch_size=256, dropout_rate=0.0, task="rating")
+#    wdc = WideDeepEstimator(lr=0.01, embed_size=16, n_epochs=100, batch_size=256, task="ranking", cross_features=False)
+    wdc = WideDeep(lr=0.01, embed_size=16, n_epochs=100, batch_size=256, dropout_rate=0.0, task="rating")
     wdc.fit(dataset)
     print(wdc.predict(1, 2))
 #    t6 = time.time()

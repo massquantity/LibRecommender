@@ -181,7 +181,7 @@ def NDCG_at_k(model, dataset, k, mode="normal"):
         u_items = dataset.train_user
 
     NDCG = []
-    for u in list(u_items.keys())[:5]:
+    for u in list(u_items.keys()):
         DCG = 0
         IDCG = 0
         true_items = test_item_indices[np.where(test_user_indices == u)]
