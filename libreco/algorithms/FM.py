@@ -1,10 +1,9 @@
 import os
 import time
-import shutil
-import logging
+import itertools
 import numpy as np
 import tensorflow as tf
-from ..evaluate.evaluate import precision_tf
+from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, NDCG_at_k
 from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 
@@ -290,30 +289,45 @@ class FmFeat:
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
                     neg = NegativeSamplingFeat(dataset, dataset.num_neg, self.batch_size, pre_sampling=pre_sampling)
-                    n_batches = len(dataset.train_indices_implicit) // self.batch_size
+                    n_batches = int(np.ceil(len(dataset.train_labels_implicit) / self.batch_size))
+                #    n_batches = len(dataset.train_indices_implicit) // self.batch_size
                     for n in range(n_batches):
                         indices_batch, values_batch, labels_batch = neg.next_batch()
                         self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch})
 
-                #        pred, logits, loss, acc, pre = self.sess.run([self.pred, self.logits, self.loss, self.accuracy, self.precision],
-                #                                       feed_dict={self.feature_indices: indices_batch,
-                #                                                   self.feature_values: values_batch,
-                #                                                   self.labels: labels_batch})
-                #        if n % 100 == 0:
-                        #    print("mm: ", pred[:10], loss, acc, pre)
-                #            print("batch pred: ", pred[:10])
-                #            print("batch labe: ", labels_batch[:10])
-                #            print("accuracy: ", acc, pre)
-
                     if verbose > 0:
-                #        train_loss, train_accuracy, train_precision = \
-                #            self.sess.run([self.loss, self.accuracy, self.precision],
-                #                          feed_dict={self.feature_indices: dataset.train_indices_implicit,
-                #                                     self.feature_values: dataset.train_values_implicit,
-                #                                     self.labels: dataset.train_labels_implicit})
+                        print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
+                        t3 = time.time()
+                        test_loss, test_accuracy, test_precision = \
+                            self.sess.run([self.loss, self.accuracy, self.precision],
+                                feed_dict={self.feature_indices: dataset.test_indices_implicit,
+                                           self.feature_values: dataset.test_values_implicit,
+                                           self.labels: dataset.test_labels_implicit})
 
+                        print("\ttest loss: {:.4f}".format(test_loss))
+                        print("\ttest accuracy: {:.4f}".format(test_accuracy))
+                        print("\ttest precision: {:.4f}".format(test_precision))
+                        print("\tloss time: {:.4f}".format(time.time() - t3))
+
+                        t4 = time.time()
+                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
+                        print("\t MAP @ {}: {:.4f}".format(10, mean_average_precision_10))
+                        print("\t MAP @ 10 time: {:.4f}".format(time.time() - t4))
+
+                        t6 = time.time()
+                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
+                        print("\t MAR @ {}: {:.4f}".format(50, mean_average_recall_50))
+                        print("\t MAR @ 50 time: {:.4f}".format(time.time() - t6))
+
+                        t9 = time.time()
+                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
+                        print("\t NDCG @ {}: {:.4f}".format(10, NDCG))
+                        print("\t NDCG time: {:.4f}".format(time.time() - t9))
+                        print()
+
+                        '''
                         test_pred, test_loss, test_accuracy, test_precision = \
                             self.sess.run([self.pred, self.loss, self.accuracy, self.precision],
                                           feed_dict={self.feature_indices: dataset.test_indices_implicit,
@@ -325,6 +339,7 @@ class FmFeat:
                 #            epoch, train_loss, train_accuracy, train_precision))
                         print("Epoch {}, test loss: {:.4f}, test accuracy: {:.4f}, test precision: {:.4f}".format(
                             epoch, test_loss, test_accuracy, test_precision))
+                        '''
                         print()
 
     def predict(self, feat_ind, feat_val):
@@ -336,39 +351,45 @@ class FmFeat:
             pred = self.dataset.global_mean
         return pred
 
-    def export_model(self, version, simple_save=False):
-        model_base_path = os.path.realpath(".")
-        export_path = os.path.join(model_base_path, "serving", "FM", version)
-        if os.path.isdir(export_path):
-            logging.warning("\tModel path \"%s\" already exists, removing..." % export_path)
-            shutil.rmtree(export_path)
-        if simple_save:
-            print("simple_save is deprecated, it will be removed in tensorflow xxx...")
-            tf.saved_model.simple_save(self.sess, export_path,
-                                       inputs={'fi': self.feature_indices,
-                                               'fv': self.feature_values},
-                                       outputs={'y_prob': self.y_prob})
-        else:
-            builder = tf.saved_model.builder.SavedModelBuilder(export_path)
-            input_fi = tf.saved_model.utils.build_tensor_info(self.feature_indices)
-            input_fv = tf.saved_model.utils.build_tensor_info(self.feature_values)
-        #    input_label = tf.saved_model.utils.build_tensor_info(self.labels)
-            input_y = tf.saved_model.utils.build_tensor_info(self.y_prob)
+    def recommend_user(self, u, n_rec):
 
-            prediction_signature = (
-                tf.saved_model.signature_def_utils.build_signature_def(
-                    inputs={'fi': input_fi,
-                            'fv': input_fv},
-                    outputs={'y_prob': input_y},
-                    method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME))
 
-            builder.add_meta_graph_and_variables(
-                self.sess, [tf.saved_model.tag_constants.SERVING],
-                signature_def_map={'predict': prediction_signature}
-            # tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: prediction_signature},
-            #    main_op=tf.tables_initializer(),
-            #    strip_default_attrs=True
-            )
 
-            builder.save()
-        logging.warning('\tDone exporting!')
+
+
+
+        items = np.arange(self.dataset.n_items)
+        consumed = self.dataset.train_user[u]
+        count = n_rec + len(consumed)
+        target = self.pred if self.task == "rating" else self.y_prob
+
+        preds = self.sess.run(target, feed_dict={self.feature_indices: [u],
+                                                 self.feature_values: items})
+        ids = np.argpartition(preds, -count)[-count:]
+        rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
+        return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
