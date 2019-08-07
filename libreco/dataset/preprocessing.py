@@ -17,13 +17,15 @@ class FeatureBuilder:
         self.total_count = 0  # add user & item indices before/after
         feature_indices = []
         feature_values = []
-        for k, v in numerical_features.items():
+        for k in sorted(numerical_features):
+            v = numerical_features[k]
             feature_indices.append([self.total_count] * train_size)
             feature_values.append(v)
             self.total_count += 1
 
         self.val_index_dict = defaultdict(dict)
-        for k, v in categorical_features.items():
+        for k in sorted(categorical_features):  # preserve column orders
+            v = categorical_features[k]
             unique_vals, indices = np.unique(v, return_inverse=True)
             unique_vals_length = len(unique_vals)
             indices += self.total_count
@@ -33,7 +35,8 @@ class FeatureBuilder:
             self.total_count += unique_vals_length
 
         self.merge_val_index_dict = defaultdict(dict)
-        for k, v in merged_cat_features.items():
+        for k in sorted(merged_cat_features):
+            v = merged_cat_features[k]
             if len(v) % train_size == 0:
                 unique_vals, indices = np.unique(v, return_inverse=True)
                 unique_vals_length = len(unique_vals)
