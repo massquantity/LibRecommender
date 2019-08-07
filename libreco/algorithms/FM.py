@@ -352,24 +352,48 @@ class FmFeat:
         return pred
 
     def recommend_user(self, u, n_rec):
+        user_repr = u + self.dataset.user_offset
+        user_cols = self.dataset.user_feature_cols + [-2]  # -2 is user col
+        user_features = self.dataset.train_feat_indices[:, user_cols]
+        user = user_features[user_features[:, -1] == user_repr][0]
+        user = user[:-1]
+    #    print("user: ", user)
+        user_reprs = np.tile(user_repr, (self.dataset.n_items, 1))
+        users = np.tile(user, (self.dataset.n_items, 1))
+
+        item_cols = self.dataset.item_feature_cols + [-1]
+        total_items_unique = np.unique(self.dataset.train_feat_indices[:, item_cols], axis=0)
+    #    print("unique items: ", len(total_items_unique))
+        item_reprs = np.expand_dims(total_items_unique[:, -1], -1)
+        items = np.delete(total_items_unique, -1, axis=1)
+
+        orig_cols = self.dataset.user_feature_cols + self.dataset.item_feature_cols
+        col_reindex = np.array(range(len(orig_cols)))[np.argsort(orig_cols)]
+
+        concat_indices = np.concatenate([users, items], axis=-1)[:, col_reindex]
+        concat_indices = np.concatenate([concat_indices, user_reprs], axis=-1)
+        concat_indices = np.concatenate([concat_indices, item_reprs], axis=-1)
+    #    print(concat_indices[:5])
+
+        feat_values = np.ones(shape=(self.dataset.n_items, concat_indices.shape[1]))
+        if self.dataset.numerical_col is not None:
+            for i, col in enumerate(self.dataset.numerical_col):
+                feat_values[i] = self.dataset.train_feat_values[:, col]
 
 
-
-
-
-
-        items = np.arange(self.dataset.n_items)
         consumed = self.dataset.train_user[u]
         count = n_rec + len(consumed)
         target = self.pred if self.task == "rating" else self.y_prob
 
-        preds = self.sess.run(target, feed_dict={self.feature_indices: [u],
-                                                 self.feature_values: items})
+        preds = self.sess.run(target, feed_dict={self.feature_indices: concat_indices,
+                                                 self.feature_values: feat_values})
         ids = np.argpartition(preds, -count)[-count:]
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
 
-
+    def build_feat(self):
+    #    concat_indices
+        pass
 
 
 
