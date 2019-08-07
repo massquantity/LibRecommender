@@ -46,7 +46,7 @@ if __name__ == "__main__":
 #    s = pstats.Stats("Profile.prof")
 #    s.strip_dirs().sort_stats("time").print_stats()
 
-    '''
+    
 
     conf = {
         "data_path": "ml-1m/merged_data.csv",
@@ -64,6 +64,26 @@ if __name__ == "__main__":
         "batch_size": 256,
         "sep": ",",
     }
+    '''
+
+    conf = {
+        "data_path": "tianchi_recommender/merged_tianchi.csv",
+        "length": 100000,
+        "user_col": 0,
+        "item_col": 1,
+        "label_col": 2,
+        "numerical_col": [4],
+        "categorical_col": [3, 5, 6, 7, 8],
+        "merged_categorical_col": None,
+        "user_feature_cols": [3, 4, 5],
+        "item_feature_cols": [6, 7, 8],
+        "convert_implicit": True,
+        "build_negative": True,
+        "num_neg": 2,
+        "batch_size": 256,
+        "sep": ",",
+    }
+
 
     dataset = DatasetFeat(include_features=True)
     dataset.build_dataset(**conf)
@@ -77,6 +97,7 @@ if __name__ == "__main__":
 #                              merged_categorical_col=[[6, 7, 8]])
 #    print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
     print("data processing time: {:.2f}".format(time.time() - t0))
+    print(dataset.train_feat_indices[:5], dataset.train_feat_indices.shape, dataset.train_feat_indices[:, 2].max())
     print()
 
 #    user_knn = userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
@@ -153,9 +174,9 @@ if __name__ == "__main__":
 #    print(wd.predict_user(1))
 
 #    wdc = WideDeepEstimator(lr=0.01, embed_size=16, n_epochs=100, batch_size=256, task="ranking", cross_features=False)
-    wdc = WideDeep(lr=0.01, embed_size=16, n_epochs=100, batch_size=256, dropout_rate=0.0, task="rating")
-    wdc.fit(dataset)
-    print(wdc.predict(1, 2))
+#    wdc = WideDeep(lr=0.01, embed_size=16, n_epochs=100, batch_size=256, dropout_rate=0.0, task="rating")
+#    wdc.fit(dataset)
+#    print(wdc.predict(1, 2))
 #    t6 = time.time()
 #    print(wdc.recommend_user(1, n_rec=10))
 #    print("rec time: ", time.time() - t6)
@@ -163,8 +184,8 @@ if __name__ == "__main__":
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-#    fm = FmFeat(lr=0.0001, n_epochs=2, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-#    fm.fit(dataset, pre_sampling=True)
+    fm = FmFeat(lr=0.001, n_epochs=200, reg=0.0, n_factors=16, batch_size=256, task="ranking")
+    fm.fit(dataset, pre_sampling=True)
 #    export_model_tf(fm, "FM", "1", simple_save=False)
 #    current_path = Path(".").resolve()
 #    fb_path = str(Path.joinpath(current_path, "serving/models/others/feature_builder.jb"))
