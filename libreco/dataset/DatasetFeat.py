@@ -189,35 +189,45 @@ class DatasetFeat:
                              self.test_item_indices)
 
         if convert_implicit:
+            self.numerical_col = numerical_col
             self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
             self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
         #    self.item_feature_cols = [(i - 3) for i in item_feature_cols]  # remove user item label column
 
             # remove user - item - label column and add numerical columns
+            col_order_dict = {}
             total_num_index = 0
             user_num_index = 0
             user_cols = []
-            for col in user_feature_cols:
-                if col in numerical_col:
-                    user_cols.append(user_num_index)
-                    user_num_index += 1
-                    total_num_index += 1
+            if user_feature_cols is not None and numerical_col is not None:
+                for col in user_feature_cols:
+                    if col in numerical_col:
+                        user_cols.append(user_num_index)
+                        user_num_index += 1
+                        total_num_index += 1
 
             item_num_index = 0
             item_cols = []
-            for col in item_feature_cols:
-                if col in numerical_col:
-                    item_cols.append(total_num_index)
-                    item_num_index += 1
-                    total_num_index += 1
+            if item_feature_cols is not None and numerical_col is not None:
+                for col in item_feature_cols:
+                    if col in numerical_col:
+                        item_cols.append(total_num_index)
+                        item_num_index += 1
+                        total_num_index += 1
 
-            user_cat_cols = len(user_feature_cols) - user_num_index
-            user_cols.extend(np.array(range(user_cat_cols)) + total_num_index)
-            self.user_feature_cols = sorted(user_cols)
+            if user_feature_cols is not None:
+                user_cat_cols = len(user_feature_cols) - user_num_index
+                user_cols.extend(np.array(range(user_cat_cols)) + total_num_index)
+                self.user_feature_cols = sorted(user_cols)
+            else:
+                self.user_feature_cols = None
 
-            item_cat_cols = len(item_feature_cols) - item_num_index
-            item_cols.extend(np.array(range(item_cat_cols)) + item_num_index + len(user_cols))
-            self.item_feature_cols = sorted(item_cols)
+            if item_feature_cols is not None:
+                item_cat_cols = len(item_feature_cols) - item_num_index
+                item_cols.extend(np.array(range(item_cat_cols)) + item_num_index + len(user_cols))
+                self.item_feature_cols = sorted(item_cols)
+            else:
+                self.item_feature_cols = None
 
             print("user feature cols: {}, item feature cols: {}".format(self.user_feature_cols, self.item_feature_cols))
 

@@ -46,20 +46,21 @@ if __name__ == "__main__":
 #    s = pstats.Stats("Profile.prof")
 #    s.strip_dirs().sort_stats("time").print_stats()
 
-    
+    '''
 
     conf = {
         "data_path": "ml-1m/merged_data.csv",
-        "length": "all",
+        "length": 100000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
         "numerical_col": None,
         "categorical_col": [3, 4, 5, 6],
         "merged_categorical_col": [[7, 8, 9]],
+        "user_feature_cols": [3, 4, 5],
         "item_feature_cols": [6, 7, 8, 9],
-        "convert_implicit": False,
-        "build_negative": False,
+        "convert_implicit": True,
+        "build_negative": True,
         "num_neg": 2,
         "batch_size": 256,
         "sep": ",",
@@ -83,7 +84,7 @@ if __name__ == "__main__":
         "batch_size": 256,
         "sep": ",",
     }
-
+    '''
 
     dataset = DatasetFeat(include_features=True)
     dataset.build_dataset(**conf)
@@ -97,7 +98,8 @@ if __name__ == "__main__":
 #                              merged_categorical_col=[[6, 7, 8]])
 #    print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
     print("data processing time: {:.2f}".format(time.time() - t0))
-    print(dataset.train_feat_indices[:5], dataset.train_feat_indices.shape, dataset.train_feat_indices[:, 2].max())
+    print("num users: {}, num items: {}".format(dataset.n_users, dataset.n_items))
+    print(dataset.train_feat_indices[:5], dataset.train_feat_indices.shape)
     print()
 
 #    user_knn = userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
