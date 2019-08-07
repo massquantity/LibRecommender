@@ -2,7 +2,7 @@ import time
 from operator import itemgetter
 import itertools
 import numpy as np
-from ..evaluate import rmse, MAP_at_k, accuracy, precision_tf
+from ..evaluate import rmse, MAP_at_k, accuracy, precision_tf, MAR_at_k, MAP_at_k, NDCG_at_k
 from ..utils.initializers import truncated_normal
 from ..utils import NegativeSampling
 try:
@@ -142,10 +142,6 @@ class SVD_tf:
         self.reg_bi = self.reg * tf.nn.l2_loss(self.bi)
         self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi])
 
-        self.optimizer = tf.train.AdamOptimizer(self.lr)
-    #    self.optimizer = tf.train.GradientDescentOptimizer(self.lr)
-        self.training_op = self.optimizer.minimize(self.total_loss)
-
     def fit(self, dataset, verbose=1):
         """
         :param dataset:
@@ -200,23 +196,33 @@ class SVD_tf:
                                                                      self.item_indices: item_batch})
 
                     if verbose > 0:
-                        train_accuracy, train_precision = \
-                            self.sess.run([self.accuracy, self.precision],
-                                feed_dict={self.labels: dataset.train_label_implicit,
-                                           self.user_indices: dataset.train_user_implicit,
-                                           self.item_indices: dataset.train_item_implicit})
-
-                        test_accuracy, test_precision = \
-                            self.sess.run([self.accuracy, self.precision],
+                        print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
+                        t3 = time.time()
+                        test_loss, test_accuracy, test_precision = \
+                            self.sess.run([self.loss, self.accuracy, self.precision],
                                 feed_dict={self.labels: dataset.test_label_implicit,
                                            self.user_indices: dataset.test_user_implicit,
                                            self.item_indices: dataset.test_item_implicit})
 
-                        print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
-                        print("Epoch {}, train accuracy: {:.4f}, train precision: {:.4f}".format(
-                                epoch, train_accuracy, train_precision))
-                        print("Epoch {}, test accuracy: {:.4f}, test precision: {:.4f}".format(
-                                epoch, test_accuracy, test_precision))
+                        print("\ttest loss: {:.4f}".format(test_loss))
+                        print("\ttest accuracy: {:.4f}".format(test_accuracy))
+                        print("\ttest precision: {:.4f}".format(test_precision))
+                        print("\tloss time: {:.4f}".format(time.time() - t3))
+
+                        t4 = time.time()
+                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=5000)
+                        print("\t MAP @ {}: {:.4f}".format(10, mean_average_precision_10))
+                        print("\t MAP @ 10 time: {:.4f}".format(time.time() - t4))
+
+                        t6 = time.time()
+                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=5000)
+                        print("\t MAR @ {}: {:.4f}".format(50, mean_average_recall_50))
+                        print("\t MAR @ 50 time: {:.4f}".format(time.time() - t6))
+
+                        t9 = time.time()
+                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=5000)
+                        print("\t NDCG @ {}: {:.4f}".format(10, NDCG))
+                        print("\t NDCG time: {:.4f}".format(time.time() - t9))
                         print()
 
     def predict(self, u, i):
