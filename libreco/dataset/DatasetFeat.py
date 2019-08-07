@@ -58,7 +58,7 @@ class DatasetFeat:
                       train_frac=0.8, convert_implicit=False, build_negative=False, seed=42,
                       num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
                       numerical_col=None, categorical_col=None, merged_categorical_col=None,
-                      item_feature_cols=None):  # numerical feature 不做 embedding
+                      user_feature_cols=None, item_feature_cols=None):  # numerical feature 不做 embedding
 
         np.random.seed(seed)
         self.batch_size = batch_size
@@ -192,14 +192,34 @@ class DatasetFeat:
             self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
             self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
         #    self.item_feature_cols = [(i - 3) for i in item_feature_cols]  # remove user item label column
-            for i, col in enumerate(item_feature_cols):  # remove user item label column
-                if col > user_col:
-                    item_feature_cols[i] -= 1
-                if col > item_col:
-                    item_feature_cols[i] -= 1
-                if col > label_col:
-                    item_feature_cols[i] -= 1
-            self.item_feature_cols = item_feature_cols
+
+            # remove user - item - label column and add numerical columns
+            total_num_index = 0
+            user_num_index = 0
+            user_cols = []
+            for col in user_feature_cols:
+                if col in numerical_col:
+                    user_cols.append(user_num_index)
+                    user_num_index += 1
+                    total_num_index += 1
+
+            item_num_index = 0
+            item_cols = []
+            for col in item_feature_cols:
+                if col in numerical_col:
+                    item_cols.append(total_num_index)
+                    item_num_index += 1
+                    total_num_index += 1
+
+            user_cat_cols = len(user_feature_cols) - user_num_index
+            user_cols.extend(np.array(range(user_cat_cols)) + total_num_index)
+            self.user_feature_cols = sorted(user_cols)
+
+            item_cat_cols = len(item_feature_cols) - item_num_index
+            item_cols.extend(np.array(range(item_cat_cols)) + item_num_index + len(user_cols))
+            self.item_feature_cols = sorted(item_cols)
+
+            print("user feature cols: {}, item feature cols: {}".format(self.user_feature_cols, self.item_feature_cols))
 
         if build_negative:
             self.build_trainset_implicit(num_neg)
