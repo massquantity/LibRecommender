@@ -115,7 +115,7 @@ class ALS_ranking:
         self.seed = seed
         self.alpha = alpha
         self.cg_steps = cg_steps
-
+    '''
     @staticmethod
     def least_squares(dataset, X, Y, reg, n_factors, alpha=10, user=True):
         if user:
@@ -127,6 +127,7 @@ class ALS_ranking:
 
         YtY = Y.T.dot(Y) + reg * np.eye(n_factors)
         for s in data:
+            t0 = time.time()
             Cui_indices = list(data[s].keys())
             labels = list(data[s].values())
             Cui_values = np.array(labels) * alpha
@@ -134,11 +135,40 @@ class ALS_ranking:
             pui_indices = list(data[s].keys())
             pui = np.zeros(m_shape)
             pui[pui_indices] = 1.0
+            print("1: ", time.time() - t0)
+            t1 = time.time()
             A = YtY + np.dot(Y.T, Cui.dot(Y))
+            print("2: ", time.time() - t1)
 
+            t2 = time.time()
             C = Cui + sparse.eye(m_shape, format="csr")
             cp = C.dot(pui)
             b = np.dot(Y.T, cp)
+            print("3: ", time.time() - t2)
+            t3 = time.time()
+            X[s] = np.linalg.solve(A, b)
+            print("4: ", time.time() - t3)
+        #    from scipy.sparse.linalg import cg, cgs, bicg
+        #    X[s] = bicg(A, b)[0]
+        '''
+
+    @staticmethod
+    def least_squares(dataset, X, Y, reg, n_factors, alpha=10, user=True):
+        if user:
+            data = dataset.train_user
+        else:
+            data = dataset.train_item
+
+        YtY = Y.T.dot(Y)
+        for s in data:
+            A = YtY + reg * np.eye(n_factors)
+            b = np.zeros(n_factors)
+            for i in data[s]:
+                factor = Y[i]
+                confidence = 1 + alpha * data[s][i]
+                A += (confidence - 1) * np.outer(factor, factor)
+                b += confidence * factor
+
             X[s] = np.linalg.solve(A, b)
         #    from scipy.sparse.linalg import cg, cgs, bicg
         #    X[s] = bicg(A, b)[0]
@@ -191,12 +221,12 @@ class ALS_ranking:
         self.Y = truncated_normal(shape=(dataset.n_items, self.n_factors),
                                    mean=0.0, scale=0.05).astype(np.float32)
 
-        t0 = time.time()
-        confidence_data = dok_matrix((dataset.n_users, dataset.n_items), dtype=np.float32)
-        for u, i, l in zip(dataset.train_user_indices, dataset.train_item_indices, dataset.train_labels):
-            confidence_data[u, i] = self.alpha * l + 1
-        confidence_data = confidence_data.tocsr()
-        print("constrtct time: ", time.time() - t0)
+    #    t0 = time.time()
+    #    confidence_data = dok_matrix((dataset.n_users, dataset.n_items), dtype=np.float32)
+    #    for u, i, l in zip(dataset.train_user_indices, dataset.train_item_indices, dataset.train_labels):
+    #        confidence_data[u, i] = self.alpha * l + 1
+    #    confidence_data = confidence_data.tocsr()
+    #    print("constrtct time: ", time.time() - t0)
 
         if use_cg:
             method = functools.partial(ALS_ranking.least_squares_cg, cg_steps=self.cg_steps)
@@ -220,13 +250,13 @@ class ALS_ranking:
             if verbose > 0:
                 print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
                 t1 = time.time()
-                print("MAP@{}: {:.4f}".format(10, MAP_at_k(self, dataset, 10)))
+                print("MAP@{}: {:.4f}".format(10, MAP_at_k(self, dataset, 10, sample_user=None)))
                 print("MAP time: {:.4f}".format(time.time() - t1))
                 t2 = time.time()
-                print("MAR@{}: {:.4f}".format(10, MAR_at_k(self, dataset, 10)))
+                print("MAR@{}: {:.4f}".format(50, MAR_at_k(self, dataset, 50, sample_user=None)))
                 print("MAR time: {:.4f}".format(time.time() - t2))
                 t3 = time.time()
-                print("NDCG@{}: {:.4f}".format(10, NDCG_at_k(self, dataset, 10)))
+                print("NDCG@{}: {:.4f}".format(10, NDCG_at_k(self, dataset, 10, sample_user=None)))
                 print("NDCG time: {:.4f}".format(time.time() - t3))
                 print()
             #    print("training accuracy: ", accuracy(self, dataset, "train"))
@@ -249,8 +279,6 @@ class ALS_ranking:
         ids = np.argpartition(preds, -count)[-count:]
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
-
-
 
 
 
