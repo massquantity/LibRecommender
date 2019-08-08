@@ -46,7 +46,7 @@ if __name__ == "__main__":
 #    s = pstats.Stats("Profile.prof")
 #    s.strip_dirs().sort_stats("time").print_stats()
 
-    '''
+    
 
     conf = {
         "data_path": "ml-1m/merged_data.csv",
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     conf = {
         "data_path": "tianchi_recommender/merged_tianchi.csv",
-        "length": 100000,
+        "length": 10000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         "batch_size": 256,
         "sep": ",",
     }
-    '''
+
 
     dataset = DatasetFeat(include_features=True)
     dataset.build_dataset(**conf)
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-    fm = FmFeat(lr=0.001, n_epochs=200, reg=0.0, n_factors=16, batch_size=256, task="ranking")
+    fm = FmFeat(lr=0.001, n_epochs=200, reg=0.0, n_factors=16, batch_size=256, task="ranking", neg_sampling=True)
     fm.fit(dataset, pre_sampling=True)
 #    export_model_tf(fm, "FM", "1", simple_save=False)
 #    current_path = Path(".").resolve()

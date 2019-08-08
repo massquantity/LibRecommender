@@ -1,6 +1,8 @@
 import os
 import time
 import itertools
+import operator
+from collections import OrderedDict
 import numpy as np
 import tensorflow as tf
 from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, NDCG_at_k
@@ -269,7 +271,7 @@ class FmFeat:
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch})
 
-                    if verbose > 0:
+                    if verbose > 0 and self.task == "rating":
                #         train_rmse = self.rmse.eval(feed_dict={self.feature_indices: dataset.train_feat_indices,
                 #                                               self.feature_values: dataset.train_feat_values,
                 #                                               self.labels: dataset.train_labels})
@@ -285,6 +287,10 @@ class FmFeat:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
                         print("Epoch {}, test_loss: {:.4f}, test_rmse: {:.4f}".format(
                             epoch, test_loss, test_rmse))
+                        print()
+
+                    elif verbose > 0 and self.task == "ranking":
+                        pass
                         print()
 
             elif self.task == "ranking" and self.neg_sampling:
@@ -363,11 +369,12 @@ class FmFeat:
         user_reprs = np.tile(user_repr, (self.dataset.n_items, 1))
         users = np.tile(user, (self.dataset.n_items, 1))
 
-        item_cols = self.dataset.item_feature_cols + [-1]
+    #   np.unique is sorted from starting with the first element, so put item col first
+        item_cols = [-1] + self.dataset.item_feature_cols
         total_items_unique = np.unique(self.dataset.train_feat_indices[:, item_cols], axis=0)
     #    print("unique items: ", len(total_items_unique))
-        item_reprs = np.expand_dims(total_items_unique[:, -1], -1)
-        items = np.delete(total_items_unique, -1, axis=1)
+        item_reprs = np.expand_dims(total_items_unique[:, 0], -1)
+        items = np.delete(total_items_unique, 0, axis=1)
 
         orig_cols = self.dataset.user_feature_cols + self.dataset.item_feature_cols
         col_reindex = np.array(range(len(orig_cols)))[np.argsort(orig_cols)]
@@ -377,10 +384,27 @@ class FmFeat:
         concat_indices = np.concatenate([concat_indices, item_reprs], axis=-1)
     #    print(concat_indices[:5])
 
-        feat_values = np.ones(shape=(self.dataset.n_items, concat_indices.shape[1]))
         if self.dataset.numerical_col is not None:
-            for i, col in enumerate(self.dataset.numerical_col):
-                feat_values[i] = self.dataset.train_feat_values[:, col]
+            numerical_dict = OrderedDict()
+            for i in range(len(self.dataset.numerical_col)):
+                numerical_map = dict(sorted(zip(self.dataset.train_feat_indices[:, -1],
+                                           self.dataset.train_feat_values[:, i]), key=lambda x: x[0]))
+                numerical_dict[i] = [v for v in numerical_map.values()]
+
+            print("item repr: ", item_reprs)
+            print(numerical_map)
+            item_values = [v for v in numerical_map.values()]
+            print(item_values)
+
+            feat_values = np.ones(shape=(self.dataset.n_items, concat_indices.shape[1]))
+            for k, v in numerical_dict.items():
+                feat_values[:, k] = v
+
+
+    #    feat_values = np.ones(shape=(self.dataset.n_items, concat_indices.shape[1]))
+    #    if self.dataset.numerical_col is not None:
+    #        for i, col in enumerate(self.dataset.numerical_col):
+    #            feat_values[:, i] = self.dataset.train_feat_values[:, col]
 
 
         consumed = self.dataset.train_user[u]
@@ -393,7 +417,8 @@ class FmFeat:
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
 
-    def build_feat(self):
+    @property
+    def item_info(self):
     #    concat_indices
         pass
 
