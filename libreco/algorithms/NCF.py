@@ -160,7 +160,7 @@ class NCF:
                         print("\ttest precision: {:.4f}".format(test_precision))
 
                         t4 = time.time()
-                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10)
+                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=None)
                         print("\t MAP @ {}: {:.4f}".format(10, mean_average_precision_10))
                         print("\t MAP @ 10 time: {:.4f}".format(time.time() - t4))
 

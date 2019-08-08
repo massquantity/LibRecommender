@@ -13,7 +13,7 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow import feature_column as feat_col
 from tensorflow.python.estimator import estimator
-from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, HitRatio_at_k, NDCG_at_k, NDCG_at_k_wd
+from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, HitRatio_at_k, NDCG_at_k
 from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 

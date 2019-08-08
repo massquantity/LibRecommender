@@ -178,7 +178,8 @@ class FmPure:
 
 
 class FmFeat:
-    def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256, seed=42, task="rating"):
+    def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256, seed=42,
+                 task="rating", neg_sampling=False):
         self.lr = lr
         self.n_epochs = n_epochs
         self.n_factors = n_factors
@@ -186,6 +187,7 @@ class FmFeat:
         self.batch_size = batch_size
         self.seed = seed
         self.task = task
+        self.neg_sampling = neg_sampling
 
     def build_model(self, dataset):
         tf.set_random_seed(self.seed)
@@ -253,7 +255,7 @@ class FmFeat:
         self.sess.run(init)
         self.sess.run(tf.local_variables_initializer())
         with self.sess.as_default():
-            if self.task == "rating":
+            if self.task == "rating" or (self.task == "ranking" and not self.neg_sampling):
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
                     n_batches = len(dataset.train_labels) // self.batch_size
@@ -285,7 +287,7 @@ class FmFeat:
                             epoch, test_loss, test_rmse))
                         print()
 
-            elif self.task == "ranking":
+            elif self.task == "ranking" and self.neg_sampling:
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
                     neg = NegativeSamplingFeat(dataset, dataset.num_neg, self.batch_size, pre_sampling=pre_sampling)
