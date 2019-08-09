@@ -196,15 +196,13 @@ class DatasetFeat:
 
             # remove user - item - label column and add numerical columns
             total_num_index = 0
-            user_num_index = 0
-            user_cols = []
-            if user_feature_cols is not None and numerical_col is not None:
+            if user_feature_cols is not None:
+                user_cols = []
                 for col in user_feature_cols:
-                    if col in numerical_col:
-                        user_cols.append(user_num_index)
-                        user_num_index += 1
+                    if numerical_col is not None and col in numerical_col:
+                        user_cols.append(total_num_index)
                         total_num_index += 1
-                    else:
+                    elif numerical_col is not None and col in categorical_col:
                         orig_col = col
                         num_place = np.searchsorted(sorted(numerical_col), orig_col)
                         col += (len(numerical_col) - num_place)
@@ -215,16 +213,24 @@ class DatasetFeat:
                         if orig_col > label_col:
                             col -= 1
                         user_cols.append(col)
+                    elif numerical_col is None:
+                        orig_col = col
+                        if orig_col > user_col:
+                            col -= 1
+                        if orig_col > item_col:
+                            col -= 1
+                        if orig_col > label_col:
+                            col -= 1
+                        user_cols.append(col)
+                self.user_feature_cols = sorted(user_cols)
 
-            item_num_index = 0
-            item_cols = []
-            if item_feature_cols is not None and numerical_col is not None:
+            if item_feature_cols is not None:
+                item_cols = []
                 for col in item_feature_cols:
-                    if col in numerical_col:
+                    if numerical_col is not None and col in numerical_col:
                         item_cols.append(total_num_index)
-                        item_num_index += 1
                         total_num_index += 1
-                    else:
+                    elif numerical_col is not None and col in categorical_col:
                         orig_col = col
                         num_place = np.searchsorted(sorted(numerical_col), orig_col)
                         col += (len(numerical_col) - num_place)
@@ -235,9 +241,19 @@ class DatasetFeat:
                         if orig_col > label_col:
                             col -= 1
                         item_cols.append(col)
+                    elif numerical_col is None:
+                        orig_col = col
+                        if orig_col > user_col:
+                            col -= 1
+                        if orig_col > item_col:
+                            col -= 1
+                        if orig_col > label_col:
+                            col -= 1
+                        item_cols.append(col)
+                self.item_feature_cols = sorted(item_cols)
 
-            self.user_feature_cols = sorted(user_cols)
-            self.item_feature_cols = sorted(item_cols)
+    #        self.user_feature_cols = sorted(user_cols)
+    #        self.item_feature_cols = sorted(item_cols)
             print("user feature cols: {}, item feature cols: {}".format(self.user_feature_cols, self.item_feature_cols))
 
         if build_negative:
