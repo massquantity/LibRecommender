@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     conf = {
         "data_path": "tianchi_recommender/merged_tianchi.csv",
-        "length": 10000,
+        "length": 100000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -96,10 +96,12 @@ if __name__ == "__main__":
 #    dataset.leave_k_out_split(4, data_path="ml-1m/merged_data.csv", length="all", sep=",", shuffle=True,
 #                              user_col=0, item_col=1, label_col=2, numerical_col=None, categorical_col=[3, 4, 5],
 #                              merged_categorical_col=[[6, 7, 8]])
-#    print("data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
+    print("total data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
     print("data processing time: {:.2f}".format(time.time() - t0))
     print("num users: {}, num items: {}".format(dataset.n_users, dataset.n_items))
-    print(dataset.train_feat_indices[:5], dataset.train_feat_indices.shape)
+    print(dataset.train_feat_indices[:5])
+#    print(dataset.train_feat_indices.shape)
+    print(dataset.train_feat_values[:5])
     print()
 
 #    user_knn = userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
@@ -186,13 +188,9 @@ if __name__ == "__main__":
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-    fm = FmFeat(lr=0.001, n_epochs=200, reg=0.0, n_factors=16, batch_size=256, task="ranking", neg_sampling=True)
-    fm.fit(dataset, pre_sampling=True)
-#    export_model_tf(fm, "FM", "1", simple_save=False)
-#    current_path = Path(".").resolve()
-#    fb_path = str(Path.joinpath(current_path, "serving/models/others/feature_builder.jb"))
-#    conf_path = str(Path.joinpath(current_path, "serving/models/others/conf.jb"))
-#    export_feature_transform(fb_path, conf_path, dataset.fb, conf)
+    fm = FmFeat(lr=0.001, n_epochs=100, reg=0.0, n_factors=16, batch_size=8192, task="ranking", neg_sampling=True)
+    fm.fit(dataset, pre_sampling=False)
+    fm.recommend_user(19500, 7)
 
 #    num = {}
 #    cat = {3: 'F', 4: 1, 5: 10, 6: 2452.0}
