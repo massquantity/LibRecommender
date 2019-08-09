@@ -198,6 +198,7 @@ class FmFeat:
         self.feature_size = dataset.feature_size
         self.n_users = dataset.n_users
         self.n_items = dataset.n_items
+        self.total_items_unique = self.item_info
 
         self.feature_indices = tf.placeholder(tf.int32, shape=[None, self.field_size])
         self.feature_values = tf.placeholder(tf.float32, shape=[None, self.field_size])
@@ -320,34 +321,19 @@ class FmFeat:
                         print("\tloss time: {:.4f}".format(time.time() - t3))
 
                         t4 = time.time()
-                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t MAP @ {}: {:.4f}".format(10, mean_average_precision_10))
-                        print("\t MAP @ 10 time: {:.4f}".format(time.time() - t4))
+                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=100)
+                        print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
+                        print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
 
                         t6 = time.time()
-                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
-                        print("\t MAR @ {}: {:.4f}".format(50, mean_average_recall_50))
-                        print("\t MAR @ 50 time: {:.4f}".format(time.time() - t6))
+                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=100)
+                        print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
+                        print("\t MAR@50 time: {:.4f}".format(time.time() - t6))
 
                         t9 = time.time()
-                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t NDCG @ {}: {:.4f}".format(10, NDCG))
-                        print("\t NDCG time: {:.4f}".format(time.time() - t9))
-                        print()
-
-                        '''
-                        test_pred, test_loss, test_accuracy, test_precision = \
-                            self.sess.run([self.pred, self.loss, self.accuracy, self.precision],
-                                          feed_dict={self.feature_indices: dataset.test_indices_implicit,
-                                                     self.feature_values: dataset.test_values_implicit,
-                                                     self.labels: dataset.test_labels_implicit})
-
-                        print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
-                #        print("Epoch {}, train loss: {:.4f}, train accuracy: {:.4f}, train precision: {:.4f}".format(
-                #            epoch, train_loss, train_accuracy, train_precision))
-                        print("Epoch {}, test loss: {:.4f}, test accuracy: {:.4f}, test precision: {:.4f}".format(
-                            epoch, test_loss, test_accuracy, test_precision))
-                        '''
+                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=100)
+                        print("\t NDCG@{}: {:.4f}".format(10, NDCG))
+                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t9))
                         print()
 
     def predict(self, feat_ind, feat_val):
@@ -360,79 +346,63 @@ class FmFeat:
         return pred
 
     def recommend_user(self, u, n_rec):
-        user_repr = u + self.dataset.user_offset
-        user_cols = self.dataset.user_feature_cols + [-2]  # -2 is user col
-        user_features = self.dataset.train_feat_indices[:, user_cols]
-        user = user_features[user_features[:, -1] == user_repr][0]
-        user = user[:-1]
-    #    print("user: ", user)
-        user_reprs = np.tile(user_repr, (self.dataset.n_items, 1))
-        users = np.tile(user, (self.dataset.n_items, 1))
-
-    #   np.unique is sorted from starting with the first element, so put item col first
-        item_cols = [-1] + self.dataset.item_feature_cols
-        total_items_unique = np.unique(self.dataset.train_feat_indices[:, item_cols], axis=0)
-    #    print("unique items: ", len(total_items_unique))
-        item_reprs = np.expand_dims(total_items_unique[:, 0], -1)
-        items = np.delete(total_items_unique, 0, axis=1)
-
-        orig_cols = self.dataset.user_feature_cols + self.dataset.item_feature_cols
-        col_reindex = np.array(range(len(orig_cols)))[np.argsort(orig_cols)]
-
-        concat_indices = np.concatenate([users, items], axis=-1)[:, col_reindex]
-        concat_indices = np.concatenate([concat_indices, user_reprs], axis=-1)
-        concat_indices = np.concatenate([concat_indices, item_reprs], axis=-1)
-    #    print(concat_indices[:5])
-
-        if self.dataset.numerical_col is not None:
-            numerical_dict = OrderedDict()
-            for i in range(len(self.dataset.numerical_col)):
-                numerical_map = dict(sorted(zip(self.dataset.train_feat_indices[:, -1],
-                                           self.dataset.train_feat_values[:, i]), key=lambda x: x[0]))
-                numerical_dict[i] = [v for v in numerical_map.values()]
-
-            print("item repr: ", item_reprs)
-            print(numerical_map)
-            item_values = [v for v in numerical_map.values()]
-            print(item_values)
-
-            feat_values = np.ones(shape=(self.dataset.n_items, concat_indices.shape[1]))
-            for k, v in numerical_dict.items():
-                feat_values[:, k] = v
-
-
-    #    feat_values = np.ones(shape=(self.dataset.n_items, concat_indices.shape[1]))
-    #    if self.dataset.numerical_col is not None:
-    #        for i, col in enumerate(self.dataset.numerical_col):
-    #            feat_values[:, i] = self.dataset.train_feat_values[:, col]
-
-
         consumed = self.dataset.train_user[u]
         count = n_rec + len(consumed)
         target = self.pred if self.task == "rating" else self.y_prob
 
-        preds = self.sess.run(target, feed_dict={self.feature_indices: concat_indices,
+        feat_indices, feat_values = self.get_feat_indices_and_values(self.dataset, u)
+        preds = self.sess.run(target, feed_dict={self.feature_indices: feat_indices,
                                                  self.feature_values: feat_values})
+
         ids = np.argpartition(preds, -count)[-count:]
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
 
+    def get_feat_indices_and_values(self, data, user):
+        user_col = data.train_feat_indices.shape[1] - 2
+        item_col = data.train_feat_indices.shape[1] - 1
+
+        user_repr = user + data.user_offset
+        user_cols = data.user_feature_cols + [user_col]
+        user_features = data.train_feat_indices[:, user_cols]
+        user = user_features[user_features[:, -1] == user_repr][0]
+        users = np.tile(user, (data.n_items, 1))
+
+        #   np.unique is sorted from starting with the first element, so put item col first
+        item_cols = [item_col] + data.item_feature_cols
+        orig_cols = user_cols + item_cols
+        col_reindex = np.array(range(len(orig_cols)))[np.argsort(orig_cols)]
+
+        assert users.shape[0] == self.total_items_unique.shape[0], "user shape must equal to num of candidate items"
+        concat_indices = np.concatenate([users, self.total_items_unique], axis=-1)[:, col_reindex]
+
+        #   construct feature values, mainly fill numerical columns
+        feat_values = np.ones(shape=(data.n_items, concat_indices.shape[1]))
+        if data.numerical_col is not None:
+            numerical_dict = OrderedDict()
+            for col in range(len(data.numerical_col)):
+                if col in data.user_feature_cols:
+                    user_indices = np.where(data.train_feat_indices[:, user_col] == user_repr)[0]
+                    numerical_values = data.train_feat_values[user_indices, col][0]
+                    numerical_dict[col] = numerical_values
+                elif col in data.item_feature_cols:
+                    # order according to item indices
+                    numerical_map = OrderedDict(
+                        sorted(
+                            zip(data.train_feat_indices[:, -1],
+                                data.train_feat_values[:, col]), key=lambda x: x[0]))
+                    numerical_dict[col] = [v for v in numerical_map.values()]
+
+            for k, v in numerical_dict.items():
+                feat_values[:, k] = np.array(v)
+
+        return concat_indices, feat_values
+
     @property
     def item_info(self):
-    #    concat_indices
-        pass
-
-
-
-
-
-
-
-
-
-
-
-
+        item_col = self.dataset.train_feat_indices.shape[1] - 1
+        item_cols = [item_col] + self.dataset.item_feature_cols
+        return np.unique(self.dataset.train_feat_indices[:, item_cols], axis=0)
 
 
 
