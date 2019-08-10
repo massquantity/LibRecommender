@@ -145,16 +145,16 @@ class WideDeepEstimator(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO 
     @staticmethod
     def input_fn(data, repeat=1, batch=256, mode="train", user=None, item=None):  # , original_data=None
         if mode == "train":
-            features = {col: data.train_data[col].values for col in data.feature_cols}
-        #    features = {"age": data.train_data["age"].values}
-            labels = data.train_data[data.label_cols].values
+            features = {col: data.train_data[col].to_numpy() for col in data.feature_cols}
+        #    features = {"age": data.train_data["age"].to_numpy()}
+            labels = data.train_data[data.label_cols].to_numpy()
 
             train_data = tf.data.Dataset.from_tensor_slices((features, labels))
             return train_data.shuffle(len(labels)).repeat(repeat).batch(batch)
 
         elif mode == "evaluate":
-            features = {col: data.test_data[col].values.reshape(-1, 1) for col in data.feature_cols}
-            labels = data.test_data[data.label_cols].values.reshape(-1, 1)
+            features = {col: data.test_data[col].to_numpy().reshape(-1, 1) for col in data.feature_cols}
+            labels = data.test_data[data.label_cols].to_numpy().reshape(-1, 1)
 
             evaluate_data = tf.data.Dataset.from_tensor_slices((features, labels))
             return evaluate_data
@@ -162,8 +162,8 @@ class WideDeepEstimator(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO 
         elif mode == "test":
             user_part = pd.DataFrame([data.user_dict[user]], columns=data.user_feature_cols)
             item_part = pd.DataFrame([data.item_dict[item]], columns=data.item_feature_cols)
-            features = {col: user_part[col].values.reshape(-1, 1) for col in user_part.columns}
-            features.update({col: item_part[col].values.reshape(-1, 1) for col in item_part.columns})
+            features = {col: user_part[col].to_numpy().reshape(-1, 1) for col in user_part.columns}
+            features.update({col: item_part[col].to_numpy().reshape(-1, 1) for col in item_part.columns})
             for col, col_type in data.column_types:
                 if col_type == np.float32 or col_type == np.float64:
                     features[col] = features[col].astype(int)
@@ -178,8 +178,8 @@ class WideDeepEstimator(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO 
             user_part = pd.DataFrame([data.user_dict[user]], columns=data.user_feature_cols)
             user_part = user_part.reindex(user_part.index.repeat(n_items))
             item_part = pd.DataFrame(list(data.item_dict.values()), columns=data.item_feature_cols)
-            features = {col: user_part[col].values.reshape(-1, 1) for col in user_part.columns}
-            features.update({col: item_part[col].values.reshape(-1, 1) for col in item_part.columns})
+            features = {col: user_part[col].to_numpy().reshape(-1, 1) for col in user_part.columns}
+            features.update({col: item_part[col].to_numpy().reshape(-1, 1) for col in item_part.columns})
             for col, col_type in data.column_types:
                 if col_type == np.float32 or col_type == np.float64:
                     features[col] = features[col].astype(int)

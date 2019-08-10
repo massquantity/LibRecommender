@@ -539,8 +539,8 @@ class DatasetFeat:
             length = None
         loaded_data = pd.read_csv(data_path, sep=sep, header=header, names=col_names, nrows=length)
         train_data, test_data = train_test_split(loaded_data, train_size=train_frac, random_state=2019)
-        train_data = train_data.values
-        test_data = test_data.values
+        train_data = train_data.to_numpy()
+        test_data = test_data.to_numpy()
 
         print("test size before filtering: ", len(test_data))
         unique_values = dict()  # unique values of every column
@@ -563,7 +563,7 @@ class DatasetFeat:
         total_users_col = [user_col]
         total_users_col.extend(user_feature_cols)
         train_data_items = pd.DataFrame(train_data[:, total_users_col])
-        total_users_unique = train_data_items.drop_duplicates().values
+        total_users_unique = train_data_items.drop_duplicates().to_numpy()
         total_users = total_users_unique[:, 0]
         for user, user_columns in zip(total_users, total_users_unique):
             self.user_dict[user] = user_columns
@@ -572,7 +572,7 @@ class DatasetFeat:
         total_items_col = [item_col]
         total_items_col.extend(item_feature_cols)
         train_data_items = pd.DataFrame(train_data[:, total_items_col])
-        total_items_unique = train_data_items.drop_duplicates().values
+        total_items_unique = train_data_items.drop_duplicates().to_numpy()
         total_items = total_items_unique[:, 0]
         for item, item_columns in zip(total_items, total_items_unique):
             self.item_dict[item] = item_columns

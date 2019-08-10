@@ -182,8 +182,8 @@ def HitRatio_at_k(model, dataset, k):
 
 def NDCG_at_k(model, dataset, k, sample_user=None, mode="normal"):
     if mode.lower() == "wide_deep":
-        test_user_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "user"].values
-        test_item_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "item"].values
+        test_user_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "user"].to_numpy()
+        test_item_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "item"].to_numpy()
         u_items = dataset.user_dict
     else:
         test_user_indices = dataset.test_user_indices
