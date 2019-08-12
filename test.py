@@ -188,8 +188,9 @@ if __name__ == "__main__":
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-    fm = FmFeat(lr=0.001, n_epochs=100, reg=0.0, n_factors=16, batch_size=8192, task="ranking", neg_sampling=True)
+    fm = FmFeat(lr=0.0003, n_epochs=500, reg=0.01, n_factors=16, batch_size=2048, task="ranking", neg_sampling=True)
     fm.fit(dataset, pre_sampling=False)
+#    print(fm.predict(1959, 1992))
     fm.recommend_user(19500, 7)
 
 #    num = {}

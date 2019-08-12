@@ -309,8 +309,8 @@ class FmFeat:
                     if verbose > 0:
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
                         t3 = time.time()
-                        test_loss, test_accuracy, test_precision = \
-                            self.sess.run([self.loss, self.accuracy, self.precision],
+                        test_loss, test_accuracy, test_precision, test_ndcg = \
+                            self.sess.run([self.loss, self.accuracy, self.precision, self.ndcg],
                                 feed_dict={self.feature_indices: dataset.test_indices_implicit,
                                            self.feature_values: dataset.test_values_implicit,
                                            self.labels: dataset.test_labels_implicit})
@@ -321,26 +321,28 @@ class FmFeat:
                         print("\tloss time: {:.4f}".format(time.time() - t3))
 
                         t4 = time.time()
-                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=100)
+                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
                         print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
                         print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
 
-                        t6 = time.time()
-                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=100)
+                        t5 = time.time()
+                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
                         print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
-                        print("\t MAR@50 time: {:.4f}".format(time.time() - t6))
+                        print("\t MAR@50 time: {:.4f}".format(time.time() - t5))
 
-                        t9 = time.time()
-                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=100)
+                        t6 = time.time()
+                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
                         print("\t NDCG@{}: {:.4f}".format(10, NDCG))
-                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t9))
+                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t6))
                         print()
 
-    def predict(self, feat_ind, feat_val):
+    def predict(self, user, item):
+        feat_indices, feat_value = self.get_predict_indices_and_values(self.dataset, user, item)
         try:
-            pred = self.sess.run(self.pred, feed_dict={self.feature_indices: feat_ind,
-                                                       self.feature_values: feat_val})
-            pred = np.clip(pred, 1, 5)
+            target = self.pred if self.task == "rating" else self.y_prob
+            pred = self.sess.run(target, feed_dict={self.feature_indices: feat_indices,
+                                                       self.feature_values: feat_value})
+            pred = np.clip(pred, 1, 5) if self.task == "rating" else pred[0]
         except tf.errors.InvalidArgumentError:
             pred = self.dataset.global_mean
         return pred
@@ -350,7 +352,7 @@ class FmFeat:
         count = n_rec + len(consumed)
         target = self.pred if self.task == "rating" else self.y_prob
 
-        feat_indices, feat_values = self.get_feat_indices_and_values(self.dataset, u)
+        feat_indices, feat_values = self.get_recommend_indices_and_values(self.dataset, u)
         preds = self.sess.run(target, feed_dict={self.feature_indices: feat_indices,
                                                  self.feature_values: feat_values})
 
@@ -358,7 +360,7 @@ class FmFeat:
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
 
-    def get_feat_indices_and_values(self, data, user):
+    def get_predict_indices_and_values(self, data, user, item):
         user_col = data.train_feat_indices.shape[1] - 2
         item_col = data.train_feat_indices.shape[1] - 1
 
@@ -366,7 +368,39 @@ class FmFeat:
         user_cols = data.user_feature_cols + [user_col]
         user_features = data.train_feat_indices[:, user_cols]
         user = user_features[user_features[:, -1] == user_repr][0]
-        users = np.tile(user, (data.n_items, 1))
+
+        item_repr = item + data.user_offset + data.n_users
+        item_cols = [item_col] + data.item_feature_cols
+        item_features = data.train_feat_indices[:, item_cols]
+        item = item_features[item_features[:, 0] == item_repr][0]
+
+        orig_cols = user_cols + item_cols
+        col_reindex = np.array(range(len(orig_cols)))[np.argsort(orig_cols)]
+        concat_indices = np.concatenate([user, item])[col_reindex]
+
+        feat_values = np.ones(len(concat_indices))
+        if data.numerical_col is not None:
+            for col in range(len(data.numerical_col)):
+                if col in data.user_feature_cols:
+                    user_indices = np.where(data.train_feat_indices[:, user_col] == user_repr)[0]
+                    numerical_values = data.train_feat_values[user_indices, col][0]
+                    feat_values[col] = numerical_values
+                elif col in data.item_feature_cols:
+                    item_indices = np.where(data.train_feat_indices[:, item_col] == item_repr)[0]
+                    numerical_values = data.train_feat_values[item_indices, col][0]
+                    feat_values[col] = numerical_values
+
+        return concat_indices.reshape(1, -1), feat_values.reshape(1, -1)
+
+    def get_recommend_indices_and_values(self, data, user):
+        user_col = data.train_feat_indices.shape[1] - 2
+        item_col = data.train_feat_indices.shape[1] - 1
+
+        user_repr = user + data.user_offset
+        user_cols = data.user_feature_cols + [user_col]
+        user_features = data.train_feat_indices[:, user_cols]
+        user_unique = user_features[user_features[:, -1] == user_repr][0]
+        users = np.tile(user_unique, (data.n_items, 1))
 
         #   np.unique is sorted from starting with the first element, so put item col first
         item_cols = [item_col] + data.item_feature_cols
@@ -388,9 +422,9 @@ class FmFeat:
                 elif col in data.item_feature_cols:
                     # order according to item indices
                     numerical_map = OrderedDict(
-                        sorted(
-                            zip(data.train_feat_indices[:, -1],
-                                data.train_feat_values[:, col]), key=lambda x: x[0]))
+                                        sorted(
+                                            zip(data.train_feat_indices[:, -1],
+                                                data.train_feat_values[:, col]), key=lambda x: x[0]))
                     numerical_dict[col] = [v for v in numerical_map.values()]
 
             for k, v in numerical_dict.items():
