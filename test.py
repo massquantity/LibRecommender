@@ -81,7 +81,7 @@ if __name__ == "__main__":
         "convert_implicit": True,
         "build_negative": True,
         "num_neg": 2,
-        "batch_size": 256,
+    #    "batch_size": 2048,
         "sep": ",",
     }
 

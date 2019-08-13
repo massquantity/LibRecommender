@@ -309,8 +309,8 @@ class FmFeat:
                     if verbose > 0:
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
                         t3 = time.time()
-                        test_loss, test_accuracy, test_precision, test_ndcg = \
-                            self.sess.run([self.loss, self.accuracy, self.precision, self.ndcg],
+                        test_loss, test_accuracy, test_precision = \
+                            self.sess.run([self.loss, self.accuracy, self.precision],
                                 feed_dict={self.feature_indices: dataset.test_indices_implicit,
                                            self.feature_values: dataset.test_values_implicit,
                                            self.labels: dataset.test_labels_implicit})
