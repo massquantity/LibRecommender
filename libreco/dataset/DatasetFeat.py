@@ -198,9 +198,11 @@ class DatasetFeat:
             total_num_index = 0
             if user_feature_cols is not None:
                 user_cols = []
+                self.user_numerical_cols = []
                 for col in user_feature_cols:
                     if numerical_col is not None and col in numerical_col:
                         user_cols.append(total_num_index)
+                        self.user_numerical_cols.append(total_num_index)
                         total_num_index += 1
                     elif numerical_col is not None and col in categorical_col:
                         orig_col = col
@@ -226,9 +228,11 @@ class DatasetFeat:
 
             if item_feature_cols is not None:
                 item_cols = []
+                self.item_numerical_cols = []
                 for col in item_feature_cols:
                     if numerical_col is not None and col in numerical_col:
                         item_cols.append(total_num_index)
+                        self.item_numerical_cols.append(total_num_index)
                         total_num_index += 1
                     elif numerical_col is not None and col in categorical_col:
                         orig_col = col
