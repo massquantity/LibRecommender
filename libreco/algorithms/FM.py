@@ -352,7 +352,7 @@ class FmFeat:
         count = n_rec + len(consumed)
         target = self.pred if self.task == "rating" else self.y_prob
 
-        feat_indices, feat_values = self.get_recommend_indices_and_values(self.dataset, u)
+        feat_indices, feat_values = self.get_recommend_indices_and_values(self.dataset, u, self.total_items_unique)
         preds = self.sess.run(target, feed_dict={self.feature_indices: feat_indices,
                                                  self.feature_values: feat_values})
 
@@ -392,7 +392,7 @@ class FmFeat:
 
         return concat_indices.reshape(1, -1), feat_values.reshape(1, -1)
 
-    def get_recommend_indices_and_values(self, data, user):
+    def get_recommend_indices_and_values(self, data, user, items_unique):
         user_col = data.train_feat_indices.shape[1] - 2
         item_col = data.train_feat_indices.shape[1] - 1
 
@@ -407,8 +407,8 @@ class FmFeat:
         orig_cols = user_cols + item_cols
         col_reindex = np.array(range(len(orig_cols)))[np.argsort(orig_cols)]
 
-        assert users.shape[0] == self.total_items_unique.shape[0], "user shape must equal to num of candidate items"
-        concat_indices = np.concatenate([users, self.total_items_unique], axis=-1)[:, col_reindex]
+        assert users.shape[0] == items_unique.shape[0], "user shape must equal to num of candidate items"
+        concat_indices = np.concatenate([users, items_unique], axis=-1)[:, col_reindex]
 
         #   construct feature values, mainly fill numerical columns
         feat_values = np.ones(shape=(data.n_items, concat_indices.shape[1]))
