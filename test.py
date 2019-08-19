@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path, PurePath
 from libreco.dataset import DatasetPure, DatasetFeat
-from libreco.algorithms import userKNN, FmFeat, WideDeep, WideDeepEstimator, WideDeep
+from libreco.algorithms import userKNN, FmFeat, WideDeep, WideDeepEstimator, WideDeep, DeepFMFeat
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
@@ -46,8 +46,6 @@ if __name__ == "__main__":
 #    s = pstats.Stats("Profile.prof")
 #    s.strip_dirs().sort_stats("time").print_stats()
 
-    
-
     conf = {
         "data_path": "ml-1m/merged_data.csv",
         "length": 100000,
@@ -65,11 +63,12 @@ if __name__ == "__main__":
         "batch_size": 256,
         "sep": ",",
     }
+
     '''
 
     conf = {
         "data_path": "tianchi_recommender/merged_tianchi.csv",
-        "length": 500000,
+        "length": 100000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -187,11 +186,11 @@ if __name__ == "__main__":
 
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
-#    fm = FM.FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-    fm = FmFeat(lr=0.0001, n_epochs=500, reg=0.0, n_factors=50, batch_size=2048, task="ranking", neg_sampling=True)
-    fm.fit(dataset, pre_sampling=False)
+#    fm = FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
+#    fm = FmFeat(lr=0.0002, n_epochs=500, reg=0.1, n_factors=50, batch_size=2048, task="ranking", neg_sampling=True)
+#    fm.fit(dataset, pre_sampling=False, verbose=1)
 #    print(fm.predict(1959, 1992))
-    fm.recommend_user(19500, 7)
+#    fm.recommend_user(19500, 7)
 
 #    num = {}
 #    cat = {3: 'F', 4: 1, 5: 10, 6: 2452.0}
@@ -202,11 +201,11 @@ if __name__ == "__main__":
 #    fm.export_model(version="1", simple_save=False)
 #    print(fm.predict(1, 2))
 
-#    dfm = DeepFM.DeepFM(lr=0.0001, n_epochs=20000, reg=0.0, embed_size=8,
-#                        batch_size=1024, dropout=0.0, task="ranking")
-#    dfm.fit(dataset)
-#    print(dfm.predict(1, 2))
-#    print(dfm.predict_user(1))
+    dfm = DeepFMFeat(lr=0.0001, n_epochs=10000, reg=0.0, embed_size=50,
+                        batch_size=1024, dropout=0.0, task="ranking", neg_sampling=True)
+    dfm.fit(dataset, pre_sampling=False, verbose=1)
+    print(dfm.predict(1959, 1992))
+    print(dfm.recommend_user(19500, 7))
 
 #    iteration = len(dataset.train_user_indices) * 10000
 #    bpr = BPR.BPR(lr=0.01, iteration=iteration)  # reg
