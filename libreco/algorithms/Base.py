@@ -7,19 +7,19 @@ class BasePure(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def build_model(self):
+    def build_model(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    def fit(self):
+    def fit(self, *args, **kwargs):
         raise NotImplementedError
 
     @abstractmethod
-    def predict(self):
+    def predict(self, *args, **kwargs):
         raise NotImplementedError
 
     @abstractmethod
-    def recommend_user(self):
+    def recommend_user(self, *args, **kwargs):
         raise NotImplementedError
 
 
@@ -27,19 +27,19 @@ class BaseFeat(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def build_model(self):
+    def build_model(self, *args, **kwargs):
         pass
 
     @abstractmethod
-    def fit(self):
+    def fit(self, *args, **kwargs):
         raise NotImplementedError
 
     @abstractmethod
-    def predict(self):
+    def predict(self, *args, **kwargs):
         raise NotImplementedError
 
     @abstractmethod
-    def recommend_user(self):
+    def recommend_user(self, *args, **kwargs):
         raise NotImplementedError
 
     def get_predict_indices_and_values(self, data, user, item):
