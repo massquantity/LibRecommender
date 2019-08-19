@@ -215,8 +215,8 @@ class FmFeat:
         self.feature_embedding = tf.multiply(self.feature_embedding, self.feature_values_reshape)
 
         self.pairwise_term = 0.5 * tf.subtract(
-            tf.square(tf.reduce_sum(self.feature_embedding, axis=1)),
-            tf.reduce_sum(tf.square(self.feature_embedding), axis=1))
+            tf.square(tf.reduce_sum(self.feature_embedding, axis=2)), # axis=1 ?
+            tf.reduce_sum(tf.square(self.feature_embedding), axis=2))
 
         self.concat = tf.concat([self.linear_term, self.pairwise_term], axis=1)
 
