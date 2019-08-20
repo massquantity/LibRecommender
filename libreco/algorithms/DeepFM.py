@@ -193,8 +193,8 @@ class DeepFMFeat(BaseFeat):
         self.feature_embedding = tf.multiply(self.feature_embedding, self.feature_values_reshape)
 
         self.pairwise_term = 0.5 * tf.subtract(
-            tf.square(tf.reduce_sum(self.feature_embedding, axis=1)),  # axis=1 ?
-            tf.reduce_sum(tf.square(self.feature_embedding), axis=1))
+            tf.square(tf.reduce_sum(self.feature_embedding, axis=2)),  # axis=1 ?
+            tf.reduce_sum(tf.square(self.feature_embedding), axis=2))
 
         self.MLP_embedding = tf.reduce_sum(self.feature_embedding, axis=1)  # axis=1 ?
     #    self.MLP_embedding = tf.reshape(self.feature_embedding, [-1, self.field_size * self.embed_size])  # N * (F * K)
