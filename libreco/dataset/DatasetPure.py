@@ -38,9 +38,10 @@ class DatasetPure:
 
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all", sep=",",
                       train_frac=0.8, convert_implicit=False, build_negative=False, build_tf_dataset=False,
-                      batch_size=256, seed=42, num_neg=None):
+                      batch_size=256, seed=42, num_neg=None, lower_upper_bound=None):
         np.random.seed(seed)
         self.batch_size = batch_size
+        self.lower_upper_bound = lower_upper_bound
         if isinstance(num_neg, int) and num_neg > 0:
             self.num_neg = num_neg
         index_user = 0
@@ -77,7 +78,7 @@ class DatasetPure:
                 self.train_user_indices.append(user_id)
                 self.train_item_indices.append(item_id)
                 self.train_labels.append(float(label))
-                self.train_user[user_id].update(dict(zip([item_id], [float(label)])))  ### convert to float
+                self.train_user[user_id].update(dict(zip([item_id], [float(label)])))
                 self.train_item[item_id].update(dict(zip([user_id], [float(label)])))
             else:
                 self.test_user_indices.append(user_id)
@@ -98,9 +99,9 @@ class DatasetPure:
         self.test_item_indices = test_safe[:, 1].astype(int)
         self.test_labels = test_safe[:, 2]
 
-        if convert_implicit:
-            self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
-            self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
+    #    if convert_implicit:
+    #        self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
+    #        self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
 
         if build_negative:
             self.build_trainset_implicit(num_neg)

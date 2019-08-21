@@ -667,7 +667,8 @@ class DatasetFeat:
                 self.train_data[col] = self.train_data[col].astype(col_type)
                 self.test_data[col] = self.test_data[col].astype(col_type)
 
-#    def leave_k_out_chrono_split(self):
+#  TODO
+#   def leave_k_out_chrono_split(self):
 
     def build_trainset_implicit(self, num_neg):
         neg = NegativeSamplingFeat(self, num_neg, self.batch_size, replacement_sampling=True)
