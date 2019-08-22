@@ -2,90 +2,15 @@ import time
 from operator import itemgetter
 import itertools
 import numpy as np
-from ..evaluate import rmse, MAP_at_k, accuracy, precision_tf, MAR_at_k, MAP_at_k, NDCG_at_k
-from ..utils.initializers import truncated_normal
+from sklearn.metrics import roc_auc_score, precision_recall_curve, average_precision_score, auc
+from ..evaluate import rmse, accuracy, precision_tf, MAR_at_k, MAP_at_k, NDCG_at_k
 from ..utils import NegativeSampling
-try:
-    import tensorflow as tf
-except ModuleNotFoundError:
-    print("you need tensorflow for tf-version of this model")
+import tensorflow as tf
 
 
-class SVDBaseline:
-    def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=5.0,
-                 batch_size=256, batch_training=True, seed=42):
-        self.n_factors = n_factors
-        self.n_epochs = n_epochs
-        self.lr = lr
-        self.reg = reg
-        self.batch_size = batch_size
-        self.batch_training = batch_training
-        self.seed = seed
-
-    def fit(self, dataset, verbose=1):
-        np.random.seed(self.seed)
-        self.dataset = dataset
-        self.global_mean = dataset.global_mean
-        self.bu = np.zeros((dataset.n_users))
-        self.bi = np.zeros((dataset.n_items))
-        self.pu = truncated_normal(mean=0.0, scale=0.1,
-                                   shape=(dataset.n_users, self.n_factors))
-        self.qi = truncated_normal(mean=0.0, scale=0.1,
-                                   shape=(dataset.n_items, self.n_factors))
-
-        if not self.batch_training:
-            for epoch in range(1, self.n_epochs + 1):
-                t0 = time.time()
-                for u, i, r in zip(dataset.train_user_indices,
-                                   dataset.train_item_indices,
-                                   dataset.train_labels):
-                    dot = np.dot(self.qi[i], self.pu[u])
-                    err = r - (self.global_mean + self.bu[u] + self.bi[i] + dot)
-                    self.bu[u] += self.lr * (err - self.reg * self.bu[u])
-                    self.bi[i] += self.lr * (err - self.reg * self.bi[i])
-                    self.pu[u] += self.lr * (err * self.qi[i] - self.reg * self.pu[u])
-                    self.qi[i] += self.lr * (err * self.pu[u] - self.reg * self.qi[i])
-
-                if verbose > 0:
-                    print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
-                    print("training rmse: ", rmse(self, dataset, "train"))
-                    print("test rmse: ", rmse(self, dataset, "test"))
-
-        else:
-            for epoch in range(1, self.n_epochs + 1):
-                t0 = time.time()
-                n_batches = len(dataset.train_labels) // self.batch_size
-                for n in range(n_batches):
-                    end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
-                    u = dataset.train_user_indices[n * self.batch_size: end]
-                    i = dataset.train_item_indices[n * self.batch_size: end]
-                    r = dataset.train_labels[n * self.batch_size: end]
-
-                    dot = np.sum(np.multiply(self.pu[u], self.qi[i]), axis=1)
-                    err = r - (self.global_mean + self.bu[u] + self.bi[i] + dot)
-                    self.bu[u] += self.lr * (err - self.reg * self.bu[u])
-                    self.bi[i] += self.lr * (err - self.reg * self.bi[i])
-                    self.pu[u] += self.lr * (err.reshape(-1, 1) * self.qi[i] - self.reg * self.pu[u])
-                    self.qi[i] += self.lr * (err.reshape(-1, 1) * self.pu[u] - self.reg * self.qi[i])
-
-                if verbose > 0 and epoch % 10 == 0:
-                    print("Epoch {} time: {:.4f}".format(epoch, time.time() - t0))
-                    print("training rmse: ", rmse(self, dataset, "train"))
-                    print("test rmse: ", rmse(self, dataset, "test"))
-
-
-    def predict(self, u, i):
-        try:
-            pred = self.global_mean + self.bu[u] + self.bi[i] + np.dot(self.pu[u], self.qi[i])
-            pred = np.clip(pred, 1, 5)
-        except IndexError:
-            pred = self.global_mean
-        return pred
-
-
-class SVD_tf:
+class SVD:
     def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=1e-3,
-                 batch_size=256, seed=42, task="rating"):
+                 batch_size=256, seed=42, task="rating", neg_sampling=False):
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.lr = lr
@@ -93,11 +18,19 @@ class SVD_tf:
         self.batch_size = batch_size
         self.seed = seed
         self.task = task
+        self.neg_sampling = neg_sampling
 
     def build_model(self, dataset):
         tf.set_random_seed(self.seed)
         self.dataset = dataset
         self.global_mean = dataset.global_mean
+        if dataset.lower_upper_bound is not None:
+            self.lower_bound = dataset.lower_upper_bound[0]
+            self.upper_bound = dataset.lower_upper_bound[1]
+        else:
+            self.lower_bound = None
+            self.upper_bound = None
+
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
@@ -119,8 +52,11 @@ class SVD_tf:
             self.loss = tf.losses.mean_squared_error(labels=self.labels,
                                                      predictions=self.pred)
 
-            self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=self.labels,
-                                                             predictions=tf.clip_by_value(self.pred, 1, 5)))
+            if self.lower_bound is not None and self.upper_bound is not None:
+                self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=self.labels,
+                                predictions=tf.clip_by_value(self.pred, self.lower_bound, self.upper_bound)))
+            else:
+                self.rmse = self.loss
 
         elif self.task == "ranking":
             self.logits = self.global_mean + self.bias_user + self.bias_item + \
@@ -156,32 +92,58 @@ class SVD_tf:
         self.sess = tf.Session()
         self.sess.run(init)
         with self.sess.as_default():
-            if self.task == "rating":
+            if self.task == "rating" or (self.task == "ranking" and not self.neg_sampling):
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
                     n_batches = int(np.ceil(len(dataset.train_labels) / self.batch_size))
-                    for n in range(n_batches):  # batch training
+                    for n in range(n_batches):
                         end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
                         r = dataset.train_labels[n * self.batch_size: end]
                         u = dataset.train_user_indices[n * self.batch_size: end]
                         i = dataset.train_item_indices[n * self.batch_size: end]
-                        self.sess.run([self.training_op], feed_dict={self.labels: r,
+                        self.sess.run(self.training_op, feed_dict={self.labels: r,
                                                                      self.user_indices: u,
                                                                      self.item_indices: i})
 
-                    if verbose > 0:
-                        train_rmse = self.sess.run(self.rmse,
-                                                   feed_dict={self.labels: dataset.train_labels,
-                                                              self.user_indices: dataset.train_user_indices,
-                                                              self.item_indices: dataset.train_item_indices})
-                        test_rmse = self.sess.run(self.rmse,
+                    if verbose > 0 and self.task == "rating":
+                        test_loss, test_rmse = self.sess.run([self.total_loss, self.rmse],
                                                    feed_dict={self.labels: dataset.test_labels,
                                                               self.user_indices: dataset.test_user_indices,
                                                               self.item_indices: dataset.test_item_indices})
 
-                        print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
-                        print("Epoch {}, train rmse: {:.4f}".format(epoch, train_rmse))
-                        print("Epoch {}, test rmse: {:.4f}".format(epoch, test_rmse))
+                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
+                        print("Epoch {}, test_loss: {:.4f}, test_rmse: {:.4f}".format(
+                            epoch, test_loss, test_rmse))
+                        print()
+
+                    elif verbose > 0 and self.task == "ranking":
+                        print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
+                        t3 = time.time()
+                        test_loss, test_accuracy, test_precision = \
+                            self.sess.run([self.loss, self.accuracy, self.precision],
+                                          feed_dict={self.labels: dataset.test_labels,
+                                                     self.user_indices: dataset.test_user_indices,
+                                                     self.item_indices: dataset.test_item_indices})
+
+                        print("\ttest loss: {:.4f}".format(test_loss))
+                        print("\ttest accuracy: {:.4f}".format(test_accuracy))
+                        print("\ttest precision: {:.4f}".format(test_precision))
+                        print("\tloss time: {:.4f}".format(time.time() - t3))
+
+                        t4 = time.time()
+                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
+                        print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
+                        print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
+
+                        t5 = time.time()
+                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
+                        print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
+                        print("\t MAR@50 time: {:.4f}".format(time.time() - t5))
+
+                        t6 = time.time()
+                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
+                        print("\t NDCG@{}: {:.4f}".format(10, NDCG))
+                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t6))
                         print()
 
             elif self.task == "ranking":
@@ -198,8 +160,8 @@ class SVD_tf:
                     if verbose > 0:
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
                         t3 = time.time()
-                        test_loss, test_accuracy, test_precision = \
-                            self.sess.run([self.loss, self.accuracy, self.precision],
+                        test_loss, test_accuracy, test_precision, test_prob = \
+                            self.sess.run([self.loss, self.accuracy, self.precision, self.y_prob],
                                 feed_dict={self.labels: dataset.test_label_implicit,
                                            self.user_indices: dataset.test_user_implicit,
                                            self.item_indices: dataset.test_item_implicit})
@@ -209,41 +171,43 @@ class SVD_tf:
                         print("\ttest precision: {:.4f}".format(test_precision))
                         print("\tloss time: {:.4f}".format(time.time() - t3))
 
+                        t1 = time.time()
+                        test_auc = roc_auc_score(dataset.test_label_implicit, test_prob)
+                        test_ap = average_precision_score(dataset.test_label_implicit, test_prob)
+                        precision_test, recall_test, _ = precision_recall_curve(dataset.test_label_implicit,
+                                                                                test_prob)
+                        test_pr_auc = auc(recall_test, precision_test)
+                        print("\t test roc auc: {:.2f} "
+                              "\n\t test average precision: {:.2f}"
+                              "\n\t test pr auc: {:.2f}".format(test_auc, test_ap, test_pr_auc))
+                        print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
+
                         t4 = time.time()
-                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=5000)
-                        print("\t MAP @ {}: {:.4f}".format(10, mean_average_precision_10))
-                        print("\t MAP @ 10 time: {:.4f}".format(time.time() - t4))
+                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
+                        print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
+                        print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
+
+                        t5 = time.time()
+                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
+                        print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
+                        print("\t MAR@50 time: {:.4f}".format(time.time() - t5))
 
                         t6 = time.time()
-                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=5000)
-                        print("\t MAR @ {}: {:.4f}".format(50, mean_average_recall_50))
-                        print("\t MAR @ 50 time: {:.4f}".format(time.time() - t6))
-
-                        t9 = time.time()
-                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=5000)
-                        print("\t NDCG @ {}: {:.4f}".format(10, NDCG))
-                        print("\t NDCG time: {:.4f}".format(time.time() - t9))
+                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
+                        print("\t NDCG@{}: {:.4f}".format(10, NDCG))
+                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t6))
                         print()
 
     def predict(self, u, i):
-        if self.task == "rating":
-            try:
-                pred = self.sess.run(self.pred, feed_dict={self.user_indices: [u],
-                                                           self.item_indices: [i]})
-                pred = np.clip(pred, 1, 5)
-            except tf.errors.InvalidArgumentError:
-                pred = self.global_mean
-            return pred
-
-        elif self.task == "ranking":
-            try:
-                prob, pred = self.sess.run([self.y_prob, self.pred],
-                                            feed_dict={self.user_indices: [u],
-                                                       self.item_indices: [i]})
-            except tf.errors.InvalidArgumentError:
-                prob = 0.5
-                pred = self.global_mean
-            return prob[0], pred[0]
+        try:
+            target = self.pred if self.task == "rating" else self.y_prob
+            pred = self.sess.run(target, feed_dict={self.user_indices: [u],
+                                                    self.item_indices: [i]})
+            if self.lower_bound is not None and self.upper_bound is not None:
+                pred = np.clip(pred, self.lower_bound, self.upper_bound) if self.task == "rating" else pred[0]
+        except tf.errors.InvalidArgumentError:
+            pred = self.dataset.global_mean
+        return pred
 
     def recommend_user(self, u, n_rec):
         items = np.arange(self.dataset.n_items)
