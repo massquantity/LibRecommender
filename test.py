@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     conf = {
         "data_path": "tianchi_recommender/merged_tianchi.csv",
-        "length": 100000,
+        "length": 500000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -201,8 +201,8 @@ if __name__ == "__main__":
 #    fm.export_model(version="1", simple_save=False)
 #    print(fm.predict(1, 2))
 
-    dfm = DeepFMFeat(lr=0.0001, n_epochs=10000, reg=0.0, embed_size=50,
-                        batch_size=1024, dropout=0.0, task="ranking", neg_sampling=True)
+    dfm = DeepFMFeat(lr=0.0002, n_epochs=10000, reg=0.1, embed_size=50,
+                        batch_size=2048, dropout=0.0, task="ranking", neg_sampling=True)
     dfm.fit(dataset, pre_sampling=False, verbose=1)
     print(dfm.predict(1959, 1992))
     print(dfm.recommend_user(19500, 7))
