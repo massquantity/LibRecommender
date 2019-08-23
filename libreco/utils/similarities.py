@@ -77,8 +77,7 @@ def pearson_sim(dicts, x1, x2, min_support=5, shrunk=10):
 def get_sim(data, sim_func, n, ids, symmetric=True, min_support=5):
     if not symmetric:
         print("not symmetric")
-        sim = np.array([[
-            sim_func(data, i, other, min_support) for other in ids] for i in ids])
+        sim = np.array([[sim_func(data, i, other, min_support) for other in ids] for i in ids])
     else:
         print("symmetric")
         sim = np.zeros((n, n))

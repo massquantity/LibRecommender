@@ -429,7 +429,6 @@ class NegativeSamplingFeat:
             return np.array(indices)[random_mask], np.array(values)[random_mask], np.array(labels)[random_mask]
 
 
-
 class PairwiseSampling:
     def __init__(self, dataset, batch_size=None):
         self.dataset = dataset
