@@ -3,7 +3,9 @@ from operator import itemgetter
 import itertools
 import numpy as np
 from sklearn.metrics import roc_auc_score, precision_recall_curve, average_precision_score, auc
-from ..evaluate import rmse, accuracy, precision_tf, MAR_at_k, MAP_at_k, NDCG_at_k
+
+from libreco.utils.initializers import truncated_normal
+from ..evaluate import rmse, accuracy, precision_tf, MAR_at_k, MAP_at_k, NDCG_at_k, binary_cross_entropy
 from ..utils import NegativeSampling
 import tensorflow as tf
 
@@ -28,6 +30,8 @@ class SVDpp:
         self.n_items = dataset.n_items
         self.train_user_indices = dataset.train_user_indices
         self.train_item_indices = dataset.train_item_indices
+        implicit_feedback = self.get_implicit_feedback(dataset)
+
         if dataset.lower_upper_bound is not None:
             self.lower_bound = dataset.lower_upper_bound[0]
             self.upper_bound = dataset.lower_upper_bound[1]
@@ -45,7 +49,8 @@ class SVDpp:
         self.qi = tf.Variable(tf.random_normal([dataset.n_items, self.n_factors], 0.0, 0.01))
         self.yj = tf.Variable(tf.random_normal([dataset.n_items, self.n_factors], 0.0, 0.01))
 
-        self.nu = self.get_implicit_feedback(dataset)
+        yjs = tf.nn.embedding_lookup_sparse(self.yj, implicit_feedback, sp_weights=None, combiner="sqrtn")
+        self.nu = tf.gather(yjs, np.arange(dataset.n_users))
         self.pn = self.pu + self.nu
 
         self.bias_user = tf.nn.embedding_lookup(self.bu, self.user_indices)
@@ -54,7 +59,7 @@ class SVDpp:
         self.embed_item = tf.nn.embedding_lookup(self.qi, self.item_indices)
 
         if self.task == "rating":
-            self.pred = self.global_mean + self.bias_user + self.bias_item + \
+            self.pred = tf.cast(self.global_mean, tf.float32) + self.bias_user + self.bias_item + \
                         tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item), axis=1)
 
             self.loss = tf.losses.mean_squared_error(labels=self.labels,
@@ -67,7 +72,7 @@ class SVDpp:
                 self.rmse = self.loss
 
         elif self.task == "ranking":
-            self.logits = self.global_mean + self.bias_user + self.bias_item + \
+            self.logits = tf.cast(self.global_mean, tf.float32) + self.bias_user + self.bias_item + \
                           tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item), axis=1)
             self.logits = tf.reshape(self.logits, [-1])
             self.loss = tf.reduce_mean(
@@ -79,12 +84,13 @@ class SVDpp:
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.pred, self.labels), tf.float32))
             self.precision = precision_tf(self.pred, self.labels)
 
-        self.reg_pu = self.reg * tf.nn.l2_loss(self.pu)
-        self.reg_qi = self.reg * tf.nn.l2_loss(self.qi)
-        self.reg_bu = self.reg * tf.nn.l2_loss(self.bu)
-        self.reg_bi = self.reg * tf.nn.l2_loss(self.bi)
-        self.reg_yj = self.reg * tf.nn.l2_loss(self.yj)  ###########
-        self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi, self.reg_yj])
+    #    self.reg_pu = self.reg * tf.nn.l2_loss(self.pu)
+    #    self.reg_qi = self.reg * tf.nn.l2_loss(self.qi)
+    #    self.reg_bu = self.reg * tf.nn.l2_loss(self.bu)
+    #    self.reg_bi = self.reg * tf.nn.l2_loss(self.bi)
+    #    self.reg_yj = self.reg * tf.nn.l2_loss(self.yj)
+    #    self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi])
+        self.total_loss = self.loss
 
     def fit(self, dataset, verbose=1):
         self.build_model(dataset)
@@ -235,6 +241,117 @@ class SVDpp:
                 sparse_dict['values'].append(item)
         sparse_dict['dense_shape'] = (data.n_users, data.n_items)
         implicit_feedback = tf.SparseTensor(**sparse_dict)
-        yjs = tf.nn.embedding_lookup_sparse(self.yj, implicit_feedback, sp_weights=None, combiner="sqrtn")
-        nu = tf.gather(yjs, np.arange(data.n_users))
-        return nu
+        return implicit_feedback
+
+
+
+class sss:
+    def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=5.0,
+                 batch_size=256, seed=42):
+        self.n_factors = n_factors
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.reg = reg
+        self.batch_size = batch_size
+        self.seed = seed
+
+    def fit(self, dataset, verbose=1):
+        np.random.seed(self.seed)
+        self.dataset = dataset
+        self.global_mean = dataset.global_mean
+        self.bu = np.zeros((dataset.n_users))
+        self.bi = np.zeros((dataset.n_items))
+        self.pu = truncated_normal(mean=0.0, scale=0.1,
+                                   shape=(dataset.n_users, self.n_factors))
+        self.qi = truncated_normal(mean=0.0, scale=0.1,
+                                   shape=(dataset.n_items, self.n_factors))
+        self.yj = truncated_normal(mean=0.0, scale=0.1,
+                                   shape=(dataset.n_items, self.n_factors))
+
+        for epoch in range(1, self.n_epochs + 1):
+            t0 = time.time()
+            neg = NegativeSampling(dataset, dataset.num_neg, self.batch_size)
+            n_batches = int(np.ceil(len(dataset.train_label_implicit) / self.batch_size))
+        #    n_batches = len(dataset.train_labels) // self.batch_size
+            for n in range(n_batches):
+                users, items, labels = neg.next_batch()
+                nu = []
+                u_items = []
+                u_sqrt = []
+                for u in users:
+                    u_items_single = list(dataset.train_user[u].keys())
+                    nu_sqrt = np.sqrt(len(u_items_single))
+                    nu_single = np.sum(self.yj[u_items_single], axis=0) / nu_sqrt
+                    nu.append(nu_single)
+                    u_items.append(u_items_single)
+                    u_sqrt.append(nu_sqrt)
+
+                self.pn = self.pu[users] + np.array(nu)
+
+                dot = np.sum(np.multiply(self.pn, self.qi[items]), axis=1)
+                err = labels - (self.global_mean + self.bu[users] + self.bi[items] + dot)
+                self.bu[users] += self.lr * (err - self.reg * self.bu[users])
+                self.bi[items] += self.lr * (err - self.reg * self.bi[items])
+                self.pu[users] += self.lr * (err.reshape(-1, 1) * self.qi[items] - self.reg * self.pu[users])
+                self.qi[items] += self.lr * (err.reshape(-1, 1) * self.pn - self.reg * self.qi[items])
+                for k, i in enumerate(u_items):
+                    self.yj[i] += self.lr * (err[k] * self.qi[i] / u_sqrt[k] - self.reg * self.yj[i])
+
+            if verbose > 0:
+                print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
+                t1 = time.time()
+                test_loss, test_prob = binary_cross_entropy(self, dataset.test_user_implicit,
+                                                            dataset.test_item_implicit,
+                                                            dataset.test_label_implicit)
+
+                test_auc = roc_auc_score(dataset.test_label_implicit, test_prob)
+                test_ap = average_precision_score(dataset.test_label_implicit, test_prob)
+                precision_test, recall_test, _ = precision_recall_curve(dataset.test_label_implicit,
+                                                                        test_prob)
+                test_pr_auc = auc(recall_test, precision_test)
+                print("\t test loss: {:.4f}".format(test_loss))
+                print("\t test roc auc: {:.2f} "
+                      "\n\t test average precision: {:.2f}"
+                      "\n\t test pr auc: {:.2f}".format(test_auc, test_ap, test_pr_auc))
+                print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
+
+                t4 = time.time()
+                mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
+                print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
+                print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
+
+                t5 = time.time()
+                mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
+                print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
+                print("\t MAR@50 time: {:.4f}".format(time.time() - t5))
+
+                t6 = time.time()
+                NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
+                print("\t NDCG@{}: {:.4f}".format(10, NDCG))
+                print("\t NDCG@10 time: {:.4f}".format(time.time() - t6))
+                print()
+
+    def predict(self, u, i):
+        try:
+            u_items = list(self.dataset.train_user[u].keys())
+            nu = np.sum(self.yj[u_items], axis=0) / np.sqrt(len(u_items))
+            logits = self.global_mean + self.bu[u] + self.bi[i] + np.dot(self.pu[u] + nu, self.qi[i])
+            prob = 1.0 / (1.0 + np.exp(-logits))
+            pred = 1.0 if prob >= 0.5 else 0.0
+        except IndexError:
+            pred, prob = 0.0, 0.0
+        return prob, pred
+
+    def recommend_user(self, u, n_rec):
+        consumed = self.dataset.train_user[u]
+        count = n_rec + len(consumed)
+
+        u_items = list(self.dataset.train_user[u].keys())
+        nu = np.sum(self.yj[u_items], axis=0) / np.sqrt(len(u_items))
+        preds = self.global_mean + self.bu[u] + self.bi + np.dot(self.pu[u] + nu, self.qi.T)
+        ids = np.argpartition(preds, -count)[-count:]
+        rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
+        return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
+
+
+
