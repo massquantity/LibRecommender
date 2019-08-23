@@ -64,11 +64,11 @@ def precision_tf(pred, y):
     return precision[0]
 
 
-def AP_at_k(model, dataset, u, k):
+def AP_at_k(model, dataset, u, k, **kwargs):
     true_items = dataset.test_item_indices[np.where(dataset.test_user_indices == u)]
     if len(true_items) == 0:
         return -1
-    rank_list = model.recommend_user(u, k)
+    rank_list = model.recommend_user(u, k, **kwargs)
     top_k = [i[0] for i in rank_list]
     precision_k = 0
     count_relevant_k = 0
@@ -89,7 +89,7 @@ def AP_at_k(model, dataset, u, k):
     return average_precision_at_k
 
 
-def MAP_at_k(model, dataset, k, sample_user=None):
+def MAP_at_k(model, dataset, k, sample_user=None, **kwargs):
     average_precision_at_k = []
     if sample_user is not None:
         assert isinstance(sample_user, int), "sampled users must be integer"
@@ -100,7 +100,7 @@ def MAP_at_k(model, dataset, k, sample_user=None):
 
     i = 0
     for u in users:
-        AP = AP_at_k(model, dataset, u, k)
+        AP = AP_at_k(model, dataset, u, k, **kwargs)
         if AP == -1:
             i += 1
             continue
@@ -231,11 +231,11 @@ def NDCG_at_k_tf(labels, predictions, k):
     return tf.metrics.mean(NDCG)
 
 
-def binary_cross_entropy(model, user, item, label, method="mf"):
+def binary_cross_entropy(model, user, item, label):
     ce = []
     probs = []
     for u, i, l in zip(user, item, label):
-        prob, _ = model.predict(u, i, method)
+        prob, _ = model.predict(u, i)
         probs.append(prob)
         if l == 1.0:
             ce.append(-np.log(prob))
