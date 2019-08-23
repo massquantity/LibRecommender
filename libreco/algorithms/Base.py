@@ -19,6 +19,10 @@ class BasePure(object):
         raise NotImplementedError
 
     @abstractmethod
+    def evaluate(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
     def recommend_user(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -36,6 +40,10 @@ class BaseFeat(object):
 
     @abstractmethod
     def predict(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def evaluate(self, *args, **kwargs):
         raise NotImplementedError
 
     @abstractmethod
