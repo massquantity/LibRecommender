@@ -199,12 +199,12 @@ class DeepFMFeat(BaseFeat):
         self.MLP_embedding = tf.reduce_sum(self.feature_embedding, axis=1)  # axis=1 ?
     #    self.MLP_embedding = tf.reshape(self.feature_embedding, [-1, self.field_size * self.embed_size])  # N * (F * K)
         self.MLP_layer_one = tf.layers.dense(inputs=self.MLP_embedding,
-                                          units=self.embed_size * 2,   # self.embed_size * 2,
+                                          units=self.embed_size * self.field_size,   # self.embed_size * 2,
                                           activation=tf.nn.relu,
                                           kernel_initializer=tf.variance_scaling_initializer)
         self.MLP_layer_one = tf.layers.dropout(self.MLP_layer_one, rate=self.dropout)
         self.MLP_layer_two = tf.layers.dense(inputs=self.MLP_layer_one,
-                                          units=self.embed_size,   # self.embed_size,
+                                          units=self.embed_size * 2,   # self.embed_size,
                                           activation=tf.nn.relu,
                                           kernel_initializer=tf.variance_scaling_initializer)
         self.MLP_layer_two = tf.layers.dropout(self.MLP_layer_two, rate=self.dropout)
@@ -217,6 +217,8 @@ class DeepFMFeat(BaseFeat):
         self.concat_layer = tf.concat([self.linear_term,
                                        self.pairwise_term,
                                        self.MLP_layer_three], axis=1)
+
+    #    self.concat_layer = self.MLP_layer_three
 
         if self.task == "rating":
             self.pred = tf.layers.dense(inputs=self.concat_layer, units=1, name="pred")
