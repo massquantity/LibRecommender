@@ -1,5 +1,6 @@
 import time
 import itertools
+import logging
 import numpy as np
 import tensorflow as tf
 from ..utils.sampling import PairwiseSampling
@@ -11,12 +12,11 @@ from sklearn.metrics import roc_auc_score, average_precision_score, log_loss
 
 class BPR:
     def __init__(self, n_factors=16, lr=0.01, n_epochs=20, reg=0.0,
-                 iteration=1000, batch_size=64, seed=42, k=20, method="mf"):
+                 batch_size=64, seed=42, k=20, method="mf"):
         self.n_factors = n_factors
         self.lr = lr
         self.n_epochs = n_epochs
         self.reg = reg
-        self.iteration = iteration
         self.batch_size = batch_size
         self.seed = seed
         self.k = k
@@ -49,14 +49,23 @@ class BPR:
                 tf.log(1 / (1 + tf.exp(-self.x_uij))) - self.reg_user - self.reg_item_i - self.reg_item_j)
 
             self.item_t = tf.placeholder(tf.int32, shape=[None])
+            self.labels = tf.placeholder(tf.float32, shape=[None])
             self.embed_item_t = tf.nn.embedding_lookup(self.qi, self.item_t)
             self.logits = tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item_t), axis=1)
+            self.test_loss = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=self.logits))
             self.prob = tf.sigmoid(self.logits)
             self.pred = tf.where(self.prob >= 0.5,
                                  tf.fill(tf.shape(self.logits), 1.0),
                                  tf.fill(tf.shape(self.logits), 0.0))
 
         elif self.method == "knn":
+            LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+            logging.basicConfig(format=LOG_FORMAT)
+            logging.warning("knn method requires huge memory for constructing similarity matrix")
+            self.dataset = dataset
+            self.n_users = dataset.n_users
+            self.n_items = dataset.n_items
         #    self.sim_matrix = truncated_normal(shape=[dataset.n_items, dataset.n_items], mean=0.0, scale=0.01)
             self.sim_matrix = np.zeros((dataset.n_items, dataset.n_items))
         #    self.sim_matrix = get_sim(dataset.train_item, cosine_sim, dataset.n_items,
@@ -94,31 +103,33 @@ class BPR:
 
                     if verbose > 0:
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
-
-                        test_loss, test_prob = self.sess.run([self.loss, self.prob],
+                        t1 = time.time()
+                        test_loss, test_prob = self.sess.run([self.test_loss, self.prob],
                                                                feed_dict={self.user: test_user,
                                                                           self.item_t: test_item,
+                                                                          self.labels: test_label,
                                                                           self.item_i: np.zeros(test_item.shape),
                                                                           self.item_j: np.zeros(test_item.shape)})
                         test_roc_auc = roc_auc_score(test_label, test_prob)
                         test_pr_auc = average_precision_score(test_label, test_prob)
                         print("test loss: {:.2f}, test roc auc: {:.4f}, test pr auc: {:.4f}".format(
                             test_loss, test_roc_auc, test_pr_auc))
-
-                        t1 = time.time()
-                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
-                        print("\t MAP@10 time: {:.4f}".format(time.time() - t1))
+                        print("evaluate time: {:.2f}".format(time.time() - t1))
 
                         t2 = time.time()
-                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
-                        print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
-                        print("\t MAR@50 time: {:.4f}".format(time.time() - t2))
+                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
+                        print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
+                        print("\t MAP@10 time: {:.4f}".format(time.time() - t2))
 
                         t3 = time.time()
+                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
+                        print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
+                        print("\t MAR@50 time: {:.4f}".format(time.time() - t3))
+
+                        t4 = time.time()
                         NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
                         print("\t NDCG@{}: {:.4f}".format(10, NDCG))
-                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t3))
+                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t4))
                         print()
 
         elif self.method == "knn":
@@ -150,20 +161,20 @@ class BPR:
                     print("test loss: {:.4f}, test auc: {:.4f}, test pr auc: {:.4f}".format(
                         test_loss, test_roc_auc, test_pr_auc))
 
-                    t1 = time.time()
+                    t2 = time.time()
                     mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
                     print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
-                    print("\t MAP@10 time: {:.4f}".format(time.time() - t1))
-
-                    t2 = time.time()
-                    mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
-                    print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
-                    print("\t MAR@50 time: {:.4f}".format(time.time() - t2))
+                    print("\t MAP@10 time: {:.4f}".format(time.time() - t2))
 
                     t3 = time.time()
+                    mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
+                    print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
+                    print("\t MAR@50 time: {:.4f}".format(time.time() - t3))
+
+                    t4 = time.time()
                     NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
                     print("\t NDCG@{}: {:.4f}".format(10, NDCG))
-                    print("\t NDCG@10 time: {:.4f}".format(time.time() - t3))
+                    print("\t NDCG@10 time: {:.4f}".format(time.time() - t4))
                     print()
 
     def predict(self, u, i):
