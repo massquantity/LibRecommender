@@ -1,15 +1,23 @@
+import time, sys
 from operator import itemgetter
 import random
 import numpy as np
 from ..utils.similarities import *
 from ..utils.baseline_estimates import baseline_als, baseline_sgd
-
+from ..evaluate import rmse, accuracy, MAR_at_k, MAP_at_k, NDCG_at_k
+try:
+    from ..utils.similarities_cy import cosine_cy, cosine_cym
+    use_cython = True
+except ImportError:
+    use_cython = False
+    pass
 
 class itemKNN:
-    def __init__(self, sim_option="pearson", k=50, min_support=1, baseline=True):
+    def __init__(self, sim_option="pearson", k=50, min_support=1, baseline=True, task="rating"):
         self.k = k
         self.min_support = min_support
         self.baseline = baseline
+        self.task = task
         if sim_option == "cosine":
             self.sim_option = cosine_sim
         elif sim_option == "msd":
@@ -19,16 +27,49 @@ class itemKNN:
         else:
             raise ValueError("sim_option %s not allowed" % sim_option)
 
-    def fit(self, dataset):
+    def fit(self, dataset, verbose=1):
+        t0 = time.time()
         self.global_mean = dataset.global_mean
         self.default_prediction = dataset.global_mean
         self.train_user = dataset.train_user
         self.train_item = dataset.train_item
+        if dataset.lower_upper_bound is not None:
+            self.lower_bound = dataset.lower_upper_bound[0]
+            self.upper_bound = dataset.lower_upper_bound[1]
         n = len(self.train_item)
         ids = list(self.train_item.keys())
         self.sim = get_sim(self.train_item, self.sim_option, n, ids, min_support=self.min_support)
         if self.baseline:
             self.bu, self.bi = baseline_als(dataset)
+
+        if verbose > 0 and self.task == "rating":
+            print("training_time: {:.2f}".format(time.time() - t0))
+            t1 = time.time()
+            print("test rmse: {:.4f}".format(rmse(self, dataset, "test")))
+            print("rmse time: {:.4f}".format(time.time() - t1))
+
+        elif verbose > 0 and self.task == "ranking":
+            print("training_time: {:.2f}".format(time.time() - t0))
+            t1 = time.time()
+            print("test accuracy: {:.4f}".format(accuracy(self, dataset, "test")))
+            print("accuracy time: {:.4f}".format(time.time() - t1))
+
+            t2 = time.time()
+            mean_average_precision_10 = MAP_at_k(self, dataset, 10, sample_user=1000)
+            print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
+            print("\t MAP@10 time: {:.4f}".format(time.time() - t2))
+
+            t3 = time.time()
+            mean_average_recall_50 = MAR_at_k(self, dataset, 50, sample_user=1000)
+            print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
+            print("\t MAR@50 time: {:.4f}".format(time.time() - t3))
+
+            t4 = time.time()
+            NDCG = NDCG_at_k(self, dataset, 10, sample_user=1000)
+            print("\t NDCG@{}: {:.4f}".format(10, NDCG))
+            print("\t NDCG@10 time: {:.4f}".format(time.time() - t4))
+            print()
+
         return self
 
     def predict(self, u, i):
@@ -49,7 +90,8 @@ class itemKNN:
 
             try:
                 pred = bui + sim_ratings / sim_sums
-                pred = np.clip(pred, 1, 5)
+                if self.lower_bound and self.upper_bound:
+                    pred = np.clip(pred, self.lower_bound, self.upper_bound)
                 return pred
             except ZeroDivisionError:
                 return self.default_prediction
@@ -69,30 +111,45 @@ class itemKNN:
 
             try:
                 pred = sim_ratings / sim_sums
-                pred = np.clip(pred, 1, 5)
+                if self.lower_bound and self.upper_bound:
+                    pred = np.clip(pred, self.lower_bound, self.upper_bound)
                 return pred
             except ZeroDivisionError:
                 return self.default_prediction
 
-    def recommend_user(self, u, k, n_rec, random_rec=False):
+    def recommend_user(self, u, n_rec, like_score=4.0, random_rec=False):
         rank = []
         u_items = np.array(list(self.train_user[u].items()))
-        u_items = [(i, r) for i, r in u_items if r > 3]
+        if self.task == "rating":
+            u_items = [(i, r) for i, r in u_items if r >= like_score]
+    #    elif self.task == "ranking":
+    #        u_items = [(i, r) for i, r in u_items]
+
         for i, _ in u_items:
-            neighbors = [(self.sim[i, j], j) for j in range(len(self.train_item))]
-            k_neighbors = sorted(neighbors, key=itemgetter(0), reverse=True)[:k]
-            for _, j in k_neighbors:
+    #        neighbors = [(self.sim[i, j], j) for j in range(len(self.train_item))]
+    #        k_neighbors = sorted(neighbors, key=itemgetter(0), reverse=True)[:self.k]
+
+            k_neighbors = np.argsort(self.sim[i])[::-1][1: self.k + 1]
+            for j in k_neighbors:
                 if j in self.train_user[u]:
                     continue
                 pred = self.predict(u, j)
                 rank.append((j, pred))
+
         if random_rec:
-            item_pred_dict = {j: pred for j, pred in rank if pred >= 4}
+            item_pred_dict = {j: pred for j, pred in rank if pred >= like_score}
+            if len(item_pred_dict) == 0:
+                print("not enough candidates, try raising the like_score")
+                sys.exit(1)
+
             item_list = list(item_pred_dict.keys())
             pred_list = list(item_pred_dict.values())
             p = [p / np.sum(pred_list) for p in pred_list]
 
-            item_candidates = np.random.choice(item_list, n_rec, replace=False, p=p)
+            if len(item_list) < n_rec:
+                item_candidates = item_list
+            else:
+                item_candidates = np.random.choice(item_list, n_rec, replace=False, p=p)
             reco = [(item, item_pred_dict[item]) for item in item_candidates]
             return reco
         else:
