@@ -2,6 +2,7 @@ import time
 import itertools
 import logging
 import numpy as np
+from scipy.sparse import lil_matrix
 import tensorflow as tf
 from ..utils.sampling import PairwiseSampling
 from ..utils.initializers import truncated_normal
@@ -67,7 +68,7 @@ class BPR:
             self.n_users = dataset.n_users
             self.n_items = dataset.n_items
         #    self.sim_matrix = truncated_normal(shape=[dataset.n_items, dataset.n_items], mean=0.0, scale=0.01)
-            self.sim_matrix = np.zeros((dataset.n_items, dataset.n_items))
+            self.sim_matrix = lil_matrix((dataset.n_items, dataset.n_items))
         #    self.sim_matrix = get_sim(dataset.train_item, cosine_sim, dataset.n_items,
         #                              list(dataset.train_item), 10)
 
@@ -142,12 +143,13 @@ class BPR:
                         sampling.next_knn(self.sim_matrix, k=self.k)
 
                     sigmoid = 1.0 / (1.0 + np.exp(x_uij))
-                    self.sim_matrix[item_i][item_i_nei] += self.lr * (
-                            sigmoid - self.reg * self.sim_matrix[item_i][item_i_nei])
+                    sigmoid = np.repeat(sigmoid, len(item_i_nei))
+                    self.sim_matrix[item_i, item_i_nei] += self.lr * (
+                            sigmoid - self.reg * self.sim_matrix[item_i, item_i_nei])
                     self.sim_matrix[item_i_nei, item_i] = self.sim_matrix[item_i, item_i_nei]
                     self.sim_matrix[item_i, item_i] = 1.0
-                    self.sim_matrix[item_j][item_j_nei] += self.lr * (
-                            - sigmoid - self.reg * self.sim_matrix[item_j][item_j_nei])
+                    self.sim_matrix[item_j, item_j_nei] += self.lr * (
+                            - sigmoid - self.reg * self.sim_matrix[item_j, item_j_nei])
                     self.sim_matrix[item_j_nei, item_j] = self.sim_matrix[item_j, item_j_nei]
                     self.sim_matrix[item_j, item_j] = 1.0
 
@@ -213,7 +215,7 @@ class BPR:
 
         elif self.method == "knn":
             u_items = np.array(list(self.dataset.train_user[u]))
-            k_neightbors_all_items = self.sim_matrix[:, u_items]
+            k_neightbors_all_items = self.sim_matrix[:, u_items]  # self.sim_matrix.todense()
             preds = np.sum(k_neightbors_all_items, axis=1)
             count = n_rec + len(u_items)
             ids = np.argpartition(preds, -count)[-count:]

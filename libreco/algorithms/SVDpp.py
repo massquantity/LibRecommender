@@ -1,4 +1,5 @@
 import time
+from collections import defaultdict
 from operator import itemgetter
 import itertools
 import numpy as np
@@ -84,13 +85,13 @@ class SVDpp:
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.pred, self.labels), tf.float32))
             self.precision = precision_tf(self.pred, self.labels)
 
-    #    self.reg_pu = self.reg * tf.nn.l2_loss(self.pu)
-    #    self.reg_qi = self.reg * tf.nn.l2_loss(self.qi)
-    #    self.reg_bu = self.reg * tf.nn.l2_loss(self.bu)
-    #    self.reg_bi = self.reg * tf.nn.l2_loss(self.bi)
+        self.reg_pu = self.reg * tf.nn.l2_loss(self.pu)
+        self.reg_qi = self.reg * tf.nn.l2_loss(self.qi)
+        self.reg_bu = self.reg * tf.nn.l2_loss(self.bu)
+        self.reg_bi = self.reg * tf.nn.l2_loss(self.bi)
     #    self.reg_yj = self.reg * tf.nn.l2_loss(self.yj)
-    #    self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi])
-        self.total_loss = self.loss
+        self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi])
+    #    self.total_loss = self.loss
 
     def fit(self, dataset, verbose=1):
         self.build_model(dataset)
@@ -278,6 +279,7 @@ class sss:
                 nu = []
                 u_items = []
                 u_sqrt = []
+        #        t0 = time.time()
                 for u in users:
                     u_items_single = list(dataset.train_user[u].keys())
                     nu_sqrt = np.sqrt(len(u_items_single))
@@ -285,17 +287,114 @@ class sss:
                     nu.append(nu_single)
                     u_items.append(u_items_single)
                     u_sqrt.append(nu_sqrt)
-
+         #       print("1: ", time.time() - t0)
+         #       t3 = time.time()
                 self.pn = self.pu[users] + np.array(nu)
-
+        #        print("4: ", time.time() - t3)
+        #        t1 = time.time()
                 dot = np.sum(np.multiply(self.pn, self.qi[items]), axis=1)
                 err = labels - (self.global_mean + self.bu[users] + self.bi[items] + dot)
                 self.bu[users] += self.lr * (err - self.reg * self.bu[users])
                 self.bi[items] += self.lr * (err - self.reg * self.bi[items])
                 self.pu[users] += self.lr * (err.reshape(-1, 1) * self.qi[items] - self.reg * self.pu[users])
                 self.qi[items] += self.lr * (err.reshape(-1, 1) * self.pn - self.reg * self.qi[items])
+        #        print("2: ", time.time() - t1)
+        #        t2 = time.time()
+                err /= nu_sqrt
                 for k, i in enumerate(u_items):
-                    self.yj[i] += self.lr * (err[k] * self.qi[i] / u_sqrt[k] - self.reg * self.yj[i])
+                    self.yj[i] += self.lr * (err[k] * self.qi[i] - self.reg * self.yj[i])
+        #        print("3: ", time.time() - t2)
+
+            if verbose > 0:
+                print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
+                t1 = time.time()
+                test_loss, test_prob = binary_cross_entropy(self, dataset.test_user_implicit,
+                                                            dataset.test_item_implicit,
+                                                            dataset.test_label_implicit)
+
+                test_auc = roc_auc_score(dataset.test_label_implicit, test_prob)
+                test_ap = average_precision_score(dataset.test_label_implicit, test_prob)
+                precision_test, recall_test, _ = precision_recall_curve(dataset.test_label_implicit,
+                                                                        test_prob)
+                test_pr_auc = auc(recall_test, precision_test)
+                print("\t test loss: {:.4f}".format(test_loss))
+                print("\t test roc auc: {:.2f} "
+                      "\n\t test average precision: {:.2f}"
+                      "\n\t test pr auc: {:.2f}".format(test_auc, test_ap, test_pr_auc))
+                print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
+
+                t4 = time.time()
+                mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
+                print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
+                print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
+
+                t5 = time.time()
+                mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
+                print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
+                print("\t MAR@50 time: {:.4f}".format(time.time() - t5))
+
+                t6 = time.time()
+                NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
+                print("\t NDCG@{}: {:.4f}".format(10, NDCG))
+                print("\t NDCG@10 time: {:.4f}".format(time.time() - t6))
+                print()
+
+    def fit_7890(self, dataset, verbose=1):
+        np.random.seed(self.seed)
+        self.dataset = dataset
+        self.global_mean = dataset.global_mean
+        self.bu = np.zeros((dataset.n_users))
+        self.bi = np.zeros((dataset.n_items))
+        self.pu = truncated_normal(mean=0.0, scale=0.1,
+                                   shape=(dataset.n_users, self.n_factors))
+        self.qi = truncated_normal(mean=0.0, scale=0.1,
+                                   shape=(dataset.n_items, self.n_factors))
+        self.yj = truncated_normal(mean=0.0, scale=0.1,
+                                   shape=(dataset.n_items, self.n_factors))
+
+        for epoch in range(1, self.n_epochs + 1):
+            t0 = time.time()
+            neg = NegativeSampling(dataset, dataset.num_neg, self.batch_size)
+            n_batches = int(np.ceil(len(dataset.train_label_implicit) / self.batch_size))
+        #    n_batches = len(dataset.train_labels) // self.batch_size
+            for n in range(n_batches):
+                users, items, labels = neg.next_batch()
+                nu = []
+                u_items = []
+                u_sqrt = []
+                items_dict = dict()
+            #    t0 = time.time()
+                for u in users:
+                    u_items_single = list(dataset.train_user[u].keys())
+                    for i in u_items_single:
+                        if i in items_dict:
+                            items_dict[i] += 1
+                        else:
+                            items_dict[i] = 0
+
+                    nu_sqrt = np.sqrt(len(u_items_single))
+                    nu_single = np.sum(self.yj[u_items_single], axis=0) / nu_sqrt
+                    nu.append(nu_single)
+                    u_items.append(u_items_single)
+                    u_sqrt.append(nu_sqrt)
+            #    print("1: ", time.time() - t0)
+            #   t3 = time.time()
+                self.pn = self.pu[users] + np.array(nu)
+            #    print("4: ", time.time() - t3)
+            #    t1 = time.time()
+                dot = np.sum(np.multiply(self.pn, self.qi[items]), axis=1)
+                err = labels - (self.global_mean + self.bu[users] + self.bi[items] + dot)
+                self.bu[users] += self.lr * (err - self.reg * self.bu[users])
+                self.bi[items] += self.lr * (err - self.reg * self.bi[items])
+                self.pu[users] += self.lr * (err.reshape(-1, 1) * self.qi[items] - self.reg * self.pu[users])
+                self.qi[items] += self.lr * (err.reshape(-1, 1) * self.pn - self.reg * self.qi[items])
+            #    print("2: ", time.time() - t1)
+                t2 = time.time()
+                err /= nu_sqrt
+                for k, i in enumerate(items_dict):
+                    err_i = np.sum(err[np.where(items == i)])
+                    self.yj[i] += self.lr * (err_i * self.qi[i] - items_dict[i] * self.reg * self.yj[i])
+                print("3: ", time.time() - t2)
 
             if verbose > 0:
                 print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))

@@ -1,6 +1,10 @@
 cimport numpy as np
 import numpy as np
+cimport cython
+from libc.math cimport sqrt, pow
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def cosine_cy(n, data, min_support=5):
     cdef np.ndarray[np.double_t, ndim=2] prods
     cdef np.ndarray[np.int_t, ndim=2] freq
@@ -23,16 +27,16 @@ def cosine_cy(n, data, min_support=5):
             for xj, rj in v:
                 freq[xi, xj] += 1
                 prods[xi, xj] += ri * rj
-                sqi[xi, xj] += ri**2
-                sqj[xi, xj] += rj**2
+                sqi[xi, xj] += pow(ri, 2)
+                sqj[xi, xj] += pow(rj, 2)
 
     for xi in range(n):
-        sim[xi, xi] = 1
+        sim[xi, xi] = 1.0
         for xj in range(xi + 1, n):
             if freq[xi, xj] < min_sup:
-                sim[xi, xj] = 0
+                sim[xi, xj] = 0.0
             else:
-                denum = np.sqrt(sqi[xi, xj] * sqj[xi, xj])
+                denum = sqrt(sqi[xi, xj] * sqj[xi, xj])
                 sim[xi, xj] = prods[xi, xj] / denum
                 
             sim[xj, xi] = sim[xi, xj]
@@ -40,9 +44,6 @@ def cosine_cy(n, data, min_support=5):
     return sim
 
 
-
-cimport cython
-from libc.math cimport sqrt, pow
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def cosine_cym(n, data, min_support=5):
@@ -65,10 +66,10 @@ def cosine_cym(n, data, min_support=5):
                 sqj[xi, xj] += pow(rj, 2)
 
     for xi in range(n):
-        sim[xi, xi] = 1
+        sim[xi, xi] = 1.0
         for xj in range(xi + 1, n):
             if freq[xi, xj] < min_sup:
-                sim[xi, xj] = 0
+                sim[xi, xj] = 0.0
             else:
                 denum = sqrt(sqi[xi, xj] * sqj[xi, xj])
                 sim[xi, xj] = prods[xi, xj] / denum

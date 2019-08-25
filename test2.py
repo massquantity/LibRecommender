@@ -29,6 +29,7 @@ if __name__ == "__main__":
 
     conf = {
         "data_path": "tianchi_recommender/testB_pure.csv",
+    #    "data_path": "ml-1m/ratings.dat",
         "length": "all",
         "convert_implicit": True,
         "build_negative": True,
@@ -61,33 +62,18 @@ if __name__ == "__main__":
 
     from libreco.algorithms.SVD import SVDBaseline
     from libreco.algorithms.SVDpp import sss
-    svd = SVDpp(n_factors=16, n_epochs=10000, lr=0.01, reg=0.0, batch_size=65536, task="ranking", neg_sampling=True)
-#    svd = SVDBaseline(n_factors=16, n_epochs=10000, lr=0.01, reg=0.0, batch_size=256)
+#    svd = SVD(n_factors=16, n_epochs=10000, lr=0.01, reg=0.0, batch_size=2048, task="ranking", neg_sampling=True)
+#    svd = SVDBaseline(n_factors=16, n_epochs=10000, lr=0.01, reg=0.0, batch_size=2048, task="ranking", neg_sampling=True)
 #    svd = sss(n_factors=16, n_epochs=20000, lr=0.01, reg=0.0, batch_size=65536)
-    svd.fit(dataset, verbose=1)
-    print(svd.predict(1,2))
-    print(svd.recommend_user(1, 7))
-#    print(rmse(svd, dataset, mode="train"))
-#    print(rmse(svd, dataset, mode="test"))
+#    svd.fit(dataset, verbose=1)
+#    print(svd.predict(1,2))
+#    print(svd.recommend_user(1, 7))
 
 #    svd = SVD.SVDBaseline(n_factors=30, n_epochs=20, lr=0.001, reg=0.1,
 #                          batch_size=256, batch_training=True)
 #    svd.fit(dataset)
 #    print(rmse_svd(svd, dataset, mode="train"))
 #    print(rmse_svd(svd, dataset, mode="test"))
-
-#    svdpp = SVDpp.SVDpp(n_factors=30, n_epochs=20000, lr=0.001, reg=0.1,
-#                        batch_size=256, batch_training=True)
-#    svdpp.fit(dataset)
-#    print(rmse_svd(svdpp, dataset, mode="train"))
-#    print(rmse_svd(svdpp, dataset, mode="test"))
-
-#    svdpp = SVDpp.SVDpp_tf(n_factors=100, n_epochs=10, lr=0.001, reg=0.1,
-#                            batch_size=256, batch_training=True)  # 0.8579
-#    svdpp.fit(dataset)
-#    print(svdpp.predict(1,2))
-#    print(rmse_svd(svdpp, dataset, mode="train"))
-#    print(rmse_svd(svdpp, dataset, mode="test"))
 
 #    ncf = NCF(embed_size=32, lr=0.001, n_epochs=200, reg=0.1, batch_size=256, dropout_rate=0.0, task="ranking")
 #    ncf.fit(dataset)
@@ -97,11 +83,11 @@ if __name__ == "__main__":
 #    print(bpr.predict(1, 2))
 #    print(bpr.recommend_user(1, 7))
 
-#    user_knn = userKNN(sim_option="msd", k=40, min_support=0, baseline=False, task="ranking")
-#    user_knn.fit(dataset)
-#    t1 = time.time()
-#    print("predict: ", user_knn.predict(0, 5))
-#    print("predict time: ", time.time() - t1)
+    user_knn = userKNN(sim_option="sklearn", k=40, min_support=1, baseline=False, task="ranking", neg_sampling=True)
+    user_knn.fit(dataset, verbose=1)
+    t1 = time.time()
+    print("predict: ", user_knn.predict(0, 5))
+    print("predict time: ", time.time() - t1)
 
 
     print("train + test time: {:.4f}".format(time.time() - t0))

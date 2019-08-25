@@ -21,22 +21,12 @@ def rmse(model, dataset, mode="train"):
     score = np.sqrt(np.mean(np.power(pred - labels, 2)))
     return score
 
-def accuracy(model, dataset, mode="train"):
-    if mode == "train":
-        user_indices = dataset.train_user_implicit
-        item_indices = dataset.train_item_implicit
-        labels = dataset.train_label_implicit
-    elif mode == "test":
-        user_indices = dataset.test_user_implicit
-        item_indices = dataset.test_item_implicit
-        labels = dataset.test_label_implicit
-
+def accuracy(model, user, item, labels):
     pred = []
-    for j, (u, i) in enumerate(zip(user_indices, item_indices)):
-        p = model.predict(u, i)
+    for j, (u, i) in enumerate(zip(user, item)):
+        p = model.predict(u, i)[1]
         pred.append(p)
-   # print(pred[:10], pred[-10:])
-   # print(labels[:10], labels[-10:])
+
     score = np.sum(labels == np.array(pred)) / len(labels)
     return score
 
@@ -69,12 +59,17 @@ def AP_at_k(model, dataset, u, k, **kwargs):
     if len(true_items) == 0:
         return -1
     rank_list = model.recommend_user(u, k, **kwargs)
+    if rank_list == -1 or len(rank_list) == 0:
+        return -1
+
     top_k = [i[0] for i in rank_list]
     precision_k = 0
     count_relevant_k = 0
     for i in range(1, k + 1):
+        if i > len(top_k):
+            break
         precision_i = 0
-        if top_k[i-1] in true_items:
+        if top_k[i - 1] in true_items:
             count_relevant_k += 1
             for pred in top_k[:i]:
                 if pred in true_items:
@@ -164,6 +159,36 @@ def MAR_at_k(model, dataset, k, sample_user=None):
     return mean_average_recall_at_k
 
 
+def recall_at_k(model, dataset, k, sample_user=None):
+    if sample_user is not None:
+        assert isinstance(sample_user, int), "sampled users must be integer"
+        np.random.seed(42)
+        users = np.random.choice(list(dataset.train_user), sample_user, replace=False)
+    else:
+        users = list(dataset.train_user)
+
+    recall = []
+    i = 0
+    for u in users:
+        true_items = dataset.test_item_indices[np.where(dataset.test_user_indices == u)]
+        if len(true_items) == 0:
+            i += 1
+            continue
+        else:
+            rank_list = model.recommend_user(u, k)
+            if rank_list == -1 or len(rank_list) == 0:
+                i += 1
+                continue
+            top_k = [i[0] for i in rank_list]
+            recall_i = 0
+            for pred in top_k:
+                if pred in true_items:
+                    recall_i += 1
+            recall.append(recall_i / len(true_items))
+
+    return np.mean(recall)
+
+
 def HitRatio_at_k(model, dataset, k):
     HitRatio = []
     for u in dataset.train_user:
@@ -207,6 +232,9 @@ def NDCG_at_k(model, dataset, k, sample_user=None, mode="normal"):
             i += 1
             continue
         rank_list = model.recommend_user(u, k)
+        if rank_list == -1 or len(rank_list) == 0:
+            i += 1
+            continue
         top_k = [i[0] for i in rank_list]
         for n, item in enumerate(top_k):
             if item in true_items:
@@ -237,6 +265,8 @@ def binary_cross_entropy(model, user, item, label):
     for u, i, l in zip(user, item, label):
         prob, _ = model.predict(u, i)
         probs.append(prob)
+        if prob == 0.0 or prob == 1.0:
+            continue
         if l == 1.0:
             ce.append(-np.log(prob))
         elif l == 0.0:
@@ -244,10 +274,4 @@ def binary_cross_entropy(model, user, item, label):
     return np.mean(ce), probs
 
 
-# TODO
-# def recall
 
-# def f1
-
-
-# def evaluate in fit

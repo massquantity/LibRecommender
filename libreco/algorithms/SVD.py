@@ -3,14 +3,14 @@ from operator import itemgetter
 import itertools
 import numpy as np
 from sklearn.metrics import roc_auc_score, precision_recall_curve, average_precision_score, auc
-
-from libreco.utils.initializers import truncated_normal
+from .Base import BasePure, BaseFeat
+from ..utils.initializers import truncated_normal
 from ..evaluate import rmse, accuracy, precision_tf, MAR_at_k, MAP_at_k, NDCG_at_k, binary_cross_entropy
 from ..utils import NegativeSampling
 import tensorflow as tf
 
 
-class SVD:
+class SVD(BasePure):
     def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=1e-3,
                  batch_size=256, seed=42, task="rating", neg_sampling=False):
         self.n_factors = n_factors
@@ -21,6 +21,9 @@ class SVD:
         self.seed = seed
         self.task = task
         self.neg_sampling = neg_sampling
+        self.metrics = {"roc_auc": True, "pr_auc": True, "map": True, "map_num": 20,
+                        "recall": True, "recall_num": 50, "ndcg": True, "ndcg_num": 20,
+                        "sample_user": 1000}
 
     def build_model(self, dataset):
         tf.set_random_seed(self.seed)
@@ -75,13 +78,11 @@ class SVD:
             self.precision = precision_tf(self.pred, self.labels)
 
 
-#        self.reg_pu = self.reg * tf.nn.l2_loss(self.pu)
-#        self.reg_qi = self.reg * tf.nn.l2_loss(self.qi)
-#        self.reg_bu = self.reg * tf.nn.l2_loss(self.bu)
-#        self.reg_bi = self.reg * tf.nn.l2_loss(self.bi)
-#        self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi])
-        self.total_loss = self.loss
-
+        self.reg_pu = self.reg * tf.nn.l2_loss(self.pu)
+        self.reg_qi = self.reg * tf.nn.l2_loss(self.qi)
+        self.reg_bu = self.reg * tf.nn.l2_loss(self.bu)
+        self.reg_bi = self.reg * tf.nn.l2_loss(self.bi)
+        self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi])
 
     def fit(self, dataset, verbose=1):
         """
@@ -110,45 +111,12 @@ class SVD:
                                                                      self.user_indices: u,
                                                                      self.item_indices: i})
 
-                    if verbose > 0 and self.task == "rating":
-                        test_loss, test_rmse = self.sess.run([self.total_loss, self.rmse],
-                                                   feed_dict={self.labels: dataset.test_labels,
-                                                              self.user_indices: dataset.test_user_indices,
-                                                              self.item_indices: dataset.test_item_indices})
-
+                    if verbose > 0:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
-                        print("Epoch {}, test_loss: {:.4f}, test_rmse: {:.4f}".format(
-                            epoch, test_loss, test_rmse))
-                        print()
-
-                    elif verbose > 0 and self.task == "ranking":
-                        print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
-                        t3 = time.time()
-                        test_loss, test_accuracy, test_precision = \
-                            self.sess.run([self.loss, self.accuracy, self.precision],
-                                          feed_dict={self.labels: dataset.test_labels,
-                                                     self.user_indices: dataset.test_user_indices,
-                                                     self.item_indices: dataset.test_item_indices})
-
-                        print("\ttest loss: {:.4f}".format(test_loss))
-                        print("\ttest accuracy: {:.4f}".format(test_accuracy))
-                        print("\ttest precision: {:.4f}".format(test_precision))
-                        print("\tloss time: {:.4f}".format(time.time() - t3))
-
-                        t4 = time.time()
-                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
-                        print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
-
-                        t5 = time.time()
-                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
-                        print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
-                        print("\t MAR@50 time: {:.4f}".format(time.time() - t5))
-
-                        t6 = time.time()
-                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t NDCG@{}: {:.4f}".format(10, NDCG))
-                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t6))
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, **self.metrics)
+                        else:
+                            self.print_metrics(dataset, epoch, **self.metrics)
                         print()
 
             elif self.task == "ranking":
@@ -164,43 +132,10 @@ class SVD:
 
                     if verbose > 0:
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
-                        t3 = time.time()
-                        test_loss, test_accuracy, test_precision, test_prob = \
-                            self.sess.run([self.loss, self.accuracy, self.precision, self.y_prob],
-                                feed_dict={self.labels: dataset.test_label_implicit,
-                                           self.user_indices: dataset.test_user_implicit,
-                                           self.item_indices: dataset.test_item_implicit})
-
-                        print("\ttest loss: {:.4f}".format(test_loss))
-                        print("\ttest accuracy: {:.4f}".format(test_accuracy))
-                        print("\ttest precision: {:.4f}".format(test_precision))
-                        print("\tloss time: {:.4f}".format(time.time() - t3))
-
-                        t1 = time.time()
-                        test_auc = roc_auc_score(dataset.test_label_implicit, test_prob)
-                        test_ap = average_precision_score(dataset.test_label_implicit, test_prob)
-                        precision_test, recall_test, _ = precision_recall_curve(dataset.test_label_implicit,
-                                                                                test_prob)
-                        test_pr_auc = auc(recall_test, precision_test)
-                        print("\t test roc auc: {:.2f} "
-                              "\n\t test average precision: {:.2f}"
-                              "\n\t test pr auc: {:.2f}".format(test_auc, test_ap, test_pr_auc))
-                        print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
-
-                        t4 = time.time()
-                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
-                        print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
-
-                        t5 = time.time()
-                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
-                        print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
-                        print("\t MAR@50 time: {:.4f}".format(time.time() - t5))
-
-                        t6 = time.time()
-                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t NDCG@{}: {:.4f}".format(10, NDCG))
-                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t6))
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, **self.metrics)
+                        else:
+                            self.print_metrics()
                         print()
 
     def predict(self, u, i):
@@ -229,15 +164,20 @@ class SVD:
 
 
 
-class SVDBaseline:
+class SVDBaseline(BasePure):
     def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=5.0,
-                 batch_size=256, seed=42):
+                 batch_size=256, seed=42, task="ranking", neg_sampling=False):
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.lr = lr
         self.reg = reg
         self.batch_size = batch_size
         self.seed = seed
+        self.neg_sampling = neg_sampling
+        self.task = task
+        self.metrics = {"roc_auc": True, "pr_auc": True, "map": True, "map_num": 20,
+                        "recall": True, "recall_num": 50, "ndcg": True, "ndcg_num": 20,
+                        "sample_user": 1000}
 
     def fit(self, dataset, verbose=1):
         np.random.seed(self.seed)
@@ -271,36 +211,10 @@ class SVDBaseline:
 
             if verbose > 0:
                 print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
-                t1 = time.time()
-                test_loss, test_prob = binary_cross_entropy(self, dataset.test_user_implicit,
-                                                            dataset.test_item_implicit,
-                                                            dataset.test_label_implicit)
-
-                test_auc = roc_auc_score(dataset.test_label_implicit, test_prob)
-                test_ap = average_precision_score(dataset.test_label_implicit, test_prob)
-                precision_test, recall_test, _ = precision_recall_curve(dataset.test_label_implicit,
-                                                                        test_prob)
-                test_pr_auc = auc(recall_test, precision_test)
-                print("\t test loss: {:.4f}".format(test_loss))
-                print("\t test roc auc: {:.2f} "
-                      "\n\t test average precision: {:.2f}"
-                      "\n\t test pr auc: {:.2f}".format(test_auc, test_ap, test_pr_auc))
-                print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
-
-                t4 = time.time()
-                mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
-                print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
-                print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
-
-                t5 = time.time()
-                mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
-                print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
-                print("\t MAR@50 time: {:.4f}".format(time.time() - t5))
-
-                t6 = time.time()
-                NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
-                print("\t NDCG@{}: {:.4f}".format(10, NDCG))
-                print("\t NDCG@10 time: {:.4f}".format(time.time() - t6))
+                if hasattr(self, "sess"):
+                    self.print_metrics_tf(dataset, epoch, **self.metrics)
+                else:
+                    self.print_metrics(dataset, epoch, **self.metrics)
                 print()
 
     def predict(self, u, i):

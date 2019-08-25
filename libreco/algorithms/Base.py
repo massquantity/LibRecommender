@@ -10,6 +10,11 @@ import tensorflow as tf
 class BasePure(object):
     __metaclass__ = ABCMeta
 
+    def __init__(self):
+        self.metrics = {"roc_auc": True, "pr_auc": True, "map": True, "map_num": 20,
+                        "recall": True, "recall_num": 50, "ndcg": True, "ndcg_num": 20,
+                        "sample_user": 1000}
+
     @abstractmethod
     def build_model(self, *args, **kwargs):
         pass
