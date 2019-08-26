@@ -2,10 +2,10 @@ import time
 from collections import defaultdict
 from multiprocessing import Pool
 import numpy as np
-from scipy.sparse import csr_matrix, issparse
+from scipy.sparse import csr_matrix, lil_matrix, issparse
 from math import sqrt
 import itertools
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity, linear_kernel
 
 
 def cosine_sim(dicts, x1, x2, min_support=5):
@@ -131,46 +131,12 @@ def invert_sim(data, n_users, min_support=5):
     return sim
 
 
-def sk_sim(data, n_users, n_items, min_support=5, sparse=True):
-    if sparse:
-        user_indices = []
-        item_indices = []
-        values = []
-        for i, u_ratings in data.items():
-            for u, r in u_ratings.items():
-                user_indices.append(u)
-                item_indices.append(i)
-                values.append(r)
-        m = csr_matrix((np.array(values), (np.array(user_indices), np.array(item_indices))))
-        assert issparse(m)
-    else:
-        m = np.zeros((n_users, n_items))
-        for i, u_ratings in data.items():
-            for u, r in u_ratings.items():
-                m[u, i] = r
-
-    sim = cosine_similarity(m)
-
-    if min_support > 0:
-        num = np.zeros((n_users, n_users))
-        for i, u_labels in data.items():
-            for ui, li in u_labels.items():
-                for uj, lj in u_labels.items():
-                    num[ui, uj] += 1
-
-        indices = np.where(num < min_support)
-        for i, j in zip(indices[0], indices[1]):
-            sim[i, j] = 0.0
-
-    return sim
-
-
 try:
     from .similarities_cy import sk_num
 except:
     pass
 
-def sk_sim_cy(data, n_users, n_items, min_support=5, sparse=True):
+def sk_sim(data, n_users, n_items, min_support=5, sparse=True):
     if sparse:
         user_indices = []
         item_indices = []
@@ -190,6 +156,23 @@ def sk_sim_cy(data, n_users, n_items, min_support=5, sparse=True):
 
     sim = cosine_similarity(m, dense_output=False)
     sim = sim.tolil()
+
+    if min_support > 1:
+        print("warning: allow min_support > 1 could be slow for calculating similarity matrix")
+        t0 = time.time()
+        dot = linear_kernel(m, dense_output=False)
+        dot = dot.tolil()
+    #    print("dot: ", [i for i in dot.data if len(i) != 0], dot.getnnz())
+        s = lil_matrix((n_users, n_users), dtype=np.float32)
+        for u in range(n_users):
+            for e, freq in enumerate(dot.data[u]):
+                index = dot.rows[u][e]
+                if freq >= min_support and index != u:
+                #    print(u, index, freq)
+                    s[u, index] = sim[u, index]
+        #    s[u, u] = 1.0
+        print("lil time: {:.4f}, lil_elements: {}".format(time.time() - t0, s.getnnz()))
+        return s
 
     if min_support > 0 and not sparse:
         item_user_sklearn = {k: list(v.keys()) for k, v in data.items()}

@@ -185,7 +185,7 @@ def recall_at_k(model, dataset, k, sample_user=None):
                 if pred in true_items:
                     recall_i += 1
             recall.append(recall_i / len(true_items))
-
+    print("\trecall None users: ", i)
     return np.mean(recall)
 
 
@@ -263,7 +263,7 @@ def binary_cross_entropy(model, user, item, label):
     ce = []
     probs = []
     for u, i, l in zip(user, item, label):
-        prob, _ = model.predict(u, i)
+        prob = model.predict(u, i)
         probs.append(prob)
         if prob == 0.0 or prob == 1.0:
             continue

@@ -11,6 +11,7 @@ from libreco.utils import export_model_pickle, export_model_joblib, export_model
 # from libreco.utils import export_model_pickle, export_model_joblib
 import pickle
 import cProfile
+np.set_printoptions(precision=4, edgeitems=7)
 
 
 if __name__ == "__main__":
@@ -30,7 +31,7 @@ if __name__ == "__main__":
     conf = {
         "data_path": "tianchi_recommender/testB_pure.csv",
     #    "data_path": "ml-1m/ratings.dat",
-        "length": "all",
+        "length": 2000000,
         "convert_implicit": True,
         "build_negative": True,
         "num_neg": 2,
@@ -44,7 +45,10 @@ if __name__ == "__main__":
     #    dataset.leave_k_out_split(4, data_path="ml-1m/ratings.dat", length=100000, sep="::",
     #                              convert_implicit=True, build_negative=True, batch_size=256, num_neg=1)
     print("num_users: {}, num_items: {}".format(dataset.n_users, dataset.n_items))
-    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit))
+    if conf.get("convert_implicit"):
+        print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit))
+    else:
+        print("data size: ", len(dataset.train_user_indices) + len(dataset.test_user_indices))
     print("data processing time: {:.2f}".format(time.time() - t0))
     print()
 
@@ -82,13 +86,12 @@ if __name__ == "__main__":
 #    bpr.fit(dataset, verbose=1)
 #    print(bpr.predict(1, 2))
 #    print(bpr.recommend_user(1, 7))
-
     user_knn = userKNN(sim_option="sklearn", k=40, min_support=1, baseline=False, task="ranking", neg_sampling=True)
     user_knn.fit(dataset, verbose=1)
     t1 = time.time()
     print("predict: ", user_knn.predict(0, 5))
+    print("recommend: ", user_knn.recommend_user(0, 7, like_score=4.0, random_rec=False))
     print("predict time: ", time.time() - t1)
-
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 

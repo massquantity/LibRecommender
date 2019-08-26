@@ -5,7 +5,10 @@ import numpy as np
 from ..utils.similarities import *
 from ..evaluate import rmse, accuracy, MAR_at_k, MAP_at_k, NDCG_at_k
 from .Base import BasePure, BaseFeat
-from ..utils.similarities_cy import cosine_cy, cosine_cym
+try:
+    from ..utils.similarities_cy import cosine_cy, cosine_cym
+except ImportError:
+    pass
 from ..utils.baseline_estimates import baseline_als, baseline_sgd
 import logging
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -23,13 +26,13 @@ class userKNN(BasePure):
         self.task = task
         self.neg_sampling = neg_sampling
         if sim_option == "cosine":
-            self.sim_option = cosine_cym
+            self.sim_option = cosine_sim   # cosine_cym
     #    elif sim_option == "msd":
     #        self.sim_option = msd_sim_cy
     #    elif sim_option == "pearson":
     #        self.sim_option = pearson_sim
         elif sim_option == "sklearn":
-          self.sim_option = sk_sim_cy
+          self.sim_option = sk_sim
         else:
             raise ValueError("sim_option %s not allowed" % sim_option)
         super(userKNN, self).__init__()
@@ -37,7 +40,6 @@ class userKNN(BasePure):
     def fit(self, dataset, verbose=1, **kwargs):
         self.dataset = dataset
         self.global_mean = dataset.global_mean
-        self.default_prediction = dataset.global_mean
         self.train_user = dataset.train_user
         self.train_item = dataset.train_item
         if dataset.lower_upper_bound is not None:
@@ -49,11 +51,15 @@ class userKNN(BasePure):
 
         item_user_list = {k: list(v.items()) for k, v in dataset.train_item.items()}
         t0 = time.time()
-        if self.sim_option == sk_sim_cy or self.sim_option == sk_sim:
+        if self.sim_option == sk_sim:
             self.sim = self.sim_option(self.train_item, dataset.n_users, dataset.n_items,
                                        min_support=self.min_support, sparse=True)
         else:
-            self.sim = self.sim_option(dataset.n_users, item_user_list, min_support=self.min_support)
+        #    self.sim = self.sim_option(dataset.n_users, item_user_list, min_support=self.min_support)
+            n = len(self.train_user)
+            ids = list(self.train_user.keys())
+            self.sim = get_sim(self.train_user, self.sim_option, n, ids, min_support=self.min_support)
+        #    print(self.sim[9, 1000: 1005], len(self.sim[self.sim > 0.0]))
 
         print("sim time: {:.4f}, sim shape: {}".format(time.time() - t0, self.sim.shape))
         if issparse(self.sim):
@@ -73,95 +79,75 @@ class userKNN(BasePure):
         return self
 
     def predict(self, u, i):
-        if self.baseline:
-            try:
-                neighbors = [(v, self.sim[u, v], r) for (v, r) in self.train_item[i].items()]
-                k_neighbors = sorted(neighbors, key=lambda x: x[1], reverse=True)[:self.k]
+        if self.sim_option == sk_sim:
+            u_nonzero_neighbors = set(self.sim.rows[u])
+        else:
+            u_nonzero_neighbors = set(np.where(self.sim[u] != 0.0)[0])
+        try:
+            neighbors = [(v, self.sim[u, v], r) for (v, r) in self.train_item[i].items()
+                         if v in u_nonzero_neighbors and u != v]
+            k_neighbors = sorted(neighbors, key=lambda x: x[0], reverse=True)[:self.k]
+            if self.baseline:
                 bui = self.global_mean + self.bu[u] + self.bi[i]
-            except IndexError:
-                return self.default_prediction, self.default_prediction
+        except IndexError:
+            return self.global_mean if self.task == "rating" else 0.0
+        if len(neighbors) == 0:
+            return self.global_mean if self.task == "rating" else 0.0
+
+        if self.task == "rating":
             sim_ratings = 0
             sim_sums = 0
-            for v, sim, r in k_neighbors:
-                if sim > 0:
+            for (v, sim, r) in k_neighbors:
+                if sim > 0 and self.baseline:
                     bvi = self.global_mean + self.bu[v] + self.bi[i]
                     sim_ratings += sim * (r - bvi)
                     sim_sums += sim
+                elif sim > 0:
+                    sim_ratings += sim * r
+                    sim_sums += sim
             try:
-                pred = bui + sim_ratings / sim_sums
-                if self.lower_bound and self.upper_bound:
-                    pred = np.clip(pred, self.lower_bound, self.upper_bound)
-                return pred, pred
-            except ZeroDivisionError:
-            #    print("user %d sim item is zero" % u)
-                return self.default_prediction, self.default_prediction
-
-        else:
-            try:
-                u_nonzero_neighbors = set(self.sim.rows[u])
-            #    neighbors = []
-            #    for v, r in self.train_item[i].items():
-            #        if v not in u_nonzero_neighbors:
-            #            continue
-            #        neighbors.append((self.sim[u, v], r))
-
-                neighbors = [(self.sim[u, v], r) for (v, r) in self.train_item[i].items()
-                             if v in u_nonzero_neighbors and u != v]
-                k_neighbors = sorted(neighbors, key=lambda x: x[0], reverse=True)[:self.k]
-            except IndexError:
-                return self.default_prediction, self.default_prediction
-            if len(neighbors) == 0:
-                return self.default_prediction, self.default_prediction
-
-            if self.task == "rating":
-                sim_ratings = 0
-                sim_sums = 0
-                print(k_neighbors)
-                for (sim, r) in k_neighbors:
-                    if sim > 0:
-                        sim_ratings += sim * r
-                        sim_sums += sim
-                try:
+                if self.baseline:
+                    pred = bui + sim_ratings / sim_sums
+                else:
                     pred = sim_ratings / sim_sums
-                    if self.lower_bound is not None and self.upper_bound is not None:
-                        pred = np.clip(pred, self.lower_bound, self.upper_bound)
-                #    print("pred: ", pred)
-                    return pred, pred
-                except ZeroDivisionError:
-                #    print("user %d sim item is zero" % u)
-                    return self.default_prediction, self.default_prediction
 
-            elif self.task == "ranking":
-                sim_sums = 0
-            #    print(k_neighbors)
-                for (sim, r) in k_neighbors:
-                    if sim > 0:
-                        sim_sums += sim
-                pred = sim_sums
-            #    if pred > 0.5:
-            #        print(pred)
-                return pred, 1.0 if pred >= 0.5 else 0.0
+                if self.lower_bound is not None and self.upper_bound is not None:
+                    pred = np.clip(pred, self.lower_bound, self.upper_bound)
+                return pred
+            except ZeroDivisionError:
+                print("user %d sim item is zero" % u)
+                return self.global_mean
+
+        elif self.task == "ranking":
+            sim_sums = 0
+            for (_, sim, r) in k_neighbors:
+                if sim > 0:
+                    sim_sums += sim
+            return sim_sums
 
     def recommend_user(self, u, n_rec, like_score=4.0, random_rec=False):
-        if len(self.sim.rows[u]) <= 1:  # no neighbors, just herself
+        if self.sim_option == sk_sim and len(self.sim.rows[u]) <= 1:  # no neighbors, just herself
+            return -1
+        elif self.sim_option != sk_sim and len(np.where(self.sim[u] != 0.0)[0]) <= 1:
             return -1
 
         rank = set()
-        indices = np.argsort(self.sim[u].data[0])[::-1][1: self.k + 1]
-        k_neighbors = np.array(self.sim.rows[u])[indices]
-    #    k_neighbors = np.argsort(self.sim[u])[::-1][1: self.k + 1]
+        if self.sim_option == sk_sim:
+            indices = np.argsort(self.sim[u].data[0])[::-1][1: self.k + 1]
+            k_neighbors = np.array(self.sim.rows[u])[indices]
+        else:
+            k_neighbors = np.argsort(self.sim[u])[::-1][1: self.k + 1]
+
         for n in k_neighbors:
             n_items = np.array(list(self.train_user[n].items()))
             if self.task == "rating":
                 n_items = [(i, r) for i, r in n_items if r >= like_score]
-    #        elif self.task == "ranking":
-    #            n_items = [(i, r) for i, r in n_items]
 
             for j, _ in n_items:
                 if j in self.train_user[u]:
                     continue
                 pred = self.predict(u, j)
-                rank.add((j, pred))
+                rank.add((int(j), pred))
         rank = list(rank)
 
         if random_rec:

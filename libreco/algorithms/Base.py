@@ -61,7 +61,7 @@ class BasePure(object):
         t0 = time.time()
         test_loss, test_prob = binary_cross_entropy(self, test_user, test_item, test_label)
         print("\ttest loss: {:.4f}".format(test_loss))
-        print("\ttest accuracy: {:.4f}".format(accuracy(self, test_user, test_item, test_label)))
+    #    print("\ttest accuracy: {:.4f}".format(accuracy(self, test_user, test_item, test_label)))
         print("\tloss time: {:.4f}".format(time.time() - t0))
 
         t1 = time.time()
@@ -86,8 +86,8 @@ class BasePure(object):
         if kwargs.get("recall"):
             recall_num = kwargs.get("recall_num", 50)
             recall = recall_at_k(self, self.dataset, recall_num, sample_user=sample_user)
-            print("\t MAR@{}: {:.4f}".format(recall_num, recall))
-            print("\t MAR time: {:.4f}".format(time.time() - t3))
+            print("\t recall@{}: {:.4f}".format(recall_num, recall))
+            print("\t recall time: {:.4f}".format(time.time() - t3))
 
         t4 = time.time()
         if kwargs.get("ndcg"):
