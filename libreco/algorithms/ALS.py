@@ -22,6 +22,7 @@ from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 from scipy import sparse
 from ..evaluate import rmse, MAP_at_k, MAR_at_k, NDCG_at_k, accuracy
 from ..utils.initializers import truncated_normal
+from .Base import BasePure
 try:
     from . import ALS_cy, ALS_rating_cy
 except ImportError:
@@ -29,6 +30,19 @@ except ImportError:
     logging.basicConfig(format=LOG_FORMAT)
     logging.warn("Cython version is not available")
     pass
+
+
+class Als(BasePure):
+    def __init__(self, n_factors=100, n_epochs=20, reg=5.0, task="rating", seed=42, alpha=10, cg_steps=3):
+        self.n_factors = n_factors
+        self.n_epochs = n_epochs
+        self.reg = reg
+        self.task = task
+        self.seed = seed
+        self.alpha = alpha
+        self.cg_steps = cg_steps
+        super(Als, self).__init__()
+
 
 
 class ALS_rating:

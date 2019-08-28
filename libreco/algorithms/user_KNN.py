@@ -15,7 +15,7 @@ LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=LOG_FORMAT)
 logging.warning("KNN method requires huge memory for constructing similarity matrix. \n"
                 "\tFor large num of users or items, consider using sklearn sim_option, "
-                "which provides sparse similarity matrix")
+                "which provides sparse similarity matrix. \n")
 
 
 class userKNN(BasePure):
@@ -26,7 +26,7 @@ class userKNN(BasePure):
         self.task = task
         self.neg_sampling = neg_sampling
         if sim_option == "cosine":
-            self.sim_option = cosine_sim   # cosine_cym
+            self.sim_option = cosine_sim  # cosine_cym
     #    elif sim_option == "msd":
     #        self.sim_option = msd_sim_cy
     #    elif sim_option == "pearson":
@@ -56,15 +56,15 @@ class userKNN(BasePure):
                                        min_support=self.min_support, sparse=True)
         else:
         #    self.sim = self.sim_option(dataset.n_users, item_user_list, min_support=self.min_support)
+
             n = len(self.train_user)
             ids = list(self.train_user.keys())
             self.sim = get_sim(self.train_user, self.sim_option, n, ids, min_support=self.min_support)
-        #    print(self.sim[9, 1000: 1005], len(self.sim[self.sim > 0.0]))
 
         print("sim time: {:.4f}, sim shape: {}".format(time.time() - t0, self.sim.shape))
         if issparse(self.sim):
             print("sim num_elements: {}".format(self.sim.getnnz()))
-        if self.baseline:
+        if self.baseline and self.task == "rating":
             self.bu, self.bi = baseline_als(dataset)
 
         if verbose > 0:
