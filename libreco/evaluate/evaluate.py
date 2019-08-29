@@ -265,11 +265,11 @@ def binary_cross_entropy(model, user, item, label):
     for u, i, l in zip(user, item, label):
         prob = model.predict(u, i)
         probs.append(prob)
-        if prob == 0.0 or prob == 1.0:
-            continue
-        if l == 1.0:
+    #    if prob == 0.0 or prob == 1.0:
+    #        continue
+        if l == 1.0 and prob > 0.0:
             ce.append(-np.log(prob))
-        elif l == 0.0:
+        elif l == 0.0 and prob < 1.0:
             ce.append(-np.log(1.0 - prob))
     return np.mean(ce), probs
 

@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path, PurePath
 from libreco.dataset import DatasetPure, DatasetFeat
-from libreco.algorithms import SVD, SVDpp, ALS_ranking, NCF, BPR, userKNN, itemKNN
+from libreco.algorithms import SVD, SVDpp, Als, Ncf, BPR, userKNN, itemKNN
 from libreco.evaluate import rmse, rmse_tf, MAP_at_k, AP_at_k
 from libreco import baseline_als
 from libreco import NegativeSampling
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     conf = {
         "data_path": "tianchi_recommender/testB_pure.csv",
     #    "data_path": "ml-1m/ratings.dat",
-        "length": 2000,
+        "length": 200000,
         "convert_implicit": True,
         "build_negative": True,
         "num_neg": 2,
@@ -52,17 +52,19 @@ if __name__ == "__main__":
     print("data processing time: {:.2f}".format(time.time() - t0))
     print()
 
-    svd = ALS_ranking(n_factors=32, n_epochs=200, reg=10.0, alpha=1, cg_steps=3)
-    svd.fit(dataset, use_cg=True)  # , use_cg=True
-    print(svd.recommend_user(1, 7))
+#    als = Als(n_factors=32, n_epochs=200, reg=5.0, alpha=1, cg_steps=3, task="ranking", neg_sampling=True)
+#    als.fit(dataset, use_cg=False, verbose=1)  # , use_cg=True
+#    print("predict: ", als.predict(1, 5))
+#    print(als.recommend_user(1, 7))
 
-    import cProfile
-    cProfile.run('svd.fit(dataset)')
+#    import cProfile
+#    cProfile.run('svd.fit(dataset)')
 
     from libreco.algorithms.SVD import SVDBaseline
     from libreco.algorithms.SVDpp import sss
-#    svd = SVD(n_factors=16, n_epochs=10000, lr=0.01, reg=0.0, batch_size=2048, task="ranking", neg_sampling=True)
-#    svd = SVDBaseline(n_factors=16, n_epochs=10000, lr=0.01, reg=0.0, batch_size=2048, task="ranking", neg_sampling=True)
+#    svd = SVDpp(n_factors=32, n_epochs=300, lr=0.001, reg=0.0, batch_size=2048, task="ranking", neg_sampling=True)
+#    svd = SVDBaseline(n_factors=32, n_epochs=10000, lr=0.0001, reg=0.0, batch_size=256,
+#                      task="ranking", neg_sampling=True, baseline=False)
 #    svd = sss(n_factors=16, n_epochs=20000, lr=0.01, reg=0.0, batch_size=65536)
 #    svd.fit(dataset, verbose=1)
 #    print(svd.predict(1,2))
@@ -74,8 +76,9 @@ if __name__ == "__main__":
 #    print(rmse_svd(svd, dataset, mode="train"))
 #    print(rmse_svd(svd, dataset, mode="test"))
 
-#    ncf = NCF(embed_size=32, lr=0.001, n_epochs=200, reg=0.1, batch_size=256, dropout_rate=0.0, task="ranking")
-#    ncf.fit(dataset)
+    ncf = Ncf(embed_size=32, lr=0.001, n_epochs=200, reg=0.1, batch_size=2048,
+              dropout_rate=0.5, task="ranking", neg_sampling=True)
+    ncf.fit(dataset)
 
 #    bpr = BPR(lr=0.001, n_epochs=1000, reg=0.0, n_factors=16, batch_size=256, k=20, method="knn")
 #    bpr.fit(dataset, verbose=1)

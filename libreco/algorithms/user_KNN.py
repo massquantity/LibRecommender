@@ -3,7 +3,6 @@ import pickle
 from operator import itemgetter
 import numpy as np
 from ..utils.similarities import *
-from ..evaluate import rmse, accuracy, MAR_at_k, MAP_at_k, NDCG_at_k
 from .Base import BasePure, BaseFeat
 try:
     from ..utils.similarities_cy import cosine_cy, cosine_cym
@@ -87,7 +86,7 @@ class userKNN(BasePure):
             neighbors = [(v, self.sim[u, v], r) for (v, r) in self.train_item[i].items()
                          if v in u_nonzero_neighbors and u != v]
             k_neighbors = sorted(neighbors, key=lambda x: x[0], reverse=True)[:self.k]
-            if self.baseline:
+            if self.baseline and self.task == "rating":
                 bui = self.global_mean + self.bu[u] + self.bi[i]
         except IndexError:
             return self.global_mean if self.task == "rating" else 0.0
