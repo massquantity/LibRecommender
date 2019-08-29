@@ -2,10 +2,10 @@ from .user_KNN import userKNN
 from .item_KNN import itemKNN
 from .SVD import SVD
 from .SVDpp import SVDpp
-from .ALS import ALS_rating, ALS_ranking
+from .ALS import Als
 from .FM import FmPure, FmFeat
 from .superSVD import superSVD
-from .NCF import NCF
+from .NCF import Ncf
 from .wide_deep import WideDeep, WideDeepEstimator
 from .DeepFM import DeepFMPure, DeepFMFeat
 from .BPR import BPR

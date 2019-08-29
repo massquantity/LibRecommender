@@ -117,10 +117,6 @@ def _least_squares(integral[:] indptr, integral[:] indices, float[:] data,
                 if not err:
                     memcpy(&X[u, 0], b, sizeof(floating) * factors)
                 else:
-                    # I believe the only time this should happen is on trivial problems with no
-                    # regularization being used (posv requires a positive semi-definite matrix,
-                    # since a= Yt(Cu + regularization I)Y a is always positive. its also non
-                    # zero if the regularization factor > 0.
                     with gil:
                         raise ValueError("cython_lapack.posv failed (err=%i) on row %i. Try "
                                          "increasing the regularization parameter." % (err, u))
