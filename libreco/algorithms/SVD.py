@@ -1,11 +1,17 @@
+"""
+
+References: Yehuda Koren "Matrix Factorization Techniques for Recommender Systems"
+            (https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf)
+
+author: massquantity
+
+"""
 import time
-from operator import itemgetter
 import itertools
 import numpy as np
-from sklearn.metrics import roc_auc_score, precision_recall_curve, average_precision_score, auc
-from .Base import BasePure, BaseFeat
+from .Base import BasePure
 from ..utils.initializers import truncated_normal
-from ..evaluate import rmse, accuracy, precision_tf, MAR_at_k, MAP_at_k, NDCG_at_k, binary_cross_entropy
+from ..evaluate import precision_tf
 from ..utils import NegativeSampling
 import tensorflow as tf
 
@@ -21,9 +27,7 @@ class SVD(BasePure):
         self.seed = seed
         self.task = task
         self.neg_sampling = neg_sampling
-        self.metrics = {"roc_auc": True, "pr_auc": True, "map": True, "map_num": 20,
-                        "recall": True, "recall_num": 50, "ndcg": True, "ndcg_num": 20,
-                        "sample_user": 1000}
+        super(SVD, self).__init__()
 
     def build_model(self, dataset):
         tf.set_random_seed(self.seed)
@@ -64,9 +68,8 @@ class SVD(BasePure):
                 self.rmse = self.loss
 
         elif self.task == "ranking":
-            self.logits = tf.cast(self.global_mean, tf.float32) + self.bias_user + self.bias_item + \
+            self.logits = self.bias_user + self.bias_item + \
                           tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item), axis=1)
-
             self.logits = tf.reshape(self.logits, [-1])
             self.loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=self.logits))
@@ -77,14 +80,13 @@ class SVD(BasePure):
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.pred, self.labels), tf.float32))
             self.precision = precision_tf(self.pred, self.labels)
 
-
         self.reg_pu = self.reg * tf.nn.l2_loss(self.pu)
         self.reg_qi = self.reg * tf.nn.l2_loss(self.qi)
         self.reg_bu = self.reg * tf.nn.l2_loss(self.bu)
         self.reg_bi = self.reg * tf.nn.l2_loss(self.bi)
         self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi])
 
-    def fit(self, dataset, verbose=1):
+    def fit(self, dataset, verbose=1, **kwargs):
         """
         :param dataset:
         :param verbose: whether to print train & test metrics, could be slow...
@@ -113,10 +115,11 @@ class SVD(BasePure):
 
                     if verbose > 0:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
+                        metrics = kwargs.get("metrics", self.metrics)
                         if hasattr(self, "sess"):
-                            self.print_metrics_tf(dataset, epoch, **self.metrics)
+                            self.print_metrics_tf(dataset, epoch, **metrics)
                         else:
-                            self.print_metrics(dataset, epoch, **self.metrics)
+                            self.print_metrics(dataset, epoch, **metrics)
                         print()
 
             elif self.task == "ranking":
@@ -132,10 +135,11 @@ class SVD(BasePure):
 
                     if verbose > 0:
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
+                        metrics = kwargs.get("metrics", self.metrics)
                         if hasattr(self, "sess"):
-                            self.print_metrics_tf(dataset, epoch, **self.metrics)
+                            self.print_metrics_tf(dataset, epoch, **metrics)
                         else:
-                            self.print_metrics()
+                            self.print_metrics(dataset, epoch, **metrics)
                         print()
 
     def predict(self, u, i):
@@ -146,7 +150,7 @@ class SVD(BasePure):
             if self.lower_bound is not None and self.upper_bound is not None:
                 pred = np.clip(pred, self.lower_bound, self.upper_bound) if self.task == "rating" else pred[0]
         except tf.errors.InvalidArgumentError:
-            pred = self.dataset.global_mean
+            pred = self.dataset.global_mean if self.task == "rating" else 0.0
         return pred
 
     def recommend_user(self, u, n_rec):
@@ -165,7 +169,7 @@ class SVD(BasePure):
 
 
 class SVDBaseline(BasePure):
-    def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=5.0,
+    def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=5.0, baseline=False,
                  batch_size=256, seed=42, task="ranking", neg_sampling=False):
         self.n_factors = n_factors
         self.n_epochs = n_epochs
@@ -175,9 +179,8 @@ class SVDBaseline(BasePure):
         self.seed = seed
         self.neg_sampling = neg_sampling
         self.task = task
-        self.metrics = {"roc_auc": True, "pr_auc": True, "map": True, "map_num": 20,
-                        "recall": True, "recall_num": 50, "ndcg": True, "ndcg_num": 20,
-                        "sample_user": 1000}
+        self.baseline = baseline
+        super(SVDBaseline, self).__init__()
 
     def fit(self, dataset, verbose=1):
         np.random.seed(self.seed)
@@ -185,29 +188,33 @@ class SVDBaseline(BasePure):
         self.global_mean = dataset.global_mean
         self.bu = np.zeros((dataset.n_users))
         self.bi = np.zeros((dataset.n_items))
-        self.pu = truncated_normal(mean=0.0, scale=0.1,
+        self.pu = truncated_normal(mean=0.0, scale=0.01,
                                    shape=(dataset.n_users, self.n_factors))
-        self.qi = truncated_normal(mean=0.0, scale=0.1,
+        self.qi = truncated_normal(mean=0.0, scale=0.01,
                                    shape=(dataset.n_items, self.n_factors))
 
         for epoch in range(1, self.n_epochs + 1):
             t0 = time.time()
             neg = NegativeSampling(dataset, dataset.num_neg, self.batch_size)
             n_batches = int(np.ceil(len(dataset.train_label_implicit) / self.batch_size))
-        #    n_batches = len(dataset.train_labels) // self.batch_size
             for n in range(n_batches):
                 u, i, r = neg.next_batch()
         #        end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
         #        u = dataset.train_user_indices[n * self.batch_size: end]
         #        i = dataset.train_item_indices[n * self.batch_size: end]
         #        r = dataset.train_labels[n * self.batch_size: end]
-
-                dot = np.sum(np.multiply(self.pu[u], self.qi[i]), axis=1)
-                err = r - (self.global_mean + self.bu[u] + self.bi[i] + dot)
-                self.bu[u] += self.lr * (err - self.reg * self.bu[u])
-                self.bi[i] += self.lr * (err - self.reg * self.bi[i])
-                self.pu[u] += self.lr * (err.reshape(-1, 1) * self.qi[i] - self.reg * self.pu[u])
-                self.qi[i] += self.lr * (err.reshape(-1, 1) * self.pu[u] - self.reg * self.qi[i])
+                if self.baseline:
+                    dot = np.sum(np.multiply(self.pu[u], self.qi[i]), axis=1)
+                    err = r - (self.bu[u] + self.bi[i] + dot)
+                    self.bu[u] += self.lr * (err - self.reg * self.bu[u])
+                    self.bi[i] += self.lr * (err - self.reg * self.bi[i])
+                    self.pu[u] += self.lr * (err.reshape(-1, 1) * self.qi[i] - self.reg * self.pu[u])
+                    self.qi[i] += self.lr * (err.reshape(-1, 1) * self.pu[u] - self.reg * self.qi[i])
+                else:
+                    dot = np.sum(np.multiply(self.pu[u], self.qi[i]), axis=1)
+                    err = r - dot
+                    self.pu[u] += self.lr * (err.reshape(-1, 1) * self.qi[i] - self.reg * self.pu[u])
+                    self.qi[i] += self.lr * (err.reshape(-1, 1) * self.pu[u] - self.reg * self.qi[i])
 
             if verbose > 0:
                 print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
@@ -218,18 +225,15 @@ class SVDBaseline(BasePure):
                 print()
 
     def predict(self, u, i):
-        try:
-            logits = self.global_mean + self.bu[u] + self.bi[i] + np.dot(self.pu[u], self.qi[i])
-            prob = 1.0 / (1.0 + np.exp(-logits))
-            pred = 1.0 if prob >= 0.5 else 0.0
-        except IndexError:
-            pred, prob = 0.0, 0.0
-        return prob, pred
+        pred = self.bu[u] + self.bi[i] + np.dot(self.pu[u], self.qi[i]) \
+            if self.baseline else np.dot(self.pu[u], self.qi[i])
+        return pred
 
     def recommend_user(self, u, n_rec):
         consumed = self.dataset.train_user[u]
         count = n_rec + len(consumed)
-        preds = self.global_mean + self.bu[u] + self.bi + np.dot(self.pu[u], self.qi.T)
+        preds = self.bu[u] + self.bi + np.dot(self.pu[u], self.qi.T) \
+            if self.baseline else np.dot(self.pu[u], self.qi.T)
         ids = np.argpartition(preds, -count)[-count:]
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))

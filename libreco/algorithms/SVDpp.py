@@ -1,17 +1,22 @@
+"""
+
+References: Yehuda Koren "Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model"
+            (https://dl.acm.org/citation.cfm?id=1401944)
+
+author: massquantity
+
+"""
 import time
-from collections import defaultdict
-from operator import itemgetter
 import itertools
 import numpy as np
-from sklearn.metrics import roc_auc_score, precision_recall_curve, average_precision_score, auc
-
+from .Base import BasePure
 from libreco.utils.initializers import truncated_normal
-from ..evaluate import rmse, accuracy, precision_tf, MAR_at_k, MAP_at_k, NDCG_at_k, binary_cross_entropy
+from ..evaluate import precision_tf
 from ..utils import NegativeSampling
 import tensorflow as tf
 
 
-class SVDpp:
+class SVDpp(BasePure):
     def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=1e-3,
                  batch_size=256, seed=42, task="rating", neg_sampling=False):
         self.n_factors = n_factors
@@ -22,6 +27,7 @@ class SVDpp:
         self.seed = seed
         self.task = task
         self.neg_sampling = neg_sampling
+        super(SVDpp, self).__init__()
 
     def build_model(self, dataset):
         tf.set_random_seed(self.seed)
@@ -73,7 +79,7 @@ class SVDpp:
                 self.rmse = self.loss
 
         elif self.task == "ranking":
-            self.logits = tf.cast(self.global_mean, tf.float32) + self.bias_user + self.bias_item + \
+            self.logits = self.bias_user + self.bias_item + \
                           tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item), axis=1)
             self.logits = tf.reshape(self.logits, [-1])
             self.loss = tf.reduce_mean(
@@ -89,11 +95,11 @@ class SVDpp:
         self.reg_qi = self.reg * tf.nn.l2_loss(self.qi)
         self.reg_bu = self.reg * tf.nn.l2_loss(self.bu)
         self.reg_bi = self.reg * tf.nn.l2_loss(self.bi)
-    #    self.reg_yj = self.reg * tf.nn.l2_loss(self.yj)
-        self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi])
+        self.reg_yj = self.reg * tf.nn.l2_loss(self.yj)
+        self.total_loss = tf.add_n([self.loss, self.reg_pu, self.reg_qi, self.reg_bu, self.reg_bi, self.reg_yj])
     #    self.total_loss = self.loss
 
-    def fit(self, dataset, verbose=1):
+    def fit(self, dataset, verbose=1, **kwargs):
         self.build_model(dataset)
         optimizer = tf.train.AdamOptimizer(self.lr)
         self.training_op = optimizer.minimize(self.total_loss)
@@ -111,48 +117,16 @@ class SVDpp:
                         u = dataset.train_user_indices[n * self.batch_size: end]
                         i = dataset.train_item_indices[n * self.batch_size: end]
                         self.sess.run(self.training_op, feed_dict={self.labels: r,
-                                                                     self.user_indices: u,
-                                                                     self.item_indices: i})
+                                                                   self.user_indices: u,
+                                                                   self.item_indices: i})
 
-                    if verbose > 0 and self.task == "rating":
-                        test_loss, test_rmse = self.sess.run([self.total_loss, self.rmse],
-                                                   feed_dict={self.labels: dataset.test_labels,
-                                                              self.user_indices: dataset.test_user_indices,
-                                                              self.item_indices: dataset.test_item_indices})
-
+                    if verbose > 0:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
-                        print("Epoch {}, test_loss: {:.4f}, test_rmse: {:.4f}".format(
-                            epoch, test_loss, test_rmse))
-                        print()
-
-                    elif verbose > 0 and self.task == "ranking":
-                        print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
-                        t3 = time.time()
-                        test_loss, test_accuracy, test_precision = \
-                            self.sess.run([self.loss, self.accuracy, self.precision],
-                                          feed_dict={self.labels: dataset.test_labels,
-                                                     self.user_indices: dataset.test_user_indices,
-                                                     self.item_indices: dataset.test_item_indices})
-
-                        print("\ttest loss: {:.4f}".format(test_loss))
-                        print("\ttest accuracy: {:.4f}".format(test_accuracy))
-                        print("\ttest precision: {:.4f}".format(test_precision))
-                        print("\tloss time: {:.4f}".format(time.time() - t3))
-
-                        t4 = time.time()
-                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
-                        print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
-
-                        t5 = time.time()
-                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
-                        print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
-                        print("\t MAR@50 time: {:.4f}".format(time.time() - t5))
-
-                        t6 = time.time()
-                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t NDCG@{}: {:.4f}".format(10, NDCG))
-                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t6))
+                        metrics = kwargs.get("metrics", self.metrics)
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, **metrics)
+                        else:
+                            self.print_metrics(dataset, epoch, **metrics)
                         print()
 
             elif self.task == "ranking":
@@ -168,43 +142,11 @@ class SVDpp:
 
                     if verbose > 0:
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
-                        t3 = time.time()
-                        test_loss, test_accuracy, test_precision, test_prob = \
-                            self.sess.run([self.loss, self.accuracy, self.precision, self.y_prob],
-                                feed_dict={self.labels: dataset.test_label_implicit,
-                                           self.user_indices: dataset.test_user_implicit,
-                                           self.item_indices: dataset.test_item_implicit})
-
-                        print("\ttest loss: {:.4f}".format(test_loss))
-                        print("\ttest accuracy: {:.4f}".format(test_accuracy))
-                        print("\ttest precision: {:.4f}".format(test_precision))
-                        print("\tloss time: {:.4f}".format(time.time() - t3))
-
-                        t1 = time.time()
-                        test_auc = roc_auc_score(dataset.test_label_implicit, test_prob)
-                        test_ap = average_precision_score(dataset.test_label_implicit, test_prob)
-                        precision_test, recall_test, _ = precision_recall_curve(dataset.test_label_implicit,
-                                                                                test_prob)
-                        test_pr_auc = auc(recall_test, precision_test)
-                        print("\t test roc auc: {:.2f} "
-                              "\n\t test average precision: {:.2f}"
-                              "\n\t test pr auc: {:.2f}".format(test_auc, test_ap, test_pr_auc))
-                        print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
-
-                        t4 = time.time()
-                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
-                        print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
-
-                        t5 = time.time()
-                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
-                        print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
-                        print("\t MAR@50 time: {:.4f}".format(time.time() - t5))
-
-                        t6 = time.time()
-                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t NDCG@{}: {:.4f}".format(10, NDCG))
-                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t6))
+                        metrics = kwargs.get("metrics", self.metrics)
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, **metrics)
+                        else:
+                            self.print_metrics(dataset, epoch, **metrics)
                         print()
 
     def predict(self, u, i):
@@ -215,7 +157,7 @@ class SVDpp:
             if self.lower_bound is not None and self.upper_bound is not None:
                 pred = np.clip(pred, self.lower_bound, self.upper_bound) if self.task == "rating" else pred[0]
         except tf.errors.InvalidArgumentError:
-            pred = self.dataset.global_mean
+            pred = self.dataset.global_mean if self.task == "rating" else 0.0
         return pred
 
     def recommend_user(self, u, n_rec):
