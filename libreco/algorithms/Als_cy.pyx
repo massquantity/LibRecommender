@@ -50,7 +50,7 @@ cdef inline void gesv(int * n, int * nrhs, floating * a, int * lda, int * piv, f
         cython_lapack.sgesv(n, nrhs, a, lda, piv, b, ldb, info)
 
 
-def least_squares(data, X, Y, reg, user=True, num_threads=0):
+def least_squares_weighted(data, X, Y, reg, n_factors, user=True, num_threads=0):
     if user:
         Cui = data
     else:
@@ -126,7 +126,7 @@ def _least_squares(integral[:] indptr, integral[:] indices, float[:] data,
             free(b)
 
 
-def least_squares_cg(data, X, Y, reg, user=True, num_threads=0, cg_steps=3):
+def least_squares_weighted_cg(data, X, Y, reg, n_factors, user=True, num_threads=0, cg_steps=3):
     if user:
         Cui = data
     else:

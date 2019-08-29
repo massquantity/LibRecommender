@@ -1,14 +1,13 @@
 import time, os, sys
-import pickle
 from operator import itemgetter
 import numpy as np
 from ..utils.similarities import *
-from .Base import BasePure, BaseFeat
+from ..utils.baseline_estimates import baseline_als, baseline_sgd
+from .Base import BasePure
 try:
-    from ..utils.similarities_cy import cosine_cy, cosine_cym
+    from ..utils.similarities_cy import cosine_cy, pearson_cy
 except ImportError:
     pass
-from ..utils.baseline_estimates import baseline_als, baseline_sgd
 import logging
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=LOG_FORMAT)
@@ -25,11 +24,9 @@ class userKNN(BasePure):
         self.task = task
         self.neg_sampling = neg_sampling
         if sim_option == "cosine":
-            self.sim_option = cosine_sim  # cosine_cym
-    #    elif sim_option == "msd":
-    #        self.sim_option = msd_sim_cy
-    #    elif sim_option == "pearson":
-    #        self.sim_option = pearson_sim
+            self.sim_option = cosine_cy  # cosine_sim
+        elif sim_option == "pearson":
+            self.sim_option = pearson_cy  # pearson_cy
         elif sim_option == "sklearn":
           self.sim_option = sk_sim
         else:
@@ -48,18 +45,21 @@ class userKNN(BasePure):
             self.lower_bound = None
             self.upper_bound = None
 
-        item_user_list = {k: list(v.items()) for k, v in dataset.train_item.items()}
+
         t0 = time.time()
         if self.sim_option == sk_sim:
             self.sim = self.sim_option(self.train_item, dataset.n_users, dataset.n_items,
                                        min_support=self.min_support, sparse=True)
         else:
-        #    self.sim = self.sim_option(dataset.n_users, item_user_list, min_support=self.min_support)
+            item_user_list = {k: list(v.items()) for k, v in dataset.train_item.items()}
+            self.sim = self.sim_option(dataset.n_users, item_user_list, min_support=self.min_support)
+            self.sim = np.array(self.sim)
 
-            n = len(self.train_user)
-            ids = list(self.train_user.keys())
-            self.sim = get_sim(self.train_user, self.sim_option, n, ids, min_support=self.min_support)
-
+        #    n = len(self.train_user)
+        #    ids = list(self.train_user.keys())
+        #    self.sim = get_sim(self.train_user, self.sim_option, n, ids, min_support=self.min_support)
+        print(self.sim)
+    #    print(self.sim[(self.sim != 0) & (self.sim != 1)])
         print("sim time: {:.4f}, sim shape: {}".format(time.time() - t0, self.sim.shape))
         if issparse(self.sim):
             print("sim num_elements: {}".format(self.sim.getnnz()))
@@ -85,7 +85,7 @@ class userKNN(BasePure):
         try:
             neighbors = [(v, self.sim[u, v], r) for (v, r) in self.train_item[i].items()
                          if v in u_nonzero_neighbors and u != v]
-            k_neighbors = sorted(neighbors, key=lambda x: x[0], reverse=True)[:self.k]
+            k_neighbors = sorted(neighbors, key=lambda x: x[1], reverse=True)[:self.k]
             if self.baseline and self.task == "rating":
                 bui = self.global_mean + self.bu[u] + self.bi[i]
         except IndexError:
@@ -114,7 +114,7 @@ class userKNN(BasePure):
                     pred = np.clip(pred, self.lower_bound, self.upper_bound)
                 return pred
             except ZeroDivisionError:
-                print("user %d sim item is zero" % u)
+                print("user %d sim user is zero" % u)
                 return self.global_mean
 
         elif self.task == "ranking":
@@ -158,6 +158,7 @@ class userKNN(BasePure):
             item_list = list(item_pred_dict.keys())
             pred_list = list(item_pred_dict.values())
             p = [p / np.sum(pred_list) for p in pred_list]
+
             if len(item_list) < n_rec:
                 item_candidates = item_list
             else:

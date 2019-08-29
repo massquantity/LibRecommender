@@ -52,10 +52,10 @@ if __name__ == "__main__":
     print("data processing time: {:.2f}".format(time.time() - t0))
     print()
 
-#    als = Als(n_factors=32, n_epochs=200, reg=5.0, alpha=1, cg_steps=3, task="ranking", neg_sampling=True)
-#    als.fit(dataset, use_cg=False, verbose=1)  # , use_cg=True
-#    print("predict: ", als.predict(1, 5))
-#    print(als.recommend_user(1, 7))
+    als = Als(n_factors=32, n_epochs=200, reg=5.0, alpha=1, cg_steps=3, task="ranking", neg_sampling=True)
+    als.fit(dataset, use_cg=False, verbose=1)  # , use_cg=True
+    print("predict: ", als.predict(1, 5))
+    print(als.recommend_user(1, 7))
 
 #    import cProfile
 #    cProfile.run('svd.fit(dataset)')
@@ -70,25 +70,27 @@ if __name__ == "__main__":
 #    print(svd.predict(1,2))
 #    print(svd.recommend_user(1, 7))
 
-#    svd = SVD.SVDBaseline(n_factors=30, n_epochs=20, lr=0.001, reg=0.1,
-#                          batch_size=256, batch_training=True)
-#    svd.fit(dataset)
-#    print(rmse_svd(svd, dataset, mode="train"))
-#    print(rmse_svd(svd, dataset, mode="test"))
-
-    ncf = Ncf(embed_size=32, lr=0.001, n_epochs=200, reg=0.1, batch_size=2048,
-              dropout_rate=0.5, task="ranking", neg_sampling=True)
-    ncf.fit(dataset)
+#    ncf = Ncf(embed_size=32, lr=0.001, n_epochs=200, reg=0.1, batch_size=2048,
+#              dropout_rate=0.5, task="ranking", neg_sampling=True)
+#    ncf.fit(dataset)
 
 #    bpr = BPR(lr=0.001, n_epochs=1000, reg=0.0, n_factors=16, batch_size=256, k=20, method="knn")
 #    bpr.fit(dataset, verbose=1)
 #    print(bpr.predict(1, 2))
 #    print(bpr.recommend_user(1, 7))
-#    user_knn = userKNN(sim_option="sklearn", k=40, min_support=1, baseline=False, task="ranking", neg_sampling=True)
+
+#    user_knn = userKNN(sim_option="cosine", k=5, min_support=1, baseline=False, task="ranking", neg_sampling=True)
 #    user_knn.fit(dataset, verbose=1)
 #    t1 = time.time()
 #    print("predict: ", user_knn.predict(0, 5))
 #    print("recommend: ", user_knn.recommend_user(0, 7, like_score=4.0, random_rec=False))
+#    print("predict time: ", time.time() - t1)
+
+#    item_knn = itemKNN(sim_option="sklearn", k=40, min_support=1, baseline=False, task="ranking", neg_sampling=True)
+#    item_knn.fit(dataset, verbose=1)
+#    t1 = time.time()
+#    print("predict: ", item_knn.predict(0, 5))
+#    print("recommend: ", item_knn.recommend_user(0, 7, like_score=4.0, random_rec=False))
 #    print("predict time: ", time.time() - t1)
 
     print("train + test time: {:.4f}".format(time.time() - t0))

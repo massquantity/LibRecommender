@@ -26,7 +26,7 @@ from ..evaluate import rmse, MAP_at_k, MAR_at_k, NDCG_at_k, accuracy
 from ..utils.initializers import truncated_normal
 from .Base import BasePure
 try:
-    from . import ALS_cy, ALS_rating_cy
+    from . import Als_cy, Als_rating_cy
 except ImportError:
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
     logging.basicConfig(format=LOG_FORMAT)
@@ -63,32 +63,35 @@ class Als(BasePure):
         self.Y = truncated_normal(shape=(dataset.n_items, self.n_factors),
                                    mean=0.0, scale=0.05).astype(np.float32)
 
-    #    t0 = time.time()
-    #    confidence_data = dok_matrix((dataset.n_users, dataset.n_items), dtype=np.float32)
-    #    for u, i, l in zip(dataset.train_user_indices, dataset.train_item_indices, dataset.train_labels):
-    #        confidence_data[u, i] = self.alpha * l + 1
-    #    confidence_data = confidence_data.tocsr()
-    #    print("constrtct time: ", time.time() - t0)
+        t0 = time.time()
+        confidence_data = dok_matrix((dataset.n_users, dataset.n_items), dtype=np.float32)
+        for u, i, l in zip(dataset.train_user_indices, dataset.train_item_indices, dataset.train_labels):
+            confidence_data[u, i] = self.alpha * l + 1
+        confidence_data = confidence_data.tocsr()
+        print("sparse matrix constrtct time: ", time.time() - t0)
 
         if self.task == "rating":
             method = Als.least_squares
         elif self.task == "ranking" and use_cg:
-            method = functools.partial(Als.least_squares_weighted_cg, alpha=self.alpha, cg_steps=self.cg_steps)
-        #    method = functools.partial(ALS_cy.least_squares_cg, cg_steps=self.cg_steps)
+        #    method = functools.partial(Als.least_squares_weighted_cg, alpha=self.alpha, cg_steps=self.cg_steps)
+            method = functools.partial(Als_cy.least_squares_weighted_cg, cg_steps=self.cg_steps, num_threads=0)
         else:
-            method = functools.partial(Als.least_squares_weighted, alpha=self.alpha)
-        #    method = ALS_cy.least_squares
+        #    method = functools.partial(Als.least_squares_weighted, alpha=self.alpha)
+            method = functools.partial(Als_cy.least_squares_weighted, num_threads=0)
 
         for epoch in range(1, self.n_epochs + 1):
             t0 = time.time()
-            method(self.dataset, self.X, self.Y, reg=self.reg,
-                    n_factors=self.n_factors, user=True)
+        #    method(self.dataset, self.X, self.Y, reg=self.reg,
+        #            n_factors=self.n_factors, user=True)
 
-            method(self.dataset, self.Y, self.X, reg=self.reg,
-                    n_factors=self.n_factors, user=False)
+        #    method(self.dataset, self.Y, self.X, reg=self.reg,
+        #            n_factors=self.n_factors, user=False)
 
-        #    method(confidence_data, self.X, self.Y, reg=self.reg, user=True, num_threads=0)
-        #    method(confidence_data, self.Y, self.X, reg=self.reg, user=False, num_threads=0)
+            method(confidence_data, self.X, self.Y, reg=self.reg, n_factors=self.n_factors, user=True)
+            method(confidence_data, self.Y, self.X, reg=self.reg, n_factors=self.n_factors, user=False)
+
+        #    Als_cy.least_squares_weighted(confidence_data, self.X, self.Y, reg=self.reg, n_factors=self.n_factors, user=True)
+        #    Als_cy.least_squares_weighted(confidence_data, self.X, self.Y, reg=self.reg, n_factors=self.n_factors, user=False)
 
             if verbose > 0:
                 print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))

@@ -2,7 +2,7 @@ from .user_KNN import userKNN
 from .item_KNN import itemKNN
 from .SVD import SVD
 from .SVDpp import SVDpp
-from .ALS import Als
+from .Als import Als
 from .FM import FmPure, FmFeat
 from .superSVD import superSVD
 from .NCF import Ncf
