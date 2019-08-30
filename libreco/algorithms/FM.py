@@ -1,10 +1,17 @@
+"""
+
+Reference: Steffen Rendle "Factorization Machines" (https://www.csie.ntu.edu.tw/~b97053/paper/Rendle2010FM.pdf)
+
+author: massquantity
+
+"""
 import os
 import time
 import itertools
-import operator
 from collections import OrderedDict
 import numpy as np
 import tensorflow as tf
+from .Base import BasePure, BaseFeat
 from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, NDCG_at_k
 from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
@@ -179,7 +186,7 @@ class FmPure:
         return pred
 
 
-class FmFeat:
+class FmFeat(BaseFeat):
     def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256, seed=42,
                  task="rating", neg_sampling=False):
         self.lr = lr
@@ -190,6 +197,7 @@ class FmFeat:
         self.seed = seed
         self.task = task
         self.neg_sampling = neg_sampling
+        super(FmFeat, self).__init__()
 
     def build_model(self, dataset):
         tf.set_random_seed(self.seed)
@@ -198,7 +206,14 @@ class FmFeat:
         self.feature_size = dataset.feature_size
         self.n_users = dataset.n_users
         self.n_items = dataset.n_items
+        self.global_mean = dataset.global_mean
         self.total_items_unique = self.item_info
+        if dataset.lower_upper_bound is not None:
+            self.lower_bound = dataset.lower_upper_bound[0]
+            self.upper_bound = dataset.lower_upper_bound[1]
+        else:
+            self.lower_bound = None
+            self.upper_bound = None
 
         self.feature_indices = tf.placeholder(tf.int32, shape=[None, self.field_size])
         self.feature_values = tf.placeholder(tf.float32, shape=[None, self.field_size])
@@ -224,12 +239,16 @@ class FmFeat:
             self.pred = tf.layers.dense(inputs=self.concat, units=1)
             self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
                                                      predictions=self.pred)
-            self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
-                                                             predictions=tf.clip_by_value(self.pred, 1, 5)))
+
+            if self.lower_bound is not None and self.upper_bound is not None:
+                self.rmse = tf.sqrt(tf.losses.mean_squared_error(abels=tf.reshape(self.labels, [-1, 1]),
+                                predictions=tf.clip_by_value(self.pred, self.lower_bound, self.upper_bound)))
+            else:
+                self.rmse = self.loss
 
         #    reg_w = self.reg * tf.nn.l2_loss(self.w)
             reg_v = self.reg * tf.nn.l2_loss(self.v)
-            self.total_loss = tf.add_n([self.loss, reg_v])  # reg_w
+            self.total_loss = tf.add_n([self.loss, reg_v])
 
         elif self.task == "ranking":
             self.logits = tf.layers.dense(inputs=self.concat, units=1, name="logits")
@@ -248,7 +267,7 @@ class FmFeat:
             reg_v = self.reg * tf.nn.l2_loss(self.v)
             self.total_loss = tf.add_n([self.loss, reg_v])
 
-    def fit(self, dataset, verbose=1, pre_sampling=True):
+    def fit(self, dataset, verbose=1, pre_sampling=True, **kwargs):
         self.build_model(dataset)
         self.optimizer = tf.train.AdamOptimizer(self.lr)
     #    self.optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3)
@@ -261,7 +280,7 @@ class FmFeat:
             if self.task == "rating" or (self.task == "ranking" and not self.neg_sampling):
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
-                    n_batches = len(dataset.train_labels) // self.batch_size
+                    n_batches = int(np.ceil(len(dataset.train_labels) / self.batch_size))
                     for n in range(n_batches):
                         end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
                         indices_batch = dataset.train_feat_indices[n * self.batch_size: end]
@@ -272,26 +291,13 @@ class FmFeat:
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch})
 
-                    if verbose > 0 and self.task == "rating":
-               #         train_rmse = self.rmse.eval(feed_dict={self.feature_indices: dataset.train_feat_indices,
-                #                                               self.feature_values: dataset.train_feat_values,
-                #                                               self.labels: dataset.train_labels})
-
-                        test_loss, test_rmse = self.sess.run([self.total_loss, self.rmse],
-                                                              feed_dict={
-                                                                  self.feature_indices: dataset.test_feat_indices,
-                                                                  self.feature_values: dataset.test_feat_values,
-                                                                  self.labels: dataset.test_labels})
-
-                #        print("Epoch {}, train_rmse: {:.4f}, training_time: {:.2f}".format(
-                #                epoch, train_rmse, time.time() - t0))
+                    if verbose > 0:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
-                        print("Epoch {}, test_loss: {:.4f}, test_rmse: {:.4f}".format(
-                            epoch, test_loss, test_rmse))
-                        print()
-
-                    elif verbose > 0 and self.task == "ranking":
-                        pass
+                        metrics = kwargs.get("metrics", self.metrics)
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, **metrics)
+                        else:
+                            self.print_metrics(dataset, epoch, **metrics)
                         print()
 
             elif self.task == "ranking" and self.neg_sampling:
@@ -299,7 +305,6 @@ class FmFeat:
                     t0 = time.time()
                     neg = NegativeSamplingFeat(dataset, dataset.num_neg, self.batch_size, pre_sampling=pre_sampling)
                     n_batches = int(np.ceil(len(dataset.train_labels_implicit) / self.batch_size))
-                #    n_batches = len(dataset.train_indices_implicit) // self.batch_size
                     for n in range(n_batches):
                         indices_batch, values_batch, labels_batch = neg.next_batch()
                         self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
@@ -308,32 +313,11 @@ class FmFeat:
 
                     if verbose > 0:
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
-                        t3 = time.time()
-                        test_loss, test_accuracy, test_precision = \
-                            self.sess.run([self.loss, self.accuracy, self.precision],
-                                feed_dict={self.feature_indices: dataset.test_indices_implicit,
-                                           self.feature_values: dataset.test_values_implicit,
-                                           self.labels: dataset.test_labels_implicit})
-
-                        print("\ttest loss: {:.4f}".format(test_loss))
-                        print("\ttest accuracy: {:.4f}".format(test_accuracy))
-                        print("\ttest precision: {:.4f}".format(test_precision))
-                        print("\tloss time: {:.4f}".format(time.time() - t3))
-
-                        t4 = time.time()
-                        mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
-                        print("\t MAP@10 time: {:.4f}".format(time.time() - t4))
-
-                        t5 = time.time()
-                        mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
-                        print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
-                        print("\t MAR@50 time: {:.4f}".format(time.time() - t5))
-
-                        t6 = time.time()
-                        NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
-                        print("\t NDCG@{}: {:.4f}".format(10, NDCG))
-                        print("\t NDCG@10 time: {:.4f}".format(time.time() - t6))
+                        metrics = kwargs.get("metrics", self.metrics)
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, **metrics)
+                        else:
+                            self.print_metrics(dataset, epoch, **metrics)
                         print()
 
     def predict(self, user, item):
@@ -341,10 +325,11 @@ class FmFeat:
         try:
             target = self.pred if self.task == "rating" else self.y_prob
             pred = self.sess.run(target, feed_dict={self.feature_indices: feat_indices,
-                                                       self.feature_values: feat_value})
-            pred = np.clip(pred, 1, 5) if self.task == "rating" else pred[0]
+                                                    self.feature_values: feat_value})
+            if self.lower_bound is not None and self.upper_bound is not None:
+                pred = np.clip(pred, self.lower_bound, self.upper_bound) if self.task == "rating" else pred[0]
         except tf.errors.InvalidArgumentError:
-            pred = self.dataset.global_mean
+            pred = self.dataset.global_mean if self.task == "rating" else 0.0
         return pred
 
     def recommend_user(self, u, n_rec):
@@ -359,78 +344,6 @@ class FmFeat:
         ids = np.argpartition(preds, -count)[-count:]
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
-
-    def get_predict_indices_and_values(self, data, user, item):
-        user_col = data.train_feat_indices.shape[1] - 2
-        item_col = data.train_feat_indices.shape[1] - 1
-
-        user_repr = user + data.user_offset
-        user_cols = data.user_feature_cols + [user_col]
-        user_features = data.train_feat_indices[:, user_cols]
-        user = user_features[user_features[:, -1] == user_repr][0]
-
-        item_repr = item + data.user_offset + data.n_users
-        item_cols = [item_col] + data.item_feature_cols
-        item_features = data.train_feat_indices[:, item_cols]
-        item = item_features[item_features[:, 0] == item_repr][0]
-
-        orig_cols = user_cols + item_cols
-        col_reindex = np.array(range(len(orig_cols)))[np.argsort(orig_cols)]
-        concat_indices = np.concatenate([user, item])[col_reindex]
-
-        feat_values = np.ones(len(concat_indices))
-        if data.numerical_col is not None:
-            for col in range(len(data.numerical_col)):
-                if col in data.user_feature_cols:
-                    user_indices = np.where(data.train_feat_indices[:, user_col] == user_repr)[0]
-                    numerical_values = data.train_feat_values[user_indices, col][0]
-                    feat_values[col] = numerical_values
-                elif col in data.item_feature_cols:
-                    item_indices = np.where(data.train_feat_indices[:, item_col] == item_repr)[0]
-                    numerical_values = data.train_feat_values[item_indices, col][0]
-                    feat_values[col] = numerical_values
-
-        return concat_indices.reshape(1, -1), feat_values.reshape(1, -1)
-
-    def get_recommend_indices_and_values(self, data, user, items_unique):
-        user_col = data.train_feat_indices.shape[1] - 2
-        item_col = data.train_feat_indices.shape[1] - 1
-
-        user_repr = user + data.user_offset
-        user_cols = data.user_feature_cols + [user_col]
-        user_features = data.train_feat_indices[:, user_cols]
-        user_unique = user_features[user_features[:, -1] == user_repr][0]
-        users = np.tile(user_unique, (data.n_items, 1))
-
-        #   np.unique is sorted from starting with the first element, so put item col first
-        item_cols = [item_col] + data.item_feature_cols
-        orig_cols = user_cols + item_cols
-        col_reindex = np.array(range(len(orig_cols)))[np.argsort(orig_cols)]
-
-        assert users.shape[0] == items_unique.shape[0], "user shape must equal to num of candidate items"
-        concat_indices = np.concatenate([users, items_unique], axis=-1)[:, col_reindex]
-
-        #   construct feature values, mainly fill numerical columns
-        feat_values = np.ones(shape=(data.n_items, concat_indices.shape[1]))
-        if data.numerical_col is not None:
-            numerical_dict = OrderedDict()
-            for col in range(len(data.numerical_col)):
-                if col in data.user_feature_cols:
-                    user_indices = np.where(data.train_feat_indices[:, user_col] == user_repr)[0]
-                    numerical_values = data.train_feat_values[user_indices, col][0]
-                    numerical_dict[col] = numerical_values
-                elif col in data.item_feature_cols:
-                    # order according to item indices
-                    numerical_map = OrderedDict(
-                                        sorted(
-                                            zip(data.train_feat_indices[:, -1],
-                                                data.train_feat_values[:, col]), key=lambda x: x[0]))
-                    numerical_dict[col] = [v for v in numerical_map.values()]
-
-            for k, v in numerical_dict.items():
-                feat_values[:, k] = np.array(v)
-
-        return concat_indices, feat_values
 
     @property
     def item_info(self):
