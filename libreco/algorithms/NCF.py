@@ -1,6 +1,6 @@
 """
 
-Reference: Xiangnan He et al. "Neural Collaborative Filtering"  (https://arxiv.org/pdf/1708.05031.pdf)
+Reference: Xiangnan He et al. "Neural Collaborative Filtering" (https://arxiv.org/pdf/1708.05031.pdf)
 
 author: massquantity
 
@@ -93,7 +93,8 @@ class Ncf(BasePure):
             self.pred = tf.layers.dense(inputs=self.Neu_layer, units=1, name="pred")
         #    self.loss = tf.reduce_sum(tf.square(tf.cast(self.labels, tf.float32) - self.pred)) / \
         #                tf.cast(tf.size(self.labels), tf.float32)
-            self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]), predictions=self.pred)
+            self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
+                                                     predictions=self.pred)
 
             if self.lower_bound is not None and self.upper_bound is not None:
                 self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=self.labels,
