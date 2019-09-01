@@ -54,10 +54,11 @@ class SVDpp(BasePure):
         self.bi = tf.Variable(tf.zeros([dataset.n_items]))
         self.pu = tf.Variable(tf.random_normal([dataset.n_users, self.n_factors], 0.0, 0.01))
         self.qi = tf.Variable(tf.random_normal([dataset.n_items, self.n_factors], 0.0, 0.01))
-        self.yj = tf.Variable(tf.random_normal([dataset.n_items, self.n_factors], 0.0, 0.01))
+        self.yj = tf.Variable(tf.random_normal([dataset.n_items, self.n_factors], 0.0, 0.01))  # qi, yj share embedding ???
 
-        yjs = tf.nn.embedding_lookup_sparse(self.yj, implicit_feedback, sp_weights=None, combiner="sqrtn")
-        self.nu = tf.gather(yjs, np.arange(dataset.n_users))
+    #    yjs = tf.nn.embedding_lookup_sparse(self.yj, implicit_feedback, sp_weights=None, combiner="sqrtn")
+    #    self.nu = tf.gather(yjs, np.arange(dataset.n_users))
+        self.nu = tf.nn.embedding_lookup_sparse(self.yj, implicit_feedback, sp_weights=None, combiner="sqrtn")
         self.pn = self.pu + self.nu
 
         self.bias_user = tf.nn.embedding_lookup(self.bu, self.user_indices)
@@ -393,6 +394,5 @@ class sss:
         ids = np.argpartition(preds, -count)[-count:]
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
-
 
 
