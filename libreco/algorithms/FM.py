@@ -12,12 +12,13 @@ from collections import OrderedDict
 import numpy as np
 import tensorflow as tf
 from .Base import BasePure, BaseFeat
-from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, NDCG_at_k
+from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, recall_at_k, NDCG_at_k
 from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 
-class FmPure:
-    def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256, seed=42, task="rating"):
+class FmPure(BasePure):
+    def __init__(self, lr, n_epochs=20, n_factors=100, reg=0.0, batch_size=256,
+                 seed=42, task="rating", neg_sampling=False):
         self.lr = lr
         self.n_epochs = n_epochs
         self.n_factors = n_factors
@@ -25,6 +26,8 @@ class FmPure:
         self.batch_size = batch_size
         self.seed = seed
         self.task = task
+        self.neg_sampling = neg_sampling
+        super(FmPure, self).__init__()
 
     @staticmethod
     def build_sparse_data(data, user_indices, item_indices):
@@ -39,7 +42,16 @@ class FmPure:
     def build_model(self, dataset):
         tf.set_random_seed(self.seed)
         self.dataset = dataset
+        self.n_users = dataset.n_users
+        self.n_items = dataset.n_items
         self.dim = dataset.n_users + dataset.n_items
+        if dataset.lower_upper_bound is not None:
+            self.lower_bound = dataset.lower_upper_bound[0]
+            self.upper_bound = dataset.lower_upper_bound[1]
+        else:
+            self.lower_bound = None
+            self.upper_bound = None
+
         self.w = tf.Variable(tf.truncated_normal([self.dim, 1], 0.0, 0.01))
         self.v = tf.Variable(tf.truncated_normal([self.dim, self.n_factors], 0.0, 0.01))
 
@@ -58,8 +70,11 @@ class FmPure:
             self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
                                                      predictions=self.pred)
 
-            self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
-                                                             predictions=tf.clip_by_value(self.pred, 1, 5)))
+            if self.lower_bound is not None and self.upper_bound is not None:
+                self.rmse = tf.sqrt(tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
+                                predictions=tf.clip_by_value(self.pred, self.lower_bound, self.upper_bound)))
+            else:
+                self.rmse = self.loss
 
         #    reg_w = self.reg * tf.nn.l2_loss(self.w)
             reg_v = self.reg * tf.nn.l2_loss(self.v)
@@ -82,7 +97,7 @@ class FmPure:
             reg_v = self.reg * tf.nn.l2_loss(self.v)
             self.total_loss = tf.add_n([self.loss, reg_v])
 
-    def fit(self, dataset, verbose=1):
+    def fit(self, dataset, verbose=1, **kwargs):
         self.build_model(dataset)
         self.optimizer = tf.train.AdamOptimizer(self.lr)
     #    self.optimizer = tf.train.FtrlOptimizer(learning_rate=0.1, l1_regularization_strength=1e-3)
@@ -92,10 +107,10 @@ class FmPure:
         self.sess.run(init)
         self.sess.run(tf.local_variables_initializer())
         with self.sess.as_default():
-            if self.task == "rating":
+            if self.task == "rating" or (self.task == "ranking" and not self.neg_sampling):
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
-                    n_batches = len(dataset.train_labels) // self.batch_size
+                    n_batches = int(np.ceil(len(dataset.train_labels) / self.batch_size))
                     for n in range(n_batches):
                         end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
                         user_batch = dataset.train_user_indices[n * self.batch_size: end]
@@ -111,34 +126,25 @@ class FmPure:
                                                                    self.labels: label_batch})
 
                     if verbose > 0:
-                        indices_train, values_train, shape_train = FmPure.build_sparse_data(
-                                                                        dataset,
-                                                                        dataset.train_user_indices,
-                                                                        dataset.train_item_indices)
-                        train_rmse = self.sess.run(self.rmse, feed_dict={self.x: (indices_train,
-                                                                                  values_train,
-                                                                                  shape_train),
-                                                                         self.labels: dataset.train_labels})
-
+                        print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
                         indices_test, values_test, shape_test = FmPure.build_sparse_data(
                                                                     dataset,
                                                                     dataset.test_user_indices,
                                                                     dataset.test_item_indices)
-                        test_rmse = self.sess.run(self.rmse, feed_dict={self.x: (indices_test,
+                        test_loss, test_rmse = self.sess.run([self.total_loss, self.rmse],
+                                                             feed_dict={self.x: (indices_test,
                                                                                  values_test,
                                                                                  shape_test),
                                                                         self.labels: dataset.test_labels})
 
-                        print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
-                        print("Epoch {}, train rmse: {:.4f}".format(epoch, train_rmse))
-                        print("Epoch {}, test rmse: {:.4f}".format(epoch, test_rmse))
-                        print()
+                        print("Epoch {}, test_loss: {:.4f}, test_rmse: {:.4f}".format(
+                            epoch, test_loss, test_rmse))
 
             elif self.task == "ranking":
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
                     neg = NegativeSampling(dataset, dataset.num_neg, self.batch_size)
-                    n_batches = len(dataset.train_user_implicit) // self.batch_size
+                    n_batches = int(np.ceil(len(dataset.train_labels) / self.batch_size))
                     for n in range(n_batches):
                         user_batch, item_batch, label_batch = neg.next_batch()
                         indices_batch, values_batch, shape_batch = FmPure.build_sparse_data(dataset,
@@ -150,15 +156,6 @@ class FmPure:
                                                                    self.labels: label_batch})
 
                     if verbose > 0:
-                        indices_train, values_train, shape_train = FmPure.build_sparse_data(
-                                                                       dataset,
-                                                                       dataset.train_user_implicit,
-                                                                       dataset.train_item_implicit)
-                        train_loss, train_accuracy, train_precision = \
-                            self.sess.run([self.loss, self.accuracy, self.precision],
-                                          feed_dict={self.x: (indices_train, values_train, shape_train),
-                                                     self.labels: dataset.train_label_implicit})
-
                         indices_test, values_test, shape_test = FmPure.build_sparse_data(
                                                                     dataset,
                                                                     dataset.test_user_implicit,
@@ -169,21 +166,48 @@ class FmPure:
                                                      self.labels: dataset.test_label_implicit})
 
                         print("Epoch {}, training time: {:.2f}".format(epoch, time.time() - t0))
-                        print("Epoch {}, train loss: {:.4f}, train accuracy: {:.4f}, train precision: {:.4f}".format(
-                                epoch, train_loss, train_accuracy, train_precision))
                         print("Epoch {}, test loss: {:.4f}, test accuracy: {:.4f}, test precision: {:.4f}".format(
                                 epoch, test_loss, test_accuracy, test_precision))
-                        print()
 
+                        t2 = time.time()
+                        mean_average_precision = MAP_at_k(self, self.dataset, 20, sample_user=1000)
+                        print("\t MAP@{}: {:.4f}".format(20, mean_average_precision))
+                        print("\t MAP time: {:.4f}".format(time.time() - t2))
+
+                        t3 = time.time()
+                        recall = recall_at_k(self, self.dataset, 50, sample_user=1000)
+                        print("\t MAR@{}: {:.4f}".format(50, recall))
+                        print("\t MAR time: {:.4f}".format(time.time() - t3))
+
+                        t4 = time.time()
+                        ndcg = NDCG_at_k(self, self.dataset, 20, sample_user=1000)
+                        print("\t NDCG@{}: {:.4f}".format(20, ndcg))
+                        print("\t NDCG time: {:.4f}".format(time.time() - t4))
+                        print()
 
     def predict(self, u, i):
         index, value, shape = FmPure.build_sparse_data(self.dataset, np.array([u]), np.array([i]))
         try:
             pred = self.sess.run(self.pred, feed_dict={self.x: (index, value, shape)})
-            pred = np.clip(pred, 1, 5)
+            if self.lower_bound is not None and self.upper_bound is not None:
+                pred = np.clip(pred, self.lower_bound, self.upper_bound) if self.task == "rating" else pred[0]
         except tf.errors.InvalidArgumentError:
-            pred = self.dataset.global_mean
+            pred = self.dataset.global_mean if self.task == "rating" else 0.0
         return pred
+
+    def recommend_user(self, u, n_rec):
+        consumed = self.dataset.train_user[u]
+        count = n_rec + len(consumed)
+        target = self.pred if self.task == "rating" else self.y_prob
+
+        user_indices = np.full(self.n_items, u)
+        item_indices = np.arange(self.n_items)
+        index, value, shape = FmPure.build_sparse_data(self.dataset, user_indices, item_indices)
+        preds = self.sess.run(target, feed_dict={self.x: tf.SparseTensorValue(index, value, shape)})
+
+        ids = np.argpartition(preds, -count)[-count:]
+        rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
+        return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
 
 
 class FmFeat(BaseFeat):

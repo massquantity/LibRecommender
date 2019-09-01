@@ -7,7 +7,7 @@ from .FM import FmPure, FmFeat
 from .superSVD import superSVD
 from .NCF import Ncf
 from .wide_deep import WideDeep, WideDeepEstimator
-from .DeepFM import DeepFMPure, DeepFMFeat
+from .DeepFM import DeepFmPure, DeepFmFeat
 from .BPR import BPR
 try:
     from .superSVD_cy import superSVD_cy

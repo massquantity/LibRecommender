@@ -16,7 +16,7 @@ from ..evaluate.evaluate import precision_tf
 
 class Ncf(BasePure):
     def __init__(self, embed_size, lr, n_epochs=20, reg=0.0, batch_size=64,
-                 dropout_rate=0.0, seed=42, task="rating", neg_sampling=False):
+                 dropout_rate=0.0, seed=42, task="rating", neg_sampling=False, network_size=None):
         self.embed_size = embed_size
         self.lr = lr
         self.n_epochs = n_epochs
@@ -26,6 +26,11 @@ class Ncf(BasePure):
         self.seed = seed
         self.task = task
         self.neg_sampling = neg_sampling
+        if network_size is not None:
+            assert len(network_size) == 3, "network size does not match true model size"
+            self.network_size = network_size
+        else:
+            self.network_size = [embed_size * 2, embed_size * 2, embed_size]
         super(Ncf, self).__init__()
 
     def build_model(self, dataset):
@@ -42,7 +47,7 @@ class Ncf(BasePure):
             self.upper_bound = None
 
         regularizer = tf.contrib.layers.l2_regularizer(self.reg)
-        #    self.pu_GMF = tf.get_variable(name="pu_GMF", initializer=tf.glorot_normal_initializer().__call__(shape=[2,2]))
+    #    self.pu_GMF = tf.get_variable(name="pu_GMF", initializer=tf.glorot_normal_initializer().__call__(shape=[2,2]))
         self.pu_GMF = tf.get_variable(name="pu_GMF", initializer=tf.variance_scaling_initializer,
                                       regularizer=regularizer,
                                       shape=[self.n_users, self.embed_size])
@@ -69,25 +74,25 @@ class Ncf(BasePure):
         self.GMF_layer = tf.multiply(self.pu_GMF_embedding, self.qi_GMF_embedding)
 
         self.MLP_input = tf.concat([self.pu_MLP_embedding, self.qi_MLP_embedding], axis=1, name="MLP_input")
-        self.MLP_layer1 = tf.layers.dense(inputs=self.MLP_input,
-                                          units=self.embed_size * 2,
-                                          activation=tf.nn.relu,
-        #                                  kernel_initializer=tf.variance_scaling_initializer,
-                                          name="MLP_layer1")
-        self.MLP_layer1 = tf.layers.dropout(self.MLP_layer1, rate=self.dropout_rate, training=self.dropout_switch)
-        self.MLP_layer2 = tf.layers.dense(inputs=self.MLP_layer1,
-                                          units=self.embed_size,
-                                          activation=tf.nn.relu,
-        #                                  kernel_initializer=tf.variance_scaling_initializer,
-                                          name="MLP_layer2")
-        self.MLP_layer2 = tf.layers.dropout(self.MLP_layer2, rate=self.dropout_rate, training=self.dropout_switch)
-        self.MLP_layer3 = tf.layers.dense(inputs=self.MLP_layer2,
-                                          units=self.embed_size,
-                                          activation=tf.nn.relu,
-        #                                  kernel_initializer=tf.variance_scaling_initializer,
-                                          name="MLP_layer3")
+        self.MLP_layer_one = tf.layers.dense(inputs=self.MLP_input,
+                                             units=self.network_size[0],
+                                             activation=tf.nn.relu,
+                                             kernel_initializer=tf.variance_scaling_initializer,
+                                             name="MLP_layer_one")
+        self.MLP_layer_one = tf.layers.dropout(self.MLP_layer_one, rate=self.dropout_rate, training=self.dropout_switch)
+        self.MLP_layer_two = tf.layers.dense(inputs=self.MLP_layer_one,
+                                             units=self.network_size[1],
+                                             activation=tf.nn.relu,
+                                             kernel_initializer=tf.variance_scaling_initializer,
+                                             name="MLP_layer_two")
+        self.MLP_layer_two = tf.layers.dropout(self.MLP_layer_two, rate=self.dropout_rate, training=self.dropout_switch)
+        self.MLP_layer_three = tf.layers.dense(inputs=self.MLP_layer_two,
+                                               units=self.network_size[2],
+                                               activation=tf.nn.relu,
+                                               kernel_initializer=tf.variance_scaling_initializer,
+                                               name="MLP_layer_three")
 
-        self.Neu_layer = tf.concat([self.GMF_layer, self.MLP_layer3], axis=1)
+        self.Neu_layer = tf.concat([self.GMF_layer, self.MLP_layer_three], axis=1)
 
         if self.task == "rating":
             self.pred = tf.layers.dense(inputs=self.Neu_layer, units=1, name="pred")
@@ -146,7 +151,7 @@ class Ncf(BasePure):
                             self.print_metrics(dataset, epoch, **metrics)
                         print()
 
-            elif self.task == "ranking":
+            elif self.task == "ranking" and self.neg_sampling:
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
                     neg = NegativeSampling(dataset, dataset.num_neg, self.batch_size)

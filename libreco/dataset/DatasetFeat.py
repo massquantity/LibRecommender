@@ -58,10 +58,11 @@ class DatasetFeat:
                       train_frac=0.8, convert_implicit=False, build_negative=False, seed=42,
                       num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
                       numerical_col=None, categorical_col=None, merged_categorical_col=None,
-                      user_feature_cols=None, item_feature_cols=None):  # numerical feature 不做 embedding
+                      user_feature_cols=None, item_feature_cols=None, lower_upper_bound=None):  # numerical feature 不做 embedding
 
         np.random.seed(seed)
         self.batch_size = batch_size
+        self.lower_upper_bound = lower_upper_bound
         if num_neg is not None:
             self.num_neg = num_neg
 

@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path, PurePath
 from libreco.dataset import DatasetPure, DatasetFeat
-from libreco.algorithms import userKNN, FmFeat, WideDeep, WideDeepEstimator, WideDeep, DeepFMFeat
+from libreco.algorithms import userKNN, FmFeat, FmPure, WideDeep, WideDeepEstimator, WideDeep, DeepFmFeat
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
@@ -67,7 +67,8 @@ if __name__ == "__main__":
     '''
 
     conf = {
-        "data_path": "tianchi_recommender/merged_tianchi.csv",
+        "data_path": "tianchi_recommender/merge_testB.csv",
+    #    "data_path": "ml-1m/merged_data.csv",
         "length": 500000,
         "user_col": 0,
         "item_col": 1,
@@ -95,9 +96,12 @@ if __name__ == "__main__":
 #    dataset.leave_k_out_split(4, data_path="ml-1m/merged_data.csv", length="all", sep=",", shuffle=True,
 #                              user_col=0, item_col=1, label_col=2, numerical_col=None, categorical_col=[3, 4, 5],
 #                              merged_categorical_col=[[6, 7, 8]])
-    print("total data size: ", len(dataset.train_indices_implicit) + len(dataset.test_indices_implicit))
-    print("data processing time: {:.2f}".format(time.time() - t0))
     print("num users: {}, num items: {}".format(dataset.n_users, dataset.n_items))
+    if conf.get("convert_implicit"):
+        print("data size: ", len(dataset.train_labels_implicit) + len(dataset.test_labels_implicit))
+    else:
+        print("data size: ", len(dataset.train_user_indices) + len(dataset.test_user_indices))
+    print("data processing time: {:.2f}".format(time.time() - t0))
     print(dataset.train_feat_indices[:5])
 #    print(dataset.train_feat_indices.shape)
     print(dataset.train_feat_values[:5])
@@ -186,11 +190,11 @@ if __name__ == "__main__":
 
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
-#    fm = FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=256, task="ranking")
-#    fm = FmFeat(lr=0.0002, n_epochs=500, reg=0.1, n_factors=50, batch_size=2048, task="ranking", neg_sampling=True)
+#    fm = FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=2048, task="ranking", neg_sampling=True)
+#    fm = FmFeat(lr=0.0002, n_epochs=2, reg=0.1, n_factors=50, batch_size=2048, task="ranking", neg_sampling=True)
 #    fm.fit(dataset, pre_sampling=False, verbose=1)
 #    print(fm.predict(1959, 1992))
-#    fm.recommend_user(19500, 7)
+#    print(fm.recommend_user(19500, 7))
 
 #    num = {}
 #    cat = {3: 'F', 4: 1, 5: 10, 6: 2452.0}
@@ -201,8 +205,8 @@ if __name__ == "__main__":
 #    fm.export_model(version="1", simple_save=False)
 #    print(fm.predict(1, 2))
 
-    dfm = DeepFMFeat(lr=0.0002, n_epochs=10000, reg=0.1, embed_size=50,
-                        batch_size=2048, dropout=0.0, task="ranking", neg_sampling=True)
+    dfm = DeepFmFeat(lr=0.001, n_epochs=1000, reg=0.0, embed_size=32, batch_size=2048,
+                     dropout_rate=0.0, task="ranking", neg_sampling=True, network_size=[100, 100, 100])
     dfm.fit(dataset, pre_sampling=False, verbose=1)
     print(dfm.predict(1959, 1992))
     print(dfm.recommend_user(19500, 7))
