@@ -31,7 +31,7 @@ if __name__ == "__main__":
     conf = {
         "data_path": "tianchi_recommender/testB_pure.csv",
     #    "data_path": "ml-1m/ratings.dat",
-        "length": 200000,
+        "length": 500000,
         "convert_implicit": True,
         "build_negative": True,
         "num_neg": 2,
@@ -50,7 +50,6 @@ if __name__ == "__main__":
     else:
         print("data size: ", len(dataset.train_user_indices) + len(dataset.test_user_indices))
     print("data processing time: {:.2f}".format(time.time() - t0))
-    print(dataset.train_user_indices)
     print()
 
 #    als = Als(n_factors=32, n_epochs=200, reg=5.0, alpha=1, cg_steps=3, task="ranking", neg_sampling=True)
@@ -62,14 +61,13 @@ if __name__ == "__main__":
 #    cProfile.run('svd.fit(dataset)')
 
     from libreco.algorithms.SVD import SVDBaseline
-    from libreco.algorithms.SVDpp import sss
-#    svd = SVDpp(n_factors=32, n_epochs=200, lr=0.001, reg=0.0, batch_size=2048, task="ranking", neg_sampling=True)
+    svd = SVDpp(n_factors=32, n_epochs=200, lr=0.001, reg=0.0, batch_size=8192, task="ranking", neg_sampling=True)
 #    svd = SVDBaseline(n_factors=32, n_epochs=10000, lr=0.0001, reg=0.0, batch_size=256,
 #                      task="ranking", neg_sampling=True, baseline=False)
 #    svd = sss(n_factors=16, n_epochs=20000, lr=0.01, reg=0.0, batch_size=65536)
-#    svd.fit(dataset, verbose=1)
-#    print(svd.predict(1,2))
-#    print(svd.recommend_user(1, 7))
+    svd.fit(dataset, verbose=1)
+    print(svd.predict(1,2))
+    print(svd.recommend_user(1, 7))
 
 #    ncf = Ncf(embed_size=32, lr=0.001, n_epochs=200, reg=0.1, batch_size=2048,
 #              dropout_rate=0.5, task="ranking", neg_sampling=True)
@@ -99,11 +97,11 @@ if __name__ == "__main__":
 #    print(fm.predict(1959, 1992))
 #    print(fm.recommend_user(19500, 7))
 
-    deepFm = DeepFmPure(lr=0.001, n_epochs=1, reg=0.0, embed_size=100, batch_size=2048, dropout_rate=0.0,
-                        task="ranking", neg_sampling=True, network_size=[100, 100, 100])
-    deepFm.fit(dataset, verbose=1)
-    print(deepFm.predict(1959, 1992))
-    print(deepFm.recommend_user(19500, 7))
+#    deepFm = DeepFmPure(lr=0.001, n_epochs=1, reg=0.0, embed_size=100, batch_size=2048, dropout_rate=0.0,
+#                        task="ranking", neg_sampling=True, network_size=[100, 100, 100])
+#    deepFm.fit(dataset, verbose=1)
+#    print(deepFm.predict(1959, 1992))
+#    print(deepFm.recommend_user(19500, 7))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 

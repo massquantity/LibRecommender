@@ -11,7 +11,7 @@ except ImportError:
 import logging
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=LOG_FORMAT)
-logging.warning("KNN method requires huge memory for constructing similarity matrix. \n"
+logging.warning("Item KNN method requires huge memory for constructing similarity matrix. \n"
                 "\tFor large num of users or items, consider using sklearn sim_option, "
                 "which provides sparse similarity matrix. \n")
 
