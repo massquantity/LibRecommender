@@ -414,7 +414,7 @@ class SVDpp_897(BasePure):
     def get_user_implicit_feedback(self, data, users):
         indices = []
         values = []
-        if isinstance(users, np.integer or int):
+        if isinstance(users, np.integer) or isinstance(users, int):
             for item in data.train_user[users]:
                 indices.append((0, 1))
                 values.append(item)

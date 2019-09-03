@@ -1,3 +1,11 @@
+"""
+
+References: Steffen Rendle et al. "BPR: Bayesian Personalized Ranking from Implicit Feedback"
+            (https://arxiv.org/ftp/arxiv/papers/1205/1205.2618.pdf)
+
+author: massquantity
+
+"""
 import time
 import itertools
 import logging
@@ -73,7 +81,7 @@ class BPR:
         #                              list(dataset.train_item), 10)
 
         else:
-            raise ValueError("Method must be one of these: [mf, knn]")
+            raise ValueError("method name must be one of these: [mf, knn]")
 
     def fit(self, dataset, verbose=1):
         if verbose > 0:
