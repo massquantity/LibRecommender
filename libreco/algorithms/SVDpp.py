@@ -17,7 +17,7 @@ import tensorflow as tf
 
 
 class SVDpp(BasePure):
-    def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=1e-3,
+    def __init__(self, n_factors=100, n_epochs=20, lr=0.01, reg=1e-3, concat=False,
                  batch_size=256, seed=42, task="rating", neg_sampling=False):
         self.n_factors = n_factors
         self.n_epochs = n_epochs
@@ -27,6 +27,7 @@ class SVDpp(BasePure):
         self.seed = seed
         self.task = task
         self.neg_sampling = neg_sampling
+        self.concat = concat
         super(SVDpp, self).__init__()
 
     def build_model(self, dataset):
@@ -67,9 +68,16 @@ class SVDpp(BasePure):
         self.embed_item = tf.nn.embedding_lookup(self.qi, self.item_indices)
 
         if self.task == "rating":
-            self.pred = tf.cast(self.global_mean, tf.float32) + self.bias_user + self.bias_item + \
-                        tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item), axis=1)
+            if self.concat:
+                self.bias_user = tf.reshape(self.bias_user, [-1, 1])
+                self.bias_item = tf.reshape(self.bias_item, [-1, 1])
+                self.pred = tf.concat([self.bias_user, self.bias_item, self.embed_user, self.embed_item], axis=1)
+                self.pred = tf.layers.dense(self.pred, 1)
+            else:
+                self.pred = tf.cast(self.global_mean, tf.float32) + self.bias_user + self.bias_item + \
+                            tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item), axis=1)
 
+            self.pred = tf.reshape(self.pred, [-1])
             self.loss = tf.losses.mean_squared_error(labels=self.labels,
                                                      predictions=self.pred)
 
@@ -80,8 +88,15 @@ class SVDpp(BasePure):
                 self.rmse = self.loss
 
         elif self.task == "ranking":
-            self.logits = self.bias_user + self.bias_item + \
-                          tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item), axis=1)
+            if self.concat:
+                self.bias_user = tf.reshape(self.bias_user, [-1, 1])
+                self.bias_item = tf.reshape(self.bias_item, [-1, 1])
+                self.logits = tf.concat([self.bias_user, self.bias_item, self.embed_user, self.embed_item], axis=1)
+                self.logits = tf.layers.dense(self.logits, 1)
+            else:
+                self.logits = self.bias_user + self.bias_item + \
+                            tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item), axis=1)
+
             self.logits = tf.reshape(self.logits, [-1])
             self.loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=self.logits))
@@ -162,12 +177,13 @@ class SVDpp(BasePure):
         return pred
 
     def recommend_user(self, u, n_rec):
+        users = np.full(self.dataset.n_items, u)
         items = np.arange(self.dataset.n_items)
         consumed = self.dataset.train_user[u]
         count = n_rec + len(consumed)
         target = self.pred if self.task == "rating" else self.y_prob
 
-        preds = self.sess.run(target, feed_dict={self.user_indices: [u],
+        preds = self.sess.run(target, feed_dict={self.user_indices: users,
                                                  self.item_indices: items})
         ids = np.argpartition(preds, -count)[-count:]
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
@@ -424,8 +440,6 @@ class SVDpp_897(BasePure):
                     indices.append((i, 1))
                     values.append(item)
         return indices, values
-
-
 
 
 

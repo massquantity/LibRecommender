@@ -44,7 +44,12 @@ class BasePure(object):
             if k not in allowed_kwargs:
                 raise TypeError('Keyword argument not understood:', k)
 
-        if self.task == "rating":
+        if self.__class__.__name__.lower() == "bpr":
+            test_user = self.test_user
+            test_item = self.test_item
+            test_label = self.test_label
+
+        elif self.task == "rating":
             print("Epoch {}, test_rmse: {:.4f}".format(epoch, rmse(self, dataset, "test")))
             return
 
@@ -105,7 +110,17 @@ class BasePure(object):
             if k not in allowed_kwargs:
                 raise TypeError('Keyword argument not understood:', k)
 
-        if self.task == "rating":
+        if self.__class__.__name__.lower() == "bpr":
+            test_label = self.test_label
+            test_loss, test_accuracy, test_precision, test_prob = \
+                self.sess.run([self.loss, self.accuracy, self.precision, self.prob],
+                                                 feed_dict={self.user: self.test_user,
+                                                            self.item_t: self.test_item,
+                                                            self.labels: self.test_label,
+                                                            self.item_i: np.zeros(self.test_item.shape),
+                                                            self.item_j: np.zeros(self.test_item.shape)})
+
+        elif self.task == "rating":
             test_loss, test_rmse = self.sess.run([self.total_loss, self.rmse],
                                                  feed_dict={self.labels: dataset.test_labels,
                                                             self.user_indices: dataset.test_user_indices,
@@ -117,8 +132,8 @@ class BasePure(object):
 
         elif self.task == "ranking" and not self.neg_sampling:
             test_label = dataset.test_labels
-            test_loss, test_accuracy, test_precision = \
-                self.sess.run([self.loss, self.accuracy, self.precision],
+            test_loss, test_accuracy, test_precision, test_prob = \
+                self.sess.run([self.loss, self.accuracy, self.precision, self.y_prob],
                               feed_dict={self.labels: dataset.test_labels,
                                          self.user_indices: dataset.test_user_indices,
                                          self.item_indices: dataset.test_item_indices})
