@@ -379,6 +379,7 @@ class NegativeSamplingFeat:
             batch_feat_indices = self.dataset.train_indices_implicit[self.i * self.batch_size: end]
             batch_feat_values = self.dataset.train_values_implicit[self.i * self.batch_size: end]
             batch_labels = self.dataset.train_labels_implicit[self.i * self.batch_size: end]
+            self.i += 1
             return batch_feat_indices, batch_feat_values, batch_labels
         else:
             batch_size = int(self.batch_size / (self.num_neg + 1))  # positive samples in one batch
