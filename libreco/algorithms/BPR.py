@@ -150,32 +150,6 @@ class Bpr(BasePure):
                         self.print_metrics(dataset, epoch, **metrics)
                     print()
 
-                    '''
-                    print("Epoch {}, train time: {:.4f}".format(epoch, time.time() - t0))
-                    t1 = time.time()
-                    test_loss, test_prob = binary_cross_entropy(self, test_user, test_item, test_label)
-                    test_roc_auc = roc_auc_score(test_label, test_prob)
-                    test_pr_auc = average_precision_score(test_label, test_prob)
-                    print("evaluate time: {:.2f}".format(time.time() - t1))
-                    print("test loss: {:.4f}, test auc: {:.4f}, test pr auc: {:.4f}".format(
-                        test_loss, test_roc_auc, test_pr_auc))
-
-                    t2 = time.time()
-                    mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
-                    print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
-                    print("\t MAP@10 time: {:.4f}".format(time.time() - t2))
-
-                    t3 = time.time()
-                    mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
-                    print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
-                    print("\t MAR@50 time: {:.4f}".format(time.time() - t3))
-
-                    t4 = time.time()
-                    NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
-                    print("\t NDCG@{}: {:.4f}".format(10, NDCG))
-                    print("\t NDCG@10 time: {:.4f}".format(time.time() - t4))
-                    print()
-                    '''
     def predict(self, u, i):
         if self.method == "mf":
             try:
