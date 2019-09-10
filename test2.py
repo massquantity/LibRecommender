@@ -31,7 +31,7 @@ if __name__ == "__main__":
     conf = {
         "data_path": "tianchi_recommender/testB_pure.csv",
     #    "data_path": "ml-1m/ratings.dat",
-        "length": 10000,
+        "length": 100000,
         "convert_implicit": True,
         "build_negative": True,
         "num_neg": 2,
