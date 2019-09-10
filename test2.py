@@ -31,7 +31,7 @@ if __name__ == "__main__":
     conf = {
         "data_path": "tianchi_recommender/testB_pure.csv",
     #    "data_path": "ml-1m/ratings.dat",
-        "length": 100000,
+        "length": 10000,
         "convert_implicit": True,
         "build_negative": True,
         "num_neg": 2,
@@ -74,17 +74,17 @@ if __name__ == "__main__":
 #              dropout_rate=0.5, task="ranking", neg_sampling=True)
 #    ncf.fit(dataset)
 
-    svd = SVD(n_factors=16, n_epochs=200, lr=0.001, reg=0.0, batch_size=1024, task="ranking",
-                neg_sampling=True)  # concat ?
-    svd.fit(dataset, verbose=1)
-    print(svd.predict(1,2))
-    print(svd.recommend_user(1, 7))
+#    svd = SVD(n_factors=16, n_epochs=200, lr=0.001, reg=0.0, batch_size=1024, task="ranking",
+#                neg_sampling=True)  # concat ?
+#    svd.fit(dataset, verbose=1)
+#    print(svd.predict(1,2))
+#    print(svd.recommend_user(1, 7))
 
-#    bpr = Bpr(lr=0.001, n_epochs=10000, reg=0.0, n_factors=16, batch_size=256, k=20,
-#              method="mf", neg_sampling=True)
-#    bpr.fit(dataset, verbose=1)
-#    print(bpr.predict(1, 2))
-#    print(bpr.recommend_user(1, 7))
+    bpr = Bpr(lr=0.001, n_epochs=10000, reg=0.0, n_factors=16, batch_size=256, k=20,
+              method="knn", neg_sampling=True)
+    bpr.fit(dataset, verbose=1)
+    print(bpr.predict(1, 2))
+    print(bpr.recommend_user(1, 7))
 
 #    user_knn = userKNN(sim_option="cosine", k=5, min_support=1, baseline=False, task="ranking", neg_sampling=True)
 #    user_knn.fit(dataset, verbose=1)
