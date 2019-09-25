@@ -62,6 +62,8 @@ def export_model_tf(model, model_name, version, simple_save=False):
     logging.warning('\tDone exporting!')
 
 
+def export_TFRecorf():
+    example = tf.parse_single_example()
 
 
 
