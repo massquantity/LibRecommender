@@ -211,7 +211,7 @@ class Bpr(BasePure):
         elif self.method == "knn":
             u_items = np.array(list(self.dataset.train_user[u]))
             k_neightbors_all_items = self.sim_matrix[:, u_items]  # self.sim_matrix.todense()
-            preds = np.sum(k_neightbors_all_items, axis=1)
+            preds = np.array(np.sum(k_neightbors_all_items, axis=1)).ravel()
             count = n_rec + len(u_items)
             ids = np.argpartition(preds, -count)[-count:]
             rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])

@@ -173,7 +173,7 @@ class Als(BasePure):
             r = -YtY.dot(x)
             for item, label in data[s].items():
                 confidence = 1 + alpha * label
-                r += (confidence - (confidence - 1) * Y[item].dot(x)) * Y[item]
+                r += (confidence - (confidence - 1) * Y[item].dot(x)) * Y[item]  # b - Ax
 
             p = r.copy()
             rs_old = r.dot(r)
