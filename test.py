@@ -67,8 +67,8 @@ if __name__ == "__main__":
     '''
 
     conf = {
-        "data_path": "tianchi_recommender/merge_testB.csv",
-    #    "data_path": "ml-1m/merged_data.csv",
+    #    "data_path": "tianchi_recommender/merge_testB.csv",
+        "data_path": "ml-1m/merged_data.csv",
         "length": 500000,
         "user_col": 0,
         "item_col": 1,
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         "build_negative": True,
         "num_neg": 2,
     #    "batch_size": 2048,
-        "sep": ",",
+        "sep": "::",
     }
 
 

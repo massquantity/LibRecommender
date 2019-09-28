@@ -169,7 +169,6 @@ class Als(BasePure):
         YtY = Y.T.dot(Y) + reg * np.eye(n_factors)
         for s in data:
             x = X[s]
-
             r = -YtY.dot(x)
             for item, label in data[s].items():
                 confidence = 1 + alpha * label
