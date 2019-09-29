@@ -1,5 +1,4 @@
 # LibRecommender
-<br>
 
 ## Overview
 
@@ -9,15 +8,13 @@
 
 + Allow user to use pure behavior features as well as other meta features.
 
-+ Automatically convert data to sparse feature representation, thus easy the memory usage. ??? numerical / categorical features
++ Automatically convert categorical features to sparse representation, thus ease the memory usage.
 
 + Enable negative sampling for implicit dataset.
 
 + Using Cython or Tensorflow to accelerate model training.
 
 + Provide end-to-end workflow, i.e. data handling / preprocessing -> model training -> evaluate -> serving.
-
-+ Spark(cluster) and DL4J version is also included for BIG data.
 
 
 
@@ -55,7 +52,7 @@ print(dfm.recommend_user(19500, 7))
 ```
 
 
-
+## Data Format
 
 
 ## Installation & Dependencies 
