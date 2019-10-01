@@ -1,0 +1,5 @@
+include README.md
+include LICENSE
+include requirements.txt
+recursive-include libreco *.c *.pyx
+recursive-include serving *.py *.sh
