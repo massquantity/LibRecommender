@@ -26,7 +26,7 @@ from ..evaluate import rmse, MAP_at_k, MAR_at_k, NDCG_at_k, accuracy
 from ..utils.initializers import truncated_normal
 from .Base import BasePure
 try:
-    from . import Als_cy, Als_rating_cy
+    from . import Als_cy
 except ImportError:
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
     logging.basicConfig(format=LOG_FORMAT)
