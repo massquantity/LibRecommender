@@ -6,7 +6,7 @@ from flask import Flask, jsonify, request
 import sys
 from pathlib import Path
 sys.path.append(os.pardir)
-import libreco
+
 
 app = Flask(__name__)
 
