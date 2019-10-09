@@ -96,6 +96,30 @@ def feature_transform(data, fb_path, conf_path):
     return feat_indices, feat_values
 
 
+@app.route("/<algo>", methods=['POST'])
+def api_call_recommend(algo):
+    test_json = request.get_json(force=True)
+    print(test_json)
+    test_data = pd.DataFrame(test_json)
+    orig_cols = ["user", "item", "sex", "age", "occupation", "title", "genre1", "genre2", "genre3"]
+    test_data = test_data.reindex(columns=orig_cols)
+    feature_builder_path = os.path.join(os.curdir, "models/others/feature_builder.jb")
+    conf_path = os.path.join(os.curdir, "models/others/conf.jb")
+    feat_indices, feat_values = feature_transform(test_data, feature_builder_path, conf_path)
+
+    samples = []
+    for fi, fv in zip(feat_indices, feat_values):
+        samples.append({"fi": fi.tolist(), "fv": fv.tolist()})
+
+    data = {"signature_name": "predict", "instances": samples}
+    if algo in ['fm', 'FM']:
+        model = algo
+    response = requests.post("http://localhost:8501/v1/models/%s:predict" % model, data=json.dumps(data))
+    preds = pd.DataFrame(response.text).values
+    ids = np.argpartition(preds, -7)[-7:]
+    return ids
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)  #  host="0.0.0.0"
     # export FLASK_APP=deploy_feat_flask.py | export FLASK_ENV=development | flask run

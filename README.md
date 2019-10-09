@@ -6,13 +6,13 @@
 
 + Implement a number of popular recommendation algorithms such as SVD, DeepFM, BPR etc.
 
-+ Allow user to use pure behavior features as well as other meta features.
++ Allow user to use either collaborative-filtering or content-based features, thus a hybrid system.
 
 + Automatically convert categorical features to sparse representation, thus ease the memory usage.
 
-+ Enable negative sampling for implicit dataset.
++ Suitable for explicit and implicit datasets, and negative sampling is provided for implicit dataset.
 
-+ Using Cython or Tensorflow to accelerate model training.
++ Making use of Cython or Tensorflow to accelerate model training.
 
 + Provide end-to-end workflow, i.e. data handling / preprocessing -> model training -> evaluate -> serving.
 
@@ -21,7 +21,7 @@
 ## Usage
 ```python
 from libreco.dataset import DatasetFeat
-from libreco.algorithms import DeepFMFeat
+from libreco.algorithms import DeepFmFeat
 
 conf = {
     "data_path": "path/to/your/data",
@@ -37,32 +37,42 @@ conf = {
     "convert_implicit": True,
     "build_negative": True,
     "num_neg": 2,
-#    "batch_size": 2048,
     "sep": ",",
 }
 
 dataset = DatasetFeat(include_features=True)
 dataset.build_dataset(**conf)
 
-dfm = DeepFMFeat(lr=0.0002, n_epochs=10000, reg=0.1, embed_size=50,
-                    batch_size=2048, dropout=0.0, task="ranking", neg_sampling=True)
+dfm = DeepFmFeat(lr=0.0002, n_epochs=10000, reg=0.1, embed_size=50,
+                 batch_size=2048, dropout_rate=0.0, task="ranking", neg_sampling=True)
 dfm.fit(dataset, pre_sampling=False, verbose=1)
-print(dfm.predict(1959, 1992))
-print(dfm.recommend_user(19500, 7))
+print(dfm.predict(1, 10))             # predict preference of user 1 to item 10
+print(dfm.recommend_user(19500, 7))   # recommend 7 items for user 1
 ```
 
 
 ## Data Format
+Just normal data format, but you need to specify `user`, `item`, and `label` column index. For Example, the `movielens-1m` dataset:
+
+> 1::1193::5::978300760<br>
+> 1::661::3::978302109<br>
+> 1::914::3::978301968<br>
+> 1::3408::4::978300275
+
+in `conf` dict : `"user_col": 0,  "item_col": 1,  "label_col": 2, "sep": "::"` .
+
+Besides, if you want to use some other meta features (e.g., age, sex, category etc.), `numerical` and `categorical` column index must be assigned. For example, `"numerical_col": [4], "categorical_col": [3, 5, 6, 7, 8]`, which means all features must be in a same table.
+
 
 
 ## Installation & Dependencies 
 
 - Python 3.5 +
 - tensorflow >= 1.12
-- numpy >= 1.13
-- pandas >= 0.21.0
-- scipy >= 0.19.1
-- scikit-learn >= 0.20.1
+- numpy >= 1.15.4
+- pandas >= 0.23.4
+- scipy >= 1.2.1
+- scikit-learn >= 0.20.0
 
 
 
@@ -83,3 +93,7 @@ print(dfm.recommend_user(19500, 7))
 |        FM         |   feat   | [Factorization Machines](https://www.csie.ntu.edu.tw/~b97053/paper/Rendle2010FM.pdf) |
 |      DeepFM       |   feat   | [DeepFM: A Factorization-Machine based Neural Network for CTR Prediction](https://arxiv.org/pdf/1703.04247.pdf) |
 |    YouTubeRec     |   feat   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
+
+
+## License
+MIT

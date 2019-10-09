@@ -2,12 +2,12 @@ import os
 from setuptools import setup, find_packages, Extension
 from codecs import open
 from setuptools import dist  # Install numpy right now
-dist.Distribution().fetch_build_eggs(['numpy>=1.16.4'])
+dist.Distribution().fetch_build_eggs(['numpy>=1.15.4'])
 
 try:
     import numpy as np
 except ImportError:
-    exit('Please install numpy>=1.16.4 first.')
+    exit('Please install numpy>=1.15.4 first.')
 
 try:
     from Cython.Build import cythonize
