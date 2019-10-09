@@ -8,7 +8,7 @@ from libreco.algorithms import userKNN, FmFeat, FmPure, WideDeep, WideDeepEstima
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
-# from libreco.utils import export_model_pickle, export_model_joblib
+from libreco.utils import export_model_tf_recommend
 
 
 if __name__ == "__main__":
@@ -68,8 +68,8 @@ if __name__ == "__main__":
 
     conf = {
     #    "data_path": "tianchi_recommender/merge_testB.csv",
-        "data_path": "ml-1m/merged_data.csv",
-        "length": 500000,
+        "data_path": "../ml-1m/merged_data.csv",
+        "length": 100000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         "build_negative": True,
         "num_neg": 2,
     #    "batch_size": 2048,
-        "sep": "::",
+        "sep": ",",
     }
 
 
@@ -102,9 +102,9 @@ if __name__ == "__main__":
     else:
         print("data size: ", len(dataset.train_user_indices) + len(dataset.test_user_indices))
     print("data processing time: {:.2f}".format(time.time() - t0))
-    print(dataset.train_feat_indices[:5])
+#    print(dataset.train_feat_indices[:5])
 #    print(dataset.train_feat_indices.shape)
-    print(dataset.train_feat_values[:5])
+#    print(dataset.train_feat_values[:5])
     print()
 
 #    user_knn = userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
@@ -191,25 +191,18 @@ if __name__ == "__main__":
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=2048, task="ranking", neg_sampling=True)
-#    fm = FmFeat(lr=0.0002, n_epochs=2, reg=0.1, n_factors=50, batch_size=2048, task="ranking", neg_sampling=True)
-#    fm.fit(dataset, pre_sampling=False, verbose=1)
+    fm = FmFeat(lr=0.0002, n_epochs=2, reg=0.1, n_factors=50, batch_size=2048, task="ranking", neg_sampling=True)
+    fm.fit(dataset, pre_sampling=False, verbose=0)
 #    print(fm.predict(1959, 1992))
 #    print(fm.recommend_user(19500, 7))
+    export_model_joblib("../serving/models/fm_dataset.jb", fm.dataset)
+    export_model_tf_recommend(fm, "FM", "v2")
 
-#    num = {}
-#    cat = {3: 'F', 4: 1, 5: 10, 6: 2452.0}
-#    merge = {7: ["Drama", "missing", "missing"]}
-#    indices, values = fm.dataset.fb.transform(cat, num, merge, 1, np.array([1]), np.array([1193]))
-#    print(indices)
-#    print(values)
-#    fm.export_model(version="1", simple_save=False)
-#    print(fm.predict(1, 2))
-
-    dfm = DeepFmFeat(lr=0.001, n_epochs=1000, reg=0.0, embed_size=32, batch_size=2048,
-                     dropout_rate=0.0, task="ranking", neg_sampling=True, network_size=[100, 100, 100])
-    dfm.fit(dataset, pre_sampling=False, verbose=1)
-    print(dfm.predict(1959, 1992))
-    print(dfm.recommend_user(19500, 7))
+#    dfm = DeepFmFeat(lr=0.001, n_epochs=1000, reg=0.0, embed_size=32, batch_size=2048,
+#                     dropout_rate=0.0, task="ranking", neg_sampling=True, network_size=[100, 100, 100])
+#    dfm.fit(dataset, pre_sampling=False, verbose=1)
+#    print(dfm.predict(1959, 1992))
+#    print(dfm.recommend_user(19500, 7))
 
 #    iteration = len(dataset.train_user_indices) * 10000
 #    bpr = BPR.BPR(lr=0.01, iteration=iteration)  # reg
