@@ -8,7 +8,6 @@ from libreco.algorithms import userKNN, FmFeat, FmPure, WideDeep, WideDeepEstima
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
-from libreco.utils import export_model_tf_recommend
 
 
 if __name__ == "__main__":
@@ -46,9 +45,10 @@ if __name__ == "__main__":
 #    s = pstats.Stats("Profile.prof")
 #    s.strip_dirs().sort_stats("time").print_stats()
 
+    '''
     conf = {
-        "data_path": "ml-1m/merged_data.csv",
-        "length": 100000,
+        "data_path": "../ml-1m/merged_data.csv",
+        "length": "all",
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -67,9 +67,9 @@ if __name__ == "__main__":
     '''
 
     conf = {
-    #    "data_path": "tianchi_recommender/merge_testB.csv",
-        "data_path": "../ml-1m/merged_data.csv",
-        "length": 100000,
+        "data_path": "tianchi_recommender/merge_testB.csv",
+    #    "data_path": "../ml-1m/merged_data.csv",
+        "length": "all",
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         "sep": ",",
     }
 
-
+    '''
     dataset = DatasetFeat(include_features=True)
     dataset.build_dataset(**conf)
 #    dataset.build_dataset(data_path="ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
@@ -191,12 +191,16 @@ if __name__ == "__main__":
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=2048, task="ranking", neg_sampling=True)
-    fm = FmFeat(lr=0.0002, n_epochs=2, reg=0.1, n_factors=50, batch_size=2048, task="ranking", neg_sampling=True)
-    fm.fit(dataset, pre_sampling=False, verbose=0)
-#    print(fm.predict(1959, 1992))
-#    print(fm.recommend_user(19500, 7))
-    export_model_joblib("../serving/models/fm_dataset.jb", fm.dataset)
-    export_model_tf_recommend(fm, "FM", "v2")
+    fm = FmFeat(lr=0.002, n_epochs=2, reg=0.1, n_factors=10, batch_size=2048, task="ranking", neg_sampling=True)
+    fm.fit(dataset, pre_sampling=False, verbose=1)
+    print(fm.predict(1, 10))
+    print(fm.recommend_user(1, 7))
+    export_feature_transform("../serving/models/others/feature_builder.jb",
+                             "../serving/models/others/fm_conf.jb",
+                             fm.dataset.fb, conf)
+    export_model_joblib("../serving/models/others/fm_dataset.jb", fm.dataset)
+    export_model_joblib("../serving/models/others/fm_unique_items.jb", fm.total_items_unique)
+    export_model_tf(fm, "FM", "1")
 
 #    dfm = DeepFmFeat(lr=0.001, n_epochs=1000, reg=0.0, embed_size=32, batch_size=2048,
 #                     dropout_rate=0.0, task="ranking", neg_sampling=True, network_size=[100, 100, 100])

@@ -390,7 +390,7 @@ class BaseFeat(object):
         user_unique = user_features[user_features[:, -1] == user_repr][0]
         users = np.tile(user_unique, (data.n_items, 1))
 
-        #   np.unique is sorted from starting with the first element, so put item col first
+        #   np.unique is sorted based on the first element, so put item column first
         item_cols = [item_col] + data.item_feature_cols
         orig_cols = user_cols + item_cols
         col_reindex = np.array(range(len(orig_cols)))[np.argsort(orig_cols)]

@@ -315,7 +315,9 @@ class FmFeat(BaseFeat):
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch})
 
-                    if verbose > 0:
+                    if verbose == 1:
+                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
+                    elif verbose > 1:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
                         metrics = kwargs.get("metrics", self.metrics)
                         if hasattr(self, "sess"):
@@ -335,7 +337,9 @@ class FmFeat(BaseFeat):
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch})
 
-                    if verbose > 0:
+                    if verbose == 1:
+                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
+                    elif verbose > 1:
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
                         metrics = kwargs.get("metrics", self.metrics)
                         if hasattr(self, "sess"):
