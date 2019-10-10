@@ -10,13 +10,15 @@ import requests
 from sklearn.externals import joblib
 from flask import Flask, jsonify, request
 import sys
-from pathlib import Path
+from pathlib import Path, PurePath
 sys.path.append(os.pardir)
 
+path = str(Path.joinpath(PurePath("."), "models", "others", "fm_dataset.jb"))
+print(path)
 
-with open("models/others/fm_dataset.jb", 'rb') as f:
+with open(str(Path.joinpath(Path("."), "models", "others", "fm_dataset.jb")), 'rb') as f:
     dataset = joblib.load(f)
-with open("models/others/fm_unique_items.jb", 'rb') as f:
+with open(str(Path.joinpath(PurePath("."), "models", "others", "fm_unique_items.jb")), 'rb') as f:
     items_unique = joblib.load(f)
 with open(os.path.join(os.curdir, "models/others/feature_builder.jb"), 'rb') as f:
     feat_builder = joblib.load(f)
