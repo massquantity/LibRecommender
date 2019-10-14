@@ -433,12 +433,12 @@ class SVDpp_897(BasePure):
         if isinstance(users, np.integer) or isinstance(users, int):
             for item in data.train_user[users]:
                 indices.append((0, 1))
-                values.append(item)
+                values.append(int(item))
         else:
             for i, user in enumerate(users):
                 for item in data.train_user[user]:
                     indices.append((i, 1))
-                    values.append(item)
+                    values.append(int(item))
         return indices, values
 
 
