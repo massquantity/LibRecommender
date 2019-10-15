@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path, PurePath
 from libreco.dataset import DatasetPure, DatasetFeat
-from libreco.algorithms import userKNN, FmFeat, FmPure, WideDeep, WideDeepEstimator, WideDeep, DeepFmFeat
+from libreco.algorithms import userKNN, FmFeat, FmPure, WideDeep, WideDeepEstimator, WideDeep, DeepFmFeat, YouTubeRec
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     '''
     conf = {
         "data_path": "../ml-1m/merged_data.csv",
-        "length": "all",
+        "length": 100000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -191,16 +191,16 @@ if __name__ == "__main__":
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=2048, task="ranking", neg_sampling=True)
-    fm = FmFeat(lr=0.002, n_epochs=2, reg=0.1, n_factors=10, batch_size=2048, task="ranking", neg_sampling=True)
-    fm.fit(dataset, pre_sampling=False, verbose=1)
-    print(fm.predict(1, 10))
-    print(fm.recommend_user(1, 7))
-    export_feature_transform("../serving/models/others/feature_builder.jb",
-                             "../serving/models/others/fm_conf.jb",
-                             fm.dataset.fb, conf)
-    export_model_joblib("../serving/models/others/fm_dataset.jb", fm.dataset)
-    export_model_joblib("../serving/models/others/fm_unique_items.jb", fm.total_items_unique)
-    export_model_tf(fm, "FM", "1")
+#    fm = FmFeat(lr=0.002, n_epochs=2, reg=0.1, n_factors=10, batch_size=2048, task="ranking", neg_sampling=True)
+#    fm.fit(dataset, pre_sampling=False, verbose=1)
+#    print(fm.predict(1, 10))
+#    print(fm.recommend_user(1, 7))
+#    export_feature_transform("../serving/models/others/feature_builder.jb",
+#                             "../serving/models/others/fm_conf.jb",
+#                             fm.dataset.fb, conf)
+#    export_model_joblib("../serving/models/others/fm_dataset.jb", fm.dataset)
+#    export_model_joblib("../serving/models/others/fm_unique_items.jb", fm.total_items_unique)
+#    export_model_tf(fm, "FM", "1")
 
 #    dfm = DeepFmFeat(lr=0.001, n_epochs=1000, reg=0.0, embed_size=32, batch_size=2048,
 #                     dropout_rate=0.0, task="ranking", neg_sampling=True, network_size=[100, 100, 100])
@@ -224,6 +224,11 @@ if __name__ == "__main__":
 #    bpr = BPR.BPR(lr=0.01, n_epochs=2000, reg=0.0, k=100)
 #    bpr.fit(dataset, method="knn")
 #    print(bpr.predict(1, 2, method="knn"))
+
+    you = YouTubeRec(lr=0.002, n_epochs=2, reg=0.1, embed_size=10, batch_size=2048, task="ranking", neg_sampling=True)
+    you.fit(dataset, pre_sampling=False, verbose=2)
+    print(you.predict(1, 10))
+    print(you.recommend_user(1, 7))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 
