@@ -354,6 +354,7 @@ class FmFeat(BaseFeat):
             target = self.pred if self.task == "rating" else self.y_prob
             pred = self.sess.run(target, feed_dict={self.feature_indices: feat_indices,
                                                     self.feature_values: feat_value})
+            pred = pred.flatten()
             if self.lower_bound is not None and self.upper_bound is not None:
                 pred = np.clip(pred, self.lower_bound, self.upper_bound) if self.task == "rating" else pred[0]
         except tf.errors.InvalidArgumentError:
@@ -369,6 +370,7 @@ class FmFeat(BaseFeat):
         preds = self.sess.run(target, feed_dict={self.feature_indices: feat_indices,
                                                  self.feature_values: feat_values})
 
+        preds = preds.flatten()
         ids = np.argpartition(preds, -count)[-count:]
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))

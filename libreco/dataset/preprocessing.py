@@ -5,10 +5,11 @@ from sklearn.preprocessing import OrdinalEncoder
 
 
 class FeatureBuilder:
-    def __init__(self, value_sharing=False, include_user_item=True,
+    def __init__(self, value_sharing=False, include_user=True, include_item=True,
                  n_users=None, n_items=None):
         self.value_sharing = value_sharing
-        self.include_user_item = include_user_item
+        self.include_user = include_user
+        self.include_item = include_item
         self.n_users = n_users
         self.n_items = n_items
 
@@ -52,12 +53,13 @@ class FeatureBuilder:
                 raise ValueError("feature total length must be integral multiple of train data size")
 
         self.feature_size = self.total_count  # preserve total_count for transform function
-        if self.include_user_item:
+        if self.include_user:
             feature_indices.append(user_features + self.feature_size)
             self.feature_size += self.n_users
+            feature_values.append([1.0] * train_size)
+        if self.include_item:
             feature_indices.append(item_features + self.feature_size)
             self.feature_size += self.n_items
-            feature_values.append([1.0] * train_size)
             feature_values.append([1.0] * train_size)
 
         feature_indices = np.array(feature_indices).T.astype(np.int32)
@@ -92,10 +94,11 @@ class FeatureBuilder:
             else:
                 raise ValueError("feature total length must be integral multiple of test data size")
 
-        if self.include_user_item:
+        if self.include_user:
             test_feature_indices.append(test_user_features + self.total_count)
-            test_feature_indices.append(test_item_features + self.total_count + self.n_users)
             test_feature_values.append([1.0] * test_size)
+        if self.include_item:
+            test_feature_indices.append(test_item_features + self.total_count + self.n_users)
             test_feature_values.append([1.0] * test_size)
 
         test_feature_indices = np.array(test_feature_indices).T.astype(np.int32)

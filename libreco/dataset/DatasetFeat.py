@@ -11,7 +11,7 @@ from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 
 class DatasetFeat:
-    def __init__(self, include_features=False):
+    def __init__(self, include_features=True):
         self.train_user = defaultdict(dict)
         self.train_item = defaultdict(dict)
         self.user2id = dict()
@@ -157,7 +157,8 @@ class DatasetFeat:
         self.train_item_indices = np.array(self.train_item_indices)
         self.train_labels = np.array(self.train_labels)
         if self.include_features:
-            self.fb = FeatureBuilder(include_user_item=True, n_users=self.n_users, n_items=self.n_items)
+            self.fb = FeatureBuilder(include_user=True, include_item=True,
+                                     n_users=self.n_users, n_items=self.n_items)
             self.train_feat_indices, self.train_feat_values, self.feature_size = \
                 self.fb.fit(self.train_categorical_features,
                        self.train_numerical_features,
@@ -190,75 +191,72 @@ class DatasetFeat:
                              self.test_item_indices)
 
         if convert_implicit:
-            self.numerical_col = numerical_col
             self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
             self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
         #    self.item_feature_cols = [(i - 3) for i in item_feature_cols]  # remove user item label column
 
-            # remove user - item - label column and add numerical columns
-            total_num_index = 0
-            if user_feature_cols is not None:
-                user_cols = []
-                self.user_numerical_cols = []
-                for col in user_feature_cols:
-                    if numerical_col is not None and col in numerical_col:
-                        user_cols.append(total_num_index)
-                        self.user_numerical_cols.append(total_num_index)
-                        total_num_index += 1
-                    elif numerical_col is not None and col in categorical_col:
-                        orig_col = col
-                        num_place = np.searchsorted(sorted(numerical_col), orig_col)
-                        col += (len(numerical_col) - num_place)
-                        if orig_col > user_col:
-                            col -= 1
-                        if orig_col > item_col:
-                            col -= 1
-                        if orig_col > label_col:
-                            col -= 1
-                        user_cols.append(col)
-                    elif numerical_col is None:
-                        orig_col = col
-                        if orig_col > user_col:
-                            col -= 1
-                        if orig_col > item_col:
-                            col -= 1
-                        if orig_col > label_col:
-                            col -= 1
-                        user_cols.append(col)
-                self.user_feature_cols = sorted(user_cols)
+        self.numerical_col = numerical_col
+        # remove user - item - label column and add numerical columns
+        total_num_index = 0
+        if user_feature_cols is not None:
+            user_cols = []
+            self.user_numerical_cols = []
+            for col in user_feature_cols:
+                if numerical_col is not None and col in numerical_col:
+                    user_cols.append(total_num_index)
+                    self.user_numerical_cols.append(total_num_index)
+                    total_num_index += 1
+                elif numerical_col is not None and col in categorical_col:
+                    orig_col = col
+                    num_place = np.searchsorted(sorted(numerical_col), orig_col)
+                    col += (len(numerical_col) - num_place)
+                    if orig_col > user_col:
+                        col -= 1
+                    if orig_col > item_col:
+                        col -= 1
+                    if orig_col > label_col:
+                        col -= 1
+                    user_cols.append(col)
+                elif numerical_col is None:
+                    orig_col = col
+                    if orig_col > user_col:
+                        col -= 1
+                    if orig_col > item_col:
+                        col -= 1
+                    if orig_col > label_col:
+                        col -= 1
+                    user_cols.append(col)
+            self.user_feature_cols = sorted(user_cols)
 
-            if item_feature_cols is not None:
-                item_cols = []
-                self.item_numerical_cols = []
-                for col in item_feature_cols:
-                    if numerical_col is not None and col in numerical_col:
-                        item_cols.append(total_num_index)
-                        self.item_numerical_cols.append(total_num_index)
-                        total_num_index += 1
-                    elif numerical_col is not None and col in categorical_col:
-                        orig_col = col
-                        num_place = np.searchsorted(sorted(numerical_col), orig_col)
-                        col += (len(numerical_col) - num_place)
-                        if orig_col > user_col:
-                            col -= 1
-                        if orig_col > item_col:
-                            col -= 1
-                        if orig_col > label_col:
-                            col -= 1
-                        item_cols.append(col)
-                    elif numerical_col is None:
-                        orig_col = col
-                        if orig_col > user_col:
-                            col -= 1
-                        if orig_col > item_col:
-                            col -= 1
-                        if orig_col > label_col:
-                            col -= 1
-                        item_cols.append(col)
-                self.item_feature_cols = sorted(item_cols)
-
-    #        self.user_feature_cols = sorted(user_cols)
-    #        self.item_feature_cols = sorted(item_cols)
+        if item_feature_cols is not None:
+            item_cols = []
+            self.item_numerical_cols = []
+            for col in item_feature_cols:
+                if numerical_col is not None and col in numerical_col:
+                    item_cols.append(total_num_index)
+                    self.item_numerical_cols.append(total_num_index)
+                    total_num_index += 1
+                elif numerical_col is not None and col in categorical_col:
+                    orig_col = col
+                    num_place = np.searchsorted(sorted(numerical_col), orig_col)
+                    col += (len(numerical_col) - num_place)
+                    if orig_col > user_col:
+                        col -= 1
+                    if orig_col > item_col:
+                        col -= 1
+                    if orig_col > label_col:
+                        col -= 1
+                    item_cols.append(col)
+                elif numerical_col is None:
+                    orig_col = col
+                    if orig_col > user_col:
+                        col -= 1
+                    if orig_col > item_col:
+                        col -= 1
+                    if orig_col > label_col:
+                        col -= 1
+                    item_cols.append(col)
+            self.item_feature_cols = sorted(item_cols)
             print("user feature cols: {}, item feature cols: {}".format(self.user_feature_cols, self.item_feature_cols))
 
         if build_negative:
