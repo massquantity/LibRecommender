@@ -46,9 +46,10 @@ if __name__ == "__main__":
 #    s.strip_dirs().sort_stats("time").print_stats()
 
     '''
-    conf = {
+
+    conf_movielens = {
         "data_path": "../ml-1m/merged_data.csv",
-        "length": 100000,
+        "length": "all",
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -64,12 +65,12 @@ if __name__ == "__main__":
         "sep": ",",
     }
 
-    '''
 
-    conf = {
-        "data_path": "tianchi_recommender/merge_testB.csv",
+
+    conf_tianchi = {
+        "data_path": "../tianchi_recommender/merged_tianchi.csv",
     #    "data_path": "../ml-1m/merged_data.csv",
-        "length": "all",
+        "length": 300000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -85,7 +86,8 @@ if __name__ == "__main__":
         "sep": ",",
     }
 
-    '''
+    conf = conf_tianchi
+
     dataset = DatasetFeat(include_features=True)
     dataset.build_dataset(**conf)
 #    dataset.build_dataset(data_path="ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
@@ -225,7 +227,8 @@ if __name__ == "__main__":
 #    bpr.fit(dataset, method="knn")
 #    print(bpr.predict(1, 2, method="knn"))
 
-    you = YouTubeRec(lr=0.002, n_epochs=2, reg=0.1, embed_size=10, batch_size=2048, task="ranking", neg_sampling=True)
+    you = YouTubeRec(lr=0.001, n_epochs=200, reg=0.0, embed_size=70, batch_size=4096, use_bn=True,
+                     dropout_rate=0.0, task="ranking", neg_sampling=True)
     you.fit(dataset, pre_sampling=False, verbose=2)
     print(you.predict(1, 10))
     print(you.recommend_user(1, 7))
