@@ -8,6 +8,7 @@ from libreco.algorithms import userKNN, FmFeat, FmPure, WideDeep, WideDeepEstima
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
+np.set_printoptions(precision=4, edgeitems=7)
 
 
 if __name__ == "__main__":
@@ -58,13 +59,12 @@ if __name__ == "__main__":
         "merged_categorical_col": [[7, 8, 9]],
         "user_feature_cols": [3, 4, 5],
         "item_feature_cols": [6, 7, 8, 9],
-        "convert_implicit": True,
-        "build_negative": True,
+        "convert_implicit": False,
+        "build_negative": False,
         "num_neg": 2,
         "batch_size": 256,
         "sep": ",",
     }
-
 
 
     conf_tianchi = {
@@ -86,7 +86,7 @@ if __name__ == "__main__":
         "sep": ",",
     }
 
-    conf = conf_tianchi
+    conf = conf_movielens
 
     dataset = DatasetFeat(include_features=True)
     dataset.build_dataset(**conf)
@@ -228,7 +228,7 @@ if __name__ == "__main__":
 #    print(bpr.predict(1, 2, method="knn"))
 
     you = YouTubeRec(lr=0.001, n_epochs=200, reg=0.0, embed_size=70, batch_size=4096, use_bn=True,
-                     dropout_rate=0.0, task="ranking", neg_sampling=True)
+                     dropout_rate=0.0, task="rating", neg_sampling=True)
     you.fit(dataset, pre_sampling=False, verbose=2)
     print(you.predict(1, 10))
     print(you.recommend_user(1, 7))
