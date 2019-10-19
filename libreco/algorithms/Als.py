@@ -36,18 +36,17 @@ except ImportError:
 
 class Als(BasePure):
     def __init__(self, n_factors=100, n_epochs=20, reg=5.0, task="rating", seed=42,
-                 alpha=10, cg_steps=3, neg_sampling=False):
+                 alpha=10, neg_sampling=False):
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.reg = reg
         self.task = task
         self.seed = seed
         self.alpha = alpha
-        self.cg_steps = cg_steps
         self.neg_sampling = neg_sampling
         super(Als, self).__init__()
 
-    def fit(self, dataset, verbose=1, use_cg=False, **kwargs):
+    def fit(self, dataset, verbose=1, use_cg=False, cg_steps=3, use_cython=True, **kwargs):
         np.random.seed(self.seed)
         self.dataset = dataset
         self.global_mean = dataset.global_mean
@@ -63,35 +62,41 @@ class Als(BasePure):
         self.Y = truncated_normal(shape=(dataset.n_items, self.n_factors),
                                    mean=0.0, scale=0.05).astype(np.float32)
 
-        t0 = time.time()
-        confidence_data = dok_matrix((dataset.n_users, dataset.n_items), dtype=np.float32)
-        for u, i, l in zip(dataset.train_user_indices, dataset.train_item_indices, dataset.train_labels):
-            confidence_data[u, i] = self.alpha * l + 1
-        confidence_data = confidence_data.tocsr()
-        print("sparse matrix constrtct time: ", time.time() - t0)
+        if self.task == "ranking":
+            t0 = time.time()
+            confidence_data = dok_matrix((dataset.n_users, dataset.n_items), dtype=np.float32)
+            for u, i, l in zip(dataset.train_user_indices, dataset.train_item_indices, dataset.train_labels):
+                confidence_data[u, i] = self.alpha * l + 1
+            confidence_data = confidence_data.tocsr()
+            print("sparse matrix constrtct time: ", time.time() - t0)
 
         if self.task == "rating":
             method = Als.least_squares
         elif self.task == "ranking" and use_cg:
-        #    method = functools.partial(Als.least_squares_weighted_cg, alpha=self.alpha, cg_steps=self.cg_steps)
-            method = functools.partial(Als_cy.least_squares_weighted_cg, cg_steps=self.cg_steps, num_threads=0)
+            if use_cython:
+                method = functools.partial(
+                    Als_cy.least_squares_weighted_cg, cg_steps=cg_steps, data=confidence_data, num_threads=0)
+            else:
+                method = functools.partial(
+                    Als.least_squares_weighted_cg, alpha=self.alpha, dataset=self.dataset, cg_steps=cg_steps)
+
         else:
-        #    method = functools.partial(Als.least_squares_weighted, alpha=self.alpha)
-            method = functools.partial(Als_cy.least_squares_weighted, num_threads=0)
+            if use_cython:
+                method = functools.partial(Als_cy.least_squares_weighted, data=confidence_data, num_threads=0)
+            else:
+                method = functools.partial(Als.least_squares_weighted, dataset=self.dataset, alpha=self.alpha)
+
 
         for epoch in range(1, self.n_epochs + 1):
             t0 = time.time()
-        #    method(self.dataset, self.X, self.Y, reg=self.reg,
-        #            n_factors=self.n_factors, user=True)
 
-        #    method(self.dataset, self.Y, self.X, reg=self.reg,
-        #            n_factors=self.n_factors, user=False)
+            if self.task == "rating":
+                method(self.dataset, self.X, self.Y, reg=self.reg, n_factors=self.n_factors, user=True)
+                method(self.dataset, self.Y, self.X, reg=self.reg, n_factors=self.n_factors, user=False)
 
-            method(confidence_data, self.X, self.Y, reg=self.reg, n_factors=self.n_factors, user=True)
-            method(confidence_data, self.Y, self.X, reg=self.reg, n_factors=self.n_factors, user=False)
-
-        #    Als_cy.least_squares_weighted(confidence_data, self.X, self.Y, reg=self.reg, n_factors=self.n_factors, user=True)
-        #    Als_cy.least_squares_weighted(confidence_data, self.X, self.Y, reg=self.reg, n_factors=self.n_factors, user=False)
+            elif self.task == "ranking":
+                method(X=self.X, Y=self.Y, reg=self.reg, n_factors=self.n_factors, user=True)
+                method(X=self.Y, Y=self.X, reg=self.reg, n_factors=self.n_factors, user=False)
 
             if verbose > 0:
                 print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
