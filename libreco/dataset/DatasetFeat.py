@@ -66,6 +66,11 @@ class DatasetFeat:
         if num_neg is not None:
             self.num_neg = num_neg
 
+        if not user_col or not item_col or not label_col:
+            user_col = 0
+            item_col = 1
+            label_col = 2
+
         user_pool, item_pool, loaded_data = self._get_pool(data_path=data_path,
                                                              shuffle=shuffle,
                                                              length=length,

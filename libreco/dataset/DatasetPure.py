@@ -37,6 +37,7 @@ class DatasetPure:
         return loaded_data
 
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all", sep=",",
+                      user_col=None, item_col=None, label_col=None,
                       train_frac=0.8, convert_implicit=False, build_negative=False, build_tf_dataset=False,
                       batch_size=256, seed=42, num_neg=None, lower_upper_bound=None):
         np.random.seed(seed)
@@ -44,6 +45,12 @@ class DatasetPure:
         self.lower_upper_bound = lower_upper_bound
         if isinstance(num_neg, int) and num_neg > 0:
             self.num_neg = num_neg
+
+        if not user_col or not item_col or not label_col:
+            user_col = 0
+            item_col = 1
+            label_col = 2
+
         index_user = 0
         index_item = 0
         with open(data_path, 'r') as f:
@@ -56,9 +63,9 @@ class DatasetPure:
         if length == "all":
             length = len(loaded_data)
         for i, line in enumerate(loaded_data[:length]):
-            user = line.split(sep)[0]
-            item = line.split(sep)[1]
-            label = line.split(sep)[2]
+            user = line.split(sep)[user_col]
+            item = line.split(sep)[item_col]
+            label = line.split(sep)[label_col]
             if convert_implicit and label != 0:
                 label = 1
             try:
