@@ -59,8 +59,8 @@ if __name__ == "__main__":
         "merged_categorical_col": [[7, 8, 9]],
         "user_feature_cols": [3, 4, 5],
         "item_feature_cols": [6, 7, 8, 9],
-        "convert_implicit": False,
-        "build_negative": False,
+        "convert_implicit": True,
+        "build_negative": True,
         "num_neg": 2,
         "batch_size": 256,
         "sep": ",",
@@ -228,7 +228,7 @@ if __name__ == "__main__":
 #    print(bpr.predict(1, 2, method="knn"))
 
     you = YouTubeRec(lr=0.001, n_epochs=200, reg=0.0, embed_size=70, batch_size=4096, use_bn=True,
-                     dropout_rate=0.0, task="rating", neg_sampling=True)
+                     dropout_rate=0.0, task="ranking", neg_sampling=True)
     you.fit(dataset, pre_sampling=False, verbose=2)
     print(you.predict(1, 10))
     print(you.recommend_user(1, 7))

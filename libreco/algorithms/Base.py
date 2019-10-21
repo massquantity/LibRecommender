@@ -72,11 +72,11 @@ class BasePure(object):
         t1 = time.time()
         if kwargs.get("roc_auc"):
             test_auc = roc_auc_score(test_label, test_prob)
-            print("\t test roc auc: {:.2f}".format(test_auc))
+            print("\t test roc auc: {:.4f}".format(test_auc))
         if kwargs.get("pr_auc"):
             precision_test, recall_test, _ = precision_recall_curve(test_label, test_prob)
             test_pr_auc = auc(recall_test, precision_test)
-            print("\t test pr auc: {:.2f}".format(test_pr_auc))
+            print("\t test pr auc: {:.4f}".format(test_pr_auc))
             print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
 
         sample_user = kwargs.get("sample_user", 1000)
@@ -153,11 +153,11 @@ class BasePure(object):
         t1 = time.time()
         if kwargs.get("roc_auc"):
             test_auc = roc_auc_score(test_label, test_prob)
-            print("\t test roc auc: {:.2f}".format(test_auc))
+            print("\t test roc auc: {:.4f}".format(test_auc))
         if kwargs.get("pr_auc"):
             precision_test, recall_test, _ = precision_recall_curve(test_label, test_prob)
             test_pr_auc = auc(recall_test, precision_test)
-            print("\t test pr auc: {:.2f}".format(test_pr_auc))
+            print("\t test pr auc: {:.4f}".format(test_pr_auc))
             print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
 
         sample_user = kwargs.get("sample_user", 1000)
@@ -247,11 +247,11 @@ class BaseFeat(object):
         t1 = time.time()
         if kwargs.get("roc_auc"):
             test_auc = roc_auc_score(test_labels, test_prob)
-            print("\t test roc auc: {:.2f}".format(test_auc))
+            print("\t test roc auc: {:.4f}".format(test_auc))
         if kwargs.get("pr_auc"):
             precision_test, recall_test, _ = precision_recall_curve(test_labels, test_prob)
             test_pr_auc = auc(recall_test, precision_test)
-            print("\t test pr auc: {:.2f}".format(test_pr_auc))
+            print("\t test pr auc: {:.4f}".format(test_pr_auc))
             print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
 
         sample_user = kwargs.get("sample_user", 1000)
@@ -305,24 +305,36 @@ class BaseFeat(object):
 
         elif self.task == "ranking" and self.neg_sampling:
             test_label = dataset.test_labels_implicit
-            test_loss, test_accuracy, test_precision, test_prob = \
-                self.sess.run([self.loss, self.accuracy, self.precision, self.y_prob],
-                              feed_dict={self.feature_indices: dataset.test_indices_implicit,
-                                         self.feature_values: dataset.test_values_implicit,
-                                         self.labels: dataset.test_labels_implicit})
+            test_loss_all, test_accuracy_all, test_precision_all, test_prob_all = [], [], [], []
+            t3 = time.time()
+            for batch_test in range(0, len(dataset.test_labels_implicit), 100000):
+                test_indices_implicit_batch = dataset.test_indices_implicit[batch_test: batch_test + 100000]
+                test_values_implicit_batch = dataset.test_values_implicit[batch_test: batch_test + 100000]
+                test_labels_implicit_batch = dataset.test_labels_implicit[batch_test: batch_test + 100000]
+                test_loss, test_accuracy, test_precision, test_prob = \
+                    self.sess.run([self.loss, self.accuracy, self.precision, self.y_prob],
+                                  feed_dict={self.feature_indices: test_indices_implicit_batch,
+                                             self.feature_values: test_values_implicit_batch,
+                                             self.labels: test_labels_implicit_batch})
 
-        print("\ttest loss: {:.4f}".format(test_loss))
-        print("\ttest accuracy: {:.4f}".format(test_accuracy))
-        print("\ttest precision: {:.4f}".format(test_precision))
+                test_loss_all.append(test_loss)
+                test_accuracy_all.append(test_accuracy)
+                test_precision_all.append(test_precision)
+                test_prob_all.extend(test_prob)
+
+        print("\ttest loss: {:.4f}".format(np.mean(test_loss_all)))
+        print("\ttest accuracy: {:.4f}".format(np.mean(test_accuracy_all)))
+        print("\ttest precision: {:.4f}".format(np.mean(test_precision_all)))
+        print("\tloss time: {:.4f}".format(time.time() - t3))
 
         t1 = time.time()
         if kwargs.get("roc_auc"):
-            test_auc = roc_auc_score(test_label, test_prob)
-            print("\t test roc auc: {:.2f}".format(test_auc))
+            test_auc = roc_auc_score(test_label, test_prob_all)
+            print("\t test roc auc: {:.4f}".format(test_auc))
         if kwargs.get("pr_auc"):
-            precision_test, recall_test, _ = precision_recall_curve(test_label, test_prob)
+            precision_test, recall_test, _ = precision_recall_curve(test_label, test_prob_all)
             test_pr_auc = auc(recall_test, precision_test)
-            print("\t test pr auc: {:.2f}".format(test_pr_auc))
+            print("\t test pr auc: {:.4f}".format(test_pr_auc))
             print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
 
         sample_user = kwargs.get("sample_user", 1000)

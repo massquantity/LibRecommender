@@ -29,12 +29,12 @@ if __name__ == "__main__":
 #    print("data processing time: {:.2f}".format(time.time() - t0))
 
     conf = {
-    #    "data_path": "tianchi_recommender/testB_pure.csv",
+    #    "data_path": "../tianchi_recommender/testB_pure.csv",
         "data_path": "../ml-1m/ratings.dat",
-        "length": 100000,
+        "length": 1000000,
         "convert_implicit": True,
         "build_negative": True,
-        "num_neg": 2,
+        "num_neg": 1,
     #    "batch_size": 2048,
     #    "lower_upper_bound": [1, 5],
         "sep": "::",
@@ -52,19 +52,19 @@ if __name__ == "__main__":
     print("data processing time: {:.2f}".format(time.time() - t0))
     print()
 
-#    als = Als(n_factors=32, n_epochs=200, reg=5.0, alpha=1, cg_steps=3, task="ranking", neg_sampling=True)
-#    als.fit(dataset, use_cg=False, verbose=1)  # , use_cg=True
-#    print("predict: ", als.predict(1, 5))
-#    print(als.recommend_user(1, 7))
+    als = Als(n_factors=300, n_epochs=200, reg=10.0, alpha=1, task="ranking", neg_sampling=True)
+    als.fit(dataset, use_cg=True, cg_steps=3, use_cython=False, verbose=1)
+    print("predict: ", als.predict(1, 5))
+    print(als.recommend_user(1, 7))
 
 #    import cProfile
 #    cProfile.run('svd.fit(dataset)')
 
-    svd = SVDpp(n_factors=32, n_epochs=200, lr=0.001, reg=0.0, batch_size=4096, task="ranking",
-                neg_sampling=True)  # concat ?
-    svd.fit(dataset, verbose=1)
-    print(svd.predict(1,2))
-    print(svd.recommend_user(1, 7))
+#    svd = SVDpp(n_factors=32, n_epochs=200, lr=0.001, reg=0.0, batch_size=4096, task="ranking",
+#                neg_sampling=True)  # concat ?
+#    svd.fit(dataset, verbose=1)
+#    print(svd.predict(1,2))
+#    print(svd.recommend_user(1, 7))
 
 #    ncf = Ncf(embed_size=32, lr=0.001, n_epochs=200, reg=0.1, batch_size=2048,
 #              dropout_rate=0.5, task="ranking", neg_sampling=True)
