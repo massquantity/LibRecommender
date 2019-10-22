@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     conf_movielens = {
         "data_path": "../ml-1m/merged_data.csv",
-        "length": "all",
+        "length": 100000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,

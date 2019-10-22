@@ -218,7 +218,7 @@ class BaseFeat(object):
     def print_metrics(self, *args, **kwargs):
         dataset, epoch = args[0], args[1]
         allowed_kwargs = ["roc_auc", "pr_auc", "map", "map_num", "recall",
-                          "recall_num", "ndcg", "ndcg_num", "sample_user"]
+                          "recall_num", "ndcg", "ndcg_num", "sample_user", "test_batch"]
 
         for k in kwargs:
             if k not in allowed_kwargs:
@@ -280,7 +280,7 @@ class BaseFeat(object):
     def print_metrics_tf(self, *args, **kwargs):
         dataset, epoch = args[0], args[1]
         allowed_kwargs = ["roc_auc", "pr_auc", "map", "map_num", "recall",
-                          "recall_num", "ndcg", "ndcg_num", "sample_user"]
+                          "recall_num", "ndcg", "ndcg_num", "sample_user", "test_batch"]
         for k in kwargs:
             if k not in allowed_kwargs:
                 raise TypeError('Keyword argument not understood:', k)
@@ -307,10 +307,12 @@ class BaseFeat(object):
             test_label = dataset.test_labels_implicit
             test_loss_all, test_accuracy_all, test_precision_all, test_prob_all = [], [], [], []
             t3 = time.time()
-            for batch_test in range(0, len(dataset.test_labels_implicit), 100000):
-                test_indices_implicit_batch = dataset.test_indices_implicit[batch_test: batch_test + 100000]
-                test_values_implicit_batch = dataset.test_values_implicit[batch_test: batch_test + 100000]
-                test_labels_implicit_batch = dataset.test_labels_implicit[batch_test: batch_test + 100000]
+            test_batch = kwargs.get("test_batch", 100000)
+        #    print("test_batch: ", test_batch)
+            for batch_test in range(0, len(dataset.test_labels_implicit), test_batch):
+                test_indices_implicit_batch = dataset.test_indices_implicit[batch_test: batch_test + test_batch]
+                test_values_implicit_batch = dataset.test_values_implicit[batch_test: batch_test + test_batch]
+                test_labels_implicit_batch = dataset.test_labels_implicit[batch_test: batch_test + test_batch]
                 test_loss, test_accuracy, test_precision, test_prob = \
                     self.sess.run([self.loss, self.accuracy, self.precision, self.y_prob],
                                   feed_dict={self.feature_indices: test_indices_implicit_batch,
