@@ -43,7 +43,7 @@ def api_call(algo):
         samples.append({"fi": fi.tolist(), "fv": fv.tolist()})
 
     data = {"signature_name": "predict", "instances": samples}
-    if algo in ['fm', 'FM']:
+    if algo.lower() == 'fm':
         model = algo
     else:
         raise ValueError("algorithm %s is not allowed" % algo)
@@ -151,7 +151,7 @@ def recommend(algo):
     for fi, fv in zip(feat_indices, feat_values):
         samples.append({"fi": fi.tolist(), "fv": fv.tolist()})
     data = {"signature_name": "predict", "instances": samples}
-    if algo in ['fm', 'FM']:
+    if algo.lower() == 'fm':
         model = algo
     else:
         raise ValueError("algorithm %s is not allowed" % algo)
