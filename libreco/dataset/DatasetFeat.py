@@ -66,7 +66,8 @@ class DatasetFeat:
         if num_neg is not None:
             self.num_neg = num_neg
 
-        if not user_col or not item_col or not label_col:
+    #    if not user_col or not item_col or not label_col:
+        if not np.all([user_col, item_col, label_col]):
             user_col = 0
             item_col = 1
             label_col = 2
