@@ -4,7 +4,7 @@ export FLASK_APP=deploy_feat_flask.py
 export FLASK_ENV=development
 flask run
 
-# flask run --port 8000
+# flask run --port 8000 --host 0.0.0.0
 # curl -v ec2-34-218-238-185.us-west-2.compute.amazonaws.com:8000/info
 # gunicorn -w 4 -b 0.0.0.0:5000 deploy_feat_flask:app
 # sudo /etc/init.d/nginx start

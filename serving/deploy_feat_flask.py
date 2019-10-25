@@ -22,7 +22,7 @@ with open(str(Path.joinpath(PurePath("."), "models", "others", "fm_unique_items.
     items_unique = joblib.load(f)
 with open(os.path.join(os.curdir, "models/others/feature_builder.jb"), 'rb') as f:
     feat_builder = joblib.load(f)
-with open(os.path.join(os.curdir, "models/others/conf.jb"), 'rb') as f:
+with open(os.path.join(os.curdir, "models/others/fm_conf.jb"), 'rb') as f:
     conf = joblib.load(f)
 
 
