@@ -75,7 +75,7 @@ print(dfm.recommend_user(1, 7))   # recommend 7 items for user 1
 
 
 ## Data Format
-Just normal data format, each line represents a sample. By default, model assumes that `user`, `item`, and `label` column index are 0, 1, and 2, respectively. But you need to specify `user`, `item`, and `label` column index if that’s not the case. For Example, the `movielens-1m` dataset:
+JUST normal data format, each line represents a sample. By default, model assumes that `user`, `item`, and `label` column index are 0, 1, and 2, respectively. But you need to specify `user`, `item`, and `label` column index if that’s not the case. For Example, the `movielens-1m` dataset:
 
 > 1::1193::5::978300760<br>
 > 1::661::3::978302109<br>
