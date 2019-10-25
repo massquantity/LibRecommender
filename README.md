@@ -6,11 +6,11 @@
 
 + Implement a number of popular recommendation algorithms such as SVD, DeepFM, BPR etc.
 
-+ Allow user to use either collaborative-filtering or content-based features, thus a hybrid system.
++ A hybrid system, allow user to use either collaborative-filtering or content-based features.
 
-+ Automatically convert categorical features to sparse representation, thus ease the memory usage.
++ Ease of memory usage, automatically convert categorical features to sparse representation, thus ease the memory usage.
 
-+ Suitable for explicit and implicit datasets, and negative sampling is provided for implicit dataset.
++ Suitable for both explicit and implicit datasets, and negative sampling can be used for implicit dataset.
 
 + Making use of Cython or Tensorflow to accelerate model training.
 
@@ -19,8 +19,31 @@
 
 
 ## Usage
+
+##### _pure collaborative-filtering example_ : 
+
 ```python
-from libreco.dataset import DatasetFeat
+from libreco.dataset import DatasetPure   # pure data, algorithm svd++
+from libreco.algorithms import SVDpp
+
+conf = {
+    "data_path": "path/to/your/data",
+    "length": "all",
+}
+
+dataset = DatasetPure()
+dataset.build_dataset(**conf)
+
+svd = SVDpp(n_factors=32, n_epochs=200, lr=0.001, batch_size=4096, task="rating")
+svd.fit(dataset, verbose=1)
+print(svd.predict(1, 2))	     # predict preference of user 1 to item 2
+print(svd.recommend_user(1, 7))	 # recommend 7 items for user 1
+```
+
+##### _include features example_ : 
+
+```python
+from libreco.dataset import DatasetFeat   # feat data, algorithm DeepFM
 from libreco.algorithms import DeepFmFeat
 
 conf = {
@@ -47,19 +70,19 @@ dfm = DeepFmFeat(lr=0.0002, n_epochs=10000, reg=0.1, embed_size=50,
                  batch_size=2048, dropout_rate=0.0, task="ranking", neg_sampling=True)
 dfm.fit(dataset, pre_sampling=False, verbose=1)
 print(dfm.predict(1, 10))             # predict preference of user 1 to item 10
-print(dfm.recommend_user(19500, 7))   # recommend 7 items for user 1
+print(dfm.recommend_user(1, 7))   # recommend 7 items for user 1
 ```
 
 
 ## Data Format
-Just normal data format, but you need to specify `user`, `item`, and `label` column index. For Example, the `movielens-1m` dataset:
+Just normal data format, each line represents a sample. By default, model assumes that `user`, `item`, and `label` column index are 0, 1, and 2, respectively. But you need to specify `user`, `item`, and `label` column index if that’s not the case. For Example, the `movielens-1m` dataset:
 
 > 1::1193::5::978300760<br>
 > 1::661::3::978302109<br>
 > 1::914::3::978301968<br>
 > 1::3408::4::978300275
 
-in `conf` dict : `"user_col": 0,  "item_col": 1,  "label_col": 2, "sep": "::"` .
+leads to the following settings in `conf` dict : `"user_col": 0,  "item_col": 1,  "label_col": 2, "sep": "::"` .
 
 Besides, if you want to use some other meta features (e.g., age, sex, category etc.), `numerical` and `categorical` column index must be assigned. For example, `"numerical_col": [4], "categorical_col": [3, 5, 6, 7, 8]`, which means all features must be in a same table.
 
