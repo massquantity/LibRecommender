@@ -260,6 +260,7 @@ def NDCG_at_k_tf(labels, predictions, k):
 
 
 def binary_cross_entropy(model, user, item, label):
+    eps = 1e-7
     ce = []
     probs = []
     for u, i, l in zip(user, item, label):
@@ -267,10 +268,14 @@ def binary_cross_entropy(model, user, item, label):
         probs.append(prob)
     #    if prob == 0.0 or prob == 1.0:
     #        continue
-        if l == 1.0 and prob > 0.0:
+        if l == 1.0 and prob >= eps:
             ce.append(-np.log(prob))
-        elif l == 0.0 and prob < 1.0:
+        elif l == 1.0 and prob < eps:
+            ce.append(-np.log(eps))
+        elif l == 0.0 and prob <= 1.0 - eps:
             ce.append(-np.log(1.0 - prob))
+        elif l == 0.0 and prob > 1.0 - eps:
+            ce.append(-np.log(1.0 - eps))
     return np.mean(ce), probs
 
 
