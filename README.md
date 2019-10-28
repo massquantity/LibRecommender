@@ -8,7 +8,7 @@
 
 + A hybrid system, allow user to use either collaborative-filtering or content-based features.
 
-+ Ease of memory usage, automatically convert categorical features to sparse representation, thus ease the memory usage.
++ Ease of memory usage, automatically convert categorical features to sparse representation.
 
 + Suitable for both explicit and implicit datasets, and negative sampling can be used for implicit dataset.
 
@@ -89,6 +89,10 @@ Besides, if you want to use some other meta features (e.g., age, sex, category e
 
 
 ## Installation & Dependencies 
+
+From pypi:  `pip install LibRecommender`
+
+
 
 - Python 3.5 +
 - tensorflow >= 1.12
