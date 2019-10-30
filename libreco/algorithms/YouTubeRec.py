@@ -54,8 +54,7 @@ class YouTubeRec(BaseFeat):
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.implicit_indices = tf.placeholder(tf.int64, shape=[None, 2])
         self.implicit_values = tf.placeholder(tf.int64, shape=[None])
-        self.dropout_switch = tf.placeholder_with_default(False, shape=[])
-        self.bn_switch = tf.placeholder_with_default(False, shape=[])
+        self.is_training = tf.placeholder_with_default(False, shape=[])
 
         if self.reg > 0.0:
             self.total_features = tf.get_variable(name="total_features",
@@ -99,10 +98,10 @@ class YouTubeRec(BaseFeat):
                                         # kernel_regularizer=tf.keras.regularizers.l2(0.0001)
 
         if self.bn:
-            MLP_layer_one = tf.layers.batch_normalization(MLP_layer_one, training=self.bn_switch, momentum=0.9)
+            MLP_layer_one = tf.layers.batch_normalization(MLP_layer_one, training=self.is_training, momentum=0.9)
         MLP_layer_one = tf.nn.relu(MLP_layer_one)
         if self.dropout_rate > 0.0:
-            MLP_layer_one = tf.layers.dropout(MLP_layer_one, rate=self.dropout_rate, training=self.dropout_switch)
+            MLP_layer_one = tf.layers.dropout(MLP_layer_one, rate=self.dropout_rate, training=self.is_training)
 
         MLP_layer_two = tf.layers.dense(inputs=MLP_layer_one,
                                         units=self.embed_size * 2,
@@ -110,10 +109,10 @@ class YouTubeRec(BaseFeat):
                                         kernel_initializer=tf.variance_scaling_initializer)
 
         if self.bn:
-            MLP_layer_two = tf.layers.batch_normalization(MLP_layer_two, training=self.bn_switch, momentum=0.9)
+            MLP_layer_two = tf.layers.batch_normalization(MLP_layer_two, training=self.is_training, momentum=0.9)
         MLP_layer_two = tf.nn.relu(MLP_layer_two)
         if self.dropout_rate > 0.0:
-            MLP_layer_two = tf.layers.dropout(MLP_layer_two, rate=self.dropout_rate, training=self.dropout_switch)
+            MLP_layer_two = tf.layers.dropout(MLP_layer_two, rate=self.dropout_rate, training=self.is_training)
 
         MLP_layer_three = tf.layers.dense(inputs=MLP_layer_two,
                                           units=self.embed_size,
@@ -178,8 +177,7 @@ class YouTubeRec(BaseFeat):
                         self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch,
-                                                                   self.dropout_switch: True,
-                                                                   self.bn_switch: True})
+                                                                   self.is_training: True})
                     if verbose == 1:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0), end="\n\n")
                     elif verbose > 1:
@@ -201,8 +199,7 @@ class YouTubeRec(BaseFeat):
                         self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch,
-                                                                   self.dropout_switch: True,
-                                                                   self.bn_switch: True})
+                                                                   self.is_training: True})
 
                     if verbose == 1:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
@@ -221,8 +218,7 @@ class YouTubeRec(BaseFeat):
             target = self.pred if self.task == "rating" else self.y_prob
             pred = self.sess.run(target, feed_dict={self.feature_indices: feat_indices,
                                                     self.feature_values: feat_value,
-                                                    self.dropout_switch: False,
-                                                    self.bn_switch: False})
+                                                    self.is_training: False})
 
             if self.lower_bound is not None and self.upper_bound is not None:
                 pred = np.clip(pred, self.lower_bound, self.upper_bound) if self.task == "rating" else pred[0]
@@ -239,8 +235,7 @@ class YouTubeRec(BaseFeat):
     #    user_batch = feat_indices[:, -2] - self.dataset.user_offset
         preds = self.sess.run(target, feed_dict={self.feature_indices: feat_indices,
                                                  self.feature_values: feat_values,
-                                                 self.dropout_switch: False,
-                                                 self.bn_switch: False})
+                                                 self.is_training: False})
 
         ids = np.argpartition(preds, -count)[-count:]
         rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
