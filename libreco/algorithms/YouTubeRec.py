@@ -90,6 +90,8 @@ class YouTubeRec(BaseFeat):
         user_indices = tf.subtract(self.feature_indices[:, -2], dataset.user_offset)
         self.user_embedding = tf.nn.embedding_lookup(self.user_embedding, user_indices)
         self.concat_embedding = tf.concat([self.user_embedding, self.feature_embedding], axis=1)
+        if self.bn:
+            self.concat_embedding = tf.layers.batch_normalization(self.concat_embedding, training=self.is_training, momentum=0.99)
 
         MLP_layer_one = tf.layers.dense(inputs=self.concat_embedding,
                                         units=self.embed_size * 3,
@@ -98,7 +100,7 @@ class YouTubeRec(BaseFeat):
                                         # kernel_regularizer=tf.keras.regularizers.l2(0.0001)
 
         if self.bn:
-            MLP_layer_one = tf.layers.batch_normalization(MLP_layer_one, training=self.is_training, momentum=0.9)
+            MLP_layer_one = tf.layers.batch_normalization(MLP_layer_one, training=self.is_training, momentum=0.99)
         MLP_layer_one = tf.nn.relu(MLP_layer_one)
         if self.dropout_rate > 0.0:
             MLP_layer_one = tf.layers.dropout(MLP_layer_one, rate=self.dropout_rate, training=self.is_training)
@@ -109,7 +111,7 @@ class YouTubeRec(BaseFeat):
                                         kernel_initializer=tf.variance_scaling_initializer)
 
         if self.bn:
-            MLP_layer_two = tf.layers.batch_normalization(MLP_layer_two, training=self.is_training, momentum=0.9)
+            MLP_layer_two = tf.layers.batch_normalization(MLP_layer_two, training=self.is_training, momentum=0.99)
         MLP_layer_two = tf.nn.relu(MLP_layer_two)
         if self.dropout_rate > 0.0:
             MLP_layer_two = tf.layers.dropout(MLP_layer_two, rate=self.dropout_rate, training=self.is_training)
@@ -117,9 +119,11 @@ class YouTubeRec(BaseFeat):
         MLP_layer_three = tf.layers.dense(inputs=MLP_layer_two,
                                           units=self.embed_size,
                                           activation=tf.nn.relu,
-                                          kernel_initializer=tf.variance_scaling_initializer)
+                                          kernel_initializer=tf.variance_scaling_initializer,)
+    #                                      use_bias=False)
     #    MLP_layer_three = tf.layers.dropout(MLP_layer_three, rate=dropout_rate, training=dropout_switch)
-    #    MLP_layer_three = tf.layers.batch_normalization(MLP_layer_three, training=self.bn_switch)
+    #    if self.bn:
+    #        MLP_layer_three = tf.layers.batch_normalization(MLP_layer_three, training=self.is_training, momentum=0.99)
 
         if self.task == "rating":
             self.pred = tf.layers.dense(inputs=MLP_layer_three, units=1)
