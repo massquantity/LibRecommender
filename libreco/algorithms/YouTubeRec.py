@@ -91,7 +91,9 @@ class YouTubeRec(BaseFeat):
         self.user_embedding = tf.nn.embedding_lookup(self.user_embedding, user_indices)
         self.concat_embedding = tf.concat([self.user_embedding, self.feature_embedding], axis=1)
         if self.bn:
-            self.concat_embedding = tf.layers.batch_normalization(self.concat_embedding, training=self.is_training, momentum=0.99)
+            self.concat_embedding = tf.layers.batch_normalization(self.concat_embedding,
+                                                                  training=self.is_training,
+                                                                  momentum=0.99)
 
         MLP_layer_one = tf.layers.dense(inputs=self.concat_embedding,
                                         units=self.embed_size * 3,
