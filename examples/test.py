@@ -9,7 +9,8 @@ from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
 np.set_printoptions(precision=4, edgeitems=7)
-
+# tf.logging.set_verbosity(tf.logging.ERROR)
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 if __name__ == "__main__":
     t0 = time.time()
@@ -55,10 +56,10 @@ if __name__ == "__main__":
         "item_col": 1,
         "label_col": 2,
         "numerical_col": None,
-        "categorical_col": [3, 4, 5, 6],
-        "merged_categorical_col": [[7, 8, 9]],
+        "categorical_col": [3, 4, 5],
+        "merged_categorical_col": [[6, 7, 8]],
         "user_feature_cols": [3, 4, 5],
-        "item_feature_cols": [6, 7, 8, 9],
+        "item_feature_cols": [6, 7, 8],
         "convert_implicit": True,
         "build_negative": True,
         "num_neg": 2,
