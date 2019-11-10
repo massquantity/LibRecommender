@@ -1,5 +1,5 @@
 import os, time, sys
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 import tensorflow as tf
 from pathlib import Path, PurePath

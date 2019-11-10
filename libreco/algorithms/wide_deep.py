@@ -18,62 +18,31 @@ from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, HitRatio_at_k,
 from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 
-# TODO batch_norm, dropout
 class WideDeepEstimator(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO inheritance
-    def __init__(self, lr, embed_size, n_epochs=20, reg=0.0, cross_features=False,
-                 batch_size=64, dropout=0.0, seed=42, task="rating"):
+    def __init__(self, lr, embed_size, n_epochs=20, reg=0.0, cross_features=False, batch_size=64,
+                 use_bn=False, hidden_units=[256, 128, 64], dropout=0.0, seed=42, task="rating"):
         self.lr = lr
         self.embed_size = embed_size
         self.n_epochs = n_epochs
         self.reg = reg
         self.batch_size = batch_size
         self.dropout = dropout
+        self.use_bn = use_bn
+        self.hidden_units = hidden_units
         self.seed = seed
         self.task = task
         self.cross_features = cross_features
         super(WideDeepEstimator, self).__init__(model_fn=WideDeepEstimator.model_func)
 
-    def build_model(self, dataset):
-        wide_cols = []
-        deep_cols = []
-        if self.cross_features:
-            for i in range(len(dataset.feature_cols)):
-                for j in range(i + 1, len(dataset.feature_cols)):
-                    col1 = dataset.feature_cols[i]
-                    col2 = dataset.feature_cols[j]
-                    col1_feat = feat_col.categorical_column_with_vocabulary_list(
-                        col1, dataset.col_unique_values[col1])
-                    col2_feat = feat_col.categorical_column_with_vocabulary_list(
-                        col2, dataset.col_unique_values[col2])
-                    if (col1 not in ["user", "item", "title"]) and (col2 not in ["user", "item", "title"]):
-                        wide_cols.append(feat_col.crossed_column([col1_feat, col2_feat], hash_bucket_size=1000))
-
-            for col in dataset.feature_cols:
-                col_feat = feat_col.categorical_column_with_vocabulary_list(col, dataset.col_unique_values[col])
-                if col in ["user", "item", "title"]:
-                    wide_cols.append(col_feat)
-                    deep_cols.append(feat_col.embedding_column(col_feat, dimension=self.embed_size))
-                elif len(dataset.col_unique_values[col]) < 10:
-                    deep_cols.append(feat_col.indicator_column(col_feat))
-                else:
-                    deep_cols.append(feat_col.embedding_column(col_feat, dimension=self.embed_size))
-
-        else:
-            for col in dataset.feature_cols:
-                col_feat = feat_col.categorical_column_with_vocabulary_list(col, dataset.col_unique_values[col])
-                wide_cols.append(col_feat)
-                if len(dataset.col_unique_values[col]) < 10:
-                    deep_cols.append(feat_col.indicator_column(col_feat))
-                else:
-                    deep_cols.append(feat_col.embedding_column(col_feat, dimension=self.embed_size))
-
+    def build_model(self, wide_cols, deep_cols):
         config = tf.estimator.RunConfig(log_step_count_steps=100000, save_checkpoints_steps=100000)
         model = tf.estimator.Estimator(model_fn=WideDeepEstimator.model_func,
                                        model_dir="wide_deep_dir",
                                        config=config,
                                        params={'deep_columns': deep_cols,
                                                'wide_columns': wide_cols,
-                                               'hidden_units': [128, 64],
+                                               'hidden_units': self.hidden_units,
+                                               'use_bn': self.use_bn,
                                                'task': self.task,
                                                'lr': self.lr})
 
