@@ -13,12 +13,12 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow import feature_column as feat_col
-from tensorflow.python.estimator import estimator
+# from tensorflow.python.estimator import estimator
 from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, HitRatio_at_k, NDCG_at_k
 from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 
-class WideDeepEstimator(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO inheritance
+class WideDeepEstimator(tf.estimator.Estimator):  # tf.estimator.Estimator,  NOOOO inheritance
     def __init__(self, lr, embed_size, n_epochs=20, reg=0.0, cross_features=False, batch_size=64,
                  use_bn=False, hidden_units=[256, 128, 64], dropout=0.0, seed=42, task="rating"):
         self.lr = lr
@@ -50,9 +50,19 @@ class WideDeepEstimator(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO 
 
     @staticmethod
     def model_func(features, labels, mode, params):
+        is_training = mode == tf.estimator.ModeKeys.TRAIN
         dnn_input = feat_col.input_layer(features, params['deep_columns'])
+        if params["use_bn"]:
+            dnn_input = tf.layers.batch_normalization(dnn_input, training=is_training, momentum=0.99)
         for units in params['hidden_units']:
-            dnn_input = tf.layers.dense(dnn_input, units=units, activation=tf.nn.relu)
+            dnn_input = tf.layers.dense(dnn_input, units=units, activation=None,
+                                        kernel_initializer=tf.variance_scaling_initializer)
+            if params["use_bn"]:
+                dnn_input = tf.layers.dense(dnn_input, units=units, activation=None, use_bias=False)
+                dnn_input = tf.nn.relu(tf.layers.batch_normalization(dnn_input, training=is_training, momentum=0.99))
+            else:
+                dnn_input = tf.layers.dense(dnn_input, units=units, activation=tf.nn.relu)
+
         dnn_logits = tf.layers.dense(dnn_input, units=10, activation=None)
 
         linear_logits = feat_col.linear_model(units=10, features=features,
@@ -113,23 +123,38 @@ class WideDeepEstimator(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO 
         return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=training_op)
 
     @staticmethod
-    def input_fn(data, repeat=1, batch=256, mode="train", user=None, item=None):  # , original_data=None
+    def input_fn(data=None, file_path=None, repeat=1, batch_size=256, mode="train", user=None, item=None):
+        def _parse_record(record):
+            features = {
+                "user": tf.io.FixedLenFeature([], tf.int64),
+                "item": tf.io.FixedLenFeature([], tf.int64),
+                "label": tf.io.FixedLenFeature([], tf.float32),
+                "gender": tf.io.FixedLenFeature([], tf.string),
+                "age": tf.io.FixedLenFeature([], tf.int64),
+                "occupation": tf.io.FixedLenFeature([], tf.int64),
+                "genre1": tf.io.FixedLenFeature([], tf.string),
+                "genre2": tf.io.FixedLenFeature([], tf.string),
+                "genre3": tf.io.FixedLenFeature([], tf.string),
+            }
+            example = tf.io.parse_single_example(record, features=features)
+            labels = example.pop("label")
+            return example, labels
+
         if mode == "train":
-            features = {col: data.train_data[col].to_numpy() for col in data.feature_cols}
-        #    features = {"age": data.train_data["age"].to_numpy()}
-            labels = data.train_data[data.label_cols].to_numpy()
+            data = tf.data.TFRecordDataset([file_path])
+            data = data.map(_parse_record, num_parallel_calls=4)
+            data = data.shuffle(buffer_size=100000).batch(batch_size=batch_size).prefetch(buffer_size=1)
+            print(data.output_types)
+            print(data.output_shapes)
+            return data
 
-            train_data = tf.data.Dataset.from_tensor_slices((features, labels))
-            return train_data.shuffle(len(labels)).repeat(repeat).batch(batch)
+        elif mode == "eval":
+            data = tf.data.TFRecordDataset([file_path])
+            data = data.map(_parse_record, num_parallel_calls=4)
+            data = data.batch(batch_size=batch_size)
+            return data
 
-        elif mode == "evaluate":
-            features = {col: data.test_data[col].to_numpy().reshape(-1, 1) for col in data.feature_cols}
-            labels = data.test_data[data.label_cols].to_numpy().reshape(-1, 1)
-
-            evaluate_data = tf.data.Dataset.from_tensor_slices((features, labels))
-            return evaluate_data
-
-        elif mode == "test":
+        elif mode == "predict":
             user_part = pd.DataFrame([data.user_dict[user]], columns=data.user_feature_cols)
             item_part = pd.DataFrame([data.item_dict[item]], columns=data.item_feature_cols)
             features = {col: user_part[col].to_numpy().reshape(-1, 1) for col in user_part.columns}
@@ -155,20 +180,20 @@ class WideDeepEstimator(estimator.Estimator):  # tf.estimator.Estimator,  NOOOO 
                     features[col] = features[col].astype(int)
                 elif col != "label":
                     features[col] = features[col].astype(col_type)
-            rank_data = tf.data.Dataset.from_tensor_slices(features).batch(batch)
+            rank_data = tf.data.Dataset.from_tensor_slices(features).batch(batch_size)
             return rank_data
 
-    def fit(self, dataset, verbose=1):
+    def fit(self, dataset, wide_cols, deep_cols, train_data, eval_data, verbose=1):
         self.dataset = dataset
-        self.model = self.build_model(dataset)
+        self.model = self.build_model(wide_cols, deep_cols)
         for epoch in range(1, self.n_epochs):  # epoch_per_eval
             t0 = time.time()
             self.model.train(input_fn=lambda: WideDeepEstimator.input_fn(
-                data=dataset, repeat=1, batch=self.batch_size, mode="train"))
+                data=dataset, repeat=1, batch_size=self.batch_size, mode="train", file_path=train_data))
             train_result = self.model.evaluate(input_fn=lambda: WideDeepEstimator.input_fn(
-                data=dataset, repeat=1, batch=self.batch_size, mode="train"))
+                data=dataset, repeat=1, batch_size=self.batch_size, mode="train", file_path=train_data))
             eval_result = self.model.evaluate(input_fn=lambda: WideDeepEstimator.input_fn(
-                data=dataset, mode="evaluate"))
+                data=dataset, mode="eval", file_path=eval_data))
 
             if verbose > 0:
                 print("Epoch {} training time: {:.4f}".format(epoch, time.time() - t0))

@@ -5,6 +5,9 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow import feature_column as fc
+from libreco.dataset import DatasetPure, DatasetFeat
+from libreco.algorithms import WideDeepEstimator
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
 def create_feature_columns(file_path, embed_size=32, hash_size=10000):
@@ -34,4 +37,47 @@ def create_feature_columns(file_path, embed_size=32, hash_size=10000):
     deep_cols.append(fc.indicator_column(gender))
 
     return wide_cols, deep_cols
+
+
+
+if __name__ == "__main__":
+    conf_movielens = {
+        "data_path": "../ml-1m/merged_data.csv",
+        "length": 100000,
+        "user_col": 0,
+        "item_col": 1,
+        "label_col": 2,
+        "numerical_col": None,
+        "categorical_col": [3, 4, 5],
+        "merged_categorical_col": [[6, 7, 8]],
+        "user_feature_cols": [3, 4, 5],
+        "item_feature_cols": [6, 7, 8],
+        "convert_implicit": True,
+        "build_negative": True,
+        "num_neg": 2,
+        "batch_size": 256,
+        "sep": ",",
+    }
+
+    conf = conf_movielens
+    t0 = time.time()
+    dataset = DatasetFeat(include_features=True)
+    dataset.build_dataset(**conf)
+    print("num users: {}, num items: {}".format(dataset.n_users, dataset.n_items))
+    if conf.get("convert_implicit"):
+        print("data size: ", len(dataset.train_labels_implicit) + len(dataset.test_labels_implicit))
+    else:
+        print("data size: ", len(dataset.train_user_indices) + len(dataset.test_user_indices))
+    print("data processing time: {:.2f}".format(time.time() - t0))
+    print()
+
+    wide_cols, deep_cols = create_feature_columns("../ml-1m/merged_data.csv")
+    wdc = WideDeepEstimator(lr=0.005, embed_size=32, n_epochs=100, batch_size=256, use_bn=False,
+                            task="ranking", cross_features=False)
+    wdc.fit(dataset, wide_cols, deep_cols, "../ml-1m/train.tfrecord", "../ml-1m/test.tfrecord")
+    print(wdc.predict(1, 2))
+    t6 = time.time()
+    print(wdc.recommend_user(1, n_rec=10))
+    print("rec time: ", time.time() - t6)
+
 
