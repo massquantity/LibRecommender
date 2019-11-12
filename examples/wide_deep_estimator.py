@@ -1,6 +1,6 @@
 import os
 import time
-import math
+import functools
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -10,10 +10,7 @@ from libreco.algorithms import WideDeepEstimator
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
-def create_feature_columns(file_path, embed_size=32, hash_size=10000):
-    dataset = pd.read_csv(file_path, header=None, sep=",",
-                          names=["user", "item", "label", "gender", "age",
-                                 "occupation", "genre1", "genre2", "genre3"])
+def create_feature_columns(dataset, embed_size=32, hash_size=10000):
     n_users = dataset.user.nunique()
     n_items = dataset.item.nunique()
     genre_list = dataset.genre1.unique()
@@ -39,45 +36,86 @@ def create_feature_columns(file_path, embed_size=32, hash_size=10000):
     return wide_cols, deep_cols
 
 
+def get_unique_info(data):
+    user_unique = data.drop_duplicates("user")
+    user_dict = dict()
+    for u in user_unique.user.values:
+        user_dict[u] = user_unique.loc[user_unique.user == u, ["gender", "age", "occupation"]].values.ravel()
+
+    item_unique = data.drop_duplicates("item")
+    item_dict = dict()
+    for i in item_unique.item.values:
+        item_dict[i] = item_unique.loc[item_unique.item == i, ["genre1", "genre2", "genre3"]].values.ravel()
+
+    item_info = item_unique.sort_values("item", ascending=True)
+    item_indices = item_info.item.values
+    return user_dict, item_dict, item_info, item_indices
+
+
+def predict_info(user_dict, item_dict, u, i):
+#    user_info = data[data.user == u].values[0]
+#    item_info = data[data.item == i].values[0]
+    features = {
+        "user": np.array(u).reshape(-1, 1),
+        "item": np.array(i).reshape(-1, 1),
+        "gender": np.array(user_dict[u][0]).reshape(-1, 1),
+        "age": np.array(user_dict[u][1]).reshape(-1, 1),
+        "occupation": np.array(user_dict[u][2]).reshape(-1, 1),
+        "genre1": np.array(item_dict[i][0]).reshape(-1, 1),
+        "genre2": np.array(item_dict[i][1]).reshape(-1, 1),
+        "genre3": np.array(item_dict[i][2]).reshape(-1, 1)
+    }
+    return features
+
+
+def rank_info(user_dict, u, item_info):
+    n_items = len(item_info)
+    features = {
+        "user": np.tile(u, [n_items, 1]),
+        "item": item_info.item.values.reshape(-1, 1),
+        "gender": np.tile(user_dict[u][0], [n_items, 1]),
+        "age": np.tile(user_dict[u][1], [n_items, 1]),
+        "occupation": np.tile(user_dict[u][2], [n_items, 1]),
+        "genre1": item_info.genre1.values.reshape(-1, 1),
+        "genre2": item_info.genre2.values.reshape(-1, 1),
+        "genre3": item_info.genre3.values.reshape(-1, 1),
+    }
+    return features
+
 
 if __name__ == "__main__":
-    conf_movielens = {
-        "data_path": "../ml-1m/merged_data.csv",
-        "length": 100000,
-        "user_col": 0,
-        "item_col": 1,
-        "label_col": 2,
-        "numerical_col": None,
-        "categorical_col": [3, 4, 5],
-        "merged_categorical_col": [[6, 7, 8]],
-        "user_feature_cols": [3, 4, 5],
-        "item_feature_cols": [6, 7, 8],
-        "convert_implicit": True,
-        "build_negative": True,
-        "num_neg": 2,
-        "batch_size": 256,
-        "sep": ",",
-    }
+    dataset = pd.read_csv("../ml-1m/merged_data.csv", header=None, sep=",",
+                          names=["user", "item", "label", "gender", "age",
+                                 "occupation", "genre1", "genre2", "genre3"])
+    wide_cols, deep_cols = create_feature_columns(dataset)
+    eval_info = np.load("../ml-1m/test_data.npy", allow_pickle=True)  # used for evaluate
 
-    conf = conf_movielens
-    t0 = time.time()
-    dataset = DatasetFeat(include_features=True)
-    dataset.build_dataset(**conf)
-    print("num users: {}, num items: {}".format(dataset.n_users, dataset.n_items))
-    if conf.get("convert_implicit"):
-        print("data size: ", len(dataset.train_labels_implicit) + len(dataset.test_labels_implicit))
-    else:
-        print("data size: ", len(dataset.train_user_indices) + len(dataset.test_user_indices))
-    print("data processing time: {:.2f}".format(time.time() - t0))
-    print()
+    t1 = time.time()
+    user_dict, item_dict, item_info, item_indices = get_unique_info(dataset)
+    print("get user-item info time: {:.4f}".format(time.time() - t1))
 
-    wide_cols, deep_cols = create_feature_columns("../ml-1m/merged_data.csv")
-    wdc = WideDeepEstimator(lr=0.005, embed_size=32, n_epochs=100, batch_size=256, use_bn=False,
-                            task="ranking", cross_features=False)
-    wdc.fit(dataset, wide_cols, deep_cols, "../ml-1m/train.tfrecord", "../ml-1m/test.tfrecord")
-    print(wdc.predict(1, 2))
+    feat_func = {
+                "user": tf.io.FixedLenFeature([], tf.int64),
+                "item": tf.io.FixedLenFeature([], tf.int64),
+                "label": tf.io.FixedLenFeature([], tf.float32),
+                "gender": tf.io.FixedLenFeature([], tf.string),
+                "age": tf.io.FixedLenFeature([], tf.int64),
+                "occupation": tf.io.FixedLenFeature([], tf.int64),
+                "genre1": tf.io.FixedLenFeature([], tf.string),
+                "genre2": tf.io.FixedLenFeature([], tf.string),
+                "genre3": tf.io.FixedLenFeature([], tf.string),
+            }
+    pred_feat_func = functools.partial(predict_info, user_dict=user_dict, item_dict=item_dict)
+    rank_feat_func = functools.partial(rank_info, user_dict=user_dict, item_info=item_info)
+
+    wde = WideDeepEstimator(lr=0.005, embed_size=32, n_epochs=10, batch_size=4096, use_bn=False,
+                            task="ranking", cross_features=False, pred_feat_func=pred_feat_func,
+                            rank_feat_func=rank_feat_func, item_indices=item_indices)
+    wde.fit(wide_cols, deep_cols, "../ml-1m/train.tfrecord", "../ml-1m/test.tfrecord",
+            feat_func, eval_info, verbose=2)
+    print(wde.predict_ui(1, 2))
     t6 = time.time()
-    print(wdc.recommend_user(1, n_rec=10))
+    print(wde.recommend_user(1, n_rec=7))
     print("rec time: ", time.time() - t6)
 
 

@@ -6,7 +6,7 @@ import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
 
-def preprocess_data(par_path=None, convert_implicit=False, num_neg=0, task="nce", test_frac=0.2, seed=42):
+def preprocess_data(par_path=None, convert_implicit=False, num_neg=0, task="rating", test_frac=0.2, seed=42):
     file_path = os.path.join(par_path, "merged_data.csv")
     if task == "rating" or task == "ranking":
         dataset = pd.read_csv(file_path, header=None, sep=",",
@@ -15,13 +15,13 @@ def preprocess_data(par_path=None, convert_implicit=False, num_neg=0, task="nce"
 
         user_unique = np.unique(dataset.user.values)
         print("num users: ", len(user_unique))
-        user_id_map = dict(zip(user_unique, np.arange(len(user_unique))))
-        dataset["user"] = dataset["user"].map(user_id_map)
+    #    user_id_map = dict(zip(user_unique, np.arange(len(user_unique))))
+    #    dataset["user"] = dataset["user"].map(user_id_map)
 
         item_unique = np.unique(dataset.item.values)
         print("num items: ", len(item_unique))
-        item_id_map = dict(zip(item_unique, np.arange(len(item_unique))))
-        dataset["item"] = dataset["item"].map(item_id_map)
+    #    item_id_map = dict(zip(item_unique, np.arange(len(item_unique))))
+    #    dataset["item"] = dataset["item"].map(item_id_map)
 
         if convert_implicit:
             dataset["label"] = 1.0
@@ -31,6 +31,7 @@ def preprocess_data(par_path=None, convert_implicit=False, num_neg=0, task="nce"
         train_data, test_data = train_test_split(dataset, test_size=test_frac, random_state=seed, shuffle=True)
         train_data = train_data.values
         test_data = test_data.values
+        np.save(os.path.join(par_path, "test_data"), test_data[:, [0, 1]])
 
         if num_neg > 0:
             print("carry out negative sampling...")
