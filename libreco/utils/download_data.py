@@ -61,6 +61,15 @@ def _extract_and_preprocess_data(par_path=None, feat=False):
 
         data = pd.merge(ratings, users, on="user")
         data = pd.merge(data, items, on="item")
+
+        user_unique = np.unique(data.user.values)
+        user_id_map = dict(zip(user_unique, np.arange(len(user_unique))))
+        data["user"] = data["user"].map(user_id_map)
+
+        item_unique = np.unique(data.item.values)
+        item_id_map = dict(zip(item_unique, np.arange(len(item_unique))))
+        data["item"] = data["item"].map(item_id_map)
+
         data.to_csv(os.path.join(par_path, "ml-1m", "merged_data.csv"), index=False, header=False)
         print("Merge Data Done !")
 

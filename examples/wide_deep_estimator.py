@@ -4,6 +4,7 @@ import functools
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from tensorflow.contrib import predictor
 from tensorflow import feature_column as fc
 from libreco.dataset import DatasetPure, DatasetFeat
 from libreco.algorithms import WideDeepEstimator
@@ -33,7 +34,12 @@ def create_feature_columns(dataset, embed_size=32, hash_size=10000):
         deep_cols.append(fc.embedding_column(col, embed_size))
     deep_cols.append(fc.indicator_column(gender))
 
-    return wide_cols, deep_cols
+    label = fc.numeric_column("label", default_value=0.0, dtype=tf.float32)
+    feat_columns = [label]
+    feat_columns += wide_cols
+    feat_columns += deep_cols
+    feat_spec = fc.make_parse_example_spec(feat_columns)
+    return wide_cols, deep_cols, feat_spec
 
 
 def get_unique_info(data):
@@ -83,33 +89,48 @@ def rank_info(user_dict, u, item_info):
     return features
 
 
+def serving_input_receiver_fn():
+    features = {"user": tf.placeholder(tf.int64, shape=[None, 1]),
+                "item": tf.placeholder(tf.int64, shape=[None, 1]),
+                "gender": tf.placeholder(tf.string, shape=[None, 1]),
+                "age": tf.placeholder(tf.int64, shape=[None, 1]),
+                "occupation": tf.placeholder(tf.int64, shape=[None, 1]),
+                "genre1": tf.placeholder(tf.string, shape=[None, 1]),
+                "genre2": tf.placeholder(tf.string, shape=[None, 1]),
+                "genre3": tf.placeholder(tf.string, shape=[None, 1])}
+
+    return tf.estimator.export.ServingInputReceiver(features, features)
+
+
+def get_tf_feat():
+    feat_func = {"user": tf.io.FixedLenFeature([], tf.int64),
+                 "item": tf.io.FixedLenFeature([], tf.int64),
+                 "label": tf.io.FixedLenFeature([], tf.float32),
+                 "gender": tf.io.FixedLenFeature([], tf.string),
+                 "age": tf.io.FixedLenFeature([], tf.int64),
+                 "occupation": tf.io.FixedLenFeature([], tf.int64),
+                 "genre1": tf.io.FixedLenFeature([], tf.string),
+                 "genre2": tf.io.FixedLenFeature([], tf.string),
+                 "genre3": tf.io.FixedLenFeature([], tf.string)}
+    return feat_func
+
+
 if __name__ == "__main__":
     dataset = pd.read_csv("../ml-1m/merged_data.csv", header=None, sep=",",
                           names=["user", "item", "label", "gender", "age",
                                  "occupation", "genre1", "genre2", "genre3"])
-    wide_cols, deep_cols = create_feature_columns(dataset)
+    wide_cols, deep_cols, feat_func = create_feature_columns(dataset)
     eval_info = np.load("../ml-1m/test_data.npy", allow_pickle=True)  # used for evaluate
 
     t1 = time.time()
     user_dict, item_dict, item_info, item_indices = get_unique_info(dataset)
     print("get user-item info time: {:.4f}".format(time.time() - t1))
 
-    feat_func = {
-                "user": tf.io.FixedLenFeature([], tf.int64),
-                "item": tf.io.FixedLenFeature([], tf.int64),
-                "label": tf.io.FixedLenFeature([], tf.float32),
-                "gender": tf.io.FixedLenFeature([], tf.string),
-                "age": tf.io.FixedLenFeature([], tf.int64),
-                "occupation": tf.io.FixedLenFeature([], tf.int64),
-                "genre1": tf.io.FixedLenFeature([], tf.string),
-                "genre2": tf.io.FixedLenFeature([], tf.string),
-                "genre3": tf.io.FixedLenFeature([], tf.string),
-            }
     pred_feat_func = functools.partial(predict_info, user_dict=user_dict, item_dict=item_dict)
     rank_feat_func = functools.partial(rank_info, user_dict=user_dict, item_info=item_info)
 
-    wde = WideDeepEstimator(lr=0.005, embed_size=32, n_epochs=10, batch_size=4096, use_bn=False,
-                            task="ranking", cross_features=False, pred_feat_func=pred_feat_func,
+    wde = WideDeepEstimator(lr=0.005, embed_size=32, n_epochs=0, batch_size=4096, use_bn=True,
+                            task="ranking", pred_feat_func=pred_feat_func,
                             rank_feat_func=rank_feat_func, item_indices=item_indices)
     wde.fit(wide_cols, deep_cols, "../ml-1m/train.tfrecord", "../ml-1m/test.tfrecord",
             feat_func, eval_info, verbose=2)
@@ -118,4 +139,16 @@ if __name__ == "__main__":
     print(wde.recommend_user(1, n_rec=7))
     print("rec time: ", time.time() - t6)
 
+    wde.model.export_saved_model("./export_model_dir", serving_input_receiver_fn)
+
+    from pathlib import Path
+    subdirs = [x for x in Path("./export_model_dir").iterdir()
+               if x.is_dir() and 'temp' not in str(x)]
+    latest = str(sorted(subdirs)[-1])
+
+    predict_fn = predictor.from_saved_model(latest)
+    samples = rank_info(user_dict, 1, item_info)
+    t1 = time.time()
+    print(predict_fn(samples)["probabilities"][0])
+    print("rec time: ", time.time() - t1)
 

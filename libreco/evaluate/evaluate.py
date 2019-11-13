@@ -206,10 +206,14 @@ def HitRatio_at_k(model, dataset, k):
 
 
 def NDCG_at_k(model, dataset, k, sample_user=None, mode="normal"):
-    if mode.lower() == "wide_deep":
-        test_user_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "user"].to_numpy()
-        test_item_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "item"].to_numpy()
-        u_items = dataset.user_dict
+    if mode.lower() == "estimator":
+        test_user_indices = dataset[:, 0]
+        test_item_indices = dataset[:, 1]
+        u_items = dataset[:, 0]  # ???
+
+    #    test_user_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "user"].to_numpy()
+    #    test_item_indices = dataset.test_data.loc[dataset.test_data.label == 1.0, "item"].to_numpy()
+    #    u_items = dataset.user_dict
     else:
         test_user_indices = dataset.test_user_indices
         test_item_indices = dataset.test_item_indices
@@ -256,7 +260,7 @@ def NDCG_at_k_tf(labels, predictions, k):
     DCG = tf.reduce_sum(dcg_numerator / denominator, axis=1, keep_dims=True)
     IDCG = tf.reduce_sum(1.0 / denominator, axis=1, keep_dims=True)
     NDCG = DCG / IDCG
-    return tf.metrics.mean(NDCG)
+    return tf.metrics.mean(NDCG), tf.reduce_mean(NDCG)
 
 
 def binary_cross_entropy(model, user, item, label):

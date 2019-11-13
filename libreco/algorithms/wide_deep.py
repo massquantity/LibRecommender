@@ -18,9 +18,10 @@ from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, HitRatio_at_k,
 from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 
-class WideDeepEstimator(tf.estimator.Estimator):  # tf.estimator.Estimator,  NOOOO inheritance
-    def __init__(self, lr, embed_size, n_epochs=20, reg=0.0, cross_features=False, batch_size=64,
-                 use_bn=False, hidden_units=[256, 128, 64], dropout=0.0, seed=42, task="rating"):
+class WideDeepEstimator(tf.estimator.Estimator):
+    def __init__(self, lr, embed_size, n_epochs=20, reg=0.0, batch_size=64,
+                 use_bn=False, hidden_units="256,128,64", dropout=0.0, seed=42, eval_top_n="10,50",
+                 task="rating", pred_feat_func=None, rank_feat_func=None, item_indices=None):
         self.lr = lr
         self.embed_size = embed_size
         self.n_epochs = n_epochs
@@ -29,9 +30,12 @@ class WideDeepEstimator(tf.estimator.Estimator):  # tf.estimator.Estimator,  NOO
         self.dropout = dropout
         self.use_bn = use_bn
         self.hidden_units = hidden_units
+        self.eval_top_n = eval_top_n
         self.seed = seed
         self.task = task
-        self.cross_features = cross_features
+        self.pred_feat_func = pred_feat_func
+        self.rank_feat_func = rank_feat_func
+        self.item_indices = item_indices
         super(WideDeepEstimator, self).__init__(model_fn=WideDeepEstimator.model_func)
 
     def build_model(self, wide_cols, deep_cols):
@@ -41,10 +45,11 @@ class WideDeepEstimator(tf.estimator.Estimator):  # tf.estimator.Estimator,  NOO
                                        config=config,
                                        params={'deep_columns': deep_cols,
                                                'wide_columns': wide_cols,
-                                               'hidden_units': self.hidden_units,
+                                               'hidden_units': self.hidden_units.split(","),
                                                'use_bn': self.use_bn,
                                                'task': self.task,
-                                               'lr': self.lr})
+                                               'lr': self.lr,
+                                               'eval_top_n': self.eval_top_n})
 
         return model
 
@@ -64,7 +69,6 @@ class WideDeepEstimator(tf.estimator.Estimator):  # tf.estimator.Estimator,  NOO
                 dnn_input = tf.layers.dense(dnn_input, units=units, activation=tf.nn.relu)
 
         dnn_logits = tf.layers.dense(dnn_input, units=10, activation=None)
-
         linear_logits = feat_col.linear_model(units=10, features=features,
                                               feature_columns=params['wide_columns'])
 
@@ -96,19 +100,15 @@ class WideDeepEstimator(tf.estimator.Estimator):  # tf.estimator.Estimator,  NOO
 
             labels = tf.cast(tf.reshape(labels, [-1, 1]), tf.float32)
             loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
-            #    labels = tf.cast(labels, tf.int64)
-            accuracy = tf.metrics.accuracy(labels=labels, predictions=pred)
-            #    precision_at_k = tf.metrics.precision_at_k(labels=labels, predictions=logits, k=10)
-            #    precision_at_k_2 = tf.metrics.precision_at_top_k(labels=labels, predictions_idx=pred, k=10)
-            precision = tf.metrics.precision(labels=labels, predictions=pred)
-            recall = tf.metrics.recall(labels=labels, predictions=pred)
-            f1 = tf.contrib.metrics.f1_score(labels=labels, predictions=pred)
-            auc_roc = tf.metrics.auc(labels=labels, predictions=pred, curve="ROC",
-                                     summation_method='careful_interpolation')
-            auc_pr = tf.metrics.auc(labels=labels, predictions=pred, curve="PR",
-                                    summation_method='careful_interpolation')
-            metrics = {'accuracy': accuracy, 'precision': precision, 'recall': recall, 'f1': f1,
-                       'auc_roc': auc_roc, 'auc_pr': auc_pr}
+            thresholds = params["eval_top_n"].split(",") if "eval_top_n" in params else [10, 50]
+            metrics = dict()
+        #    for k in thresholds:
+        #        metrics["recall@" + str(k)] = tf.metrics.recall_at_k(tf.cast(labels, tf.int64), logits, int(k))  ############------ class_id=1
+        #        metrics["precision@" + str(k)] = tf.metrics.precision_at_k(tf.cast(labels, tf.int64), logits, int(k))
+            metrics["auc_roc"] = tf.metrics.auc(labels=labels, predictions=pred, curve="ROC",
+                                                summation_method='careful_interpolation')
+            metrics["auc_pr"] = tf.metrics.auc(labels=labels, predictions=pred, curve="PR",
+                                               summation_method='careful_interpolation')
 
         if mode == tf.estimator.ModeKeys.EVAL:
             return tf.estimator.EstimatorSpec(mode, loss=loss, eval_metric_ops=metrics)
@@ -120,102 +120,69 @@ class WideDeepEstimator(tf.estimator.Estimator):  # tf.estimator.Estimator,  NOO
     #    optimizer = tf.train.AdagradOptimizer(learning_rate=0.01)
     #    optimizer = tf.train.ProximalAdagradOptimizer(learning_rate=0.01)
         training_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        training_op = tf.group([training_op, update_ops])
         return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=training_op)
 
     @staticmethod
-    def input_fn(data=None, file_path=None, repeat=1, batch_size=256, mode="train", user=None, item=None):
+    def input_fn(file_path=None, batch_size=256, mode="train", user=None, item=None, feature_func=None):
         def _parse_record(record):
-            features = {
-                "user": tf.io.FixedLenFeature([], tf.int64),
-                "item": tf.io.FixedLenFeature([], tf.int64),
-                "label": tf.io.FixedLenFeature([], tf.float32),
-                "gender": tf.io.FixedLenFeature([], tf.string),
-                "age": tf.io.FixedLenFeature([], tf.int64),
-                "occupation": tf.io.FixedLenFeature([], tf.int64),
-                "genre1": tf.io.FixedLenFeature([], tf.string),
-                "genre2": tf.io.FixedLenFeature([], tf.string),
-                "genre3": tf.io.FixedLenFeature([], tf.string),
-            }
-            example = tf.io.parse_single_example(record, features=features)
+            example = tf.io.parse_single_example(record, features=feature_func)
             labels = example.pop("label")
             return example, labels
 
         if mode == "train":
-            data = tf.data.TFRecordDataset([file_path])
-            data = data.map(_parse_record, num_parallel_calls=4)
-            data = data.shuffle(buffer_size=100000).batch(batch_size=batch_size).prefetch(buffer_size=1)
-            print(data.output_types)
-            print(data.output_shapes)
-            return data
+            dataset = tf.data.TFRecordDataset([file_path])
+            dataset = dataset.map(_parse_record, num_parallel_calls=4)
+            dataset = dataset.shuffle(buffer_size=100000).batch(batch_size=batch_size).prefetch(buffer_size=1)
+        #    print(data.output_types)
+        #    print(data.output_shapes)
+            return dataset
 
         elif mode == "eval":
-            data = tf.data.TFRecordDataset([file_path])
-            data = data.map(_parse_record, num_parallel_calls=4)
-            data = data.batch(batch_size=batch_size)
-            return data
+            dataset = tf.data.TFRecordDataset([file_path])
+            dataset = dataset.map(_parse_record, num_parallel_calls=4)
+            dataset = dataset.batch(batch_size=batch_size)
+            return dataset
 
-        elif mode == "predict":
-            user_part = pd.DataFrame([data.user_dict[user]], columns=data.user_feature_cols)
-            item_part = pd.DataFrame([data.item_dict[item]], columns=data.item_feature_cols)
-            features = {col: user_part[col].to_numpy().reshape(-1, 1) for col in user_part.columns}
-            features.update({col: item_part[col].to_numpy().reshape(-1, 1) for col in item_part.columns})
-            for col, col_type in data.column_types:
-                if col_type == np.float32 or col_type == np.float64:
-                    features[col] = features[col].astype(int)
-                elif col != "label":
-                    features[col] = features[col].astype(col_type)
-
-            test_data = tf.data.Dataset.from_tensor_slices(features)
-            return test_data
+        elif mode == "pred":
+            pred_features = feature_func(u=user, i=item)
+            pred_data = tf.data.Dataset.from_tensor_slices(pred_features)
+            return pred_data
 
         elif mode == "rank":
-            n_items = len(data.item_dict)
-            user_part = pd.DataFrame([data.user_dict[user]], columns=data.user_feature_cols)
-            user_part = user_part.reindex(user_part.index.repeat(n_items))
-            item_part = pd.DataFrame(list(data.item_dict.values()), columns=data.item_feature_cols)
-            features = {col: user_part[col].to_numpy().reshape(-1, 1) for col in user_part.columns}
-            features.update({col: item_part[col].to_numpy().reshape(-1, 1) for col in item_part.columns})
-            for col, col_type in data.column_types:
-                if col_type == np.float32 or col_type == np.float64:
-                    features[col] = features[col].astype(int)
-                elif col != "label":
-                    features[col] = features[col].astype(col_type)
-            rank_data = tf.data.Dataset.from_tensor_slices(features).batch(batch_size)
+            rank_features = feature_func(u=user)
+            rank_data = tf.data.Dataset.from_tensor_slices(rank_features).batch(batch_size)
             return rank_data
 
-    def fit(self, dataset, wide_cols, deep_cols, train_data, eval_data, verbose=1):
-        self.dataset = dataset
+    def fit(self, wide_cols, deep_cols, train_data, eval_data, feature_func, eval_info, verbose=1):
+    #    self.dataset = dataset
         self.model = self.build_model(wide_cols, deep_cols)
-        for epoch in range(1, self.n_epochs):  # epoch_per_eval
+        for epoch in range(1, self.n_epochs + 1):  # epoch_per_eval
             t0 = time.time()
             self.model.train(input_fn=lambda: WideDeepEstimator.input_fn(
-                data=dataset, repeat=1, batch_size=self.batch_size, mode="train", file_path=train_data))
-            train_result = self.model.evaluate(input_fn=lambda: WideDeepEstimator.input_fn(
-                data=dataset, repeat=1, batch_size=self.batch_size, mode="train", file_path=train_data))
-            eval_result = self.model.evaluate(input_fn=lambda: WideDeepEstimator.input_fn(
-                data=dataset, mode="eval", file_path=eval_data))
+                file_path=train_data, batch_size=self.batch_size, mode="train", feature_func=feature_func))
 
-            if verbose > 0:
+            if verbose == 1:
                 print("Epoch {} training time: {:.4f}".format(epoch, time.time() - t0))
+            elif verbose > 1:
+                print("Epoch {} training time: {:.4f}".format(epoch, time.time() - t0))
+                eval_result = self.model.evaluate(input_fn=lambda: WideDeepEstimator.input_fn(
+                                                  file_path=eval_data, mode="eval", feature_func=feature_func))
                 if self.task == "rating":
-                    print("train loss: {loss:.4f}, train rmse: {rmse:.4f}".format(**train_result))
-                    print("test loss: {loss:.4f}, test rmse: {rmse:.4f}".format(**eval_result))
+                    print("eval loss: {loss:.4f}, test rmse: {rmse:.4f}".format(**eval_result))
                 elif self.task == "ranking":
-                    print("train loss: {loss:.4f}, accuracy: {accuracy:.4f}, precision: {precision:.4f}, "
-                          "recall: {recall:.4f}, f1: {f1:.4f}, auc_roc: {auc_roc:.4f}, "
-                          "auc_pr: {auc_pr:.4f}".format(**train_result))
-                    print("test loss: {loss:.4f}, accuracy: {accuracy:.4f}, precision: {precision:.4f}, "
-                          "recall: {recall:.4f}, f1: {f1:.4f}, auc_roc: {auc_roc:.4f}, "
-                          "auc_pr: {auc_pr:.4f}".format(**eval_result))
+                    for key in sorted(eval_result):
+                        print("%s: %s" % (key, eval_result[key]))
 
                 t0 = time.time()
-                NDCG = NDCG_at_k(self, self.dataset, 10, mode="wide_deep")
-                print("\t NDCG @ {}: {:.4f}".format(10, NDCG))
+                NDCG = NDCG_at_k(self, dataset=eval_info, k=10, sample_user=100, mode="estimator")
+                print("\t NDCG@{}: {:.4f}".format(10, NDCG))
                 print("\t NDCG time: {:.4f}".format(time.time() - t0))
 
     def predict_ui(self, u, i):  # cannot override Estimator's predict method
-        pred_result = self.model.predict(input_fn=lambda: WideDeepEstimator.input_fn(
-            data=self.dataset, mode="test", user=u, item=i))  #  original_data=self.dataset
+        pred_result = self.model.predict(input_fn=lambda: WideDeepEstimator.input_fn(   # use predict_fn ??
+            mode="pred", user=u, item=i, feature_func=self.pred_feat_func))
         pred_result = list(pred_result)[0]
         if self.task == "rating":
             return list(pred_result)[0]['predictions']
@@ -224,18 +191,17 @@ class WideDeepEstimator(tf.estimator.Estimator):  # tf.estimator.Estimator,  NOO
 
     def recommend_user(self, u, n_rec=10):
         rank_list = self.model.predict(input_fn=lambda: WideDeepEstimator.input_fn(
-            data=self.dataset, mode="rank", user=u, batch=256))
+            mode="rank", user=u, batch_size=256, feature_func=self.rank_feat_func))
 
-        items = np.array(list(self.dataset.item_dict.keys()))
         if self.task == "rating":
             rank = np.array([res['predictions'][0] for res in rank_list])
             indices = np.argpartition(rank, -n_rec)[-n_rec:]
-            return sorted(zip(items[indices], rank[indices]), key=lambda x: -x[1])
+            return sorted(zip(self.item_indices[indices], rank[indices]), key=lambda x: -x[1])
 
         elif self.task == "ranking":
             rank = np.array([res['probabilities'][0] for res in rank_list])
             indices = np.argpartition(rank, -n_rec)[-n_rec:]
-            return sorted(zip(items[indices], rank[indices]), key=itemgetter(1), reverse=True)
+            return sorted(zip(self.item_indices[indices], rank[indices]), key=itemgetter(1), reverse=True)
 
 
 class WideDeep:
