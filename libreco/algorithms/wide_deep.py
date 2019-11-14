@@ -10,7 +10,6 @@ import itertools
 from operator import itemgetter
 from collections import OrderedDict
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 from tensorflow import feature_column as feat_col
 # from tensorflow.python.estimator import estimator
@@ -100,11 +99,7 @@ class WideDeepEstimator(tf.estimator.Estimator):
 
             labels = tf.cast(tf.reshape(labels, [-1, 1]), tf.float32)
             loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits))
-            thresholds = params["eval_top_n"].split(",") if "eval_top_n" in params else [10, 50]
             metrics = dict()
-        #    for k in thresholds:
-        #        metrics["recall@" + str(k)] = tf.metrics.recall_at_k(tf.cast(labels, tf.int64), logits, int(k))  ############------ class_id=1
-        #        metrics["precision@" + str(k)] = tf.metrics.precision_at_k(tf.cast(labels, tf.int64), logits, int(k))
             metrics["auc_roc"] = tf.metrics.auc(labels=labels, predictions=pred, curve="ROC",
                                                 summation_method='careful_interpolation')
             metrics["auc_pr"] = tf.metrics.auc(labels=labels, predictions=pred, curve="PR",
@@ -176,7 +171,7 @@ class WideDeepEstimator(tf.estimator.Estimator):
                         print("%s: %s" % (key, eval_result[key]))
 
                 t0 = time.time()
-                NDCG = NDCG_at_k(self, dataset=eval_info, k=10, sample_user=100, mode="estimator")
+                NDCG = NDCG_at_k(self, dataset=eval_info, k=10, sample_user=10, mode="estimator")
                 print("\t NDCG@{}: {:.4f}".format(10, NDCG))
                 print("\t NDCG time: {:.4f}".format(time.time() - t0))
 

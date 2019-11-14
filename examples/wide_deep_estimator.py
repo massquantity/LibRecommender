@@ -1,6 +1,7 @@
 import os
 import time
 import functools
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -9,6 +10,26 @@ from tensorflow import feature_column as fc
 from libreco.dataset import DatasetPure, DatasetFeat
 from libreco.algorithms import WideDeepEstimator
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+
+
+flags = tf.app.flags
+# flags.DEFINE_string("saved_model_dir", "./saved_model_dir", "Path to the saved model.")
+flags.DEFINE_string("export_model_dir", "./export_model_dir", "Path to the export model.")
+flags.DEFINE_string("train_path", None, "Path to the training data, tfrecord format.")
+flags.DEFINE_string("eval_path", None, "Path to the evaluate data, tfrecord format.")
+flags.DEFINE_string("orig_path", None, "Path to the original data, csv format.")
+flags.DEFINE_string("eval_info", None, "Path to the evaluate information, numpy npy format.")
+flags.DEFINE_integer("embed_size", 32, "Embedding vector size")
+flags.DEFINE_integer("epochs", 10, "Total training epochs")
+flags.DEFINE_string("hidden_units", "256,128,64", "Comma-separated list of number of hidden units")
+flags.DEFINE_string("eval_top_n", "5,20,50", "Comma-separated list of top evaluate numbers")
+flags.DEFINE_integer("batch_size", 256, "Training batch size")
+flags.DEFINE_float("lr", 0.005, "Learning rate")
+flags.DEFINE_string("task", "ranking", "Specific task: rating or raking")
+flags.DEFINE_boolean("use_bn", False, "Whether to use batch normalization for hidden layers")
+flags.DEFINE_boolean("export_and_load", False, "Whether to export and load model")
+flags.DEFINE_integer("n_rec", 7, "Number of recommended items for a user")
+FLAGS = flags.FLAGS
 
 
 def create_feature_columns(dataset, embed_size=32, hash_size=10000):
@@ -59,8 +80,6 @@ def get_unique_info(data):
 
 
 def predict_info(user_dict, item_dict, u, i):
-#    user_info = data[data.user == u].values[0]
-#    item_info = data[data.item == i].values[0]
     features = {
         "user": np.array(u).reshape(-1, 1),
         "item": np.array(i).reshape(-1, 1),
@@ -115,40 +134,62 @@ def get_tf_feat():
     return feat_func
 
 
-if __name__ == "__main__":
-    dataset = pd.read_csv("../ml-1m/merged_data.csv", header=None, sep=",",
+def main(unused_argv):
+    dataset = pd.read_csv(FLAGS.orig_path, header=None, sep=",",
                           names=["user", "item", "label", "gender", "age",
                                  "occupation", "genre1", "genre2", "genre3"])
     wide_cols, deep_cols, feat_func = create_feature_columns(dataset)
-    eval_info = np.load("../ml-1m/test_data.npy", allow_pickle=True)  # used for evaluate
-
-    t1 = time.time()
+    eval_info = np.load(FLAGS.eval_info, allow_pickle=True)  # used for evaluate
     user_dict, item_dict, item_info, item_indices = get_unique_info(dataset)
-    print("get user-item info time: {:.4f}".format(time.time() - t1))
-
     pred_feat_func = functools.partial(predict_info, user_dict=user_dict, item_dict=item_dict)
     rank_feat_func = functools.partial(rank_info, user_dict=user_dict, item_info=item_info)
 
-    wde = WideDeepEstimator(lr=0.005, embed_size=32, n_epochs=0, batch_size=4096, use_bn=True,
-                            task="ranking", pred_feat_func=pred_feat_func,
-                            rank_feat_func=rank_feat_func, item_indices=item_indices)
-    wde.fit(wide_cols, deep_cols, "../ml-1m/train.tfrecord", "../ml-1m/test.tfrecord",
-            feat_func, eval_info, verbose=2)
+    wde = WideDeepEstimator(lr=FLAGS.lr,
+                            embed_size=FLAGS.embed_size,
+                            n_epochs=FLAGS.epochs,
+                            batch_size=FLAGS.batch_size,
+                            use_bn=FLAGS.use_bn,
+                            task=FLAGS.task,
+                            pred_feat_func=pred_feat_func,
+                            rank_feat_func=rank_feat_func,
+                            item_indices=item_indices)
+    wde.fit(wide_cols, deep_cols, FLAGS.train_path, FLAGS.eval_path, feat_func, eval_info, verbose=2)
     print(wde.predict_ui(1, 2))
     t6 = time.time()
     print(wde.recommend_user(1, n_rec=7))
-    print("rec time: ", time.time() - t6)
+    print("recommend time: ", time.time() - t6)
 
-    wde.model.export_saved_model("./export_model_dir", serving_input_receiver_fn)
+    if FLAGS.export_and_load:
+        wde.model.export_saved_model(FLAGS.export_model_dir, serving_input_receiver_fn)
 
-    from pathlib import Path
-    subdirs = [x for x in Path("./export_model_dir").iterdir()
-               if x.is_dir() and 'temp' not in str(x)]
-    latest = str(sorted(subdirs)[-1])
+        sub_dirs = [x for x in Path(FLAGS.export_model_dir).iterdir() if x.is_dir() and 'temp' not in str(x)]
+        latest = str(sorted(sub_dirs)[-1])
+        predict_fn = predictor.from_saved_model(latest)
+        samples = rank_info(user_dict, 1, item_info)
 
-    predict_fn = predictor.from_saved_model(latest)
-    samples = rank_info(user_dict, 1, item_info)
-    t1 = time.time()
-    print(predict_fn(samples)["probabilities"][0])
-    print("rec time: ", time.time() - t1)
+        t1 = time.time()
+        rank = predict_fn(samples)["probabilities"].ravel()
+        indices = np.argpartition(rank, -FLAGS.n_rec)[-FLAGS.n_rec:]
+        print("recommend for user 1: %s" % sorted(zip(item_indices[indices], rank[indices]), key=lambda x: -x[1]))
+        print("predict_fn recommend time: ", time.time() - t1)
+
+
+if __name__ == "__main__":
+    tf.app.run(main=main)
+
+# from libreco.utils import download_data
+# download_data.prepare_data("par_path=..., feat=True")
+
+
+# from wide_deep_tfrecord_estimator import export_TFRecord
+# export_TFRecord(par_dir="...", convert_implicit=True, num_neg=2, task="ranking")
+
+
+# $python wide_deep_estimator.py
+#         --train_path "../ml-1m/train.tfrecord" \
+#         --eval_path "../ml-1m/test.tfrecord" \
+#         --orig_path "../ml-1m/merged_data.csv" \
+#         --eval_info "../ml-1m/test_data.npy" \
+#         --epochs 10 \
+#         --export_and_load True
 
