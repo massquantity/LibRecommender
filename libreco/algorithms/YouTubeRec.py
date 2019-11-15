@@ -19,7 +19,7 @@ from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 class YouTubeRec(BaseFeat):
     def __init__(self, lr, n_epochs=20, embed_size=100, reg=0.0, batch_size=256, seed=42,
-                 use_bn=True, dropout_rate=0.0, task="rating", neg_sampling=False):
+                 use_bn=True, hidden_units="128,64,32", dropout_rate=0.0, task="rating", neg_sampling=False):
         self.lr = lr
         self.n_epochs = n_epochs
         self.embed_size = embed_size
@@ -28,6 +28,7 @@ class YouTubeRec(BaseFeat):
         self.seed = seed
         self.dropout_rate = dropout_rate
         self.bn = use_bn
+        self.hidden_units = list(map(int, hidden_units.split(",")))
         self.task = task
         self.neg_sampling = neg_sampling
         super(YouTubeRec, self).__init__()
@@ -96,7 +97,7 @@ class YouTubeRec(BaseFeat):
                                                                   momentum=0.99)
 
         MLP_layer_one = tf.layers.dense(inputs=self.concat_embedding,
-                                        units=self.embed_size * 3,
+                                        units=self.hidden_units[0],
                                         activation=None,
                                         kernel_initializer=tf.variance_scaling_initializer)
                                         # kernel_regularizer=tf.keras.regularizers.l2(0.0001)
@@ -108,7 +109,7 @@ class YouTubeRec(BaseFeat):
             MLP_layer_one = tf.layers.dropout(MLP_layer_one, rate=self.dropout_rate, training=self.is_training)
 
         MLP_layer_two = tf.layers.dense(inputs=MLP_layer_one,
-                                        units=self.embed_size * 2,
+                                        units=self.hidden_units[1],
                                         activation=None,
                                         kernel_initializer=tf.variance_scaling_initializer)
 
@@ -119,7 +120,7 @@ class YouTubeRec(BaseFeat):
             MLP_layer_two = tf.layers.dropout(MLP_layer_two, rate=self.dropout_rate, training=self.is_training)
 
         MLP_layer_three = tf.layers.dense(inputs=MLP_layer_two,
-                                          units=self.embed_size,
+                                          units=self.hidden_units[2],
                                           activation=tf.nn.relu,
                                           kernel_initializer=tf.variance_scaling_initializer,)
     #                                      use_bias=False)

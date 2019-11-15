@@ -178,10 +178,11 @@ if __name__ == "__main__":
 #    print(rmse_tf(ncf, dataset, mode="train"))
 #    print(rmse_tf(ncf, dataset, mode="test"))
 
-#    wd = wide_deep.WideDeep(embed_size=16, n_epochs=1, batch_size=256, task="ranking")
-#    wd.fit(dataset)
-#    print(wd.predict(1, 2, "2001-1-8"))
-#    print(wd.predict_user(1))
+    wd = WideDeep(lr=0.0005, n_epochs=200, reg=0.0, embed_size=32, batch_size=4096, use_bn=True,
+                  dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
+    wd.fit(dataset, pre_sampling=False, verbose=2)
+    print(wd.predict(1, 10))
+    print(wd.recommend_user(1, 7))
 
 #    wdc = WideDeepEstimator(lr=0.01, embed_size=16, n_epochs=100, batch_size=256, task="ranking", cross_features=False)
 #    wdc = WideDeep(lr=0.01, embed_size=16, n_epochs=100, batch_size=256, dropout_rate=0.0, task="rating")
@@ -229,7 +230,7 @@ if __name__ == "__main__":
 #    print(bpr.predict(1, 2, method="knn"))
 
     you = YouTubeRec(lr=0.0005, n_epochs=200, reg=0.0, embed_size=32, batch_size=4096, use_bn=True,
-                     dropout_rate=0.0, task="ranking", neg_sampling=True)
+                     dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
     you.fit(dataset, pre_sampling=False, verbose=2)
     print(you.predict(1, 10))
     print(you.recommend_user(1, 7))
