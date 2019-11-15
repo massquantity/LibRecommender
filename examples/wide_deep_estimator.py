@@ -45,14 +45,17 @@ def create_feature_columns(dataset, embed_size=32, hash_size=10000):
     genre2 = fc.categorical_column_with_vocabulary_list("genre2", genre_list)
     genre3 = fc.categorical_column_with_vocabulary_list("genre3", genre_list)
 
-    wide_cols = [users, items, gender, age, occupation, genre1, genre2, genre3]
-    wide_cols.append(fc.crossed_column([gender, age, occupation], hash_bucket_size=hash_size))
-    wide_cols.append(fc.crossed_column([age, genre1], hash_bucket_size=hash_size))
+    wide_cols = [users, items, gender, age, occupation, genre1, genre2, genre3,
+                 fc.crossed_column([gender, age, occupation], hash_bucket_size=hash_size),
+                 fc.crossed_column([age, genre1], hash_bucket_size=hash_size)]
 
-    embed_cols = [users, items, age, occupation, genre1, genre2, genre3]
+    embed_cols = [users, items, age, occupation]
     deep_cols = list()
     for col in embed_cols:
         deep_cols.append(fc.embedding_column(col, embed_size))
+
+    shared_embed_cols = [genre1, genre2, genre3]
+    deep_cols.extend(fc.shared_embedding_columns(shared_embed_cols, embed_size))
     deep_cols.append(fc.indicator_column(gender))
 
     label = fc.numeric_column("label", default_value=0.0, dtype=tf.float32)
@@ -143,6 +146,8 @@ def main(unused_argv):
     user_dict, item_dict, item_info, item_indices = get_unique_info(dataset)
     pred_feat_func = functools.partial(predict_info, user_dict=user_dict, item_dict=item_dict)
     rank_feat_func = functools.partial(rank_info, user_dict=user_dict, item_info=item_info)
+    if FLAGS.use_bn:
+        print("use batch normalization...")
 
     wde = WideDeepEstimator(lr=FLAGS.lr,
                             embed_size=FLAGS.embed_size,
