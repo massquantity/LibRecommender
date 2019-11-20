@@ -183,7 +183,7 @@ if __name__ == "__main__":
     tf.app.run(main=main)
 
 # from libreco.utils import download_data
-# download_data.prepare_data("par_path=..., feat=True")
+# download_data.prepare_data("par_path="...", feat=True")
 
 
 # from wide_deep_tfrecord_estimator import export_TFRecord
