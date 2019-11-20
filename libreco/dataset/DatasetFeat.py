@@ -58,7 +58,7 @@ class DatasetFeat:
                       train_frac=0.8, convert_implicit=False, build_negative=False, seed=42,
                       num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
                       numerical_col=None, categorical_col=None, merged_categorical_col=None,
-                      user_feature_cols=None, item_feature_cols=None, lower_upper_bound=None):  # numerical feature 不做 embedding
+                      user_feature_cols=None, item_feature_cols=None, lower_upper_bound=None):
 
         np.random.seed(seed)
         self.batch_size = batch_size
@@ -175,13 +175,6 @@ class DatasetFeat:
             self.user_offset = self.fb.total_count
             print("offset: {}, n_users: {}, feature_size: {}".format(
                 self.user_offset, self.n_users, self.feature_size))
-        #    print(self.train_feat_indices.shape)
-        #    print(min(self.train_feat_indices[:, 6]))
-
-        # user_embedding, item_embedding, feature_embedding
-        # np.unique(return_inverse=True)
-        # numerical min_max_scale
-        # min_occurance
 
         print("testset size before: ", len(self.test_labels))
         self.test_user_indices = np.array(self.test_user_indices)
@@ -199,7 +192,6 @@ class DatasetFeat:
         if convert_implicit:
             self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
             self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
-        #    self.item_feature_cols = [(i - 3) for i in item_feature_cols]  # remove user item label column
 
         self.numerical_col = numerical_col
         # remove user - item - label column and add numerical columns
@@ -263,7 +255,8 @@ class DatasetFeat:
                         col -= 1
                     item_cols.append(col)
             self.item_feature_cols = sorted(item_cols)
-            print("user feature cols: {}, item feature cols: {}".format(self.user_feature_cols, self.item_feature_cols))
+            print("user feature cols: {}, item feature cols: {}".format(
+                self.user_feature_cols, self.item_feature_cols))
 
         if build_negative:
             self.build_trainset_implicit(num_neg)
