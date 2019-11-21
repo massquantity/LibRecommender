@@ -1,17 +1,18 @@
-import warnings
-warnings.filterwarnings("ignore")
 from collections import defaultdict
-import time
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
+from .download_data import prepare_data
 from .preprocessing import FeatureBuilder
-from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
+from ..utils.sampling import NegativeSamplingFeat
+import warnings
+
+warnings.filterwarnings("ignore")
 
 
 class DatasetFeat:
-    def __init__(self, include_features=True):
+    def __init__(self, include_features=True, load_builtin_data="ml-1m", par_path=None):
         self.train_user = defaultdict(dict)
         self.train_item = defaultdict(dict)
         self.user2id = dict()
@@ -32,15 +33,18 @@ class DatasetFeat:
             self.test_numerical_features = defaultdict(list)
             self.train_mergecat_features = defaultdict(list)
             self.test_mergecat_features = defaultdict(list)
-            self.train_merge_list = defaultdict(list)
-            self.test_merge_list = defaultdict(list)
 
-    def _get_pool(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
-                    train_frac=0.8, sep=",", user_col=None, item_col=None, seed=42):
+        if load_builtin_data == "ml-1m":
+            prepare_data(par_path, feat=True)
+
+    @staticmethod
+    def _get_pool(data_path="../ml-1m/ratings.dat", shuffle=True, length="all",
+                  train_frac=0.8, sep=",", user_col=None, item_col=None, seed=42):
         np.random.seed(seed)
         user_pool = set()
         item_pool = set()
-        loaded_data = open(data_path, 'r').readlines()
+        with open(data_path, 'r') as f:
+            loaded_data = f.readlines()
         if shuffle:
             loaded_data = np.random.permutation(loaded_data)
         if length == "all":
@@ -55,48 +59,61 @@ class DatasetFeat:
         return user_pool, item_pool, loaded_data
 
     def build_dataset(self, data_path="../ml-1m/ratings.dat", shuffle=True, length="all", batch_size=256,
-                      train_frac=0.8, convert_implicit=False, build_negative=False, seed=42,
-                      num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
+                      train_frac=0.8, convert_implicit=False, build_negative=False, seed=42, threshold=0,
+                      k=1, num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
                       numerical_col=None, categorical_col=None, merged_categorical_col=None,
-                      user_feature_cols=None, item_feature_cols=None, lower_upper_bound=None):
-
+                      user_feature_cols=None, item_feature_cols=None, lower_upper_bound=None,
+                      split_mode="train_test"):
         np.random.seed(seed)
         self.batch_size = batch_size
         self.lower_upper_bound = lower_upper_bound
-        if num_neg is not None:
+        if isinstance(num_neg, int) and num_neg > 0:
             self.num_neg = num_neg
-
-    #    if not user_col or not item_col or not label_col:
         if not np.all([user_col, item_col, label_col]):
-            user_col = 0
-            item_col = 1
-            label_col = 2
+            self.user_col = 0
+            self.item_col = 1
+            self.label_col = 2
+        if split_mode == "train_test":
+            self.train_test_split(data_path, shuffle, sep, length, train_frac, convert_implicit, build_negative,
+                                  threshold, seed, num_neg, numerical_col, categorical_col,
+                                  merged_categorical_col, user_feature_cols, item_feature_cols)
+        elif split_mode == "leave_k_out":
+            self.leave_k_out_split(k, data_path, shuffle, length, sep, convert_implicit, build_negative, threshold,
+                                   num_neg, numerical_col, categorical_col, merged_categorical_col, seed,
+                                   user_feature_cols, item_feature_cols)
+        else:
+            raise ValueError("split_mode must be either 'train_test' or 'leave_k_out'")
 
-        user_pool, item_pool, loaded_data = self._get_pool(data_path=data_path,
-                                                             shuffle=shuffle,
-                                                             length=length,
-                                                             train_frac=train_frac,
-                                                             sep=sep,
-                                                             user_col=user_col,
-                                                             item_col=item_col,
-                                                             seed=seed)
+    def train_test_split(self, data_path, shuffle=True, sep=",", length="all",
+                         train_frac=0.8, convert_implicit=False, build_negative=False, threshold=0,
+                         seed=42, num_neg=None, numerical_col=None, categorical_col=None,
+                         merged_categorical_col=None, user_feature_cols=None, item_feature_cols=None):
+
+        user_pool, item_pool, loaded_data = DatasetFeat._get_pool(data_path=data_path,
+                                                                  shuffle=shuffle,
+                                                                  length=length,
+                                                                  train_frac=train_frac,
+                                                                  sep=sep,
+                                                                  user_col=self.user_col,
+                                                                  item_col=self.item_col,
+                                                                  seed=seed)
 
         index_user = 0
         index_item = 0
+        train_merge_list = defaultdict(list)
+        test_merge_list = defaultdict(list)
         if length == "all":
             length = len(loaded_data)
 
         for i, data in enumerate(loaded_data[:length]):
             line = data.split(sep)
-            user = line[user_col]
-            item = line[item_col]
-            label = line[label_col]
-            if convert_implicit and label != 0:
+            user = line[self.user_col]
+            item = line[self.item_col]
+            label = line[self.label_col]
+            if convert_implicit and int(label) > threshold:
                 label = 1
-
             if user not in user_pool or item not in item_pool:
                 continue
-
             try:
                 user_id = self.user2id[user]
             except KeyError:
@@ -114,8 +131,8 @@ class DatasetFeat:
                 self.train_user_indices.append(user_id)
                 self.train_item_indices.append(item_id)
                 self.train_labels.append(int(label))
-                self.train_user[user_id].update(dict(zip([item_id], [int(label)])))
-                self.train_item[item_id].update(dict(zip([user_id], [int(label)])))
+                self.train_user[user_id].update(dict(zip([item_id], [float(label)])))
+                self.train_item[item_id].update(dict(zip([user_id], [float(label)])))
 
                 if categorical_col is not None and self.include_features:
                     for cat_feat in categorical_col:
@@ -127,12 +144,8 @@ class DatasetFeat:
 
                 if merged_categorical_col is not None and self.include_features:
                     for merge_feat in merged_categorical_col:
-                    #    merge_list = [[] for _ in range(len(merge_feat))]
                         for mft in merge_feat:
-                            self.train_merge_list[mft].append(line[mft].strip())
-                    #    merge_col_index = merge_feat[0]
-                    #    for ml in merge_list:
-                    #        self.train_mergecat_features[merge_col_index].extend(ml)
+                            train_merge_list[mft].append(line[mft].strip())
 
             else:
                 self.test_user_indices.append(user_id)
@@ -150,14 +163,14 @@ class DatasetFeat:
                 if merged_categorical_col is not None and self.include_features:
                     for merge_feat in merged_categorical_col:
                         for mft in merge_feat:
-                            self.test_merge_list[mft].append(line[mft].strip())
+                            test_merge_list[mft].append(line[mft].strip())
 
         if merged_categorical_col is not None and self.include_features:
             for merge_feat in merged_categorical_col:
                 merge_col_index = merge_feat[0]
                 for mft in merge_feat:
-                    self.train_mergecat_features[merge_col_index].extend(self.train_merge_list[mft])
-                    self.test_mergecat_features[merge_col_index].extend(self.test_merge_list[mft])
+                    self.train_mergecat_features[merge_col_index].extend(train_merge_list[mft])
+                    self.test_mergecat_features[merge_col_index].extend(test_merge_list[mft])
 
         self.train_user_indices = np.array(self.train_user_indices)
         self.train_item_indices = np.array(self.train_item_indices)
@@ -167,11 +180,11 @@ class DatasetFeat:
                                      n_users=self.n_users, n_items=self.n_items)
             self.train_feat_indices, self.train_feat_values, self.feature_size = \
                 self.fb.fit(self.train_categorical_features,
-                       self.train_numerical_features,
-                       self.train_mergecat_features,
-                       len(self.train_labels),
-                       self.train_user_indices,
-                       self.train_item_indices)
+                            self.train_numerical_features,
+                            self.train_mergecat_features,
+                            len(self.train_labels),
+                            self.train_user_indices,
+                            self.train_item_indices)
             self.user_offset = self.fb.total_count
             print("offset: {}, n_users: {}, feature_size: {}".format(
                 self.user_offset, self.n_users, self.feature_size))
@@ -183,15 +196,11 @@ class DatasetFeat:
         if self.include_features:
             self.test_feat_indices, self.test_feat_values = \
                 self.fb.transform(self.test_categorical_features,
-                             self.test_numerical_features,
-                             self.test_mergecat_features,
-                             len(self.test_labels),
-                             self.test_user_indices,
-                             self.test_item_indices)
-
-        if convert_implicit:
-            self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
-            self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
+                                  self.test_numerical_features,
+                                  self.test_mergecat_features,
+                                  len(self.test_labels),
+                                  self.test_user_indices,
+                                  self.test_item_indices)
 
         self.numerical_col = numerical_col
         # remove user - item - label column and add numerical columns
@@ -208,24 +217,25 @@ class DatasetFeat:
                     orig_col = col
                     num_place = np.searchsorted(sorted(numerical_col), orig_col)
                     col += (len(numerical_col) - num_place)
-                    if orig_col > user_col:
+                    if orig_col > self.user_col:
                         col -= 1
-                    if orig_col > item_col:
+                    if orig_col > self.item_col:
                         col -= 1
-                    if orig_col > label_col:
+                    if orig_col > self.label_col:
                         col -= 1
                     user_cols.append(col)
                 elif numerical_col is None:
                     orig_col = col
-                    if orig_col > user_col:
+                    if orig_col > self.user_col:
                         col -= 1
-                    if orig_col > item_col:
+                    if orig_col > self.item_col:
                         col -= 1
-                    if orig_col > label_col:
+                    if orig_col > self.label_col:
                         col -= 1
                     user_cols.append(col)
             self.user_feature_cols = sorted(user_cols)
 
+        # item_feature_cols are used for negative sampling
         if item_feature_cols is not None:
             item_cols = []
             self.item_numerical_cols = []
@@ -238,20 +248,20 @@ class DatasetFeat:
                     orig_col = col
                     num_place = np.searchsorted(sorted(numerical_col), orig_col)
                     col += (len(numerical_col) - num_place)
-                    if orig_col > user_col:
+                    if orig_col > self.user_col:
                         col -= 1
-                    if orig_col > item_col:
+                    if orig_col > self.item_col:
                         col -= 1
-                    if orig_col > label_col:
+                    if orig_col > self.label_col:
                         col -= 1
                     item_cols.append(col)
                 elif numerical_col is None:
                     orig_col = col
-                    if orig_col > user_col:
+                    if orig_col > self.user_col:
                         col -= 1
-                    if orig_col > item_col:
+                    if orig_col > self.item_col:
                         col -= 1
-                    if orig_col > label_col:
+                    if orig_col > self.label_col:
                         col -= 1
                     item_cols.append(col)
             self.item_feature_cols = sorted(item_cols)
@@ -265,20 +275,21 @@ class DatasetFeat:
         print("testset size after: ", len(self.test_labels))
         return self
 
-    def leave_k_out_split(self, k, data_path, length="all", sep=",", shuffle=True, user_col=None,
-                         item_col=None, label_col=None, numerical_col=None, categorical_col=None,
-                         merged_categorical_col=None, seed=42):
+    def leave_k_out_split(self, k, data_path, shuffle=True, length="all", sep=",", convert_implicit=False,
+                          build_negative=False, threshold=0, num_neg=None, numerical_col=None,
+                          categorical_col=None, merged_categorical_col=None, seed=42,
+                          user_feature_cols=None, item_feature_cols=None):
         """
         leave-last-k-out-split
         :return: train - test, user - item - ratings
         """
         np.random.seed(seed)
-        self.user_indices = []
-        self.item_indices = []
-        self.labels = []
-        self.categorical_features = defaultdict(list)
-        self.numerical_features = defaultdict(list)
-        self.mergecat_features = defaultdict(list)
+        user_indices = list()
+        item_indices = list()
+        labels = list()
+        categorical_features = defaultdict(list)
+        numerical_features = defaultdict(list)
+        mergecat_features = defaultdict(list)
 
         user2id = dict()
         item2id = dict()
@@ -297,15 +308,17 @@ class DatasetFeat:
 
         index_user = 0
         index_item = 0
-        loaded_data = open(data_path, 'r').readlines()
+        with open(data_path, 'r') as f:
+            loaded_data = f.readlines()
         if length == "all":
             length = len(loaded_data)
         for i, data in enumerate(loaded_data[:length]):
             line = data.split(sep)
-            user = line[user_col]
-            item = line[item_col]
-            label = line[label_col]
-
+            user = line[self.user_col]
+            item = line[self.item_col]
+            label = line[self.label_col]
+            if convert_implicit and int(label) > threshold:
+                label = 1
             try:
                 user_id = user2id[user]
             except KeyError:
@@ -319,28 +332,28 @@ class DatasetFeat:
                 item2id[item] = index_item
                 index_item += 1
 
-            self.user_indices.append(user_id)
-            self.item_indices.append(item_id)
-            self.labels.append(int(label))
+            user_indices.append(user_id)
+            item_indices.append(item_id)
+            labels.append(float(label))
 
             if categorical_col is not None and self.include_features:
                 for cat_feat in categorical_col:
-                    self.categorical_features[cat_feat].append(line[cat_feat].strip())
+                    categorical_features[cat_feat].append(line[cat_feat].strip())
 
             if numerical_col is not None and self.include_features:
                 for num_feat in numerical_col:
-                    self.numerical_features[num_feat].append(line[num_feat].strip())
+                    numerical_features[num_feat].append(line[num_feat].strip())
 
             if merged_categorical_col is not None and self.include_features:
                 for merge_feat in merged_categorical_col:
                     for mft in merge_feat:
-                        self.mergecat_features[mft].append(line[mft].strip())
+                        mergecat_features[mft].append(line[mft].strip())
 
-        self.user_indices = np.array(self.user_indices)
-        self.item_indices = np.array(self.item_indices)
-        self.labels = np.array(self.labels)
+        user_indices = np.array(user_indices)
+        item_indices = np.array(item_indices)
+        labels = np.array(labels)
 
-        users, user_position, user_counts = np.unique(self.user_indices,
+        users, user_position, user_counts = np.unique(user_indices,
                                                       return_inverse=True,
                                                       return_counts=True)
         user_split_indices = np.split(np.argsort(user_position, kind="mergesort"),
@@ -362,47 +375,46 @@ class DatasetFeat:
                 train_indices = user_split_indices[u][:-p]
                 test_indices = user_split_indices[u][-p:]
 
-            train_user_indices.extend(self.user_indices[train_indices])
-            train_item_indices.extend(self.item_indices[train_indices])
-            train_labels.extend(self.labels[train_indices])
-            test_user_indices.extend(self.user_indices[test_indices])
-            test_item_indices.extend(self.item_indices[test_indices])
-            test_labels.extend(self.labels[test_indices])
+            train_user_indices.extend(user_indices[train_indices])
+            train_item_indices.extend(item_indices[train_indices])
+            train_labels.extend(labels[train_indices])
+            test_user_indices.extend(user_indices[test_indices])
+            test_item_indices.extend(item_indices[test_indices])
+            test_labels.extend(labels[test_indices])
 
-            train_indices_all.extend(train_indices.tolist())
-            test_indices_all.extend(test_indices.tolist())
+            train_indices_all.extend(train_indices)
+            test_indices_all.extend(test_indices)
 
         if categorical_col is not None and self.include_features:
             for cat_feat in categorical_col:
                 train_categorical_features[cat_feat].extend(
-                    np.array(self.categorical_features[cat_feat])[np.array(train_indices_all)])
+                    np.array(categorical_features[cat_feat])[np.array(train_indices_all)])
         if numerical_col is not None and self.include_features:
             for num_feat in numerical_col:
                 train_numerical_features[num_feat].extend(
-                    np.array(self.numerical_features[num_feat])[np.array(train_indices_all)])
+                    np.array(numerical_features[num_feat])[np.array(train_indices_all)])
         if merged_categorical_col is not None and self.include_features:
             for merge_feat in merged_categorical_col:
                 for mft in merge_feat:
                     train_mergecat_features[mft].extend(
-                        np.array(self.mergecat_features[mft])[np.array(train_indices_all)])
-
+                        np.array(mergecat_features[mft])[np.array(train_indices_all)])
 
         if categorical_col is not None and self.include_features:
             for cat_feat in categorical_col:
                 test_categorical_features[cat_feat].extend(
-                    np.array(self.categorical_features[cat_feat])[np.array(test_indices_all)])
+                    np.array(categorical_features[cat_feat])[np.array(test_indices_all)])
         if numerical_col is not None and self.include_features:
             for num_feat in numerical_col:
                 test_numerical_features[num_feat].extend(
-                    np.array(self.numerical_features[num_feat])[np.array(test_indices_all)])
+                    np.array(numerical_features[num_feat])[np.array(test_indices_all)])
         if merged_categorical_col is not None and self.include_features:
             for merge_feat in merged_categorical_col:
                 for mft in merge_feat:
                     test_mergecat_features[mft].extend(
-                        np.array(self.mergecat_features[mft])[np.array(test_indices_all)])
+                        np.array(mergecat_features[mft])[np.array(test_indices_all)])
 
         print("item before: ", len(test_item_indices))
-        train_item_pool = np.unique(train_item_indices)   # remove items in test data that are not in train data
+        train_item_pool = np.unique(train_item_indices)  # remove items in test data that are not in train data
         mask = np.isin(test_item_indices, train_item_pool)
         test_user_indices = np.array(test_user_indices)[mask]
         test_item_indices = np.array(test_item_indices)[mask]
@@ -419,16 +431,16 @@ class DatasetFeat:
                     test_mergecat_features[mft] = np.array(test_mergecat_features[mft])[mask]
         print("item after: ", len(test_item_indices))
 
-        user_mapping = dict(zip(set(train_user_indices), np.arange(len(set(train_user_indices)))))
-        item_mapping = dict(zip(set(train_item_indices), np.arange(len(set(train_item_indices)))))
+        self.user2id = dict(zip(set(train_user_indices), np.arange(len(set(train_user_indices)))))
+        self.item2id = dict(zip(set(train_item_indices), np.arange(len(set(train_item_indices)))))
         for user, item, label in zip(train_user_indices, train_item_indices, train_labels):
-            self.train_user_indices.append(user_mapping[user])
-            self.train_item_indices.append(item_mapping[item])
+            self.train_user_indices.append(self.user2id[user])
+            self.train_item_indices.append(self.item2id[item])
             self.train_labels.append(label)
 
         for test_u, test_i, test_l in zip(test_user_indices, test_item_indices, test_labels):
-            self.test_user_indices.append(user_mapping[test_u])
-            self.test_item_indices.append(item_mapping[test_i])
+            self.test_user_indices.append(self.user2id[test_u])
+            self.test_item_indices.append(self.item2id[test_i])
             self.test_labels.append(test_l)
 
         if shuffle:
@@ -448,8 +460,10 @@ class DatasetFeat:
                 for merge_feat in merged_categorical_col:
                     merge_col_index = merge_feat[0]
                     for mft in merge_feat:
-                        self.train_mergecat_features[merge_col_index] = \
-                            np.array(train_mergecat_features[mft])[random_mask]
+                        #    self.train_mergecat_features[merge_col_index] = \
+                        #        np.array(train_mergecat_features[mft])[random_mask]
+                        self.train_mergecat_features[merge_col_index].extend(
+                            np.array(train_mergecat_features[mft])[random_mask])
 
         else:
             self.train_user_indices = np.array(self.train_user_indices)
@@ -465,17 +479,22 @@ class DatasetFeat:
                 for merge_feat in merged_categorical_col:
                     merge_col_index = merge_feat[0]
                     for mft in merge_feat:
-                        self.train_mergecat_features[merge_col_index] = np.array(train_mergecat_features[mft])
+                        #    self.train_mergecat_features[merge_col_index] = \
+                        #        np.array(train_mergecat_features[mft])
+                        self.train_mergecat_features[merge_col_index].extend(
+                            np.array(train_mergecat_features[mft]))
 
         if self.include_features:
-            fb = FeatureBuilder(include_user_item=True, n_users=self.n_users, n_items=self.n_items)
+            self.fb = FeatureBuilder(include_user=True, include_item=True,
+                                     n_users=self.n_users, n_items=self.n_items)
             self.train_feat_indices, self.train_feat_values, self.feature_size = \
-                fb.fit(self.train_categorical_features,
-                       self.train_numerical_features,
-                       self.train_mergecat_features,
-                       len(self.train_labels),
-                       self.train_user_indices,
-                       self.train_item_indices)
+                self.fb.fit(self.train_categorical_features,
+                            self.train_numerical_features,
+                            self.train_mergecat_features,
+                            len(self.train_labels),
+                            self.train_user_indices,
+                            self.train_item_indices)
+            self.user_offset = self.fb.total_count
 
         self.test_user_indices = np.array(self.test_user_indices)
         self.test_item_indices = np.array(self.test_item_indices)
@@ -490,32 +509,107 @@ class DatasetFeat:
             for merge_feat in merged_categorical_col:
                 merge_col_index = merge_feat[0]
                 for mft in merge_feat:
-                    self.test_mergecat_features[merge_col_index] = np.array(test_mergecat_features[mft])
+                    #    self.test_mergecat_features[merge_col_index] = np.array(test_mergecat_features[mft])
+                    self.test_mergecat_features[merge_col_index].extend(np.array(test_mergecat_features[mft]))
 
         print("testset size before: ", len(self.test_labels))
-        self.test_user_indices = np.array(self.test_user_indices)
-        self.test_item_indices = np.array(self.test_item_indices)
-        self.test_labels = np.array(self.test_labels)
+    #    self.test_user_indices = np.array(self.test_user_indices)
+    #    self.test_item_indices = np.array(self.test_item_indices)
+    #    self.test_labels = np.array(self.test_labels)
         if self.include_features:
             self.test_feat_indices, self.test_feat_values = \
-                fb.transform(self.test_categorical_features,
-                             self.test_numerical_features,
-                             self.test_mergecat_features,
-                             len(self.test_labels),
-                             self.test_user_indices,
-                             self.test_item_indices)
+                self.fb.transform(self.test_categorical_features,
+                                  self.test_numerical_features,
+                                  self.test_mergecat_features,
+                                  len(self.test_labels),
+                                  self.test_user_indices,
+                                  self.test_item_indices)
         print("testset size after: ", len(self.test_labels))
+
+        self.numerical_col = numerical_col
+        # remove user - item - label column and add numerical columns
+        total_num_index = 0
+        if user_feature_cols is not None:
+            user_cols = []
+            self.user_numerical_cols = []
+            for col in user_feature_cols:
+                if numerical_col is not None and col in numerical_col:
+                    user_cols.append(total_num_index)
+                    self.user_numerical_cols.append(total_num_index)
+                    total_num_index += 1
+                elif numerical_col is not None and col in categorical_col:
+                    orig_col = col
+                    num_place = np.searchsorted(sorted(numerical_col), orig_col)
+                    col += (len(numerical_col) - num_place)
+                    if orig_col > self.user_col:
+                        col -= 1
+                    if orig_col > self.item_col:
+                        col -= 1
+                    if orig_col > self.label_col:
+                        col -= 1
+                    user_cols.append(col)
+                elif numerical_col is None:
+                    orig_col = col
+                    if orig_col > self.user_col:
+                        col -= 1
+                    if orig_col > self.item_col:
+                        col -= 1
+                    if orig_col > self.label_col:
+                        col -= 1
+                    user_cols.append(col)
+            self.user_feature_cols = sorted(user_cols)
+
+        # item_feature_cols are used for negative sampling
+        if item_feature_cols is not None:
+            item_cols = []
+            self.item_numerical_cols = []
+            for col in item_feature_cols:
+                if numerical_col is not None and col in numerical_col:
+                    item_cols.append(total_num_index)
+                    self.item_numerical_cols.append(total_num_index)
+                    total_num_index += 1
+                elif numerical_col is not None and col in categorical_col:
+                    orig_col = col
+                    num_place = np.searchsorted(sorted(numerical_col), orig_col)
+                    col += (len(numerical_col) - num_place)
+                    if orig_col > self.user_col:
+                        col -= 1
+                    if orig_col > self.item_col:
+                        col -= 1
+                    if orig_col > self.label_col:
+                        col -= 1
+                    item_cols.append(col)
+                elif numerical_col is None:
+                    orig_col = col
+                    if orig_col > self.user_col:
+                        col -= 1
+                    if orig_col > self.item_col:
+                        col -= 1
+                    if orig_col > self.label_col:
+                        col -= 1
+                    item_cols.append(col)
+            self.item_feature_cols = sorted(item_cols)
+            print("user feature cols: {}, item feature cols: {}".format(
+                self.user_feature_cols, self.item_feature_cols))
 
         for u, i, r in zip(self.train_user_indices, self.train_item_indices, self.train_labels):
             self.train_user[u].update(dict(zip([i], [r])))
             self.train_item[i].update(dict(zip([u], [r])))
+
+        print("offset: {}, n_users: {}, n_items: {}, feature_size: {}".format(
+            self.user_offset, self.n_users, self.n_items, self.feature_size))
+
+        if build_negative:
+            self.build_trainset_implicit(num_neg)
+            self.build_testset_implicit(num_neg)
+
         return self
 
     # this data input function is designed for tensorflow estimator - wide_deep model
     def load_pandas(self, data_path="../ml-1m/ratings.dat", header="infer", col_names=None, length="all",
-                      train_frac=0.8, convert_implicit=False, build_negative=False, seed=42,
-                      num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
-                      user_feature_cols=None, item_feature_cols=None):
+                    train_frac=0.8, convert_implicit=False, build_negative=False, seed=42,
+                    num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
+                    user_feature_cols=None, item_feature_cols=None):
 
         np.random.seed(seed)
         if isinstance(item_feature_cols[0], str) and col_names is None:
@@ -556,8 +650,8 @@ class DatasetFeat:
                     out_of_bounds_indices.add(i)
 
         mask = np.arange(len(test_data))
-    #    test_data = test_data[~np.isin(mask, list(out_of_bounds_indices))]
-    #    filter test values that are not in train_data
+        #    test_data = test_data[~np.isin(mask, list(out_of_bounds_indices))]
+        #    filter test values that are not in train_data
         test_data = test_data[np.invert(np.isin(mask, list(out_of_bounds_indices), assume_unique=True))]
         print("test size after filtering: ", len(test_data))
 
@@ -583,7 +677,7 @@ class DatasetFeat:
             train_data[:, label_col] = 1.0
             test_data[:, label_col] = 1.0
 
-        if build_negative:   # negative sampling
+        if build_negative:  # negative sampling
             consumed_items = defaultdict(set)
             for user, item in zip(train_data[:, user_col], train_data[:, item_col]):
                 consumed_items[user].add(item)
@@ -607,13 +701,12 @@ class DatasetFeat:
                     sample[label_col] = 0.0
                     train_negative_samples.append(sample)
 
-         #   train_data = np.concatenate([train_data, train_negative_samples], axis=0)
+            #   train_data = np.concatenate([train_data, train_negative_samples], axis=0)
             train_data = pd.concat([pd.DataFrame(train_data), pd.DataFrame(train_negative_samples)], ignore_index=True)
             if col_names is not None:
                 train_data.columns = col_names
 
-
-        #    test_consumed_items = consumed_items.copy()
+            #    test_consumed_items = consumed_items.copy()
             for user, item in zip(test_data[:, user_col], test_data[:, item_col]):
                 consumed_items[user].add(item)  # plus test consumed items
 
@@ -665,8 +758,8 @@ class DatasetFeat:
                 self.train_data[col] = self.train_data[col].astype(col_type)
                 self.test_data[col] = self.test_data[col].astype(col_type)
 
-#  TODO
-#   def leave_k_out_chrono_split(self):
+    #  TODO
+    #   def leave_k_out_chrono_split(self):
 
     def build_trainset_implicit(self, num_neg):
         neg = NegativeSamplingFeat(self, num_neg, self.batch_size, replacement_sampling=True)
@@ -694,8 +787,8 @@ class DatasetFeat:
         self.testset_tf = testset_tf.filter(lambda x: (x['user'] < self.n_users) & (x['item'] < self.n_items))
         return self
 
-    def ratings(dataset):
-        for user, r in dataset.items():
+    def ratings(self):
+        for user, r in self.train_user:
             for item, rating in r.items():
                 yield user, item, rating
 
@@ -709,8 +802,10 @@ class DatasetFeat:
 
     @property
     def n_users(self):
-        return len(self.train_user)
+    #    return len(self.train_user)
+        return len(np.unique(self.train_user_indices))
 
     @property
     def n_items(self):
-        return len(self.train_item)
+    #    return len(self.train_item)
+        return len(np.unique(self.train_item_indices))
