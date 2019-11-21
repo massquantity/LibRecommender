@@ -1,4 +1,5 @@
 import warnings
+
 warnings.filterwarnings("ignore")
 from collections import defaultdict
 import time
@@ -25,9 +26,9 @@ class DatasetPure:
         self.test_item_indices = list()
         self.test_labels = list()
 
-#    TODO
-#    @classmethod
-#    def load_builtin_dataset(cls, data_path="../ml-1m/ratings"):
+    #    TODO
+    #    @classmethod
+    #    def load_builtin_dataset(cls, data_path="../ml-1m/ratings"):
 
     @classmethod
     def load_builtin_dataset(cls, data_path="../ml-1m/ratings.dat", shuffle=False):
@@ -46,7 +47,7 @@ class DatasetPure:
         if isinstance(num_neg, int) and num_neg > 0:
             self.num_neg = num_neg
 
-    #    if not user_col or not item_col or not label_col:
+        #    if not user_col or not item_col or not label_col:
         if not np.all([user_col, item_col, label_col]):
             user_col = 0
             item_col = 1
@@ -56,9 +57,9 @@ class DatasetPure:
         index_item = 0
         with open(data_path, 'r') as f:
             loaded_data = f.readlines()
-    #    f = open(data_path, 'r')
-    #    loaded_data = f.readlines()
-    #    f.close()
+        #    f = open(data_path, 'r')
+        #    loaded_data = f.readlines()
+        #    f.close()
         if shuffle:
             loaded_data = np.random.permutation(loaded_data)
         if length == "all":
@@ -107,9 +108,9 @@ class DatasetPure:
         self.test_item_indices = test_safe[:, 1].astype(int)
         self.test_labels = test_safe[:, 2]
 
-    #    if convert_implicit:
-    #        self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
-    #        self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
+        #    if convert_implicit:
+        #        self.train_labels = np.ones(len(self.train_labels), dtype=np.float32)
+        #        self.test_labels = np.ones(len(self.test_labels), dtype=np.float32)
 
         if build_negative:
             self.build_trainset_implicit(num_neg)
@@ -206,12 +207,12 @@ class DatasetPure:
             test_labels.extend(self.labels[test_indices])
 
         print("item before: ", len(test_item_indices))
-        train_item_pool = np.unique(train_item_indices)   # remove items in test data that are not in train data
-    #    for user, item, label in zip(test_user_temp, test_item_temp, test_label_temp):
-    #        if item in train_item_pool:
-    #            test_user_indices.append(user)
-    #            test_item_indices.append(item)
-    #            test_labels.append(label)
+        train_item_pool = np.unique(train_item_indices)  # remove items in test data that are not in train data
+        #    for user, item, label in zip(test_user_temp, test_item_temp, test_label_temp):
+        #        if item in train_item_pool:
+        #            test_user_indices.append(user)
+        #            test_item_indices.append(item)
+        #            test_labels.append(label)
 
         mask = np.isin(test_item_indices, train_item_pool)
         test_user_indices = np.array(test_user_indices)[mask]
@@ -259,10 +260,6 @@ class DatasetPure:
 
         return self
 
-
-#   TODO
-#   def load_pandas
-
     def build_trainset_implicit(self, num_neg):
         neg = NegativeSampling(self, num_neg, self.batch_size, replacement_sampling=True)
         self.train_user_implicit, \
@@ -275,16 +272,11 @@ class DatasetPure:
         self.test_item_implicit, \
         self.test_label_implicit = neg(mode="test")
 
-    # TODO
-    def build_tf_sparse(self):
-        pass
-
-
     def load_tf_trainset(self, batch_size=1):
         trainset_tf = tf.data.Dataset.from_tensor_slices({'user': self.train_user_indices,
                                                           'item': self.train_item_indices,
                                                           'label': self.train_labels})
-        self.trainset_tf = trainset_tf.shuffle(len(self.train_labels))  #  .batch(batch_size)
+        self.trainset_tf = trainset_tf.shuffle(len(self.train_labels))  # .batch(batch_size)
         return self
 
     def load_tf_testset(self):
@@ -310,6 +302,7 @@ class DatasetPure:
     @property
     def n_users(self):
         return len(self.train_user)
+
     #    return len(np.unique(self.train_user_indices))
 
     @property
