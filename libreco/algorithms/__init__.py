@@ -4,7 +4,6 @@ from .SVD import SVD
 from .SVDpp import SVDpp
 from .Als import Als
 from .FM import FmPure, FmFeat
-from .superSVD import superSVD
 from .NCF import Ncf
 from .wide_deep import WideDeep, WideDeepEstimator
 from .DeepFM import DeepFmPure, DeepFmFeat
