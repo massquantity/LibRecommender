@@ -9,6 +9,7 @@ from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
 # from libreco.utils import export_model_pickle, export_model_joblib
+from libreco.dataset import prepare_data
 import pickle
 import cProfile
 np.set_printoptions(precision=4, edgeitems=7)
@@ -16,43 +17,37 @@ np.set_printoptions(precision=4, edgeitems=7)
 
 if __name__ == "__main__":
     t0 = time.time()
-#    dataset = DatasetPure()
 #    path = str(Path.joinpath(Path(__file__).parent, "ml-1m", "ratings.dat"))
 #    path = str(Path.joinpath(Path(__file__).parent, "tianchi_recommender", "testB_pure.csv"))
-#    dataset.build_dataset(data_path=path, sep=",", length="all", shuffle=True,
-#                          convert_implicit=True, build_negative=True, num_neg=2, batch_size=256,
-#                          build_tf_dataset=False)
-#    dataset.leave_k_out_split(4, data_path="ml-1m/ratings.dat", length=100000, sep="::",
-#                              convert_implicit=True, build_negative=True, batch_size=256, num_neg=1)
-#    print("num_users: {}, num_items: {}".format(dataset.n_users, dataset.n_items))
-#    print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit))
-#    print("data processing time: {:.2f}".format(time.time() - t0))
 
     conf = {
     #    "data_path": "../tianchi_recommender/testB_pure.csv",
-        "data_path": "../ml-1m/ratings.dat",
-        "length": 1000000,
+        "data_path": os.path.join(os.path.expanduser("~"), ".libreco_data", "ml-1m", "ratings.dat"),
+        "length": "all",
+        "user_col": 0,
+        "item_col": 1,
+        "label_col": 2,
         "convert_implicit": True,
         "build_negative": True,
         "num_neg": 1,
-    #    "batch_size": 2048,
+        "k": 1,
+        "batch_size": 256,
     #    "lower_upper_bound": [1, 5],
         "sep": "::",
+        "split_mode": "leave_k_out",
     }
 
-    dataset = DatasetPure()
+    dataset = DatasetPure(load_builtin_data="ml-1m")
     dataset.build_dataset(**conf)
-    #    dataset.leave_k_out_split(4, data_path="ml-1m/ratings.dat", length=100000, sep="::",
-    #                              convert_implicit=True, build_negative=True, batch_size=256, num_neg=1)
     print("num_users: {}, num_items: {}".format(dataset.n_users, dataset.n_items))
-    if conf.get("convert_implicit"):
-        print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit))
+    if conf.get("build_negative"):
+        print("implicit data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit))
     else:
-        print("data size: ", len(dataset.train_user_indices) + len(dataset.test_user_indices))
+        print("explicit data size: ", len(dataset.train_user_indices) + len(dataset.test_user_indices))
     print("data processing time: {:.2f}".format(time.time() - t0))
     print()
 
-    als = Als(n_factors=300, n_epochs=200, reg=10.0, alpha=1, task="ranking", neg_sampling=True)
+    als = Als(n_factors=32, n_epochs=200, reg=10.0, alpha=1, task="ranking", neg_sampling=True)
     als.fit(dataset, use_cg=True, cg_steps=3, use_cython=False, verbose=1)
     print("predict: ", als.predict(1, 5))
     print(als.recommend_user(1, 7))

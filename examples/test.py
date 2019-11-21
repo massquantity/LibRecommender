@@ -14,14 +14,6 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 if __name__ == "__main__":
     t0 = time.time()
-#    dataset = DatasetPure()
-#    path = str(Path.joinpath(Path(__file__).parent, "ml-1m", "ratings.dat"))
-#    dataset.build_dataset(data_path=path, sep="::", length=10000, shuffle=True,
-#                          convert_implicit=False, build_negative=False, num_neg=10, batch_size=256)
-#    dataset.leave_k_out_split(4, data_path="ml-1m/ratings.dat", length=100000, sep="::",
-#                              convert_implicit=True, build_negative=True, batch_size=256, num_neg=1)
-#   print("data size: ", len(dataset.train_user_implicit) + len(dataset.test_user_implicit))
-#    print("data processing time: {:.2f}".format(time.time() - t0))
     '''
     conf = {
         "data_path": "ml-1m/merged_data.csv",
@@ -50,8 +42,8 @@ if __name__ == "__main__":
     '''
 
     conf_movielens = {
-        "data_path": "../ml-1m/merged_data.csv",
-        "length": "all",
+        "data_path": os.path.join(os.path.expanduser("~"), ".libreco_data", "ml-1m", "merged_data.csv"),
+        "length": 100000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -65,6 +57,7 @@ if __name__ == "__main__":
         "num_neg": 2,
         "batch_size": 256,
         "sep": ",",
+        "split_mode": "leave_k_out",
     }
 
 
@@ -83,31 +76,19 @@ if __name__ == "__main__":
         "convert_implicit": True,
         "build_negative": True,
         "num_neg": 2,
-    #    "batch_size": 2048,
+        "k": 1,
         "sep": ",",
     }
 
     conf = conf_movielens
-
-    dataset = DatasetFeat(include_features=True)
+    dataset = DatasetFeat(include_features=True, load_builtin_data="ml-1m")
     dataset.build_dataset(**conf)
-#    dataset.build_dataset(data_path="ml-1m/merged_data.csv", length="all", user_col=0, item_col=1, label_col=2,
-#                          numerical_col=None, categorical_col=[3, 4, 5, 6], merged_categorical_col=[[7, 8, 9]],
-#                          item_sample_col=[6, 7, 8, 9],
-#                          convert_implicit=True, build_negative=True, num_neg=1, batch_size=256)
-#                         numerical_col=None, categorical_col=[3, 4, 5, 6, 7, 8], merged_categorical_col=None)
-#    dataset.leave_k_out_split(4, data_path="ml-1m/merged_data.csv", length="all", sep=",", shuffle=True,
-#                              user_col=0, item_col=1, label_col=2, numerical_col=None, categorical_col=[3, 4, 5],
-#                              merged_categorical_col=[[6, 7, 8]])
     print("num users: {}, num items: {}".format(dataset.n_users, dataset.n_items))
-    if conf.get("convert_implicit"):
+    if conf.get("build_negative"):
         print("data size: ", len(dataset.train_labels_implicit) + len(dataset.test_labels_implicit))
     else:
         print("data size: ", len(dataset.train_user_indices) + len(dataset.test_user_indices))
     print("data processing time: {:.2f}".format(time.time() - t0))
-#    print(dataset.train_feat_indices[:5])
-#    print(dataset.train_feat_indices.shape)
-#    print(dataset.train_feat_values[:5])
     print()
 
 #    user_knn = userKNN(sim_option="msd", k=40, min_support=0, baseline=False)
