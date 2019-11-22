@@ -7,7 +7,6 @@ from .download_data import prepare_data
 from .preprocessing import FeatureBuilder
 from ..utils.sampling import NegativeSamplingFeat
 import warnings
-
 warnings.filterwarnings("ignore")
 
 
@@ -110,7 +109,7 @@ class DatasetFeat:
             user = line[self.user_col]
             item = line[self.item_col]
             label = line[self.label_col]
-            if convert_implicit and int(label) > threshold:
+            if (convert_implicit and isinstance(label, str)) or (convert_implicit and int(label) > threshold):
                 label = 1
             if user not in user_pool or item not in item_pool:
                 continue
@@ -186,8 +185,8 @@ class DatasetFeat:
                             self.train_user_indices,
                             self.train_item_indices)
             self.user_offset = self.fb.total_count
-            print("offset: {}, n_users: {}, feature_size: {}".format(
-                self.user_offset, self.n_users, self.feature_size))
+            print("offset: {}, n_users: {}, n_items: {}, feature_size: {}".format(
+                self.user_offset, self.n_users, self.n_items, self.feature_size))
 
         print("testset size before: ", len(self.test_labels))
         self.test_user_indices = np.array(self.test_user_indices)
@@ -317,7 +316,7 @@ class DatasetFeat:
             user = line[self.user_col]
             item = line[self.item_col]
             label = line[self.label_col]
-            if convert_implicit and int(label) > threshold:
+            if (convert_implicit and isinstance(label, str)) or (convert_implicit and int(label) > threshold):
                 label = 1
             try:
                 user_id = user2id[user]
@@ -363,7 +362,11 @@ class DatasetFeat:
         test_indices_all = []
         for u in users:
             user_length = len(user_split_indices[u])
-            if user_length <= 1 or k == 0:
+            if user_length > 1 and k < 1:
+                p = int(np.ceil(user_length * k))
+                train_indices = user_split_indices[u][:-p]
+                test_indices = user_split_indices[u][-p:]
+            elif user_length <= 1 or k == 0:
                 train_indices = user_split_indices[u]
                 test_indices = []
             elif user_length <= k:
@@ -479,10 +482,14 @@ class DatasetFeat:
                 for merge_feat in merged_categorical_col:
                     merge_col_index = merge_feat[0]
                     for mft in merge_feat:
-                        #    self.train_mergecat_features[merge_col_index] = \
-                        #        np.array(train_mergecat_features[mft])
+                    #        self.train_mergecat_features[merge_col_index] = \
+                    #            np.array(train_mergecat_features[mft])
                         self.train_mergecat_features[merge_col_index].extend(
                             np.array(train_mergecat_features[mft]))
+
+        for u, i, r in zip(self.train_user_indices, self.train_item_indices, self.train_labels):
+            self.train_user[u].update(dict(zip([i], [r])))
+            self.train_item[i].update(dict(zip([u], [r])))
 
         if self.include_features:
             self.fb = FeatureBuilder(include_user=True, include_item=True,
@@ -495,6 +502,8 @@ class DatasetFeat:
                             self.train_user_indices,
                             self.train_item_indices)
             self.user_offset = self.fb.total_count
+            print("offset: {}, n_users: {}, n_items: {}, feature_size: {}".format(
+                self.user_offset, self.n_users, self.n_items, self.feature_size))
 
         self.test_user_indices = np.array(self.test_user_indices)
         self.test_item_indices = np.array(self.test_item_indices)
@@ -509,13 +518,10 @@ class DatasetFeat:
             for merge_feat in merged_categorical_col:
                 merge_col_index = merge_feat[0]
                 for mft in merge_feat:
-                    #    self.test_mergecat_features[merge_col_index] = np.array(test_mergecat_features[mft])
+                #    self.test_mergecat_features[merge_col_index] = np.array(test_mergecat_features[mft])
                     self.test_mergecat_features[merge_col_index].extend(np.array(test_mergecat_features[mft]))
 
         print("testset size before: ", len(self.test_labels))
-    #    self.test_user_indices = np.array(self.test_user_indices)
-    #    self.test_item_indices = np.array(self.test_item_indices)
-    #    self.test_labels = np.array(self.test_labels)
         if self.include_features:
             self.test_feat_indices, self.test_feat_values = \
                 self.fb.transform(self.test_categorical_features,
@@ -591,13 +597,6 @@ class DatasetFeat:
             self.item_feature_cols = sorted(item_cols)
             print("user feature cols: {}, item feature cols: {}".format(
                 self.user_feature_cols, self.item_feature_cols))
-
-        for u, i, r in zip(self.train_user_indices, self.train_item_indices, self.train_labels):
-            self.train_user[u].update(dict(zip([i], [r])))
-            self.train_item[i].update(dict(zip([u], [r])))
-
-        print("offset: {}, n_users: {}, n_items: {}, feature_size: {}".format(
-            self.user_offset, self.n_users, self.n_items, self.feature_size))
 
         if build_negative:
             self.build_trainset_implicit(num_neg)
@@ -802,10 +801,10 @@ class DatasetFeat:
 
     @property
     def n_users(self):
-    #    return len(self.train_user)
-        return len(np.unique(self.train_user_indices))
+        return len(self.train_user)
+    #    return len(np.unique(self.train_user_indices))
 
     @property
     def n_items(self):
-    #    return len(self.train_item)
-        return len(np.unique(self.train_item_indices))
+        return len(self.train_item)
+    #    return len(np.unique(self.train_item_indices))

@@ -310,16 +310,9 @@ class NegativeSamplingFeat:
         total_items = total_items_unique[:, 0]
         total_items_feat_col = np.delete(total_items_unique, 0, axis=1)
 
-    #    item_num_cols = [-1]
-    #    item_num_cols.extend(np.arange(len(self.dataset.item_numerical_cols)) + len(self.dataset.user_numerical_cols))
-    #    items_num_unique = np.unique(self.dataset.train_feat_values[:, item_num_cols], axis=0)
-    #    total_items_value_col = np.delete(items_num_unique, 0, axis=1)
-
         for item, item_feat_col in zip(total_items, total_items_feat_col):
             neg_indices_dict[item] = item_feat_col.tolist()
-    #    for item, item_value_col in zip(total_items, total_items_value_col):
-    #        neg_values_dict[item] = item_value_col.tolist()
-    #    print(neg_indices_dict)
+
         neg_values_dict = dict()
         for item in range(self.dataset.n_items):
             item_repr = item + self.dataset.user_offset + self.dataset.n_users
@@ -328,8 +321,6 @@ class NegativeSamplingFeat:
                 item_indices = np.where(self.dataset.train_feat_indices[:, -1] == item_repr)[0][0]
                 item_values.append(self.dataset.train_feat_values[item_indices, num_col])
             neg_values_dict[item_repr] = item_values
-    #    print(neg_values_dict[94833], neg_values_dict[103266])
-    #    print(neg_values_dict)
         return neg_indices_dict, neg_values_dict
 
     def __call__(self, mode):
@@ -349,12 +340,10 @@ class NegativeSamplingFeat:
             indices.append(feat_indices[i])
             values.append(feat_values[i])
             labels.append(feat_labels[i])
-
             for _ in range(self.num_neg):
                 item_neg = np.random.randint(0, self.dataset.n_items)
                 while item_neg in self.dataset.train_user[user]:
                     item_neg = np.random.randint(0, self.dataset.n_items)
-
                 item_neg += (self.dataset.user_offset + self.dataset.n_users)
 
             #    dt = self.dataset.train_feat_indices[self.dataset.train_feat_indices[:, -1] == item_neg][0]

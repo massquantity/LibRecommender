@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     conf_movielens = {
         "data_path": os.path.join(os.path.expanduser("~"), ".libreco_data", "ml-1m", "merged_data.csv"),
-        "length": 100000,
+        "length": "all",
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -54,16 +54,16 @@ if __name__ == "__main__":
         "item_feature_cols": [6, 7, 8],
         "convert_implicit": True,
         "build_negative": True,
-        "num_neg": 2,
+        "num_neg": 1,
         "batch_size": 256,
         "sep": ",",
+        "k": 1,
         "split_mode": "leave_k_out",
     }
 
 
     conf_tianchi = {
         "data_path": "../tianchi_recommender/merged_tianchi.csv",
-    #    "data_path": "../ml-1m/merged_data.csv",
         "length": 300000,
         "user_col": 0,
         "item_col": 1,
@@ -75,9 +75,10 @@ if __name__ == "__main__":
         "item_feature_cols": [6, 7, 8],
         "convert_implicit": True,
         "build_negative": True,
-        "num_neg": 2,
+        "num_neg": 1,
         "k": 1,
         "sep": ",",
+        "split_mode": "leave_k_out",
     }
 
     conf = conf_movielens
@@ -159,11 +160,11 @@ if __name__ == "__main__":
 #    print(rmse_tf(ncf, dataset, mode="train"))
 #    print(rmse_tf(ncf, dataset, mode="test"))
 
-    wd = WideDeep(lr=0.0005, n_epochs=200, reg=0.0, embed_size=32, batch_size=4096, use_bn=True,
-                  dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
-    wd.fit(dataset, pre_sampling=False, verbose=2)
-    print(wd.predict(1, 10))
-    print(wd.recommend_user(1, 7))
+#    wd = WideDeep(lr=0.0005, n_epochs=200, reg=0.0, embed_size=32, batch_size=4096, use_bn=True,
+#                  dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
+#    wd.fit(dataset, pre_sampling=False, verbose=2)
+#    print(wd.predict(1, 10))
+#    print(wd.recommend_user(1, 7))
 
 #    wdc = WideDeepEstimator(lr=0.01, embed_size=16, n_epochs=100, batch_size=256, task="ranking", cross_features=False)
 #    wdc = WideDeep(lr=0.01, embed_size=16, n_epochs=100, batch_size=256, dropout_rate=0.0, task="rating")
@@ -176,8 +177,8 @@ if __name__ == "__main__":
     # reg=0.001, n_factors=32 reg=0.0001   0.8586  0.8515  0.8511
     # reg=0.0003, n_factors=64, 0.8488    0.8471 0.8453
 #    fm = FmPure(lr=0.0001, n_epochs=20000, reg=0.0, n_factors=16, batch_size=2048, task="ranking", neg_sampling=True)
-#    fm = FmFeat(lr=0.002, n_epochs=2, reg=0.1, n_factors=10, batch_size=2048, task="ranking", neg_sampling=True)
-#    fm.fit(dataset, pre_sampling=False, verbose=1)
+#    fm = FmFeat(lr=0.0001, n_epochs=200, reg=0.1, n_factors=10, batch_size=2048, task="ranking", neg_sampling=True)
+#    fm.fit(dataset, pre_sampling=False, verbose=2)
 #    print(fm.predict(1, 10))
 #    print(fm.recommend_user(1, 7))
 #    export_feature_transform("../serving/models/others/feature_builder.jb",
@@ -210,7 +211,7 @@ if __name__ == "__main__":
 #    bpr.fit(dataset, method="knn")
 #    print(bpr.predict(1, 2, method="knn"))
 
-    you = YouTubeRec(lr=0.0005, n_epochs=200, reg=0.0, embed_size=32, batch_size=4096, use_bn=True,
+    you = YouTubeRec(lr=0.0001, n_epochs=200, reg=0.0, embed_size=32, batch_size=2048, use_bn=True,
                      dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
     you.fit(dataset, pre_sampling=False, verbose=2)
     print(you.predict(1, 10))
