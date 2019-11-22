@@ -304,6 +304,20 @@ class BaseFeat(object):
                                          self.labels: dataset.test_labels})
 
         elif self.task == "ranking" and self.neg_sampling:
+            train_label = dataset.train_labels_implicit
+            train_loss_all = []
+            for batch_test in range(0, len(dataset.train_labels_implicit), 100000):
+                train_indices_implicit_batch = dataset.train_indices_implicit[batch_test: batch_test + 100000]
+                train_values_implicit_batch = dataset.train_values_implicit[batch_test: batch_test + 100000]
+                train_labels_implicit_batch = dataset.train_labels_implicit[batch_test: batch_test + 100000]
+                train_loss = self.sess.run([self.loss],
+                                  feed_dict={self.feature_indices: train_indices_implicit_batch,
+                                             self.feature_values: train_values_implicit_batch,
+                                             self.labels: train_labels_implicit_batch})
+
+                train_loss_all.append(train_loss)
+            print("\ttrain loss: {:.4f}".format(np.mean(train_loss_all)))
+
             test_label = dataset.test_labels_implicit
             test_loss_all, test_accuracy_all, test_precision_all, test_prob_all = [], [], [], []
             t3 = time.time()
@@ -328,6 +342,7 @@ class BaseFeat(object):
         print("\ttest accuracy: {:.4f}".format(np.mean(test_accuracy_all)))
         print("\ttest precision: {:.4f}".format(np.mean(test_precision_all)))
         print("\tloss time: {:.4f}".format(time.time() - t3))
+
 
         t1 = time.time()
         if kwargs.get("roc_auc"):
@@ -360,6 +375,7 @@ class BaseFeat(object):
             ndcg = NDCG_at_k(self, self.dataset, ndcg_num , sample_user=sample_user)
             print("\t NDCG@{}: {:.4f}".format(ndcg_num, ndcg))
             print("\t NDCG time: {:.4f}".format(time.time() - t4))
+
         return
 
     def get_predict_indices_and_values(self, data, user, item):

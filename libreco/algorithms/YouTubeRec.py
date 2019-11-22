@@ -236,10 +236,11 @@ class YouTubeRec(BaseFeat):
     def recommend_user(self, u, n_rec):
         consumed = self.dataset.train_user[u]
         count = n_rec + len(consumed)
+        if count > self.dataset.n_items:
+            count = self.dataset.n_items
         target = self.pred if self.task == "rating" else self.y_prob
 
         feat_indices, feat_values = self.get_recommend_indices_and_values(self.dataset, u, self.total_items_unique)
-    #    user_batch = feat_indices[:, -2] - self.dataset.user_offset
         preds = self.sess.run(target, feed_dict={self.feature_indices: feat_indices,
                                                  self.feature_values: feat_values,
                                                  self.is_training: False})
