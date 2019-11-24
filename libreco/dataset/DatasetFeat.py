@@ -352,10 +352,11 @@ class DatasetFeat:
         item_indices = np.array(item_indices)
         labels = np.array(labels)
 
+        sort_kind = "quicksort" if shuffle else "mergesort"
         users, user_position, user_counts = np.unique(user_indices,
                                                       return_inverse=True,
                                                       return_counts=True)
-        user_split_indices = np.split(np.argsort(user_position, kind="mergesort"),
+        user_split_indices = np.split(np.argsort(user_position, kind=sort_kind),
                                       np.cumsum(user_counts)[:-1])
 
         train_indices_all = []
