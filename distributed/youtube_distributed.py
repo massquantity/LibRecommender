@@ -211,6 +211,8 @@ def main(unused_argv):
 
     train_data, test_data = train_test_split(dataset)
     feature_columns = create_feature_columns(train_data)
+
+    strategy = tf.distribute.experimental.ParameterServerStrategy()
     classifier = tf.estimator.Estimator(
         model_fn=model_fn,
         params={"feature_columns": feature_columns,
@@ -223,7 +225,8 @@ def main(unused_argv):
                 "top_k": FLAGS.top_k,
                 "eval_top_n": map(int, FLAGS.eval_top_n.split(","))},
         config=tf.estimator.RunConfig(model_dir="youtube_dir",
-                                      save_checkpoints_steps=100000))
+                                      save_checkpoints_steps=100000,
+                                      train_distribute=strategy))
 
     print("train steps: ", FLAGS.train_steps, "batch size: ", FLAGS.batch_size)
     train_spec = tf.estimator.TrainSpec(input_fn=lambda: input_fn(train_data, FLAGS.batch_size, mode="train"),

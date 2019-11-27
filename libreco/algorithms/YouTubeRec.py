@@ -236,17 +236,17 @@ class YouTubeRec(BaseFeat):
     def recommend_user(self, u, n_rec):
         consumed = self.dataset.train_user[u]
         count = n_rec + len(consumed)
-        if count > self.dataset.n_items:
-            count = self.dataset.n_items
         target = self.pred if self.task == "rating" else self.y_prob
-
         feat_indices, feat_values = self.get_recommend_indices_and_values(self.dataset, u, self.total_items_unique)
         preds = self.sess.run(target, feed_dict={self.feature_indices: feat_indices,
                                                  self.feature_values: feat_values,
                                                  self.is_training: False})
 
-        ids = np.argpartition(preds, -count)[-count:]
-        rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
+        if count < self.dataset.n_items:
+            ids = np.argpartition(preds, -count)[-count:]
+            rank = sorted(zip(ids, preds[ids]), key=lambda x: -x[1])
+        else:
+            rank = sorted(enumerate(preds), key=lambda x: -x[1])
         return list(itertools.islice((rec for rec in rank if rec[0] not in consumed), n_rec))
 
     @property
@@ -256,21 +256,19 @@ class YouTubeRec(BaseFeat):
         return np.unique(self.dataset.train_feat_indices[:, item_cols], axis=0)
 
     def get_implicit_feedback(self, data):
-        user_split_items = [[] for u in range(data.n_users)]
-        for u, i in zip(data.train_user_indices, data.train_item_indices):
-            user_split_items[u].append(i)
+    #    user_split_items = [[] for u in range(data.n_users)]
+    #    for u, i in zip(data.train_user_indices, data.train_item_indices):
+    #        user_split_items[u].append(i)
 
         sparse_dict = {'indices': [], 'values': []}
-        for i, user in enumerate(user_split_items):
-            for j, item in enumerate(user):
+        for i, user in enumerate(data.train_user):
+            for j, item in enumerate(data.train_user[user]):
                 sparse_dict['indices'].append((i, j))
                 sparse_dict['values'].append(item)
         sparse_dict['dense_shape'] = (data.n_users, data.n_items)
         implicit_feedback = tf.SparseTensor(**sparse_dict)
         return implicit_feedback
 
-#    def reg_term(self):
-#        return tf.cond(tf.constant(self.reg > 0.0), lambda: tf.keras.regularizers.l2(self.reg), lambda: None)
 
 
 

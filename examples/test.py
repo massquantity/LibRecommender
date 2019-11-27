@@ -57,7 +57,7 @@ if __name__ == "__main__":
         "num_neg": 1,
         "batch_size": 256,
         "sep": ",",
-        "k": 1,
+        "k": 0.2,
         "split_mode": "leave_k_out",
     }
 
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 #    print(rmse_tf(ncf, dataset, mode="train"))
 #    print(rmse_tf(ncf, dataset, mode="test"))
 
-#    wd = WideDeep(lr=0.0005, n_epochs=200, reg=0.0, embed_size=32, batch_size=4096, use_bn=True,
+#    wd = WideDeep(lr=0.003, n_epochs=200, reg=0.0, embed_size=32, batch_size=256, use_bn=True,
 #                  dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
 #    wd.fit(dataset, pre_sampling=False, verbose=2)
 #    print(wd.predict(1, 10))
