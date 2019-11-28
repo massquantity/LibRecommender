@@ -306,32 +306,40 @@ class BaseFeat(object):
         elif self.task == "ranking" and self.neg_sampling:
             train_label = dataset.train_labels_implicit
             train_loss_all = []
-            for batch_test in range(0, len(dataset.train_labels_implicit), 100000):
-                train_indices_implicit_batch = dataset.train_indices_implicit[batch_test: batch_test + 100000]
-                train_values_implicit_batch = dataset.train_values_implicit[batch_test: batch_test + 100000]
-                train_labels_implicit_batch = dataset.train_labels_implicit[batch_test: batch_test + 100000]
-                train_loss = self.sess.run([self.loss],
-                                  feed_dict={self.feature_indices: train_indices_implicit_batch,
-                                             self.feature_values: train_values_implicit_batch,
-                                             self.labels: train_labels_implicit_batch})
-
+            train_batch = kwargs.get("train_batch", 2048)
+            for batch_test in range(0, len(dataset.train_labels_implicit), train_batch):
+                train_indices_implicit_batch = dataset.train_indices_implicit[batch_test: batch_test + train_batch]
+                train_values_implicit_batch = dataset.train_values_implicit[batch_test: batch_test + train_batch]
+                train_labels_implicit_batch = dataset.train_labels_implicit[batch_test: batch_test + train_batch]
+                feed_dict = {self.feature_indices: train_indices_implicit_batch,
+                             self.feature_values: train_values_implicit_batch,
+                             self.labels: train_labels_implicit_batch}
+                if self.__class__.__name__.lower() == "din":
+                    train_seq_len, train_items_seq = self.preprocess_data(train_indices_implicit_batch)
+                    feed_dict[self.seq_matrix] = train_items_seq
+                    feed_dict[self.seq_len] = train_seq_len
+                train_loss = self.sess.run([self.loss], feed_dict=feed_dict)
                 train_loss_all.append(train_loss)
             print("\ttrain loss: {:.4f}".format(np.mean(train_loss_all)))
 
             test_label = dataset.test_labels_implicit
             test_loss_all, test_accuracy_all, test_precision_all, test_prob_all = [], [], [], []
             t3 = time.time()
-            test_batch = kwargs.get("test_batch", 100000)
-        #    print("test_batch: ", test_batch)
+            test_batch = kwargs.get("test_batch", 2048)
+            print("train batch: %d, test_batch: %d" % (train_batch, test_batch))
             for batch_test in range(0, len(dataset.test_labels_implicit), test_batch):
                 test_indices_implicit_batch = dataset.test_indices_implicit[batch_test: batch_test + test_batch]
                 test_values_implicit_batch = dataset.test_values_implicit[batch_test: batch_test + test_batch]
                 test_labels_implicit_batch = dataset.test_labels_implicit[batch_test: batch_test + test_batch]
+                feed_dict = {self.feature_indices: test_indices_implicit_batch,
+                             self.feature_values: test_values_implicit_batch,
+                             self.labels: test_labels_implicit_batch}
+                if self.__class__.__name__.lower() == "din":
+                    test_seq_len, test_items_seq = self.preprocess_data(test_indices_implicit_batch)
+                    feed_dict[self.seq_matrix] = test_items_seq
+                    feed_dict[self.seq_len] = test_seq_len
                 test_loss, test_accuracy, test_precision, test_prob = \
-                    self.sess.run([self.loss, self.accuracy, self.precision, self.y_prob],
-                                  feed_dict={self.feature_indices: test_indices_implicit_batch,
-                                             self.feature_values: test_values_implicit_batch,
-                                             self.labels: test_labels_implicit_batch})
+                    self.sess.run([self.loss, self.accuracy, self.precision, self.y_prob], feed_dict=feed_dict)
 
                 test_loss_all.append(test_loss)
                 test_accuracy_all.append(test_accuracy)

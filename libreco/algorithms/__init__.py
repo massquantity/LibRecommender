@@ -8,6 +8,7 @@ from .NCF import Ncf
 from .wide_deep import WideDeep, WideDeepEstimator
 from .DeepFM import DeepFmPure, DeepFmFeat
 from .BPR import Bpr
+from .DIN import Din
 from .YouTubeRec import YouTubeRec
 try:
     from .superSVD_cy import superSVD_cy

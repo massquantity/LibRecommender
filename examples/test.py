@@ -4,7 +4,8 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path, PurePath
 from libreco.dataset import DatasetPure, DatasetFeat
-from libreco.algorithms import userKNN, FmFeat, FmPure, WideDeep, WideDeepEstimator, WideDeep, DeepFmFeat, YouTubeRec
+from libreco.algorithms import userKNN, FmFeat, FmPure, WideDeep, WideDeepEstimator, WideDeep, DeepFmFeat, \
+                                YouTubeRec, Din
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
@@ -211,11 +212,17 @@ if __name__ == "__main__":
 #    bpr.fit(dataset, method="knn")
 #    print(bpr.predict(1, 2, method="knn"))
 
-    you = YouTubeRec(lr=0.0001, n_epochs=200, reg=0.0, embed_size=32, batch_size=2048, use_bn=True,
+#    you = YouTubeRec(lr=0.0001, n_epochs=200, reg=0.0, embed_size=32, batch_size=2048, use_bn=True,
+#                     dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
+#    you.fit(dataset, pre_sampling=False, verbose=2)
+#    print(you.predict(1, 10))
+#    print(you.recommend_user(1, 7))
+
+    din = Din(lr=0.0001, n_epochs=200, reg=0.0, embed_size=4, batch_size=256, use_bn=True,
                      dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
-    you.fit(dataset, pre_sampling=False, verbose=2)
-    print(you.predict(1, 10))
-    print(you.recommend_user(1, 7))
+    din.fit(dataset, pre_sampling=False, verbose=2)
+    print(din.predict(1, 10))
+    print(din.recommend_user(1, 7))
 
     print("train + test time: {:.4f}".format(time.time() - t0))
 
