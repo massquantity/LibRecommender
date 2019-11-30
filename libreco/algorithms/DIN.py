@@ -9,7 +9,6 @@ author: massquantity
 import os
 import time
 import itertools
-from collections import OrderedDict
 import numpy as np
 import tensorflow as tf
 from .Base import BasePure, BaseFeat
@@ -268,7 +267,7 @@ class Din(BaseFeat):
         item_cols = [item_col] + self.dataset.item_feature_cols
         return np.unique(self.dataset.train_feat_indices[:, item_cols], axis=0)
 
-    def preprocess_data(self, batch_data):
+    def preprocess_data_orig(self, batch_data):
         max_seq_len = 0
         user_indices = batch_data[:, -2] - self.dataset.user_offset
         for u in user_indices:
@@ -281,6 +280,31 @@ class Din(BaseFeat):
         for i, user in enumerate(user_indices):
             seq_len.append(len(self.dataset.train_user[user]))
             for j, item in enumerate(self.dataset.train_user[user]):
+                u_items_seq[i, j] = item
+
+        return seq_len, u_items_seq
+
+    def preprocess_data(self, batch_data):
+        max_seq_len = 0
+        user_indices = batch_data[:, -2] - self.dataset.user_offset
+        for u in user_indices:
+            item_length = len(self.dataset.train_user[u])
+            if item_length > max_seq_len:
+                max_seq_len = item_length
+            if max_seq_len > 100:
+                max_seq_len = 100
+                break
+    #    print("max len: ", max_seq_len)
+
+        seq_len = list()
+        u_items_seq = np.zeros((len(user_indices), max_seq_len), dtype=np.int64)
+        for i, user in enumerate(user_indices):
+            if len(self.dataset.train_user[user]) > 100:
+                u_items_len = 100
+            else:
+                u_items_len = len(self.dataset.train_user[user])
+            seq_len.append(u_items_len)
+            for j, item in enumerate(list(self.dataset.train_user[user])[:100]):
                 u_items_seq[i, j] = item
 
         return seq_len, u_items_seq

@@ -218,7 +218,7 @@ if __name__ == "__main__":
 #    print(you.predict(1, 10))
 #    print(you.recommend_user(1, 7))
 
-    din = Din(lr=0.0001, n_epochs=200, reg=0.0, embed_size=4, batch_size=256, use_bn=True,
+    din = Din(lr=0.0003, n_epochs=200, reg=0.0, embed_size=4, batch_size=2048, use_bn=True,
                      dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
     din.fit(dataset, pre_sampling=False, verbose=2)
     print(din.predict(1, 10))
