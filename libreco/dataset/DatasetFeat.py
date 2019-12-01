@@ -2,6 +2,7 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler, PowerTransformer
 import tensorflow as tf
 from .download_data import prepare_data
 from .preprocessing import FeatureBuilder
@@ -62,7 +63,7 @@ class DatasetFeat:
                       k=1, num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
                       numerical_col=None, categorical_col=None, merged_categorical_col=None,
                       user_feature_cols=None, item_feature_cols=None, lower_upper_bound=None,
-                      split_mode="train_test"):
+                      split_mode="train_test", normalize=None):
         np.random.seed(seed)
         self.batch_size = batch_size
         self.lower_upper_bound = lower_upper_bound
@@ -75,18 +76,18 @@ class DatasetFeat:
         if split_mode == "train_test":
             self.train_test_split(data_path, shuffle, sep, length, train_frac, convert_implicit, build_negative,
                                   threshold, seed, num_neg, numerical_col, categorical_col,
-                                  merged_categorical_col, user_feature_cols, item_feature_cols)
+                                  merged_categorical_col, user_feature_cols, item_feature_cols, normalize)
         elif split_mode == "leave_k_out":
             self.leave_k_out_split(k, data_path, shuffle, length, sep, convert_implicit, build_negative, threshold,
                                    num_neg, numerical_col, categorical_col, merged_categorical_col, seed,
-                                   user_feature_cols, item_feature_cols)
+                                   user_feature_cols, item_feature_cols, normalize)
         else:
             raise ValueError("split_mode must be either 'train_test' or 'leave_k_out'")
 
-    def train_test_split(self, data_path, shuffle=True, sep=",", length="all",
-                         train_frac=0.8, convert_implicit=False, build_negative=False, threshold=0,
-                         seed=42, num_neg=None, numerical_col=None, categorical_col=None,
-                         merged_categorical_col=None, user_feature_cols=None, item_feature_cols=None):
+    def train_test_split(self, data_path, shuffle=True, sep=",", length="all", train_frac=0.8,
+                         convert_implicit=False, build_negative=False, threshold=0, seed=42, num_neg=None,
+                         numerical_col=None, categorical_col=None, merged_categorical_col=None,
+                         user_feature_cols=None, item_feature_cols=None, normalize=None):
 
         user_pool, item_pool, loaded_data = DatasetFeat._get_pool(data_path=data_path,
                                                                   shuffle=shuffle,
@@ -201,9 +202,31 @@ class DatasetFeat:
                                   self.test_user_indices,
                                   self.test_item_indices)
 
+        if normalize is not None and numerical_col is not None:
+            if normalize.lower() == "min_max":
+                scaler = MinMaxScaler()
+            elif normalize.lower() == "standard":
+                scaler = StandardScaler()
+            elif normalize.lower() == "robust":
+                scaler = RobustScaler()
+            elif normalize.lower() == "power":
+                scaler = PowerTransformer()
+            else:
+                raise ValueError("unknown normalize type...")
+
+            for col in range(len(numerical_col)):
+                self.train_feat_values[:, col] = scaler.fit_transform(
+                    self.train_feat_values[:, col].reshape(-1, 1)).flatten()
+                self.test_feat_values[:, col] = scaler.transform(
+                    self.test_feat_values[:, col].reshape(-1, 1)).flatten()
+
         self.numerical_col = numerical_col
         # remove user - item - label column and add numerical columns
         total_num_index = 0
+        all_cat_cols = []
+        all_cat_cols.extend(categorical_col)
+        for mc in merged_categorical_col:
+            all_cat_cols.extend(mc)
         if user_feature_cols is not None:
             user_cols = []
             self.user_numerical_cols = []
@@ -212,7 +235,7 @@ class DatasetFeat:
                     user_cols.append(total_num_index)
                     self.user_numerical_cols.append(total_num_index)
                     total_num_index += 1
-                elif numerical_col is not None and col in categorical_col:
+                elif numerical_col is not None and col in all_cat_cols:
                     orig_col = col
                     num_place = np.searchsorted(sorted(numerical_col), orig_col)
                     col += (len(numerical_col) - num_place)
@@ -243,7 +266,7 @@ class DatasetFeat:
                     item_cols.append(total_num_index)
                     self.item_numerical_cols.append(total_num_index)
                     total_num_index += 1
-                elif numerical_col is not None and col in categorical_col:
+                elif numerical_col is not None and col in all_cat_cols:
                     orig_col = col
                     num_place = np.searchsorted(sorted(numerical_col), orig_col)
                     col += (len(numerical_col) - num_place)
@@ -277,7 +300,7 @@ class DatasetFeat:
     def leave_k_out_split(self, k, data_path, shuffle=True, length="all", sep=",", convert_implicit=False,
                           build_negative=False, threshold=0, num_neg=None, numerical_col=None,
                           categorical_col=None, merged_categorical_col=None, seed=42,
-                          user_feature_cols=None, item_feature_cols=None):
+                          user_feature_cols=None, item_feature_cols=None, normalize=None):
         """
         leave-last-k-out-split
         :return: train - test, user - item - ratings
@@ -464,8 +487,6 @@ class DatasetFeat:
                 for merge_feat in merged_categorical_col:
                     merge_col_index = merge_feat[0]
                     for mft in merge_feat:
-                        #    self.train_mergecat_features[merge_col_index] = \
-                        #        np.array(train_mergecat_features[mft])[random_mask]
                         self.train_mergecat_features[merge_col_index].extend(
                             np.array(train_mergecat_features[mft])[random_mask])
 
@@ -519,7 +540,6 @@ class DatasetFeat:
             for merge_feat in merged_categorical_col:
                 merge_col_index = merge_feat[0]
                 for mft in merge_feat:
-                #    self.test_mergecat_features[merge_col_index] = np.array(test_mergecat_features[mft])
                     self.test_mergecat_features[merge_col_index].extend(np.array(test_mergecat_features[mft]))
 
         print("testset size before: ", len(self.test_labels))
@@ -533,9 +553,31 @@ class DatasetFeat:
                                   self.test_item_indices)
         print("testset size after: ", len(self.test_labels))
 
+        if normalize is not None and numerical_col is not None:
+            if normalize.lower() == "min_max":
+                scaler = MinMaxScaler()
+            elif normalize.lower() == "standard":
+                scaler = StandardScaler()
+            elif normalize.lower() == "robust":
+                scaler = RobustScaler()
+            elif normalize.lower() == "power":
+                scaler = PowerTransformer()
+            else:
+                raise ValueError("unknown normalize type...")
+
+            for col in range(len(numerical_col)):
+                self.train_feat_values[:, col] = scaler.fit_transform(
+                    self.train_feat_values[:, col].reshape(-1, 1)).flatten()
+                self.test_feat_values[:, col] = scaler.transform(
+                    self.test_feat_values[:, col].reshape(-1, 1)).flatten()
+
         self.numerical_col = numerical_col
         # remove user - item - label column and add numerical columns
         total_num_index = 0
+        all_cat_cols = []
+        all_cat_cols.extend(categorical_col)
+        for mc in merged_categorical_col:
+            all_cat_cols.extend(mc)
         if user_feature_cols is not None:
             user_cols = []
             self.user_numerical_cols = []
@@ -544,7 +586,7 @@ class DatasetFeat:
                     user_cols.append(total_num_index)
                     self.user_numerical_cols.append(total_num_index)
                     total_num_index += 1
-                elif numerical_col is not None and col in categorical_col:
+                elif numerical_col is not None and col in all_cat_cols:
                     orig_col = col
                     num_place = np.searchsorted(sorted(numerical_col), orig_col)
                     col += (len(numerical_col) - num_place)
@@ -575,7 +617,7 @@ class DatasetFeat:
                     item_cols.append(total_num_index)
                     self.item_numerical_cols.append(total_num_index)
                     total_num_index += 1
-                elif numerical_col is not None and col in categorical_col:
+                elif numerical_col is not None and col in all_cat_cols:
                     orig_col = col
                     num_place = np.searchsorted(sorted(numerical_col), orig_col)
                     col += (len(numerical_col) - num_place)
