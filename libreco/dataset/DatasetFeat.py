@@ -576,8 +576,9 @@ class DatasetFeat:
         total_num_index = 0
         all_cat_cols = []
         all_cat_cols.extend(categorical_col)
-        for mc in merged_categorical_col:
-            all_cat_cols.extend(mc)
+        if merged_categorical_col is not None:
+            for mc in merged_categorical_col:
+                all_cat_cols.extend(mc)
         if user_feature_cols is not None:
             user_cols = []
             self.user_numerical_cols = []
@@ -607,6 +608,8 @@ class DatasetFeat:
                         col -= 1
                     user_cols.append(col)
             self.user_feature_cols = sorted(user_cols)
+        else:
+            self.user_feature_cols = None
 
         # item_feature_cols are used for negative sampling
         if item_feature_cols is not None:
@@ -640,6 +643,8 @@ class DatasetFeat:
             self.item_feature_cols = sorted(item_cols)
             print("user feature cols: {}, item feature cols: {}".format(
                 self.user_feature_cols, self.item_feature_cols))
+        else:
+            self.item_feature_cols = None
 
         if build_negative:
             self.build_trainset_implicit(num_neg)

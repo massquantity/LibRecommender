@@ -304,9 +304,12 @@ class BaseFeat(object):
                                          self.labels: dataset.test_labels})
 
         elif self.task == "ranking" and self.neg_sampling:
-            train_label = dataset.train_labels_implicit
+            t3 = time.time()
+            train_batch = kwargs.get("train_batch", 50000)
+            test_batch = kwargs.get("test_batch", 50000)
+            print("train batch: %d, test_batch: %d" % (train_batch, test_batch))
+
             train_loss_all = []
-            train_batch = kwargs.get("train_batch", 2048)
             for batch_test in range(0, len(dataset.train_labels_implicit), train_batch):
                 train_indices_implicit_batch = dataset.train_indices_implicit[batch_test: batch_test + train_batch]
                 train_values_implicit_batch = dataset.train_values_implicit[batch_test: batch_test + train_batch]
@@ -322,11 +325,7 @@ class BaseFeat(object):
                 train_loss_all.append(train_loss)
             print("\ttrain loss: {:.4f}".format(np.mean(train_loss_all)))
 
-            test_label = dataset.test_labels_implicit
             test_loss_all, test_accuracy_all, test_precision_all, test_prob_all = [], [], [], []
-            t3 = time.time()
-            test_batch = kwargs.get("test_batch", 2048)
-            print("train batch: %d, test_batch: %d" % (train_batch, test_batch))
             for batch_test in range(0, len(dataset.test_labels_implicit), test_batch):
                 test_indices_implicit_batch = dataset.test_indices_implicit[batch_test: batch_test + test_batch]
                 test_values_implicit_batch = dataset.test_values_implicit[batch_test: batch_test + test_batch]
@@ -351,8 +350,8 @@ class BaseFeat(object):
         print("\ttest precision: {:.4f}".format(np.mean(test_precision_all)))
         print("\tloss time: {:.4f}".format(time.time() - t3))
 
-
         t1 = time.time()
+        test_label = dataset.test_labels_implicit
         if kwargs.get("roc_auc"):
             test_auc = roc_auc_score(test_label, test_prob_all)
             print("\t test roc auc: {:.4f}".format(test_auc))
@@ -396,7 +395,10 @@ class BaseFeat(object):
         user = user_features[user_features[:, -1] == user_repr][0]
 
         item_repr = item + data.user_offset + data.n_users
-        item_cols = [item_col] + data.item_feature_cols
+        if data.item_feature_cols is not None:
+            item_cols = [item_col] + data.item_feature_cols
+        else:
+            item_cols = [item_col]
         item_features = data.train_feat_indices[:, item_cols]
         item = item_features[item_features[:, 0] == item_repr][0]
 
@@ -429,7 +431,10 @@ class BaseFeat(object):
         users = np.tile(user_unique, (data.n_items, 1))
 
         #   np.unique is sorted based on the first element, so put item column first
-        item_cols = [item_col] + data.item_feature_cols
+        if data.item_feature_cols is not None:
+            item_cols = [item_col] + data.item_feature_cols
+        else:
+            item_cols = [item_col]
         orig_cols = user_cols + item_cols
         col_reindex = np.array(range(len(orig_cols)))[np.argsort(orig_cols)]
 
