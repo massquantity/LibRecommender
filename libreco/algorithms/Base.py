@@ -305,8 +305,8 @@ class BaseFeat(object):
 
         elif self.task == "ranking" and self.neg_sampling:
             t3 = time.time()
-            train_batch = kwargs.get("train_batch", 50000)
-            test_batch = kwargs.get("test_batch", 50000)
+            train_batch = kwargs.get("train_batch", 32768)
+            test_batch = kwargs.get("test_batch", 32768)
             print("train batch: %d, test_batch: %d" % (train_batch, test_batch))
 
             train_loss_all = []
@@ -317,7 +317,7 @@ class BaseFeat(object):
                 feed_dict = {self.feature_indices: train_indices_implicit_batch,
                              self.feature_values: train_values_implicit_batch,
                              self.labels: train_labels_implicit_batch}
-                if self.__class__.__name__.lower() == "din":
+                if self.__class__.__name__.lower()[:3] == "din":
                     train_seq_len, train_items_seq = self.preprocess_data(train_indices_implicit_batch)
                     feed_dict[self.seq_matrix] = train_items_seq
                     feed_dict[self.seq_len] = train_seq_len
@@ -333,7 +333,7 @@ class BaseFeat(object):
                 feed_dict = {self.feature_indices: test_indices_implicit_batch,
                              self.feature_values: test_values_implicit_batch,
                              self.labels: test_labels_implicit_batch}
-                if self.__class__.__name__.lower() == "din":
+                if self.__class__.__name__.lower()[:3] == "din":
                     test_seq_len, test_items_seq = self.preprocess_data(test_indices_implicit_batch)
                     feed_dict[self.seq_matrix] = test_items_seq
                     feed_dict[self.seq_len] = test_seq_len

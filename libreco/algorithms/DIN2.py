@@ -17,7 +17,7 @@ from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, recall_at_k, N
 from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 
-class Din(BaseFeat):
+class Din2(BaseFeat):
     def __init__(self, lr, n_epochs=20, embed_size=100, reg=0.0, batch_size=256, seed=42,
                  use_bn=True, hidden_units="128,64,32", dropout_rate=0.0, task="rating", neg_sampling=False):
         self.lr = lr
@@ -31,7 +31,7 @@ class Din(BaseFeat):
         self.hidden_units = list(map(int, hidden_units.split(",")))
         self.task = task
         self.neg_sampling = neg_sampling
-        super(Din, self).__init__()
+        super(Din2, self).__init__()
 
     def build_model(self, dataset):
         tf.set_random_seed(self.seed)
@@ -42,17 +42,25 @@ class Din(BaseFeat):
         self.n_items = dataset.n_items
         self.global_mean = dataset.global_mean
         self.total_items_unique = self.item_info
+        self.item_cols_num = len(dataset.item_feature_cols) + 1
         if dataset.lower_upper_bound is not None:
             self.lower_bound = dataset.lower_upper_bound[0]
             self.upper_bound = dataset.lower_upper_bound[1]
         else:
             self.lower_bound = None
             self.upper_bound = None
+        t5 = time.time()
+        self.item_feat_dict = self.neg_feat_dict2()
+        print("item_feat_dict time: ", time.time() - t5)
+        print(self.item_feat_dict.shape)
+        print(self.item_feat_dict[:5])
+
 
         self.feature_indices = tf.placeholder(tf.int32, shape=[None, self.field_size])
         self.feature_values = tf.placeholder(tf.float32, shape=[None, self.field_size])
         self.labels = tf.placeholder(tf.float32, shape=[None])
-        self.seq_matrix = tf.placeholder(tf.int32, shape=[None, None])  # batch_size * max_seq_len
+        # seq_matrix shape:  batch_size * max_seq_len * (item_feature_cols + item_indices)
+        self.seq_matrix = tf.placeholder(tf.int32, shape=[None, None, self.item_cols_num])
         self.seq_len = tf.placeholder(tf.int32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
 
@@ -66,7 +74,7 @@ class Din(BaseFeat):
                                                   shape=[self.feature_size + 1, self.embed_size],
                                                   initializer=tf.initializers.truncated_normal(0.0, 0.01),
                                                   regularizer=None)
-
+        '''
         if self.reg > 0.0:
             self.item_features = tf.get_variable(name="item_features",
                                                  shape=[dataset.n_items, self.embed_size],
@@ -77,7 +85,7 @@ class Din(BaseFeat):
                                                  shape=[dataset.n_items, self.embed_size],
                                                  initializer=tf.initializers.truncated_normal(0.0, 0.01),
                                                  regularizer=None)
-
+        '''
         feature_values_reshape = tf.reshape(self.feature_values, shape=[-1, self.field_size, 1])
 
         feature_embedding = tf.nn.embedding_lookup(self.total_features, self.feature_indices)  # N * F * K
@@ -85,14 +93,21 @@ class Din(BaseFeat):
     #    self.feature_embedding = tf.reduce_sum(self.feature_embedding, axis=1)
         feature_embedding = tf.reshape(feature_embedding, [-1, self.field_size * self.embed_size])
 
-        item_indices = tf.subtract(self.feature_indices[:, -1], dataset.user_offset)
-        item_indices = tf.subtract(item_indices, dataset.n_users)
-        item_embedding = tf.nn.embedding_lookup(self.item_features, item_indices)
-        seq_embedding = tf.nn.embedding_lookup(self.item_features, self.seq_matrix)
+    #    item_indices = tf.subtract(self.feature_indices[:, -1], dataset.user_offset)
+    #    item_indices = tf.subtract(item_indices, dataset.n_users)
+        item_indices = len(dataset.user_feature_cols) + len(dataset.item_feature_cols) + 1
+        total_item_cols = dataset.item_feature_cols + [item_indices]
+        total_item_indices = tf.gather(self.feature_indices, total_item_cols, axis=1)
+        item_embedding = tf.nn.embedding_lookup(self.total_features, total_item_indices)  # N * F_item * K
+        item_embedding = tf.reshape(item_embedding, [-1, self.item_cols_num * self.embed_size])
+
+        seq_embedding = tf.nn.embedding_lookup(self.total_features, self.seq_matrix)   # N * seq_len * F_item * K
+        max_len = tf.shape(self.seq_matrix)[1]
+        seq_embedding = tf.reshape(seq_embedding, [-1, max_len, self.item_cols_num * self.embed_size])
 
         attention_layer = self.attention(item_embedding, seq_embedding, self.seq_len)
         attention_layer = tf.layers.batch_normalization(attention_layer, training=self.is_training, momentum=0.99)
-        attention_layer = tf.reshape(attention_layer, [-1, self.embed_size])
+        attention_layer = tf.reshape(attention_layer, [-1, self.item_cols_num * self.embed_size])
         attention_layer = tf.layers.dense(attention_layer, self.embed_size, activation=None)
 
         concat_embedding = tf.concat([attention_layer, feature_embedding], axis=1)
@@ -211,7 +226,9 @@ class Din(BaseFeat):
                     n_batches = int(np.ceil(len(dataset.train_labels_implicit) / self.batch_size))
                     for n in range(n_batches):
                         indices_batch, values_batch, labels_batch = neg.next_batch()
-                        seq_len, u_items_seq = self.preprocess_data(indices_batch, num_items=100)
+                    #    t7 = time.time()
+                        seq_len, u_items_seq = self.preprocess_data(indices_batch, num_items=100)  # 10
+                    #    print("prerpocess time: ", time.time() - t7)
                         self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch,
@@ -302,7 +319,7 @@ class Din(BaseFeat):
                 break
 
         seq_len = list()
-        u_items_seq = np.zeros((len(user_indices), max_seq_len), dtype=np.int64)
+        u_items_seq = np.zeros((len(user_indices), max_seq_len, self.item_cols_num), dtype=np.int64)
         for i, user in enumerate(user_indices):
             if len(self.dataset.train_user[user]) > num_items:
                 u_items_len = num_items
@@ -310,16 +327,29 @@ class Din(BaseFeat):
                 u_items_len = len(self.dataset.train_user[user])
             seq_len.append(u_items_len)
             items = list(self.dataset.train_user[user])
-            for j, item in enumerate(items[:num_items]):
-                u_items_seq[i, j] = item
+        #    items = [i for i in self.dataset.train_user[u] if self.dataset.train_user[u][i] >= 4]  choose liked items
+            t8 = time.time()
+        #    for j, item in enumerate(items[:num_items]):
+        #        u_items_seq[i, j, :] = self.item_feat_dict[item]
 
+            u_items_seq[i, :u_items_len, :] = self.item_feat_dict[items[:num_items]]
+            '''
+            time1 = time.time() - t8
+            if time1 > 0.0005:
+                print("user: ", user)
+                print("items: ", len(items))
+                print("time: ", time1)
+                for item in items:
+                    print(self.item_feat_dict[item])
+                print()
+            '''
         return seq_len, u_items_seq
 
     def attention(self, query, keys, keys_length):
         max_seq_len = tf.shape(keys)[1]
     #    max_seq_len = keys.get_shape().as_list()[1]
         queries = tf.tile(query, [1, max_seq_len])
-        queries = tf.reshape(queries, [-1, max_seq_len, self.embed_size])
+        queries = tf.reshape(queries, [-1, max_seq_len, self.item_cols_num * self.embed_size])
         din_all = tf.concat([queries, keys, queries - keys, queries * keys], axis=-1)
         layer_one = tf.layers.dense(din_all, 10, activation=tf.nn.sigmoid)  # Prelu?
         layer_two = tf.layers.dense(layer_one, 4, activation=tf.nn.sigmoid)
@@ -335,10 +365,31 @@ class Din(BaseFeat):
         outputs = tf.matmul(outputs, keys)
         return outputs
 
+    def neg_feat_dict(self):
+        neg_indices_dict = dict()
+        total_items_col = self.dataset.item_feature_cols + [-1]
+        total_items_unique = np.unique(self.dataset.train_feat_indices[:, total_items_col], axis=0)
+        total_items = total_items_unique[:, -1]
+    #    total_items_feat_col = np.delete(total_items_unique, 0, axis=1)
 
+        for item, item_feat_col in zip(total_items, total_items_unique):
+            item = item - self.dataset.user_offset - self.dataset.n_users
+            neg_indices_dict[item] = item_feat_col.tolist()
 
+        return neg_indices_dict
 
+    def neg_feat_dict2(self):
+        neg_indices_dict = np.zeros((self.dataset.n_items, self.item_cols_num), dtype=np.int64)
+        total_items_col = self.dataset.item_feature_cols + [-1]
+        total_items_unique = np.unique(self.dataset.train_feat_indices[:, total_items_col], axis=0)
+        total_items = total_items_unique[:, -1]
+    #    total_items_feat_col = np.delete(total_items_unique, 0, axis=1)
 
+        for item, item_feat_col in zip(total_items, total_items_unique):
+            item = item - self.dataset.user_offset - self.dataset.n_users
+            neg_indices_dict[item] = item_feat_col
+
+        return neg_indices_dict
 
 
 

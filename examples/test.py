@@ -5,7 +5,7 @@ import tensorflow as tf
 from pathlib import Path, PurePath
 from libreco.dataset import DatasetPure, DatasetFeat
 from libreco.algorithms import userKNN, FmFeat, FmPure, WideDeep, WideDeepEstimator, WideDeep, DeepFmFeat, \
-                                YouTubeRec, Din
+                                YouTubeRec, Din, Din2
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
@@ -218,6 +218,11 @@ if __name__ == "__main__":
 #    you.fit(dataset, pre_sampling=False, verbose=2)
 #    print(you.predict(1, 10))
 #    print(you.recommend_user(1, 7))
+
+#    din2 = Din2(lr=0.0003, n_epochs=200, reg=0.0, embed_size=4, batch_size=2048, use_bn=True,
+#                     dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
+#    din2.fit(dataset, pre_sampling=False, verbose=2)
+
 
     din = Din(lr=0.0003, n_epochs=200, reg=0.0, embed_size=16, batch_size=2048, use_bn=True,
                      dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
