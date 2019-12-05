@@ -305,8 +305,8 @@ class BaseFeat(object):
 
         elif self.task == "ranking" and self.neg_sampling:
             t3 = time.time()
-            train_batch = kwargs.get("train_batch", 32768)
-            test_batch = kwargs.get("test_batch", 32768)
+            train_batch = kwargs.get("train_batch", 8192)
+            test_batch = kwargs.get("test_batch", 8192)
             print("train batch: %d, test_batch: %d" % (train_batch, test_batch))
 
             train_loss_all = []
@@ -337,17 +337,15 @@ class BaseFeat(object):
                     test_seq_len, test_items_seq = self.preprocess_data(test_indices_implicit_batch)
                     feed_dict[self.seq_matrix] = test_items_seq
                     feed_dict[self.seq_len] = test_seq_len
-                test_loss, test_accuracy, test_precision, test_prob = \
-                    self.sess.run([self.loss, self.accuracy, self.precision, self.y_prob], feed_dict=feed_dict)
+                test_loss, test_accuracy, test_prob = \
+                    self.sess.run([self.loss, self.accuracy, self.y_prob], feed_dict=feed_dict)
 
                 test_loss_all.append(test_loss)
                 test_accuracy_all.append(test_accuracy)
-                test_precision_all.append(test_precision)
                 test_prob_all.extend(test_prob)
 
         print("\ttest loss: {:.4f}".format(np.mean(test_loss_all)))
         print("\ttest accuracy: {:.4f}".format(np.mean(test_accuracy_all)))
-        print("\ttest precision: {:.4f}".format(np.mean(test_precision_all)))
         print("\tloss time: {:.4f}".format(time.time() - t3))
 
         t1 = time.time()

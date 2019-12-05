@@ -330,7 +330,7 @@ class Din(BaseFeat):
         key_masks = tf.expand_dims(key_masks, 1)
         paddings = tf.ones_like(outputs) * (-2 ** 32 + 1)
         outputs = tf.where(key_masks, outputs, paddings)
-        outputs = outputs / (self.embed_size ** 0.5)  # divide sqrt(n)
+        outputs = outputs / np.sqrt(self.embed_size)  # divide sqrt(n)
         outputs = tf.nn.softmax(outputs)
         outputs = tf.matmul(outputs, keys)
         return outputs
