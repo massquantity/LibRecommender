@@ -90,10 +90,27 @@ class Din(BaseFeat):
         item_embedding = tf.nn.embedding_lookup(self.item_features, item_indices)
         seq_embedding = tf.nn.embedding_lookup(self.item_features, self.seq_matrix)
 
+        '''
         attention_layer = self.attention(item_embedding, seq_embedding, self.seq_len)
         attention_layer = tf.layers.batch_normalization(attention_layer, training=self.is_training, momentum=0.99)
         attention_layer = tf.reshape(attention_layer, [-1, self.embed_size])
         attention_layer = tf.layers.dense(attention_layer, self.embed_size, activation=None)
+        '''
+        max_seq_len = tf.shape(seq_embedding)[1]
+        keys_length = self.seq_len
+        key_masks = tf.sequence_mask(keys_length, max_seq_len)
+    #    key_masks = tf.expand_dims(key_masks, 1)
+
+        query_masks = tf.cast(tf.ones_like(tf.reshape(self.seq_len, [-1, 1])), dtype=tf.bool)
+
+        item_embedding = tf.reshape(item_embedding, [-1, 1, self.embed_size])
+
+    #    attention = tf.keras.layers.Attention(use_scale=True)
+        attention_layer = tf.keras.layers.Attention()(inputs=[item_embedding, seq_embedding], mask=[query_masks, key_masks])
+        attention_layer = tf.layers.batch_normalization(attention_layer, training=self.is_training, momentum=0.99)
+        attention_layer = tf.reshape(attention_layer, [-1, self.embed_size])
+        attention_layer = tf.layers.dense(attention_layer, self.embed_size, activation=None)
+
 
         concat_embedding = tf.concat([attention_layer, feature_embedding], axis=1)
         if self.bn:

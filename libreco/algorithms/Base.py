@@ -193,7 +193,7 @@ class BaseFeat(object):
     def __init__(self):
         self.metrics = {"roc_auc": True, "pr_auc": True, "map": True, "map_num": 20,
                         "recall": True, "recall_num": 50, "ndcg": True, "ndcg_num": 20,
-                        "sample_user": 1000}
+                        "sample_user": 1000, "show_ranking_metrics": True}
 
     @abstractmethod
     def build_model(self, *args, **kwargs):
@@ -279,8 +279,8 @@ class BaseFeat(object):
 
     def print_metrics_tf(self, *args, **kwargs):
         dataset, epoch = args[0], args[1]
-        allowed_kwargs = ["roc_auc", "pr_auc", "map", "map_num", "recall",
-                          "recall_num", "ndcg", "ndcg_num", "sample_user", "test_batch"]
+        allowed_kwargs = ["roc_auc", "pr_auc", "map", "map_num", "recall", "recall_num",
+                          "ndcg", "ndcg_num", "sample_user", "test_batch", "show_ranking_metrics"]
         for k in kwargs:
             if k not in allowed_kwargs:
                 raise TypeError('Keyword argument not understood:', k)
@@ -359,27 +359,28 @@ class BaseFeat(object):
             print("\t test pr auc: {:.4f}".format(test_pr_auc))
             print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
 
-        sample_user = kwargs.get("sample_user", 1000)
-        t2 = time.time()
-        if kwargs.get("map"):
-            map_num = kwargs.get("map_num", 20)
-            mean_average_precision = MAP_at_k(self, self.dataset, map_num, sample_user=sample_user)
-            print("\t MAP@{}: {:.4f}".format(map_num, mean_average_precision))
-            print("\t MAP time: {:.4f}".format(time.time() - t2))
+        if kwargs.get("show_ranking_metrics"):
+            sample_user = kwargs.get("sample_user", 1000)
+            t2 = time.time()
+            if kwargs.get("map"):
+                map_num = kwargs.get("map_num", 20)
+                mean_average_precision = MAP_at_k(self, self.dataset, map_num, sample_user=sample_user)
+                print("\t MAP@{}: {:.4f}".format(map_num, mean_average_precision))
+                print("\t MAP time: {:.4f}".format(time.time() - t2))
 
-        t3 = time.time()
-        if kwargs.get("recall"):
-            recall_num = kwargs.get("recall_num", 50)
-            recall = recall_at_k(self, self.dataset, recall_num, sample_user=sample_user)
-            print("\t MAR@{}: {:.4f}".format(recall_num, recall))
-            print("\t MAR time: {:.4f}".format(time.time() - t3))
+            t3 = time.time()
+            if kwargs.get("recall"):
+                recall_num = kwargs.get("recall_num", 50)
+                recall = recall_at_k(self, self.dataset, recall_num, sample_user=sample_user)
+                print("\t MAR@{}: {:.4f}".format(recall_num, recall))
+                print("\t MAR time: {:.4f}".format(time.time() - t3))
 
-        t4 = time.time()
-        if kwargs.get("ndcg"):
-            ndcg_num = kwargs.get("ndcg_num", 20)
-            ndcg = NDCG_at_k(self, self.dataset, ndcg_num , sample_user=sample_user)
-            print("\t NDCG@{}: {:.4f}".format(ndcg_num, ndcg))
-            print("\t NDCG time: {:.4f}".format(time.time() - t4))
+            t4 = time.time()
+            if kwargs.get("ndcg"):
+                ndcg_num = kwargs.get("ndcg_num", 20)
+                ndcg = NDCG_at_k(self, self.dataset, ndcg_num , sample_user=sample_user)
+                print("\t NDCG@{}: {:.4f}".format(ndcg_num, ndcg))
+                print("\t NDCG time: {:.4f}".format(time.time() - t4))
 
         return
 

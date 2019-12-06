@@ -213,21 +213,20 @@ if __name__ == "__main__":
 #    bpr.fit(dataset, method="knn")
 #    print(bpr.predict(1, 2, method="knn"))
 
-#    you = YouTubeRec(lr=0.0001, n_epochs=200, reg=0.0, embed_size=32, batch_size=2048, use_bn=True,
+#    you = YouTubeRec(lr=0.001, n_epochs=200, reg=0.0, embed_size=16, batch_size=2048, use_bn=True,
 #                     dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
 #    you.fit(dataset, pre_sampling=False, verbose=2)
 #    print(you.predict(1, 10))
 #    print(you.recommend_user(1, 7))
 
-    din2 = Din2(lr=0.0003, n_epochs=200, reg=0.0, embed_size=4, batch_size=2048, use_bn=True,
+    din2 = Din2(lr=0.001, n_epochs=200, reg=0.0, embed_size=4, batch_size=2048, use_bn=True,
                 num_att_items=100, dropout_rate=0.0, task="ranking", hidden_units="128,64,32",
-                neg_sampling=True, include_item_feat=True)
+                neg_sampling=True, include_item_feat=True, use_tf_attention=False)
     din2.fit(dataset, pre_sampling=False, verbose=2)
 
-
-    din = Din(lr=0.0003, n_epochs=200, reg=0.0, embed_size=16, batch_size=2048, use_bn=True,
+    din = Din(lr=0.001, n_epochs=200, reg=0.0, embed_size=16, batch_size=2048, use_bn=True,
                      dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
-    din.fit(dataset, pre_sampling=False, verbose=2)
+    din.fit(dataset, pre_sampling=False, verbose=3)
     print(din.predict(1, 10))
     print(din.recommend_user(1, 7))
 

@@ -20,7 +20,7 @@ from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 class Din2(BaseFeat):
     def __init__(self, lr, n_epochs=20, embed_size=100, reg=0.0, batch_size=256, seed=42, num_att_items=100,
                  use_bn=True, hidden_units="128,64,32", dropout_rate=0.0, task="rating", neg_sampling=False,
-                 include_item_feat=True):
+                 include_item_feat=True, use_tf_attention=False):
         self.lr = lr
         self.n_epochs = n_epochs
         self.embed_size = embed_size
@@ -34,6 +34,7 @@ class Din2(BaseFeat):
         self.neg_sampling = neg_sampling
         self.num_att_items = num_att_items
         self.include_item_feat = include_item_feat
+        self.use_tf_attention = use_tf_attention
         super(Din2, self).__init__()
 
     def build_model(self, dataset):
@@ -86,7 +87,6 @@ class Din2(BaseFeat):
 
     #    item_indices = tf.subtract(self.feature_indices[:, -1], dataset.user_offset)
     #    item_indices = tf.subtract(item_indices, dataset.n_users)
-    #    item_indices = len(dataset.user_feature_cols) + len(dataset.item_feature_cols) + 1
         item_indices = self.field_size - 1
         if self.include_item_feat and dataset.item_feature_cols is not None:
             total_item_cols = dataset.item_feature_cols + [item_indices]
@@ -100,11 +100,18 @@ class Din2(BaseFeat):
         seq_max_len = tf.shape(self.seq_matrix)[1]
         seq_embedding = tf.reshape(seq_embedding, [-1, seq_max_len, self.item_cols_num * self.embed_size])
 
-        attention_layer = self.attention(item_embedding, seq_embedding, self.seq_len)
+        if self.use_tf_attention:
+            query_masks = tf.cast(tf.ones_like(tf.reshape(self.seq_len, [-1, 1])), dtype=tf.bool)  # N * 1
+            key_masks = tf.sequence_mask(self.seq_len, seq_max_len)                                # N * seq_len
+            item_embedding = tf.reshape(item_embedding, [-1, 1, self.item_cols_num * self.embed_size])
+            attention = tf.keras.layers.Attention(use_scale=False)  # True False
+            attention_layer = attention(inputs=[item_embedding, seq_embedding], mask=[query_masks, key_masks])
+        else:
+            attention_layer = self.attention(item_embedding, seq_embedding, self.seq_len)
+
         attention_layer = tf.layers.batch_normalization(attention_layer, training=self.is_training, momentum=0.99)
         attention_layer = tf.reshape(attention_layer, [-1, self.item_cols_num * self.embed_size])
     #    attention_layer = tf.layers.dense(attention_layer, self.embed_size, activation=None)
-
         concat_embedding = tf.concat([attention_layer, feature_embedding], axis=1)
         if self.bn:
             concat_embedding = tf.layers.batch_normalization(concat_embedding,
@@ -191,9 +198,20 @@ class Din2(BaseFeat):
                                                                    self.is_training: True})
                     if verbose == 1:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0), end="\n\n")
-                    elif verbose > 1:
+                    elif verbose == 2:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
                         metrics = kwargs.get("metrics", self.metrics)
+                        metrics["show_ranking_metrics"] = False
+                        print(metrics)
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, **metrics)
+                        else:
+                            self.print_metrics(dataset, epoch, **metrics)
+                        print()
+                    elif verbose > 2:
+                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
+                        metrics = kwargs.get("metrics", self.metrics)
+                        metrics["show_ranking_metrics"] = True
                         if hasattr(self, "sess"):
                             self.print_metrics_tf(dataset, epoch, **metrics)
                         else:
@@ -219,9 +237,19 @@ class Din2(BaseFeat):
 
                     if verbose == 1:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
-                    elif verbose > 1:
-                        print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
+                    elif verbose == 2:
+                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
                         metrics = kwargs.get("metrics", self.metrics)
+                        metrics["show_ranking_metrics"] = False
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, **metrics)
+                        else:
+                            self.print_metrics(dataset, epoch, **metrics)
+                        print()
+                    elif verbose > 2:
+                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
+                        metrics = kwargs.get("metrics", self.metrics)
+                        metrics["show_ranking_metrics"] = True
                         if hasattr(self, "sess"):
                             self.print_metrics_tf(dataset, epoch, **metrics)
                         else:
@@ -320,7 +348,7 @@ class Din2(BaseFeat):
         queries = tf.tile(query, [1, max_seq_len])
         queries = tf.reshape(queries, [-1, max_seq_len, self.item_cols_num * self.embed_size])
         din_all = tf.concat([queries, keys, queries - keys, queries * keys], axis=-1)
-        layer = tf.layers.dense(din_all, 10, activation=tf.nn.elu)  # Prelu?
+        layer = tf.layers.dense(din_all, self.embed_size * 2, activation=tf.nn.sigmoid)  # Prelu?
         layer = tf.layers.dense(layer, 1, activation=None)
         outputs = tf.reshape(layer, [-1, 1, max_seq_len])
 
