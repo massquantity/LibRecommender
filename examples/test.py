@@ -56,7 +56,6 @@ if __name__ == "__main__":
         "convert_implicit": True,
         "build_negative": True,
         "num_neg": 1,
-        "batch_size": 256,
         "sep": ",",
         "k": 0.2,
         "split_mode": "leave_k_out",
@@ -219,7 +218,7 @@ if __name__ == "__main__":
 #    print(you.predict(1, 10))
 #    print(you.recommend_user(1, 7))
 
-    din2 = Din2(lr=0.001, n_epochs=200, reg=0.0, embed_size=4, batch_size=2048, use_bn=True,
+    din2 = Din2(lr=0.0003, n_epochs=200, reg=0.0, embed_size=4, batch_size=2048, use_bn=True,
                 num_att_items=100, dropout_rate=0.0, task="ranking", hidden_units="128,64,32",
                 neg_sampling=True, include_item_feat=True, use_tf_attention=False)
     din2.fit(dataset, pre_sampling=False, verbose=2)

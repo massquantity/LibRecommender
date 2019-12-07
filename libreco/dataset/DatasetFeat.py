@@ -809,13 +809,13 @@ class DatasetFeat:
     #   def leave_k_out_chrono_split(self):
 
     def build_trainset_implicit(self, num_neg):
-        neg = NegativeSamplingFeat(self, num_neg, self.batch_size, replacement_sampling=True)
+        neg = NegativeSamplingFeat(self, num_neg, replacement_sampling=True)
         self.train_indices_implicit, \
         self.train_values_implicit, \
         self.train_labels_implicit = neg(mode="train")
 
     def build_testset_implicit(self, num_neg):
-        neg = NegativeSamplingFeat(self, num_neg, self.batch_size, replacement_sampling=True)
+        neg = NegativeSamplingFeat(self, num_neg, replacement_sampling=True)
         self.test_indices_implicit, \
         self.test_values_implicit, \
         self.test_labels_implicit = neg(mode="test")

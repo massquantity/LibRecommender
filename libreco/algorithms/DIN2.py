@@ -58,7 +58,6 @@ class Din2(BaseFeat):
             self.item_cols_num = 1
         self.item_feat_matrix = self.get_item_feat()
 
-
         self.feature_indices = tf.placeholder(tf.int32, shape=[None, self.field_size])
         self.feature_values = tf.placeholder(tf.float32, shape=[None, self.field_size])
         self.labels = tf.placeholder(tf.float32, shape=[None])
@@ -335,11 +334,12 @@ class Din2(BaseFeat):
             else:
                 u_items_len = len(self.dataset.train_user[user])
             seq_len.append(u_items_len)
-            items = list(self.dataset.train_user[user])
+            items = list(self.dataset.train_user[user])[:u_items_len]
         #    items = [i for i in self.dataset.train_user[u] if self.dataset.train_user[u][i] >= 4]  choose liked items
+        #    u_items_seq.append(self.item_feat_matrix[items] + [0] * (max_seq_len - u_items_len))
         #    for j, item in enumerate(items[:num_items]):
         #        u_items_seq[i, j, :] = self.item_feat_dict[item]
-            u_items_seq[i, :u_items_len, :] = self.item_feat_matrix[items[:num_items]]
+            u_items_seq[i, :u_items_len, :] = self.item_feat_matrix[items]
         return seq_len, u_items_seq
 
     def attention(self, query, keys, keys_length):
