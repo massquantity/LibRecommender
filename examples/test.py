@@ -5,7 +5,7 @@ import tensorflow as tf
 from pathlib import Path, PurePath
 from libreco.dataset import DatasetPure, DatasetFeat
 from libreco.algorithms import userKNN, FmFeat, FmPure, WideDeep, WideDeepEstimator, WideDeep, DeepFmFeat, \
-                                YouTubeRec, Din, Din2
+                                YouTubeRec, Din
 from libreco import baseline_als
 from libreco import NegativeSampling
 from libreco.utils import export_model_pickle, export_model_joblib, export_model_tf, export_feature_transform
@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     conf_movielens = {
         "data_path": os.path.join(os.path.expanduser("~"), ".libreco_data", "ml-1m", "merged_data.csv"),
-        "length": "all",
+        "length": 100000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -218,14 +218,10 @@ if __name__ == "__main__":
 #    print(you.predict(1, 10))
 #    print(you.recommend_user(1, 7))
 
-    din2 = Din2(lr=0.0003, n_epochs=200, reg=0.0, embed_size=4, batch_size=2048, use_bn=True,
+    din = Din(lr=0.0003, n_epochs=200, reg=0.0, embed_size=4, batch_size=2048, use_bn=True,
                 num_att_items=100, dropout_rate=0.0, task="ranking", hidden_units="128,64,32",
                 neg_sampling=True, include_item_feat=True, use_tf_attention=False)
-    din2.fit(dataset, pre_sampling=False, verbose=2)
-
-    din = Din(lr=0.001, n_epochs=200, reg=0.0, embed_size=16, batch_size=2048, use_bn=True,
-                     dropout_rate=0.0, task="ranking", hidden_units="128,64,32", neg_sampling=True)
-    din.fit(dataset, pre_sampling=False, verbose=3)
+    din.fit(dataset, pre_sampling=False, verbose=-1)
     print(din.predict(1, 10))
     print(din.recommend_user(1, 7))
 

@@ -193,7 +193,7 @@ class BaseFeat(object):
     def __init__(self):
         self.metrics = {"roc_auc": True, "pr_auc": True, "map": True, "map_num": 20,
                         "recall": True, "recall_num": 50, "ndcg": True, "ndcg_num": 20,
-                        "sample_user": 1000, "show_ranking_metrics": True}
+                        "sample_user": 1000}
 
     @abstractmethod
     def build_model(self, *args, **kwargs):
@@ -278,9 +278,9 @@ class BaseFeat(object):
         return
 
     def print_metrics_tf(self, *args, **kwargs):
-        dataset, epoch = args[0], args[1]
+        dataset, epoch, verbose = args[0], args[1], args[2]
         allowed_kwargs = ["roc_auc", "pr_auc", "map", "map_num", "recall", "recall_num",
-                          "ndcg", "ndcg_num", "sample_user", "test_batch", "show_ranking_metrics"]
+                          "ndcg", "ndcg_num", "sample_user", "test_batch"]
         for k in kwargs:
             if k not in allowed_kwargs:
                 raise TypeError('Keyword argument not understood:', k)
@@ -304,83 +304,84 @@ class BaseFeat(object):
                                          self.labels: dataset.test_labels})
 
         elif self.task == "ranking" and self.neg_sampling:
-            t3 = time.time()
-            train_batch = kwargs.get("train_batch", 8192)
-            test_batch = kwargs.get("test_batch", 8192)
-            print("train batch: %d, test_batch: %d" % (train_batch, test_batch))
+            if verbose >= 2:
+                t3 = time.time()
+                train_batch = kwargs.get("train_batch", 8192)
+                test_batch = kwargs.get("test_batch", 8192)
+                print("train batch: %d, test_batch: %d" % (train_batch, test_batch))
 
-            train_loss_all = []
-            for batch_test in range(0, len(dataset.train_labels_implicit), train_batch):
-                train_indices_implicit_batch = dataset.train_indices_implicit[batch_test: batch_test + train_batch]
-                train_values_implicit_batch = dataset.train_values_implicit[batch_test: batch_test + train_batch]
-                train_labels_implicit_batch = dataset.train_labels_implicit[batch_test: batch_test + train_batch]
-                feed_dict = {self.feature_indices: train_indices_implicit_batch,
-                             self.feature_values: train_values_implicit_batch,
-                             self.labels: train_labels_implicit_batch}
-                if self.__class__.__name__.lower()[:3] == "din":
-                    train_seq_len, train_items_seq = self.preprocess_data(train_indices_implicit_batch)
-                    feed_dict[self.seq_matrix] = train_items_seq
-                    feed_dict[self.seq_len] = train_seq_len
-                train_loss = self.sess.run([self.loss], feed_dict=feed_dict)
-                train_loss_all.append(train_loss)
-            print("\ttrain loss: {:.4f}".format(np.mean(train_loss_all)))
+                train_loss_all = []
+                for batch_test in range(0, len(dataset.train_labels_implicit), train_batch):
+                    train_indices_implicit_batch = dataset.train_indices_implicit[batch_test: batch_test + train_batch]
+                    train_values_implicit_batch = dataset.train_values_implicit[batch_test: batch_test + train_batch]
+                    train_labels_implicit_batch = dataset.train_labels_implicit[batch_test: batch_test + train_batch]
+                    feed_dict = {self.feature_indices: train_indices_implicit_batch,
+                                 self.feature_values: train_values_implicit_batch,
+                                 self.labels: train_labels_implicit_batch}
+                    if self.__class__.__name__.lower()[:3] == "din":
+                        train_seq_len, train_items_seq = self.preprocess_data(train_indices_implicit_batch)
+                        feed_dict[self.seq_matrix] = train_items_seq
+                        feed_dict[self.seq_len] = train_seq_len
+                    train_loss = self.sess.run([self.loss], feed_dict=feed_dict)
+                    train_loss_all.append(train_loss)
+                print("\ttrain loss: {:.4f}".format(np.mean(train_loss_all)))
 
-            test_loss_all, test_accuracy_all, test_precision_all, test_prob_all = [], [], [], []
-            for batch_test in range(0, len(dataset.test_labels_implicit), test_batch):
-                test_indices_implicit_batch = dataset.test_indices_implicit[batch_test: batch_test + test_batch]
-                test_values_implicit_batch = dataset.test_values_implicit[batch_test: batch_test + test_batch]
-                test_labels_implicit_batch = dataset.test_labels_implicit[batch_test: batch_test + test_batch]
-                feed_dict = {self.feature_indices: test_indices_implicit_batch,
-                             self.feature_values: test_values_implicit_batch,
-                             self.labels: test_labels_implicit_batch}
-                if self.__class__.__name__.lower()[:3] == "din":
-                    test_seq_len, test_items_seq = self.preprocess_data(test_indices_implicit_batch)
-                    feed_dict[self.seq_matrix] = test_items_seq
-                    feed_dict[self.seq_len] = test_seq_len
-                test_loss, test_accuracy, test_prob = \
-                    self.sess.run([self.loss, self.accuracy, self.y_prob], feed_dict=feed_dict)
+                test_loss_all, test_accuracy_all, test_precision_all, test_prob_all = [], [], [], []
+                for batch_test in range(0, len(dataset.test_labels_implicit), test_batch):
+                    test_indices_implicit_batch = dataset.test_indices_implicit[batch_test: batch_test + test_batch]
+                    test_values_implicit_batch = dataset.test_values_implicit[batch_test: batch_test + test_batch]
+                    test_labels_implicit_batch = dataset.test_labels_implicit[batch_test: batch_test + test_batch]
+                    feed_dict = {self.feature_indices: test_indices_implicit_batch,
+                                 self.feature_values: test_values_implicit_batch,
+                                 self.labels: test_labels_implicit_batch}
+                    if self.__class__.__name__.lower()[:3] == "din":
+                        test_seq_len, test_items_seq = self.preprocess_data(test_indices_implicit_batch)
+                        feed_dict[self.seq_matrix] = test_items_seq
+                        feed_dict[self.seq_len] = test_seq_len
+                    test_loss, test_accuracy, test_prob = \
+                        self.sess.run([self.loss, self.accuracy, self.y_prob], feed_dict=feed_dict)
 
-                test_loss_all.append(test_loss)
-                test_accuracy_all.append(test_accuracy)
-                test_prob_all.extend(test_prob)
+                    test_loss_all.append(test_loss)
+                    test_accuracy_all.append(test_accuracy)
+                    test_prob_all.extend(test_prob)
 
-        print("\ttest loss: {:.4f}".format(np.mean(test_loss_all)))
-        print("\ttest accuracy: {:.4f}".format(np.mean(test_accuracy_all)))
-        print("\tloss time: {:.4f}".format(time.time() - t3))
+            print("\ttest loss: {:.4f}".format(np.mean(test_loss_all)))
+            print("\ttest accuracy: {:.4f}".format(np.mean(test_accuracy_all)))
+            print("\tloss time: {:.4f}".format(time.time() - t3))
 
-        t1 = time.time()
-        test_label = dataset.test_labels_implicit
-        if kwargs.get("roc_auc"):
-            test_auc = roc_auc_score(test_label, test_prob_all)
-            print("\t test roc auc: {:.4f}".format(test_auc))
-        if kwargs.get("pr_auc"):
-            precision_test, recall_test, _ = precision_recall_curve(test_label, test_prob_all)
-            test_pr_auc = auc(recall_test, precision_test)
-            print("\t test pr auc: {:.4f}".format(test_pr_auc))
-            print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
+            t1 = time.time()
+            test_label = dataset.test_labels_implicit
+            if kwargs.get("roc_auc"):
+                test_auc = roc_auc_score(test_label, test_prob_all)
+                print("\t test roc auc: {:.4f}".format(test_auc))
+            if kwargs.get("pr_auc"):
+                precision_test, recall_test, _ = precision_recall_curve(test_label, test_prob_all)
+                test_pr_auc = auc(recall_test, precision_test)
+                print("\t test pr auc: {:.4f}".format(test_pr_auc))
+                print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
 
-        if kwargs.get("show_ranking_metrics"):
-            sample_user = kwargs.get("sample_user", 1000)
-            t2 = time.time()
-            if kwargs.get("map"):
-                map_num = kwargs.get("map_num", 20)
-                mean_average_precision = MAP_at_k(self, self.dataset, map_num, sample_user=sample_user)
-                print("\t MAP@{}: {:.4f}".format(map_num, mean_average_precision))
-                print("\t MAP time: {:.4f}".format(time.time() - t2))
+            if verbose >= 3:
+                sample_user = kwargs.get("sample_user", 1000)
+                t2 = time.time()
+                if kwargs.get("map"):
+                    map_num = kwargs.get("map_num", 20)
+                    mean_average_precision = MAP_at_k(self, self.dataset, map_num, sample_user=sample_user)
+                    print("\t MAP@{}: {:.4f}".format(map_num, mean_average_precision))
+                    print("\t MAP time: {:.4f}".format(time.time() - t2))
 
-            t3 = time.time()
-            if kwargs.get("recall"):
-                recall_num = kwargs.get("recall_num", 50)
-                recall = recall_at_k(self, self.dataset, recall_num, sample_user=sample_user)
-                print("\t MAR@{}: {:.4f}".format(recall_num, recall))
-                print("\t MAR time: {:.4f}".format(time.time() - t3))
+                t3 = time.time()
+                if kwargs.get("recall"):
+                    recall_num = kwargs.get("recall_num", 50)
+                    recall = recall_at_k(self, self.dataset, recall_num, sample_user=sample_user)
+                    print("\t MAR@{}: {:.4f}".format(recall_num, recall))
+                    print("\t MAR time: {:.4f}".format(time.time() - t3))
 
-            t4 = time.time()
-            if kwargs.get("ndcg"):
-                ndcg_num = kwargs.get("ndcg_num", 20)
-                ndcg = NDCG_at_k(self, self.dataset, ndcg_num , sample_user=sample_user)
-                print("\t NDCG@{}: {:.4f}".format(ndcg_num, ndcg))
-                print("\t NDCG time: {:.4f}".format(time.time() - t4))
+                t4 = time.time()
+                if kwargs.get("ndcg"):
+                    ndcg_num = kwargs.get("ndcg_num", 20)
+                    ndcg = NDCG_at_k(self, self.dataset, ndcg_num , sample_user=sample_user)
+                    print("\t NDCG@{}: {:.4f}".format(ndcg_num, ndcg))
+                    print("\t NDCG time: {:.4f}".format(time.time() - t4))
 
         return
 

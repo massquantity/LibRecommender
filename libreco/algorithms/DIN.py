@@ -18,8 +18,9 @@ from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 
 
 class Din(BaseFeat):
-    def __init__(self, lr, n_epochs=20, embed_size=100, reg=0.0, batch_size=256, seed=42,
-                 use_bn=True, hidden_units="128,64,32", dropout_rate=0.0, task="rating", neg_sampling=False):
+    def __init__(self, lr, n_epochs=20, embed_size=100, reg=0.0, batch_size=256, seed=42, num_att_items=100,
+                 use_bn=True, hidden_units="128,64,32", dropout_rate=0.0, task="rating", neg_sampling=False,
+                 include_item_feat=True, use_tf_attention=False):
         self.lr = lr
         self.n_epochs = n_epochs
         self.embed_size = embed_size
@@ -31,6 +32,9 @@ class Din(BaseFeat):
         self.hidden_units = list(map(int, hidden_units.split(",")))
         self.task = task
         self.neg_sampling = neg_sampling
+        self.num_att_items = num_att_items
+        self.include_item_feat = include_item_feat
+        self.use_tf_attention = use_tf_attention
         super(Din, self).__init__()
 
     def build_model(self, dataset):
@@ -48,11 +52,17 @@ class Din(BaseFeat):
         else:
             self.lower_bound = None
             self.upper_bound = None
+        if self.include_item_feat and dataset.item_feature_cols is not None:
+            self.item_cols_num = len(dataset.item_feature_cols) + 1
+        else:
+            self.item_cols_num = 1
+        self.item_feat_matrix = self.get_item_feat()
 
         self.feature_indices = tf.placeholder(tf.int32, shape=[None, self.field_size])
         self.feature_values = tf.placeholder(tf.float32, shape=[None, self.field_size])
         self.labels = tf.placeholder(tf.float32, shape=[None])
-        self.seq_matrix = tf.placeholder(tf.int32, shape=[None, None])  # batch_size * max_seq_len
+        # seq_matrix shape:  batch_size * max_seq_len * (item_feature_cols + item_indices)
+        self.seq_matrix = tf.placeholder(tf.int32, shape=[None, None, self.item_cols_num])
         self.seq_len = tf.placeholder(tf.int32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
 
@@ -67,17 +77,6 @@ class Din(BaseFeat):
                                                   initializer=tf.initializers.truncated_normal(0.0, 0.01),
                                                   regularizer=None)
 
-        if self.reg > 0.0:
-            self.item_features = tf.get_variable(name="item_features",
-                                                 shape=[dataset.n_items, self.embed_size],
-                                                 initializer=tf.initializers.truncated_normal(0.0, 0.01),
-                                                 regularizer=tf.keras.regularizers.l2(self.reg))
-        else:
-            self.item_features = tf.get_variable(name="item_features",
-                                                 shape=[dataset.n_items, self.embed_size],
-                                                 initializer=tf.initializers.truncated_normal(0.0, 0.01),
-                                                 regularizer=None)
-
         feature_values_reshape = tf.reshape(self.feature_values, shape=[-1, self.field_size, 1])
 
         feature_embedding = tf.nn.embedding_lookup(self.total_features, self.feature_indices)  # N * F * K
@@ -85,73 +84,59 @@ class Din(BaseFeat):
     #    self.feature_embedding = tf.reduce_sum(self.feature_embedding, axis=1)
         feature_embedding = tf.reshape(feature_embedding, [-1, self.field_size * self.embed_size])
 
-        item_indices = tf.subtract(self.feature_indices[:, -1], dataset.user_offset)
-        item_indices = tf.subtract(item_indices, dataset.n_users)
-        item_embedding = tf.nn.embedding_lookup(self.item_features, item_indices)
-        seq_embedding = tf.nn.embedding_lookup(self.item_features, self.seq_matrix)
+    #    item_indices = tf.subtract(self.feature_indices[:, -1], dataset.user_offset)
+    #    item_indices = tf.subtract(item_indices, dataset.n_users)
+        item_indices = self.field_size - 1
+        if self.include_item_feat and dataset.item_feature_cols is not None:
+            total_item_cols = dataset.item_feature_cols + [item_indices]
+        else:
+            total_item_cols = [item_indices]
+        total_item_indices = tf.gather(self.feature_indices, total_item_cols, axis=1)
+        item_embedding = tf.nn.embedding_lookup(self.total_features, total_item_indices)  # N * F_item * K
+        item_embedding = tf.reshape(item_embedding, [-1, self.item_cols_num * self.embed_size])
 
-        '''
-        attention_layer = self.attention(item_embedding, seq_embedding, self.seq_len)
+        seq_embedding = tf.nn.embedding_lookup(self.total_features, self.seq_matrix)   # N * seq_len * F_item * K
+        seq_max_len = tf.shape(self.seq_matrix)[1]
+        seq_embedding = tf.reshape(seq_embedding, [-1, seq_max_len, self.item_cols_num * self.embed_size])
+
+        if self.use_tf_attention:
+            query_masks = tf.cast(tf.ones_like(tf.reshape(self.seq_len, [-1, 1])), dtype=tf.bool)  # N * 1
+            key_masks = tf.sequence_mask(self.seq_len, seq_max_len)                                # N * seq_len
+            item_embedding = tf.reshape(item_embedding, [-1, 1, self.item_cols_num * self.embed_size])
+            attention = tf.keras.layers.Attention(use_scale=False)  # True False
+            attention_layer = attention(inputs=[item_embedding, seq_embedding], mask=[query_masks, key_masks])
+        else:
+            attention_layer = self.attention(item_embedding, seq_embedding, self.seq_len)
+
         attention_layer = tf.layers.batch_normalization(attention_layer, training=self.is_training, momentum=0.99)
-        attention_layer = tf.reshape(attention_layer, [-1, self.embed_size])
-        attention_layer = tf.layers.dense(attention_layer, self.embed_size, activation=None)
-        '''
-        max_seq_len = tf.shape(seq_embedding)[1]
-        keys_length = self.seq_len
-        key_masks = tf.sequence_mask(keys_length, max_seq_len)
-    #    key_masks = tf.expand_dims(key_masks, 1)
-
-        query_masks = tf.cast(tf.ones_like(tf.reshape(self.seq_len, [-1, 1])), dtype=tf.bool)
-
-        item_embedding = tf.reshape(item_embedding, [-1, 1, self.embed_size])
-
-    #    attention = tf.keras.layers.Attention(use_scale=True)
-        attention_layer = tf.keras.layers.Attention()(inputs=[item_embedding, seq_embedding], mask=[query_masks, key_masks])
-        attention_layer = tf.layers.batch_normalization(attention_layer, training=self.is_training, momentum=0.99)
-        attention_layer = tf.reshape(attention_layer, [-1, self.embed_size])
-        attention_layer = tf.layers.dense(attention_layer, self.embed_size, activation=None)
-
-
+        attention_layer = tf.reshape(attention_layer, [-1, self.item_cols_num * self.embed_size])
+    #    attention_layer = tf.layers.dense(attention_layer, self.embed_size, activation=None)
         concat_embedding = tf.concat([attention_layer, feature_embedding], axis=1)
         if self.bn:
             concat_embedding = tf.layers.batch_normalization(concat_embedding,
                                                              training=self.is_training,
                                                              momentum=0.99)
 
-        MLP_layer_one = tf.layers.dense(inputs=concat_embedding,
-                                        units=self.hidden_units[0],
-                                        activation=None,
-                                        kernel_initializer=tf.variance_scaling_initializer)
-                                        # kernel_regularizer=tf.keras.regularizers.l2(0.0001)
-
-        if self.bn:
-            MLP_layer_one = tf.layers.batch_normalization(MLP_layer_one, training=self.is_training, momentum=0.99)
-        MLP_layer_one = tf.nn.relu(MLP_layer_one)
-        if self.dropout_rate > 0.0:
-            MLP_layer_one = tf.layers.dropout(MLP_layer_one, rate=self.dropout_rate, training=self.is_training)
-
-        MLP_layer_two = tf.layers.dense(inputs=MLP_layer_one,
-                                        units=self.hidden_units[1],
-                                        activation=None,
-                                        kernel_initializer=tf.variance_scaling_initializer)
-
-        if self.bn:
-            MLP_layer_two = tf.layers.batch_normalization(MLP_layer_two, training=self.is_training, momentum=0.99)
-        MLP_layer_two = tf.nn.relu(MLP_layer_two)
-        if self.dropout_rate > 0.0:
-            MLP_layer_two = tf.layers.dropout(MLP_layer_two, rate=self.dropout_rate, training=self.is_training)
-
-        MLP_layer_three = tf.layers.dense(inputs=MLP_layer_two,
-                                          units=self.hidden_units[2],
-                                          activation=tf.nn.relu,
-                                          kernel_initializer=tf.variance_scaling_initializer,)
-    #                                      use_bias=False)
-    #    MLP_layer_three = tf.layers.dropout(MLP_layer_three, rate=dropout_rate, training=dropout_switch)
-    #    if self.bn:
-    #        MLP_layer_three = tf.layers.batch_normalization(MLP_layer_three, training=self.is_training, momentum=0.99)
+        for units in self.hidden_units:
+            if self.bn:
+                MLP_layer = tf.layers.dense(inputs=concat_embedding,
+                                            units=units,
+                                            activation=None,
+                                            use_bias=False,
+                                            kernel_initializer=tf.variance_scaling_initializer)
+                                            # kernel_regularizer=tf.keras.regularizers.l2(0.0001)
+                MLP_layer = tf.nn.relu(
+                    tf.layers.batch_normalization(MLP_layer, training=self.is_training, momentum=0.99))
+            else:
+                MLP_layer = tf.layers.dense(inputs=concat_embedding,
+                                            units=units,
+                                            activation=tf.nn.relu,
+                                            kernel_initializer=tf.variance_scaling_initializer)
+            if self.dropout_rate > 0.0:
+                MLP_layer = tf.layers.dropout(MLP_layer, rate=self.dropout_rate, training=self.is_training)
 
         if self.task == "rating":
-            self.pred = tf.layers.dense(inputs=MLP_layer_three, units=1)
+            self.pred = tf.layers.dense(inputs=MLP_layer, units=1, name="pred")
             self.pred = tf.reshape(self.pred, [-1])
             self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
                                                      predictions=self.pred)
@@ -163,7 +148,7 @@ class Din(BaseFeat):
                 self.rmse = self.loss
 
         elif self.task == "ranking":
-            self.logits = tf.layers.dense(inputs=MLP_layer_three, units=1, name="logits")
+            self.logits = tf.layers.dense(inputs=MLP_layer, units=1, name="logits")
             self.logits = tf.reshape(self.logits, [-1])
             self.loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=self.logits))
@@ -173,7 +158,7 @@ class Din(BaseFeat):
                                  tf.fill(tf.shape(self.logits), 1.0),
                                  tf.fill(tf.shape(self.logits), 0.0))
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.pred, self.labels), tf.float32))
-            self.precision = precision_tf(self.pred, self.labels)
+        #    self.precision = precision_tf(self.pred, self.labels)
 
         if self.reg > 0.0:
             keys = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -203,7 +188,7 @@ class Din(BaseFeat):
                         indices_batch = dataset.train_feat_indices[n * self.batch_size: end]
                         values_batch = dataset.train_feat_values[n * self.batch_size: end]
                         labels_batch = dataset.train_labels[n * self.batch_size: end]
-                        seq_len, u_items_seq = self.preprocess_data(indices_batch, num_items=100)
+                        seq_len, u_items_seq = self.preprocess_data(indices_batch, num_items=self.num_att_items)
                         self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch,
@@ -212,9 +197,20 @@ class Din(BaseFeat):
                                                                    self.is_training: True})
                     if verbose == 1:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0), end="\n\n")
-                    elif verbose > 1:
+                    elif verbose == 2:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
                         metrics = kwargs.get("metrics", self.metrics)
+                        metrics["show_ranking_metrics"] = False
+                        print(metrics)
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, **metrics)
+                        else:
+                            self.print_metrics(dataset, epoch, **metrics)
+                        print()
+                    elif verbose > 2:
+                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
+                        metrics = kwargs.get("metrics", self.metrics)
+                        metrics["show_ranking_metrics"] = True
                         if hasattr(self, "sess"):
                             self.print_metrics_tf(dataset, epoch, **metrics)
                         else:
@@ -228,7 +224,9 @@ class Din(BaseFeat):
                     n_batches = int(np.ceil(len(dataset.train_labels_implicit) / self.batch_size))
                     for n in range(n_batches):
                         indices_batch, values_batch, labels_batch = neg.next_batch()
-                        seq_len, u_items_seq = self.preprocess_data(indices_batch, num_items=100)
+                    #    t7 = time.time()
+                        seq_len, u_items_seq = self.preprocess_data(indices_batch, num_items=self.num_att_items)
+                    #    print("prerpocess time: ", time.time() - t7)
                         self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
                                                                    self.feature_values: values_batch,
                                                                    self.labels: labels_batch,
@@ -236,16 +234,35 @@ class Din(BaseFeat):
                                                                    self.seq_len: seq_len,
                                                                    self.is_training: True})
 
-                    if verbose == 1:
+                    if verbose >= 1:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
-                    elif verbose > 1:
-                        print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
+                        if verbose > 1:
+                            metrics = kwargs.get("metrics", self.metrics)
+                            if hasattr(self, "sess"):
+                                self.print_metrics_tf(dataset, epoch, verbose, **metrics)
+                            else:
+                                self.print_metrics(dataset, epoch, verbose, **metrics)
+                            print()
+                    '''
+                    elif verbose == 2:
+                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
                         metrics = kwargs.get("metrics", self.metrics)
+                        metrics["show_ranking_metrics"] = False
                         if hasattr(self, "sess"):
                             self.print_metrics_tf(dataset, epoch, **metrics)
                         else:
                             self.print_metrics(dataset, epoch, **metrics)
                         print()
+                    elif verbose > 2:
+                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
+                        metrics = kwargs.get("metrics", self.metrics)
+                        metrics["show_ranking_metrics"] = True
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, **metrics)
+                        else:
+                            self.print_metrics(dataset, epoch, **metrics)
+                        print()
+                    '''
 
     def predict(self, user, item):
         feat_indices, feat_value = self.get_predict_indices_and_values(self.dataset, user, item)
@@ -319,29 +336,30 @@ class Din(BaseFeat):
                 break
 
         seq_len = list()
-        u_items_seq = np.zeros((len(user_indices), max_seq_len), dtype=np.int64)
+        u_items_seq = np.zeros((len(user_indices), max_seq_len, self.item_cols_num), dtype=np.int64)
         for i, user in enumerate(user_indices):
             if len(self.dataset.train_user[user]) > num_items:
                 u_items_len = num_items
             else:
                 u_items_len = len(self.dataset.train_user[user])
             seq_len.append(u_items_len)
-            items = list(self.dataset.train_user[user])
-            for j, item in enumerate(items[:num_items]):
-                u_items_seq[i, j] = item
-
+            items = list(self.dataset.train_user[user])[:u_items_len]
+        #    items = [i for i in self.dataset.train_user[u] if self.dataset.train_user[u][i] >= 4]  choose liked items
+        #    u_items_seq.append(self.item_feat_matrix[items] + [0] * (max_seq_len - u_items_len))
+        #    for j, item in enumerate(items[:num_items]):
+        #        u_items_seq[i, j, :] = self.item_feat_dict[item]
+            u_items_seq[i, :u_items_len, :] = self.item_feat_matrix[items]
         return seq_len, u_items_seq
 
     def attention(self, query, keys, keys_length):
         max_seq_len = tf.shape(keys)[1]
     #    max_seq_len = keys.get_shape().as_list()[1]
         queries = tf.tile(query, [1, max_seq_len])
-        queries = tf.reshape(queries, [-1, max_seq_len, self.embed_size])
+        queries = tf.reshape(queries, [-1, max_seq_len, self.item_cols_num * self.embed_size])
         din_all = tf.concat([queries, keys, queries - keys, queries * keys], axis=-1)
-        layer_one = tf.layers.dense(din_all, 10, activation=tf.nn.sigmoid)  # Prelu?
-        layer_two = tf.layers.dense(layer_one, 4, activation=tf.nn.sigmoid)
-        layer_three = tf.layers.dense(layer_two, 1, activation=None)
-        outputs = tf.reshape(layer_three, [-1, 1, max_seq_len])
+        layer = tf.layers.dense(din_all, self.embed_size * 2, activation=tf.nn.sigmoid)  # Prelu?
+        layer = tf.layers.dense(layer, 1, activation=None)
+        outputs = tf.reshape(layer, [-1, 1, max_seq_len])
 
         key_masks = tf.sequence_mask(keys_length, max_seq_len)
         key_masks = tf.expand_dims(key_masks, 1)
@@ -352,10 +370,34 @@ class Din(BaseFeat):
         outputs = tf.matmul(outputs, keys)
         return outputs
 
+    def neg_feat_dict_orig(self):
+        neg_indices_dict = dict()
+        total_items_col = self.dataset.item_feature_cols + [-1]
+        total_items_unique = np.unique(self.dataset.train_feat_indices[:, total_items_col], axis=0)
+        total_items = total_items_unique[:, -1]
+    #    total_items_feat_col = np.delete(total_items_unique, 0, axis=1)
 
+        for item, item_feat_col in zip(total_items, total_items_unique):
+            item = item - self.dataset.user_offset - self.dataset.n_users
+            neg_indices_dict[item] = item_feat_col.tolist()
 
+        return neg_indices_dict
 
+    def get_item_feat(self):
+        item_feat_matrix = np.zeros((self.dataset.n_items, self.item_cols_num), dtype=np.int64)
+        if self.include_item_feat and self.dataset.item_feature_cols is not None:
+            total_items_col = self.dataset.item_feature_cols + [-1]
+        else:
+            total_items_col = [-1]
+        total_items_unique = np.unique(self.dataset.train_feat_indices[:, total_items_col], axis=0)
+        total_items = total_items_unique[:, -1]
+    #    total_items_feat_col = np.delete(total_items_unique, 0, axis=1)
 
+        for item, item_feat_col in zip(total_items, total_items_unique):
+            item = item - self.dataset.user_offset - self.dataset.n_users
+            item_feat_matrix[item] = item_feat_col
+
+        return item_feat_matrix
 
 
 
