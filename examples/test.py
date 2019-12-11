@@ -221,7 +221,7 @@ if __name__ == "__main__":
     din = Din(lr=0.0003, n_epochs=200, reg=0.0, embed_size=4, batch_size=2048, use_bn=True,
                 num_att_items=100, dropout_rate=0.0, task="ranking", hidden_units="128,64,32",
                 neg_sampling=True, include_item_feat=True, use_tf_attention=False)
-    din.fit(dataset, pre_sampling=False, verbose=-1)
+    din.fit(dataset, pre_sampling=False, verbose=3)
     print(din.predict(1, 10))
     print(din.recommend_user(1, 7))
 

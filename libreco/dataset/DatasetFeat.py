@@ -341,6 +341,12 @@ class DatasetFeat:
             label = line[self.label_col]
             if (convert_implicit and isinstance(label, str)) or (convert_implicit and int(label) > threshold):
                 label = 1
+
+        #    if int(label) > 3:
+        #        label = 1.0
+        #    else:
+        #        label = 0.0
+
             try:
                 user_id = user2id[user]
             except KeyError:

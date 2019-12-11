@@ -138,7 +138,7 @@ class Din(BaseFeat):
         if self.task == "rating":
             self.pred = tf.layers.dense(inputs=MLP_layer, units=1, name="pred")
             self.pred = tf.reshape(self.pred, [-1])
-            self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
+            self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1]),
                                                      predictions=self.pred)
 
             if self.lower_bound is not None and self.upper_bound is not None:
@@ -179,6 +179,48 @@ class Din(BaseFeat):
         self.sess = tf.Session()
         self.sess.run(init)
         with self.sess.as_default():
+            for epoch in range(1, self.n_epochs + 1):
+                t0 = time.time()
+                if self.task == "rating" or (self.task == "ranking" and not self.neg_sampling):
+                    n_batches = int(np.ceil(len(dataset.train_labels) / self.batch_size))
+                    for n in range(n_batches):
+                        end = min(len(dataset.train_labels), (n + 1) * self.batch_size)
+                        indices_batch = dataset.train_feat_indices[n * self.batch_size: end]
+                        values_batch = dataset.train_feat_values[n * self.batch_size: end]
+                        labels_batch = dataset.train_labels[n * self.batch_size: end]
+                        seq_len, u_items_seq = self.preprocess_data(indices_batch, num_items=self.num_att_items)
+                        self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
+                                                                   self.feature_values: values_batch,
+                                                                   self.labels: labels_batch,
+                                                                   self.seq_matrix: u_items_seq,
+                                                                   self.seq_len: seq_len,
+                                                                   self.is_training: True})
+                elif self.task == "ranking" and self.neg_sampling:
+                    neg = NegativeSamplingFeat(dataset, dataset.num_neg, self.batch_size, pre_sampling=pre_sampling)
+                    n_batches = int(np.ceil(len(dataset.train_labels_implicit) / self.batch_size))
+                    for n in range(n_batches):
+                        indices_batch, values_batch, labels_batch = neg.next_batch()
+                        #    t7 = time.time()
+                        seq_len, u_items_seq = self.preprocess_data(indices_batch, num_items=self.num_att_items)
+                        #    print("prerpocess time: ", time.time() - t7)
+                        self.sess.run(self.training_op, feed_dict={self.feature_indices: indices_batch,
+                                                                   self.feature_values: values_batch,
+                                                                   self.labels: labels_batch,
+                                                                   self.seq_matrix: u_items_seq,
+                                                                   self.seq_len: seq_len,
+                                                                   self.is_training: True})
+
+                if verbose >= 1:
+                    print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
+                    if verbose > 1:
+                        metrics = kwargs.get("metrics", self.metrics)
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, verbose, **metrics)
+                        else:
+                            self.print_metrics(dataset, epoch, verbose, **metrics)
+                        print()
+
+            '''
             if self.task == "rating" or (self.task == "ranking" and not self.neg_sampling):
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()
@@ -195,27 +237,16 @@ class Din(BaseFeat):
                                                                    self.seq_matrix: u_items_seq,
                                                                    self.seq_len: seq_len,
                                                                    self.is_training: True})
-                    if verbose == 1:
-                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0), end="\n\n")
-                    elif verbose == 2:
+
+                    if verbose >= 1:
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
-                        metrics = kwargs.get("metrics", self.metrics)
-                        metrics["show_ranking_metrics"] = False
-                        print(metrics)
-                        if hasattr(self, "sess"):
-                            self.print_metrics_tf(dataset, epoch, **metrics)
-                        else:
-                            self.print_metrics(dataset, epoch, **metrics)
-                        print()
-                    elif verbose > 2:
-                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
-                        metrics = kwargs.get("metrics", self.metrics)
-                        metrics["show_ranking_metrics"] = True
-                        if hasattr(self, "sess"):
-                            self.print_metrics_tf(dataset, epoch, **metrics)
-                        else:
-                            self.print_metrics(dataset, epoch, **metrics)
-                        print()
+                        if verbose > 1:
+                            metrics = kwargs.get("metrics", self.metrics)
+                            if hasattr(self, "sess"):
+                                self.print_metrics_tf(dataset, epoch, verbose, **metrics)
+                            else:
+                                self.print_metrics(dataset, epoch, verbose, **metrics)
+                            print()
 
             elif self.task == "ranking" and self.neg_sampling:
                 for epoch in range(1, self.n_epochs + 1):
@@ -243,26 +274,7 @@ class Din(BaseFeat):
                             else:
                                 self.print_metrics(dataset, epoch, verbose, **metrics)
                             print()
-                    '''
-                    elif verbose == 2:
-                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
-                        metrics = kwargs.get("metrics", self.metrics)
-                        metrics["show_ranking_metrics"] = False
-                        if hasattr(self, "sess"):
-                            self.print_metrics_tf(dataset, epoch, **metrics)
-                        else:
-                            self.print_metrics(dataset, epoch, **metrics)
-                        print()
-                    elif verbose > 2:
-                        print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
-                        metrics = kwargs.get("metrics", self.metrics)
-                        metrics["show_ranking_metrics"] = True
-                        if hasattr(self, "sess"):
-                            self.print_metrics_tf(dataset, epoch, **metrics)
-                        else:
-                            self.print_metrics(dataset, epoch, **metrics)
-                        print()
-                    '''
+            '''
 
     def predict(self, user, item):
         feat_indices, feat_value = self.get_predict_indices_and_values(self.dataset, user, item)
