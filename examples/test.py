@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     conf_movielens = {
         "data_path": os.path.join(os.path.expanduser("~"), ".libreco_data", "ml-1m", "merged_data.csv"),
-        "length": 100000,
+        "length": "all",
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -60,6 +60,8 @@ if __name__ == "__main__":
         "k": 0.2,
         "split_mode": "leave_k_out",
         "normalize": None,
+        "threshold": 0,
+        "pos_bound": 4,
     }
 
 
@@ -221,7 +223,7 @@ if __name__ == "__main__":
     din = Din(lr=0.0003, n_epochs=200, reg=0.0, embed_size=4, batch_size=2048, use_bn=True,
                 num_att_items=100, dropout_rate=0.0, task="ranking", hidden_units="128,64,32",
                 neg_sampling=True, include_item_feat=True, use_tf_attention=False)
-    din.fit(dataset, pre_sampling=False, verbose=3)
+    din.fit(dataset, pre_sampling=False, verbose=2)
     print(din.predict(1, 10))
     print(din.recommend_user(1, 7))
 

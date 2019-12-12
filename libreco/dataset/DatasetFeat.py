@@ -63,7 +63,7 @@ class DatasetFeat:
                       k=1, num_neg=None, sep=",", user_col=None, item_col=None, label_col=None,
                       numerical_col=None, categorical_col=None, merged_categorical_col=None,
                       user_feature_cols=None, item_feature_cols=None, lower_upper_bound=None,
-                      split_mode="train_test", normalize=None):
+                      split_mode="train_test", normalize=None, pos_bound=None):
         np.random.seed(seed)
         self.batch_size = batch_size
         self.lower_upper_bound = lower_upper_bound
@@ -79,7 +79,7 @@ class DatasetFeat:
                                   merged_categorical_col, user_feature_cols, item_feature_cols, normalize)
         elif split_mode == "leave_k_out":
             self.leave_k_out_split(k, data_path, shuffle, length, sep, convert_implicit, build_negative, threshold,
-                                   num_neg, numerical_col, categorical_col, merged_categorical_col, seed,
+                                   num_neg, numerical_col, categorical_col, merged_categorical_col, seed, pos_bound,
                                    user_feature_cols, item_feature_cols, normalize)
         else:
             raise ValueError("split_mode must be either 'train_test' or 'leave_k_out'")
@@ -299,7 +299,7 @@ class DatasetFeat:
 
     def leave_k_out_split(self, k, data_path, shuffle=True, length="all", sep=",", convert_implicit=False,
                           build_negative=False, threshold=0, num_neg=None, numerical_col=None,
-                          categorical_col=None, merged_categorical_col=None, seed=42,
+                          categorical_col=None, merged_categorical_col=None, seed=42, pos_bound=None,
                           user_feature_cols=None, item_feature_cols=None, normalize=None):
         """
         leave-last-k-out-split
@@ -341,11 +341,8 @@ class DatasetFeat:
             label = line[self.label_col]
             if (convert_implicit and isinstance(label, str)) or (convert_implicit and int(label) > threshold):
                 label = 1
-
-        #    if int(label) > 3:
-        #        label = 1.0
-        #    else:
-        #        label = 0.0
+            elif pos_bound:
+                label = 1 if int(label) > pos_bound else 0
 
             try:
                 user_id = user2id[user]
@@ -380,6 +377,7 @@ class DatasetFeat:
         user_indices = np.array(user_indices)
         item_indices = np.array(item_indices)
         labels = np.array(labels)
+        print("label value counts: ", list(zip(*np.unique(labels, return_counts=True))))
 
         sort_kind = "quicksort" if shuffle else "mergesort"
         users, user_position, user_counts = np.unique(user_indices,
