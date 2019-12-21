@@ -21,8 +21,6 @@ import itertools
 import logging
 import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
-from scipy import sparse
-from ..evaluate import rmse, MAP_at_k, MAR_at_k, NDCG_at_k, accuracy
 from ..utils.initializers import truncated_normal
 from .Base import BasePure
 try:
@@ -98,14 +96,15 @@ class Als(BasePure):
                 method(X=self.X, Y=self.Y, reg=self.reg, n_factors=self.n_factors, user=True)
                 method(X=self.Y, Y=self.X, reg=self.reg, n_factors=self.n_factors, user=False)
 
-            if verbose > 0:
+            if verbose >= 1:
                 print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
-                metrics = kwargs.get("metrics", self.metrics)
-                if hasattr(self, "sess"):
-                    self.print_metrics_tf(dataset, epoch, **metrics)
-                else:
-                    self.print_metrics(dataset, epoch, **metrics)
-                print()
+                if verbose > 1:
+                    metrics = kwargs.get("metrics", self.metrics)
+                    if hasattr(self, "sess"):
+                        self.print_metrics_tf(dataset, epoch, verbose, **metrics)
+                    else:
+                        self.print_metrics(dataset, epoch, verbose, **metrics)
+                    print()
 
         return self
 
@@ -117,7 +116,8 @@ class Als(BasePure):
 
         if self.task == "rating" and self.lower_bound is not None and self.upper_bound is not None:
             pred = np.clip(pred, self.lower_bound, self.upper_bound)
-
+        elif self.task == "ranking":
+            pred = 1 / (1 + np.exp(-pred))
         return pred
 
     def recommend_user(self, u, n_rec):
