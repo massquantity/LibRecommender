@@ -23,7 +23,7 @@ if __name__ == "__main__":
     conf = {
     #    "data_path": "../tianchi_recommender/testB_pure.csv",
         "data_path": os.path.join(os.path.expanduser("~"), ".libreco_data", "ml-1m", "ratings.dat"),
-        "length": "all",
+        "length": 100000,
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     print()
 
     als = Als(n_factors=32, n_epochs=200, reg=10.0, alpha=1, task="ranking", neg_sampling=True)
-    als.fit(dataset, use_cg=True, cg_steps=3, use_cython=False, verbose=1)
+    als.fit(dataset, use_cg=False, cg_steps=3, use_cython=False, verbose=2)
     print("predict: ", als.predict(1, 5))
     print(als.recommend_user(1, 7))
 
