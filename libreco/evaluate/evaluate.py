@@ -4,7 +4,16 @@ import tensorflow as tf
 from sklearn.metrics import precision_score
 
 
-def rmse(model, dataset, mode="train"):
+def rmse(model, user_indices, item_indices, labels):
+    pred = []
+    for j, (u, i) in enumerate(zip(user_indices, item_indices)):
+        p = model.predict(u, i)
+        pred.append(p)
+    score = np.sqrt(np.mean(np.power(pred - labels, 2)))
+    return score
+
+
+def rmse_dataset(model, dataset, mode="train"):
     if mode == "train":
         user_indices = dataset.train_user_indices
         item_indices = dataset.train_item_indices
@@ -21,14 +30,16 @@ def rmse(model, dataset, mode="train"):
     score = np.sqrt(np.mean(np.power(pred - labels, 2)))
     return score
 
+
 def accuracy(model, user, item, labels):
     pred = []
     for j, (u, i) in enumerate(zip(user, item)):
-        p = model.predict(u, i)[1]
+        p = model.predict(u, i)
+        p = 1.0 if p >= 0.5 else 0.0
         pred.append(p)
-
     score = np.sum(labels == np.array(pred)) / len(labels)
     return score
+
 
 def rmse_tf(model, dataset, mode="train"):
     if mode == "train":
