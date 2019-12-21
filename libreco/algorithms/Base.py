@@ -4,7 +4,6 @@ from collections import OrderedDict
 import numpy as np
 from sklearn.metrics import roc_auc_score, precision_recall_curve,  auc
 from ..evaluate import rmse, accuracy, MAP_at_k, NDCG_at_k, binary_cross_entropy, recall_at_k
-import tensorflow as tf
 
 
 class BasePure(object):
@@ -36,71 +35,97 @@ class BasePure(object):
         raise NotImplementedError
 
     def print_metrics(self, *args, **kwargs):
-        dataset, epoch = args[0], args[1]
-        allowed_kwargs = ["roc_auc", "pr_auc", "map", "map_num", "recall",
-                          "recall_num", "ndcg", "ndcg_num", "sample_user"]
+        dataset, epoch, verbose = args[0], args[1], args[2]
+        allowed_kwargs = ["roc_auc", "pr_auc", "map", "map_num", "recall", "recall_num",
+                          "ndcg", "ndcg_num", "sample_user", "test_batch"]
 
         for k in kwargs:
             if k not in allowed_kwargs:
                 raise TypeError('Keyword argument not understood:', k)
 
+        if verbose >= 2:
+            train_batch = kwargs.get("train_batch", 2 ** 17)
+            test_batch = kwargs.get("test_batch", 2 ** 17)
+            print("train batch: %d, test_batch: %d" % (train_batch, test_batch))
+
         if self.__class__.__name__.lower() == "bpr":
-            test_user = self.test_user
+            test_user = self.test_user  ########
             test_item = self.test_item
             test_label = self.test_label
 
-        elif self.task == "rating":
-            print("Epoch {}, test_rmse: {:.4f}".format(epoch, rmse(self, dataset, "test")))
-            return
-
-        elif self.task == "ranking" and not self.neg_sampling:
+        elif self.task == "rating" or (self.task == "ranking" and not self.neg_sampling):
+            train_user = dataset.train_user_indices
+            train_item = dataset.train_item_indices
+            train_label = dataset.train_labels
             test_user = dataset.test_user_indices
             test_item = dataset.test_item_indices
             test_label = dataset.test_labels
-
         elif self.task == "ranking" and self.neg_sampling:
+            train_user = dataset.train_user_implicit
+            train_item = dataset.train_item_implicit
+            train_label = dataset.train_label_implicit
             test_user = dataset.test_user_implicit
             test_item = dataset.test_item_implicit
             test_label = dataset.test_label_implicit
 
-        t0 = time.time()
-        test_loss, test_prob = binary_cross_entropy(self, test_user, test_item, test_label)
-        print("\ttest loss: {:.4f}".format(test_loss))
-    #    print("\ttest accuracy: {:.4f}".format(accuracy(self, test_user, test_item, test_label)))
-        print("\tloss time: {:.4f}".format(time.time() - t0))
+        if self.task == "rating":
+            if verbose >= 2:
+                t6 = time.time()
+                train_loss = self.train_info(train_user, train_item, train_label, train_batch, self.task)
+                print("\ttrain loss: {:.4f}".format(np.mean(train_loss)))
+                print("\ttrain loss time: {:.4f}".format(time.time() - t6))
 
-        t1 = time.time()
-        if kwargs.get("roc_auc"):
-            test_auc = roc_auc_score(test_label, test_prob)
-            print("\t test roc auc: {:.4f}".format(test_auc))
-        if kwargs.get("pr_auc"):
-            precision_test, recall_test, _ = precision_recall_curve(test_label, test_prob)
-            test_pr_auc = auc(recall_test, precision_test)
-            print("\t test pr auc: {:.4f}".format(test_pr_auc))
-            print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
+                t7 = time.time()
+                test_loss = self.test_info(test_user, test_item, test_label, test_batch, self.task)
+                print("\ttest loss: {:.4f}".format(np.mean(test_loss)))
+                print("\ttest loss time: {:.4f}".format(time.time() - t7))
 
-        sample_user = kwargs.get("sample_user", 1000)
-        t2 = time.time()
-        if kwargs.get("map"):
-            map_num = kwargs.get("map_num", 20)
-            mean_average_precision = MAP_at_k(self, self.dataset, map_num, sample_user=sample_user)
-            print("\t MAP@{}: {:.4f}".format(map_num, mean_average_precision))
-            print("\t MAP time: {:.4f}".format(time.time() - t2))
+        elif self.task == "ranking":
+            if verbose >= 2:
+                t6 = time.time()
+                train_loss = self.train_info(train_user, train_item, train_label, train_batch, self.task)
+                print("\ttrain loss: {:.4f}".format(train_loss))
+                print("\ttrain loss time: {:.4f}".format(time.time() - t6))
 
-        t3 = time.time()
-        if kwargs.get("recall"):
-            recall_num = kwargs.get("recall_num", 50)
-            recall = recall_at_k(self, self.dataset, recall_num, sample_user=sample_user)
-            print("\t recall@{}: {:.4f}".format(recall_num, recall))
-            print("\t recall time: {:.4f}".format(time.time() - t3))
+                t7 = time.time()
+                test_loss, test_accuracy, test_prob_all = self.test_info(
+                    test_user, test_item, test_label, test_batch, self.task)
+                print("\ttest loss: {:.4f}".format(test_loss))
+                print("\ttest accuracy: {:.4f}".format(test_accuracy))
+                print("\ttest loss time: {:.4f}".format(time.time() - t7))
 
-        t4 = time.time()
-        if kwargs.get("ndcg"):
-            ndcg_num = kwargs.get("ndcg_num", 20)
-            ndcg = NDCG_at_k(self, self.dataset, ndcg_num , sample_user=sample_user)
-            print("\t NDCG@{}: {:.4f}".format(ndcg_num, ndcg))
-            print("\t NDCG time: {:.4f}".format(time.time() - t4))
-        return
+            t1 = time.time()
+            if kwargs.get("roc_auc"):
+                test_auc = roc_auc_score(test_label, test_prob_all)
+                print("\t test roc auc: {:.4f}".format(test_auc))
+            if kwargs.get("pr_auc"):
+                precision_test, recall_test, _ = precision_recall_curve(test_label, test_prob_all)
+                test_pr_auc = auc(recall_test, precision_test)
+                print("\t test pr auc: {:.4f}".format(test_pr_auc))
+                print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
+
+            if verbose  >= 3:
+                sample_user = kwargs.get("sample_user", 1000)
+                t2 = time.time()
+                if kwargs.get("map"):
+                    map_num = kwargs.get("map_num", 20)
+                    mean_average_precision = MAP_at_k(self, self.dataset, map_num, sample_user=sample_user)
+                    print("\t MAP@{}: {:.4f}".format(map_num, mean_average_precision))
+                    print("\t MAP time: {:.4f}".format(time.time() - t2))
+
+                t3 = time.time()
+                if kwargs.get("recall"):
+                    recall_num = kwargs.get("recall_num", 50)
+                    recall = recall_at_k(self, self.dataset, recall_num, sample_user=sample_user)
+                    print("\t recall@{}: {:.4f}".format(recall_num, recall))
+                    print("\t recall time: {:.4f}".format(time.time() - t3))
+
+                t4 = time.time()
+                if kwargs.get("ndcg"):
+                    ndcg_num = kwargs.get("ndcg_num", 20)
+                    ndcg = NDCG_at_k(self, self.dataset, ndcg_num , sample_user=sample_user)
+                    print("\t NDCG@{}: {:.4f}".format(ndcg_num, ndcg))
+                    print("\t NDCG time: {:.4f}".format(time.time() - t4))
 
     def print_metrics_tf(self, *args, **kwargs):
         dataset, epoch = args[0], args[1]
@@ -183,8 +208,39 @@ class BasePure(object):
             print("\t NDCG time: {:.4f}".format(time.time() - t4))
         return
 
-#    def __getattr__(self, item):
-#        return False
+    def train_info(self, users, items, labels, train_batch, task):
+        train_loss_all = []
+        for batch_train in range(0, len(labels), train_batch):
+            train_user_batch = users[batch_train: batch_train + train_batch]
+            train_item_batch = items[batch_train: batch_train + train_batch]
+            train_label_batch = labels[batch_train: batch_train + train_batch]
+            if task == "rating":
+                train_loss = rmse(self, train_user_batch, train_item_batch, train_label_batch)
+            elif task == "ranking":
+                train_loss, _ = binary_cross_entropy(self, train_user_batch, train_item_batch, train_label_batch)
+            train_loss_all.append(train_loss)
+        return np.mean(train_loss_all)
+
+    def test_info(self, users, items, labels, test_batch, task):
+        test_loss_all, test_accuracy_all, test_prob_all = [], [], []
+        for batch_test in range(0, len(labels), test_batch):
+            test_user_batch = users[batch_test: batch_test + test_batch]
+            test_item_batch = items[batch_test: batch_test + test_batch]
+            test_label_batch = labels[batch_test: batch_test + test_batch]
+            if task == "rating":
+                test_loss = rmse(self, test_user_batch, test_item_batch, test_label_batch)
+                test_loss_all.append(test_loss)
+            elif task == "ranking":
+                test_loss, test_prob = binary_cross_entropy(self, test_user_batch, test_item_batch, test_label_batch)
+                test_accuracy = accuracy(self, test_user_batch, test_item_batch, test_label_batch)
+                test_loss_all.append(test_loss)
+                test_accuracy_all.append(test_accuracy)
+                test_prob_all.extend(test_prob)
+
+        if task == "rating":
+            return np.mean(test_loss_all)
+        elif task == "ranking":
+            return np.mean(test_loss_all), np.mean(test_accuracy_all), test_prob_all
 
 
 class BaseFeat(object):
