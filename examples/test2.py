@@ -47,10 +47,10 @@ if __name__ == "__main__":
     print("data processing time: {:.2f}".format(time.time() - t0))
     print()
 
-    als = Als(n_factors=32, n_epochs=200, reg=10.0, alpha=1, task="ranking", neg_sampling=True)
-    als.fit(dataset, use_cg=False, cg_steps=3, use_cython=False, verbose=2)
-    print("predict: ", als.predict(1, 5))
-    print(als.recommend_user(1, 7))
+#    als = Als(n_factors=32, n_epochs=200, reg=10.0, alpha=1, task="ranking", neg_sampling=True)
+#    als.fit(dataset, use_cg=False, cg_steps=3, use_cython=False, verbose=2)
+#    print("predict: ", als.predict(1, 5))
+#    print(als.recommend_user(1, 7))
 
 #    import cProfile
 #    cProfile.run('svd.fit(dataset)')
@@ -71,11 +71,11 @@ if __name__ == "__main__":
 #    print(svd.predict(1,2))
 #    print(svd.recommend_user(1, 7))
 
-#    bpr = Bpr(lr=0.001, n_epochs=10000, reg=0.0, n_factors=16, batch_size=256, k=20,
-#              method="knn", neg_sampling=True)
-#    bpr.fit(dataset, verbose=1)
-#    print(bpr.predict(1, 2))
-#    print(bpr.recommend_user(1, 7))
+    bpr = Bpr(lr=0.001, n_epochs=10000, reg=0.0, n_factors=16, batch_size=256, k=10,
+              method="mf", neg_sampling=True)
+    bpr.fit(dataset, verbose=2)
+    print(bpr.predict(1, 2))
+    print(bpr.recommend_user(1, 7))
 
 #    user_knn = userKNN(sim_option="cosine", k=5, min_support=1, baseline=False, task="ranking", neg_sampling=True)
 #    user_knn.fit(dataset, verbose=1)
