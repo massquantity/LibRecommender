@@ -37,7 +37,7 @@ def accuracy(model, user, item, labels):
         p = model.predict(u, i)
         p = 1.0 if p >= 0.5 else 0.0
         pred.append(p)
-    score = np.sum(labels == np.array(pred)) / len(labels)
+    score = np.sum(labels == np.array(pred))
     return score
 
 
@@ -291,7 +291,7 @@ def binary_cross_entropy(model, user, item, label):
             ce.append(-np.log(1.0 - prob))
         elif l == 0.0 and prob > 1.0 - eps:
             ce.append(-np.log(1.0 - eps))
-    return np.mean(ce), probs
+    return np.sum(ce), probs
 
 
 
