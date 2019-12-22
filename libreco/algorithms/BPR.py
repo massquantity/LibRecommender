@@ -19,7 +19,7 @@ from sklearn.metrics import roc_auc_score, average_precision_score, log_loss
 
 
 class Bpr(BasePure):
-    def __init__(self, n_factors=16, lr=0.01, n_epochs=20, reg=0.0,
+    def __init__(self, n_factors=16, lr=0.01, n_epochs=20, reg=0.0, task="ranking",
                  batch_size=64, seed=42, k=20, method="mf", neg_sampling=False):
         self.n_factors = n_factors
         self.lr = lr
@@ -29,6 +29,7 @@ class Bpr(BasePure):
         self.seed = seed
         self.k = k
         self.method = method
+        self.task = task
         self.neg_sampling = neg_sampling
         print("using FTRL............ \n")
         super(Bpr, self).__init__()
@@ -75,7 +76,7 @@ class Bpr(BasePure):
         elif self.method == "knn":
             LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
             logging.basicConfig(format=LOG_FORMAT)
-            logging.warning("knn method requires huge memory for constructing similarity matrix")
+            logging.warning("KNN method requires huge memory for constructing similarity matrix")
             self.dataset = dataset
             self.n_users = dataset.n_users
             self.n_items = dataset.n_items
@@ -85,8 +86,9 @@ class Bpr(BasePure):
             raise ValueError("method name must be one of these: [mf, knn]")
 
     def fit(self, dataset, verbose=1, **kwargs):
-        if verbose > 0:
+        if verbose >= 2:
             sampling = PairwiseSampling(dataset)
+            self.train_user, self.train_item, self.train_label = sampling(mode="train")
             self.test_user, self.test_item, self.test_label = sampling(mode="test")
 
         if self.method == "mf":
@@ -112,14 +114,15 @@ class Bpr(BasePure):
                                                                    self.item_i: batch_item_i,
                                                                    self.item_j: batch_item_j})
 
-                    if verbose > 0:
+                    if verbose >= 1:
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
-                        metrics = kwargs.get("metrics", self.metrics)
-                        if hasattr(self, "sess"):
-                            self.print_metrics_tf(dataset, epoch, **metrics)
-                        else:
-                            self.print_metrics(dataset, epoch, **metrics)
-                        print()
+                        if verbose > 1:
+                            metrics = kwargs.get("metrics", self.metrics)
+                            if hasattr(self, "sess"):
+                                self.print_metrics_tf(dataset, epoch, verbose, **metrics)
+                            else:
+                                self.print_metrics(dataset, epoch, verbose, **metrics)
+                            print()
 
         elif self.method == "knn":
             self.build_model(dataset)
@@ -141,41 +144,16 @@ class Bpr(BasePure):
                     self.sim_matrix[item_j_nei, item_j] = self.sim_matrix[item_j, item_j_nei]
                     self.sim_matrix[item_j, item_j] = 1.0
 
-                if verbose > 0:
+                if verbose >= 1:
                     print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
-                    metrics = kwargs.get("metrics", self.metrics)
-                    if hasattr(self, "sess"):
-                        self.print_metrics_tf(dataset, epoch, **metrics)
-                    else:
-                        self.print_metrics(dataset, epoch, **metrics)
-                    print()
+                    if verbose > 1:
+                        metrics = kwargs.get("metrics", self.metrics)
+                        if hasattr(self, "sess"):
+                            self.print_metrics_tf(dataset, epoch, verbose, **metrics)
+                        else:
+                            self.print_metrics(dataset, epoch, verbose, **metrics)
+                        print()
 
-                    '''
-                    print("Epoch {}, train time: {:.4f}".format(epoch, time.time() - t0))
-                    t1 = time.time()
-                    test_loss, test_prob = binary_cross_entropy(self, test_user, test_item, test_label)
-                    test_roc_auc = roc_auc_score(test_label, test_prob)
-                    test_pr_auc = average_precision_score(test_label, test_prob)
-                    print("evaluate time: {:.2f}".format(time.time() - t1))
-                    print("test loss: {:.4f}, test auc: {:.4f}, test pr auc: {:.4f}".format(
-                        test_loss, test_roc_auc, test_pr_auc))
-
-                    t2 = time.time()
-                    mean_average_precision_10 = MAP_at_k(self, self.dataset, 10, sample_user=1000)
-                    print("\t MAP@{}: {:.4f}".format(10, mean_average_precision_10))
-                    print("\t MAP@10 time: {:.4f}".format(time.time() - t2))
-
-                    t3 = time.time()
-                    mean_average_recall_50 = MAR_at_k(self, self.dataset, 50, sample_user=1000)
-                    print("\t MAR@{}: {:.4f}".format(50, mean_average_recall_50))
-                    print("\t MAR@50 time: {:.4f}".format(time.time() - t3))
-
-                    t4 = time.time()
-                    NDCG = NDCG_at_k(self, self.dataset, 10, sample_user=1000)
-                    print("\t NDCG@{}: {:.4f}".format(10, NDCG))
-                    print("\t NDCG@10 time: {:.4f}".format(time.time() - t4))
-                    print()
-                    '''
     def predict(self, u, i):
         if self.method == "mf":
             try:
