@@ -49,10 +49,12 @@ class BasePure(object):
             print("train batch: %d, test_batch: %d" % (train_batch, test_batch))
 
         if self.__class__.__name__.lower() == "bpr":
-            test_user = self.test_user  ########
+            train_user = self.train_user
+            train_item = self.train_item
+            train_label = self.train_label
+            test_user = self.test_user
             test_item = self.test_item
             test_label = self.test_label
-
         elif self.task == "rating" or (self.task == "ranking" and not self.neg_sampling):
             train_user = dataset.train_user_indices
             train_item = dataset.train_item_indices
@@ -219,7 +221,11 @@ class BasePure(object):
             elif task == "ranking":
                 train_loss, _ = binary_cross_entropy(self, train_user_batch, train_item_batch, train_label_batch)
             train_loss_all.append(train_loss)
-        return np.mean(train_loss_all)
+
+        if task == "rating":
+            return np.mean(train_loss_all)
+        elif task == "ranking":
+            return np.sum(train_loss_all) / len(labels)
 
     def test_info(self, users, items, labels, test_batch, task):
         test_loss_all, test_accuracy_all, test_prob_all = [], [], []
@@ -240,7 +246,7 @@ class BasePure(object):
         if task == "rating":
             return np.mean(test_loss_all)
         elif task == "ranking":
-            return np.mean(test_loss_all), np.mean(test_accuracy_all), test_prob_all
+            return np.sum(test_loss_all) / len(labels), np.sum(test_accuracy_all) / len(labels), test_prob_all
 
 
 class BaseFeat(object):
@@ -437,7 +443,7 @@ class BaseFeat(object):
                 train_seq_len, train_items_seq = self.preprocess_data(train_indices_implicit_batch)
                 feed_dict[self.seq_matrix] = train_items_seq
                 feed_dict[self.seq_len] = train_seq_len
-            train_loss = self.sess.run([self.loss], feed_dict=feed_dict)
+            train_loss = self.sess.run(self.loss, feed_dict=feed_dict)
             train_loss_all.append(train_loss)
         return np.mean(train_loss_all)
 
