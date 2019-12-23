@@ -99,7 +99,7 @@ class Bpr(BasePure):
             init = tf.global_variables_initializer()
             self.sess = tf.Session()
             self.sess.run(init)
-            print(tf.trainable_variables())
+            print(" trainable variables: ", tf.trainable_variables())
             with self.sess.as_default():
                 for epoch in range(1, self.n_epochs + 1):
                     t0 = time.time()

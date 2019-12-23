@@ -278,66 +278,7 @@ class BaseFeat(object):
         raise NotImplementedError
 
     def print_metrics(self, *args, **kwargs):
-        dataset, epoch = args[0], args[1]
-        allowed_kwargs = ["roc_auc", "pr_auc", "map", "map_num", "recall",
-                          "recall_num", "ndcg", "ndcg_num", "sample_user", "test_batch"]
-
-        for k in kwargs:
-            if k not in allowed_kwargs:
-                raise TypeError('Keyword argument not understood:', k)
-
-        if self.task == "rating":
-            print("Epoch {}, test_rmse: {:.4f}".format(epoch, rmse(self, dataset, "test")))
-            return
-
-        elif self.task == "ranking" and not self.neg_sampling:
-            test_indices = dataset.test_feat_indices
-            test_values = dataset.test_feat_values
-            test_labels = dataset.test_labels
-
-        elif self.task == "ranking" and self.neg_sampling:
-            test_indices = dataset.test_indices_implicit
-            test_values = dataset.test_values_implicit
-            test_labels = dataset.test_labels_implicit
-
-        t0 = time.time()
-        test_loss, test_prob = binary_cross_entropy(self, test_indices, test_values, test_labels)
-        print("\ttest loss: {:.4f}".format(test_loss))
-    #    print("\ttest accuracy: {:.4f}".format(accuracy(self, test_user, test_item, test_label)))
-        print("\tloss time: {:.4f}".format(time.time() - t0))
-
-        t1 = time.time()
-        if kwargs.get("roc_auc"):
-            test_auc = roc_auc_score(test_labels, test_prob)
-            print("\t test roc auc: {:.4f}".format(test_auc))
-        if kwargs.get("pr_auc"):
-            precision_test, recall_test, _ = precision_recall_curve(test_labels, test_prob)
-            test_pr_auc = auc(recall_test, precision_test)
-            print("\t test pr auc: {:.4f}".format(test_pr_auc))
-            print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
-
-        sample_user = kwargs.get("sample_user", 1000)
-        t2 = time.time()
-        if kwargs.get("map"):
-            map_num = kwargs.get("map_num", 20)
-            mean_average_precision = MAP_at_k(self, self.dataset, map_num, sample_user=sample_user)
-            print("\t MAP@{}: {:.4f}".format(map_num, mean_average_precision))
-            print("\t MAP time: {:.4f}".format(time.time() - t2))
-
-        t3 = time.time()
-        if kwargs.get("recall"):
-            recall_num = kwargs.get("recall_num", 50)
-            recall = recall_at_k(self, self.dataset, recall_num, sample_user=sample_user)
-            print("\t recall@{}: {:.4f}".format(recall_num, recall))
-            print("\t recall time: {:.4f}".format(time.time() - t3))
-
-        t4 = time.time()
-        if kwargs.get("ndcg"):
-            ndcg_num = kwargs.get("ndcg_num", 20)
-            ndcg = NDCG_at_k(self, self.dataset, ndcg_num , sample_user=sample_user)
-            print("\t NDCG@{}: {:.4f}".format(ndcg_num, ndcg))
-            print("\t NDCG time: {:.4f}".format(time.time() - t4))
-        return
+        return None
 
     def print_metrics_tf(self, *args, **kwargs):
         dataset, epoch, verbose = args[0], args[1], args[2]
@@ -432,10 +373,10 @@ class BaseFeat(object):
 
     def train_info(self, indices, values, labels, train_batch):
         train_loss_all = []
-        for batch_test in range(0, len(labels), train_batch):
-            train_indices_implicit_batch = indices[batch_test: batch_test + train_batch]
-            train_values_implicit_batch = values[batch_test: batch_test + train_batch]
-            train_labels_implicit_batch = labels[batch_test: batch_test + train_batch]
+        for batch_train in range(0, len(labels), train_batch):
+            train_indices_implicit_batch = indices[batch_train: batch_train + train_batch]
+            train_values_implicit_batch = values[batch_train: batch_train + train_batch]
+            train_labels_implicit_batch = labels[batch_train: batch_train + train_batch]
             feed_dict = {self.feature_indices: train_indices_implicit_batch,
                          self.feature_values: train_values_implicit_batch,
                          self.labels: train_labels_implicit_batch}
