@@ -65,15 +65,15 @@ if __name__ == "__main__":
 #              dropout_rate=0.5, task="ranking", neg_sampling=True)
 #    ncf.fit(dataset)
 
-#    svd = SVD(n_factors=32, n_epochs=200, lr=0.001, reg=0.001, batch_size=256, task="ranking",
-#                neg_sampling=True)  # concat ?
-#    svd.fit(dataset, verbose=1)
+    svd = SVD(n_factors=32, n_epochs=200, lr=0.001, reg=0.001, batch_size=256, task="ranking",
+                neg_sampling=True)  # concat ?
+    svd.fit(dataset, verbose=3)
 #    print(svd.predict(1,2))
 #    print(svd.recommend_user(1, 7))
 
     bpr = Bpr(lr=0.001, n_epochs=10000, reg=0.0, n_factors=16, batch_size=256, k=10,
               method="mf", neg_sampling=True)
-    bpr.fit(dataset, verbose=2)
+    bpr.fit(dataset, verbose=3)
     print(bpr.predict(1, 2))
     print(bpr.recommend_user(1, 7))
 

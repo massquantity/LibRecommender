@@ -60,18 +60,19 @@ class Bpr(BasePure):
             self.loss = - tf.reduce_sum(
                 tf.log(1 / (1 + tf.exp(-self.x_uij))) - self.reg_user - self.reg_item_i - self.reg_item_j)
 
+            # evaluate & test begin...
             self.item_t = tf.placeholder(tf.int32, shape=[None])
             self.labels = tf.placeholder(tf.float32, shape=[None])
             self.embed_item_t = tf.nn.embedding_lookup(self.qi, self.item_t)
             self.logits = tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item_t), axis=1)
             self.test_loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=self.logits))
-            self.prob = tf.sigmoid(self.logits)
-            self.pred = tf.where(self.prob >= 0.5,
+            self.y_prob = tf.sigmoid(self.logits)
+            self.pred = tf.where(self.y_prob >= 0.5,
                                  tf.fill(tf.shape(self.logits), 1.0),
                                  tf.fill(tf.shape(self.logits), 0.0))
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.pred, self.labels), tf.float32))
-            self.precision = precision_tf(self.pred, self.labels)
+        #    self.precision = precision_tf(self.pred, self.labels)
 
         elif self.method == "knn":
             LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -157,8 +158,8 @@ class Bpr(BasePure):
     def predict(self, u, i):
         if self.method == "mf":
             try:
-                y_prob = self.sess.run([self.prob], feed_dict={self.user: np.array([u]),
-                                                               self.item_t: np.array([i])})
+                y_prob = self.sess.run([self.y_prob], feed_dict={self.user: np.array([u]),
+                                                                 self.item_t: np.array([i])})
             except tf.errors.InvalidArgumentError:
                 y_prob = [0.0]
             return y_prob[0]
@@ -177,8 +178,8 @@ class Bpr(BasePure):
         if self.method == "mf":
             user_indices = np.full(self.n_items, u)
             item_indices = np.arange(self.n_items)
-            preds = self.sess.run(self.prob, feed_dict={self.user: user_indices,
-                                                        self.item_t: item_indices})
+            preds = self.sess.run(self.y_prob, feed_dict={self.user: user_indices,
+                                                          self.item_t: item_indices})
             preds = preds.ravel()
             consumed = self.dataset.train_user[u]
             count = n_rec + len(consumed)
