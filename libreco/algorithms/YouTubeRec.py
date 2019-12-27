@@ -65,7 +65,7 @@ class YouTubeRec(BaseFeat):
         else:
             self.total_features = tf.get_variable(name="total_features",
                                                   shape=[self.feature_size + 1, self.embed_size],
-                                                  initializer=tf.initializers.truncated_normal(0.0, 0.01),
+                                                  initializer=tf.initializers.random_uniform(0.0, 0.02),
                                                   regularizer=None)
 
         if self.reg > 0.0:
@@ -76,7 +76,7 @@ class YouTubeRec(BaseFeat):
         else:
             self.implicit_features = tf.get_variable(name="implicit_features",
                                                      shape=[dataset.n_items, self.embed_size],
-                                                     initializer=tf.initializers.truncated_normal(0.0, 0.01),
+                                                     initializer=tf.initializers.random_uniform(0.0, 0.02),
                                                      regularizer=None)
 
         self.feature_values_reshape = tf.reshape(self.feature_values, shape=[-1, self.field_size, 1])
@@ -214,9 +214,9 @@ class YouTubeRec(BaseFeat):
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
                         metrics = kwargs.get("metrics", self.metrics)
                         if hasattr(self, "sess"):
-                            self.print_metrics_tf(dataset, epoch, **metrics)
+                            self.print_metrics_tf(dataset, epoch, verbose, **metrics)
                         else:
-                            self.print_metrics(dataset, epoch, **metrics)
+                            self.print_metrics(dataset, epoch, verbose, **metrics)
                         print()
 
     def predict(self, user, item):

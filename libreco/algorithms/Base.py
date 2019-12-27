@@ -106,7 +106,7 @@ class BasePure(object):
                 print("\t test pr auc: {:.4f}".format(test_pr_auc))
                 print("\t auc, etc. time: {:.4f}".format(time.time() - t1))
 
-            if verbose  >= 3:
+            if verbose >= 3:
                 sample_user = kwargs.get("sample_user", 1000)
                 t2 = time.time()
                 if kwargs.get("map"):
