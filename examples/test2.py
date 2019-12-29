@@ -13,6 +13,7 @@ from libreco.dataset import prepare_data
 import pickle
 import cProfile
 np.set_printoptions(precision=4, edgeitems=7)
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 
 if __name__ == "__main__":
