@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 # from imp import reload
 # reload(download_data)
-# download_data.prepare_data("D:\F_disk\mine")
 
 
 def _download(par_path=None, prompt=True):

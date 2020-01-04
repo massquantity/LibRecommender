@@ -333,7 +333,7 @@ class BaseFeat(object):
     def recommend_user(self, *args, **kwargs):
         raise NotImplementedError
 
-    def print_metrics(self, *args, **kwargs):
+    def print_metrics(self):
         return None
 
     def print_metrics_tf(self, *args, **kwargs):
@@ -345,8 +345,8 @@ class BaseFeat(object):
                 raise TypeError('Keyword argument not understood:', k)
 
         if verbose >= 2:
-            train_batch = kwargs.get("train_batch", 8192)
-            test_batch = kwargs.get("test_batch", 8192)
+            train_batch = kwargs.get("train_batch", 2 ** 13)
+            test_batch = kwargs.get("test_batch", 2 ** 13)
             print("train batch: %d, test_batch: %d" % (train_batch, test_batch))
 
         if self.task == "rating" or (self.task == "ranking" and not self.neg_sampling):

@@ -54,7 +54,7 @@ class Bpr(BasePure):
             self.x_uj = tf.reduce_sum(tf.multiply(self.embed_user, self.embed_item_j), axis=1)
             self.x_uij = self.x_ui - self.x_uj
 
-            self.reg_user = self.reg * tf.nn.l2_loss(self.embed_user)  #######################
+            self.reg_user = self.reg * tf.nn.l2_loss(self.embed_user)
             self.reg_item_i = self.reg * tf.nn.l2_loss(self.embed_item_i)
             self.reg_item_j = self.reg * tf.nn.l2_loss(self.embed_item_j)
             self.loss = - tf.reduce_sum(
@@ -72,7 +72,6 @@ class Bpr(BasePure):
                                  tf.fill(tf.shape(self.logits), 1.0),
                                  tf.fill(tf.shape(self.logits), 0.0))
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.pred, self.labels), tf.float32))
-        #    self.precision = precision_tf(self.pred, self.labels)
 
         elif self.method == "knn":
             LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
