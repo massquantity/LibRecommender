@@ -66,9 +66,9 @@ if __name__ == "__main__":
 #              dropout_rate=0.5, task="ranking", neg_sampling=True)
 #    ncf.fit(dataset)
 
-    svd = SVD(n_factors=32, n_epochs=200, lr=0.001, reg=0.001, batch_size=256, task="ranking",
-                neg_sampling=True)  # concat ?
-    svd.fit(dataset, verbose=3)
+#    svd = SVD(n_factors=32, n_epochs=200, lr=0.001, reg=0.001, batch_size=256, task="ranking",
+#                neg_sampling=True)  # concat ?
+#    svd.fit(dataset, verbose=3)
 #    print(svd.predict(1,2))
 #    print(svd.recommend_user(1, 7))
 
