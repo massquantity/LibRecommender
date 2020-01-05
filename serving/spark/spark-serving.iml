@@ -184,10 +184,10 @@
     <orderEntry type="library" name="Maven: com.chuusai:shapeless_2.11:2.3.2" level="project" />
     <orderEntry type="library" name="Maven: org.typelevel:macro-compat_2.11:1.1.1" level="project" />
     <orderEntry type="library" name="Maven: com.github.scopt:scopt_2.11:3.2.0" level="project" />
-    <orderEntry type="library" name="Maven: org.jpmml:pmml-evaluator:1.4.8" level="project" />
-    <orderEntry type="library" name="Maven: org.jpmml:pmml-model:1.4.10" level="project" />
-    <orderEntry type="library" name="Maven: org.jpmml:pmml-agent:1.4.10" level="project" />
-    <orderEntry type="library" name="Maven: com.google.guava:guava:27.0-jre" level="project" />
+    <orderEntry type="library" name="Maven: org.jpmml:pmml-evaluator:1.4.3" level="project" />
+    <orderEntry type="library" name="Maven: org.jpmml:pmml-model:1.4.5" level="project" />
+    <orderEntry type="library" name="Maven: org.jpmml:pmml-agent:1.4.5" level="project" />
+    <orderEntry type="library" name="Maven: com.google.guava:guava:25.1-jre" level="project" />
     <orderEntry type="library" name="Maven: org.jpmml:jpmml-sparkml:1.4.6" level="project" />
     <orderEntry type="library" name="Maven: com.beust:jcommander:1.72" level="project" />
     <orderEntry type="library" name="Maven: org.jpmml:jpmml-converter:1.3.3" level="project" />
