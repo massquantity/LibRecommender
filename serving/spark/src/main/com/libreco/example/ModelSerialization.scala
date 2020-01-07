@@ -10,7 +10,8 @@ import org.apache.spark.ml.regression.{GBTRegressor, GBTRegressionModel}
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.log4j.{Level, Logger}
 import libreco.model.GBDTRegression
-import libreco.serving.jpmml.ModelSerializer
+import libreco.serving.jpmml.{ModelSerializer => ModelSerializerJPmml}
+import libreco.serving.mleap.{ModelSerializer => ModelSerializerMLeap}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -72,9 +73,14 @@ object ModelSerialization {
     time(model.train(data), "Training")
     val transformedData = model.transform(data)
 
-    val jpmmlModelPath = "serving/spark/src/main/resources/jpmml_model/GBDT_model.xml"
-    val jpmmlModelSerializer = new ModelSerializer()
-    jpmmlModelSerializer.serializeModel(model.pipelineModel, jpmmlModelPath, transformedData)
+  //  val jpmmlModelPath = "serving/spark/src/main/resources/jpmml_model/GBDT_model.xml"
+  //  val jpmmlModelSerializer = new ModelSerializerJPmml()
+  //  jpmmlModelSerializer.serializeModel(model.pipelineModel, jpmmlModelPath, transformedData)
+
+    val mleapModelPath = "jar:file:/home/massquantity/Workspace/LibRecommender/" +
+      "serving/spark/src/main/resources/mleap_model/GBDT_model.zip"
+    val mleapModelSerializer = new ModelSerializerMLeap()
+    mleapModelSerializer.serializeModel(model.pipelineModel, mleapModelPath, transformedData)
   }
 
   def time[T](block: => T, info: String): T = {
