@@ -72,6 +72,7 @@ object ModelSerialization {
     val currentTime = System.currentTimeMillis()
     time(model.train(data), "Training")
     val transformedData = model.transform(data)
+    transformedData.show(4)
 
   //  val jpmmlModelPath = "serving/spark/src/main/resources/jpmml_model/GBDT_model.xml"
   //  val jpmmlModelSerializer = new ModelSerializerJPmml()
