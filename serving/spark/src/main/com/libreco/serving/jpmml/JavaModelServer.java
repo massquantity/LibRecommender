@@ -56,7 +56,7 @@ public class JavaModelServer {
             loadModel();
         if (featureMap == null)
         {
-            System.err.println("features is null");
+            System.err.println("features are null");
             return null;
         }
 
