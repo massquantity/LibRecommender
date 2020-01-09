@@ -3,11 +3,12 @@ package libreco.model
 import java.io.{File, FileOutputStream}
 
 import javax.xml.transform.stream.StreamResult
+import libreco.Context
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.ml.{Pipeline, PipelineModel, PipelineStage}
 import org.apache.spark.ml.feature.{OneHotEncoder, StringIndexer, VectorAssembler}
-import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.functions.{col, when}
 import org.apache.spark.sql.types.{DoubleType, IntegerType, StringType, StructField, StructType}
 import org.apache.spark.ml.regression.{GBTRegressionModel, GBTRegressor}
 import org.apache.spark.ml.evaluation.RegressionEvaluator
@@ -18,13 +19,22 @@ import org.jpmml.sparkml.PMMLBuilder
 
 import scala.collection.mutable.ArrayBuffer
 
-class GBDTRegression(evaluate: Boolean = false,
-                     paramTuning: Boolean = false,
-                     convertImplicit: Boolean = false) {
+class GBDTRegression (evaluate: Boolean = false,
+                      paramTuning: Boolean = false,
+                      convertImplicit: Boolean = false) extends Context{
+  import spark.implicits._
   var pipelineModel: PipelineModel = _
+  var data: DataFrame = _
 
   def train(dataset: DataFrame): Unit = {
     val prePipelineStages = FeatureEngineering.preProcessPipeline(dataset)
+    if (convertImplicit) {
+      data = dataset.withColumn("label", when($"rating" >= 8, 1).otherwise(0))
+    } else {
+      data = dataset
+    }
+    data.cache()
+
     val gbr = new GBTRegressor()
       .setFeaturesCol("featureVector")
       .setLabelCol("rating")
@@ -39,7 +49,7 @@ class GBDTRegression(evaluate: Boolean = false,
     val pipelineStages = prePipelineStages ++ Array(gbr)
     val pipeline = new Pipeline().setStages(pipelineStages)
     if (evaluate) {
-      var Array(trainData, testData) = dataset.randomSplit(Array(0.8, 0.2), 2020L)
+      var Array(trainData, testData) = data.randomSplit(Array(0.8, 0.2), 2020L)
     //  trainData.cache()
     //  testData.cache()
       pipelineModel = pipeline.fit(trainData)
@@ -47,12 +57,14 @@ class GBDTRegression(evaluate: Boolean = false,
     //  testData = pipelineModel.transform(testData)
     }
     else {
-      pipelineModel = pipeline.fit(dataset)
+      pipelineModel = pipeline.fit(data)
     }
+
+    data.unpersist()
   }
 
-  def transform(data: DataFrame): DataFrame = {
-    pipelineModel.transform(data)
+  def transform(dataset: DataFrame): DataFrame = {
+    pipelineModel.transform(dataset)
   }
 
   def main(args: Array[String]): Unit = {
