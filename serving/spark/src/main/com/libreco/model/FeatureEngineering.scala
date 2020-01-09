@@ -1,14 +1,8 @@
 package libreco.model
 
-import org.apache.spark.sql.{SparkSession, DataFrame, Dataset}
-import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.ml.{PipelineModel, Pipeline, PipelineStage}
-import org.apache.spark.ml.feature.{VectorAssembler, OneHotEncoder, StringIndexer}
-import org.apache.spark.sql.functions.col
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType, DoubleType}
-import org.apache.spark.ml.regression.{GBTRegressor, GBTRegressionModel}
-import org.apache.spark.ml.evaluation.RegressionEvaluator
-import org.apache.log4j.{Level, Logger}
+import org.apache.spark.ml.feature.{OneHotEncoderEstimator, StringIndexer, VectorAssembler}
+import org.apache.spark.ml.{Pipeline, PipelineStage}
+import org.apache.spark.sql.DataFrame
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -20,48 +14,37 @@ object FeatureEngineering {
     val cateCols = Set(dataColumns: _*) -- otherCols -- Seq("genre")
 
     val pipelineStages = ArrayBuffer[PipelineStage]()
-    val vectorAassembleCols = ArrayBuffer[String]()
+    val stringIndexerCols = ArrayBuffer[String]()
     cateCols.foreach { col =>
-      val (encoder, vecCol) = oneHotPipeline(col)
-      vectorAassembleCols += vecCol
-      pipelineStages += encoder
+      val (indexer, vecCol) = StringIndexerPipeline(col)
+      stringIndexerCols += vecCol
+      pipelineStages += indexer
     }
-/*
-    val genreList = data
-      .select("genre")
-      .rdd
-      .map(_.getAs[String]("genre"))
-      .flatMap(_.split(", ")).distinct.collect()
-    genreList.foreach(g => vectorAassembleCols += g)
 
-    val multiHot = new MultiHotEncoder()
-      .setInputCol("genre")
-      .setOutputCols(genreList)
-    pipelineStages += multiHot
-*/
+    val encoder = new OneHotEncoderEstimator()
+      .setInputCols(stringIndexerCols.toArray)
+      .setOutputCols(Array("OneHotVector"))
+    pipelineStages += encoder
+
     val assembler = new VectorAssembler()
-      .setInputCols(vectorAassembleCols.toArray ++ otherCols)
+      .setInputCols(Array("OneHotVector") ++ otherCols)
       .setOutputCol("featureVector")
-    //  assembler.getInputCols.foreach(x => print(x + " "))
-    //  pipeline.getStages.foreach(println)
+    // assembler.getInputCols.foreach(x => print(x + " "))
+    // pipeline.getStages.foreach(println)
     println(s"featureVector length: ${assembler.getInputCols.length}")
     //  data.schema.fields.foreach(println)
 
-  //  val pipeline = new Pipeline().setStages(pipelineStages.toArray ++ Array(assembler))
+    //  val pipeline = new Pipeline().setStages(pipelineStages.toArray ++ Array(assembler))
     pipelineStages.toArray ++ Array(assembler)
 
   }
 
 
-  def oneHotPipeline(inputCol: String): (Pipeline, String) = {
+  def StringIndexerPipeline(inputCol: String): (Pipeline, String) = {
     val indexer = new StringIndexer()
       .setInputCol(inputCol)
       .setOutputCol(inputCol + "_indexed")
-    //  .setHandleInvalid("skip")
-    val encoder = new OneHotEncoder()
-      .setInputCol(inputCol + "_indexed")
-      .setOutputCol(inputCol + "_vec")
-    val pipeline = new Pipeline().setStages(Array(indexer, encoder))
-    (pipeline, encoder.getOutputCol)
+    val pipeline = new Pipeline().setStages(Array(indexer))
+    (pipeline, indexer.getOutputCol)
   }
 }
