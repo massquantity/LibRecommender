@@ -19,5 +19,4 @@ class ModelSerializer {
       pipeline.writeBundle.save(bf)(sbc).get
     }
   }
-
 }
