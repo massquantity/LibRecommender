@@ -21,7 +21,7 @@ public class JavaModelServer {
         this.dataSchema = dataSchema;
     }
 
-    public void loadModel() {
+    private void loadModel() {
         MleapContext mleapContext = new ContextBuilder().createMleapContext();
         BundleBuilder bundleBuilder = new BundleBuilder();
         this.model = bundleBuilder.load(new File(modelPath), mleapContext).root();

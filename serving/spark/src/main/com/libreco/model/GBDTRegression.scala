@@ -25,7 +25,7 @@ class GBDTRegression (evaluate: Boolean = false,
   import spark.implicits._
   var pipelineModel: PipelineModel = _
   var data: DataFrame = _
-
+  // MultilayerPerceptronClassifier  ParamGridBuilder  Evaluator  TrainValidationSplit
   def train(dataset: DataFrame): Unit = {
     val prePipelineStages = FeatureEngineering.preProcessPipeline(dataset)
     if (convertImplicit) {
@@ -59,7 +59,6 @@ class GBDTRegression (evaluate: Boolean = false,
     else {
       pipelineModel = pipeline.fit(data)
     }
-
     data.unpersist()
   }
 

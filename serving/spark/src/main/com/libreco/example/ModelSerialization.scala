@@ -56,7 +56,7 @@ object ModelSerialization extends Context{
     val model = new GBDTRegression()
     time(model.train(data), "Training")
     val transformedData = model.transform(data)
-    transformedData.show(4)
+    transformedData.show(4, truncate = false)
 
   //  val jpmmlModelPath = "serving/spark/src/main/resources/jpmml_model/GBDT_model.xml"
   //  val jpmmlModelSerializer = new ModelSerializerJPmml()
