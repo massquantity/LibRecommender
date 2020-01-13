@@ -1,7 +1,8 @@
-package libreco
+package com.libreco
 
+import com.libreco.utils.Context
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.functions.{when, expr, sum, round}
+import org.apache.spark.sql.functions.{expr, round, sum, when}
 
 object TestScala extends Context{
   import spark.implicits._
