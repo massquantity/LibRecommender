@@ -1,4 +1,4 @@
-package libreco.model
+package com.libreco.model
 
 import org.apache.spark.sql.{SparkSession, DataFrame, Dataset}
 import org.apache.spark.{SparkConf, SparkContext}
@@ -44,7 +44,7 @@ object FeatureEngineeringAll {
       .setOutputCol("featureVector")
     //  assembler.getInputCols.foreach(x => print(x + " "))
     //  pipeline.getStages.foreach(println)
-    println(s"featureVector length: ${assembler.getInputCols.length}")
+    println(s"featureVector length: ${assembler.getOutputCol.length}")
     //  data.schema.fields.foreach(println)
 
   //  val pipeline = new Pipeline().setStages(pipelineStages.toArray ++ Array(assembler))
