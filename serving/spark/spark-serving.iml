@@ -8,7 +8,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/main/resources" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/libreco" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/main/com.libreco" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/main/com" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/core" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />

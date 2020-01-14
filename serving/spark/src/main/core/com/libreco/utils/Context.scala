@@ -1,8 +1,8 @@
-package libreco
+package com.libreco.utils
 
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import org.apache.log4j.{Level, Logger}
 
 trait Context {
   Logger.getLogger("org").setLevel(Level.ERROR)
@@ -11,7 +11,7 @@ trait Context {
   lazy val sparkConf: SparkConf = new SparkConf()
     .setAppName("Spark serving")
     .setMaster("local[*]")
-    .set("spark.core.max", "4")
+  //  .set("spark.core.max", "4")
 
   lazy val spark: SparkSession = SparkSession
     .builder()
