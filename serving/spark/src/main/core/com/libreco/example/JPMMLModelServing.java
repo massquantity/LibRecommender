@@ -1,6 +1,6 @@
-package libreco.example;
+package com.libreco.example;
 
-import libreco.serving.jpmml.JavaModelServer;
+import com.libreco.serving.jpmml.JavaModelServer;
 import org.dmg.pmml.FieldName;
 import org.jpmml.evaluator.JavaModel;
 
