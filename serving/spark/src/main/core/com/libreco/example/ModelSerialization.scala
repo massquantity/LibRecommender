@@ -1,10 +1,10 @@
-package libreco.example
+package com.libreco.example
 
 import org.apache.spark.sql.types.{DoubleType, IntegerType, StringType, StructField, StructType}
-import libreco.Context
-import libreco.model.GBDTRegression
-import libreco.serving.jpmml.{ModelSerializer => ModelSerializerJPmml}
-import libreco.serving.mleap.{ModelSerializer => ModelSerializerMLeap}
+import com.libreco.model.Regressor
+import com.libreco.utils.Context
+import com.libreco.serving.jpmml.{ModelSerializer => ModelSerializerJPmml}
+import com.libreco.serving.mleap.{ModelSerializer => ModelSerializerMLeap}
 import org.apache.spark.sql.Column
 
 
@@ -53,7 +53,7 @@ object ModelSerialization extends Context{
   //    .na.fill("Missing", Seq("type"))
   //    .na.fill(7.6, Seq("web_rating"))
 
-    val model = new GBDTRegression()
+    val model = new Regressor(algo = Some("gbdt"))
     time(model.train(data), "Training")
     val transformedData = model.transform(data)
     transformedData.show(4, truncate = false)
@@ -68,5 +68,6 @@ object ModelSerialization extends Context{
     mleapModelSerializer.serializeModel(model.pipelineModel, mleapModelPath, transformedData)
   }
 }
+
 
 
