@@ -1,6 +1,6 @@
-package libreco.model
+package com.libreco.model
 
-import libreco.Context
+import com.libreco.utils.Context
 import org.apache.spark.sql.{Column, DataFrame, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.ml.{Pipeline, PipelineModel, PipelineStage}
@@ -17,13 +17,18 @@ import scala.util.Random
 
 class Regressor(evaluate: Boolean = false,
                 algo: Option[String] = Some("gbdt"),
-                convertImplicit: Boolean = false) extends Context {
+                convertImplicit: Boolean = false) extends Serializable with Context {
   import spark.implicits._
   var pipelineModel: PipelineModel = _
   var data: DataFrame = _
 
   def train(dataset: DataFrame): Unit = {
     val prePipelineStages: Array[PipelineStage] = FeatureEngineering.preProcessPipeline(dataset)
+  //  val pipeline = new Pipeline().setStages(prePipelineStages)
+  //  pipelineModel = pipeline.fit(dataset)
+  //  val transformed = pipelineModel.transform(dataset)
+  //  transformed.show(4, truncate = false)
+
     if (convertImplicit) {
       data = dataset.withColumn("label", when($"rating" >= 8, 1).otherwise(0))
     } else {
@@ -32,7 +37,7 @@ class Regressor(evaluate: Boolean = false,
     data.cache()
 
     if (evaluate) {
-      var Array(trainData, testData) = data.randomSplit(Array(0.8, 0.2), 2020L)
+      val Array(trainData, testData) = data.randomSplit(Array(0.8, 0.2), 2020L)
       trainData.cache()
       testData.cache()
       algo match {
@@ -215,7 +220,7 @@ object Regressor extends Context{
     println(s"data length: ${data.count()}")
     data.show(4, truncate = false)
 
-    val model = new Regressor(evaluate = true, algo = Some("gbdt"))
+    val model = new Regressor(evaluate = true, algo = Some("glr"))
     time(model.train(data), "Training")
 
     /*
