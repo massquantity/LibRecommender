@@ -1,7 +1,7 @@
-package libreco.example;
+package com.libreco.example;
 
-import libreco.serving.mleap.JavaModelServer;
-import libreco.Scala2JavaConverter;
+import com.libreco.serving.mleap.JavaModelServer;
+import com.libreco.utils.Scala2JavaConverter;
 import ml.combust.mleap.core.types.StructField;
 import ml.combust.mleap.core.types.StructType;
 import ml.combust.mleap.runtime.frame.Row;
