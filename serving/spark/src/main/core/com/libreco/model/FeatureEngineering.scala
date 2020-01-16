@@ -33,6 +33,16 @@ object FeatureEngineering {
       .setOutputCols(Array("one_hot_vector"))
       .setHandleInvalid("keep")  //// keep
 
+    val genreList = dataset
+      .select("genre")
+      .rdd
+      .map(_.getAs[String]("genre"))
+      .flatMap(_.split(", ")).distinct.collect()
+
+    val multiHotEncoder = new MultiHotEncoder(uid = "multi_hot_encoder")
+      .setInputCol("genre")
+      .setOutputCols(genreList)
+
     // deal with textual features
     val regexTokenizer = new RegexTokenizer(uid = "regex_tokenizer")
       .setInputCol("name")
@@ -51,6 +61,7 @@ object FeatureEngineering {
     val featureCols = categoricalFeatureEncoder.getOutputCols
       .union(Seq("scaled_continuous_features"))
       .union(Seq("word_vectors"))
+      .union(genreList)  // genreList
     val assembler = new VectorAssembler(uid = "feature_assembler")
       .setInputCols(featureCols)
       .setOutputCol("featureVector")
@@ -58,7 +69,7 @@ object FeatureEngineering {
 
     val estimators = Array(continuousFeatureAssembler, continuousFeatureScaler) ++
       categoricalFeatureIndexers ++
-      Seq(categoricalFeatureEncoder) ++
+      Seq(categoricalFeatureEncoder, multiHotEncoder) ++  // multiHotEncoder
       Seq(regexTokenizer, word2Vec) ++
       Seq(assembler)
     estimators.asInstanceOf[Array[PipelineStage]]
