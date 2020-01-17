@@ -222,7 +222,7 @@ object Classifier extends Context{
     println(s"data length: ${data.count()}")
     data.show(4, truncate = false)
 
-    val model = new Classifier(evaluate = true, algo = Some("mlp"), convertLabel = true)
+    val model = new Classifier(evaluate = false, algo = Some("rf"), convertLabel = true)
     time(model.train(data), "Training")
 
     val transformedData = model.transform(data)
