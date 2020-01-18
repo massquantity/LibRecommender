@@ -1,4 +1,4 @@
-package libreco.serving.mleap
+package com.libreco.serving.mleap
 
 import ml.combust.bundle.BundleFile
 import org.apache.spark.ml.PipelineModel

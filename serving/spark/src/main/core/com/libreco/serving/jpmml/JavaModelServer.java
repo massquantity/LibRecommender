@@ -1,4 +1,4 @@
-package libreco.serving.jpmml;
+package com.libreco.serving.jpmml;
 
 import org.dmg.pmml.FieldName;
 import org.dmg.pmml.PMML;

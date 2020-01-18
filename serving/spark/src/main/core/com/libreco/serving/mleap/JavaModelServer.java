@@ -1,4 +1,4 @@
-package libreco.serving.mleap;
+package com.libreco.serving.mleap;
 
 import ml.combust.mleap.core.types.*;
 import ml.combust.mleap.runtime.MleapContext;

@@ -1,4 +1,4 @@
-package libreco.serving.jpmml;
+package com.libreco.serving.jpmml;
 
 import java.io.*;
 
