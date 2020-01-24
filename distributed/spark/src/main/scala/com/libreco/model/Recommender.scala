@@ -1,31 +1,26 @@
 package com.libreco.model
 
-import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession, Column}
-import org.apache.log4j.{Level, Logger}
-import com.libreco.data.DataSplitter
-import com.libreco.evaluate.EvalRecommender
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.ml.recommendation.{ALS, ALSModel}
-import org.apache.spark.sql.functions.{split, explode, struct, udf}
+import org.apache.spark.sql.functions.{coalesce, typedLit}
 import com.libreco.utils.Context
+import com.libreco.evaluate.EvalRecommender
+
+import scala.collection.Map
 
 class Recommender extends Serializable with Context{
+  import spark.implicits._
   var model: ALSModel = _
 
-  def train(df: DataFrame, evaluate: Boolean = false): Unit = {
+  def train(df: DataFrame, evaluate: Boolean = false, num: Int = 10): Unit = {
+    df.cache()
     if (evaluate) {
-      val splitter = new DataSplitter()
-      val Array(trainData, testData) = splitter.stratified_chrono_split(df, 0.8, "user")
-      trainData.cache()
-      testData.cache()
-
-
-
+      val evalModel = new EvalRecommender(num, "ndcg")
+      evalModel.eval(df)
     }
     else {
-      df.cache()
       val als = new ALS()
-        .setMaxIter(5)
+        .setMaxIter(20)
         .setRegParam(0.01)
         .setUserCol("user")
         .setItemCol("item")
@@ -34,17 +29,23 @@ class Recommender extends Serializable with Context{
         .setRatingCol("label")
       model = als.fit(df)
       model.setColdStartStrategy("drop")
-      df.unpersist()
     }
+    df.unpersist()
   }
 
   def transform(df: DataFrame): DataFrame = {
     model.transform(df)
   }
 
-  def recommendForUsers(df: DataFrame, num: Int): DataFrame = {
-    model.recommendForUserSubset(df, num)
-      .selectExpr("user", "explode(recommendations) as predAndProb")
-      .select("user", "predAndProb.*").toDF("user", "item", "prob") // pred means specific item
+  def recommendForUsers(df: DataFrame,
+                        num: Int,
+                        ItemNameMap: Map[Int, String] = Map.empty): DataFrame = {
+
+    val rec = model.recommendForUserSubset(df, num)
+        .selectExpr("user", "explode(recommendations) as predAndProb")
+        .select("user", "predAndProb.*").toDF("user", "item", "prob") // pred means specific item
+
+    val nameMapCol = typedLit(ItemNameMap)
+    rec.withColumn("name", coalesce(nameMapCol($"item")))
   }
 }
