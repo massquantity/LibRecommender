@@ -37,7 +37,9 @@ object FeatureEngineering {
       .select("genre")
       .rdd
       .map(_.getAs[String]("genre"))
-      .flatMap(_.split(", ")).distinct.collect()
+      .flatMap(_.trim().split(", "))
+      .distinct
+      .collect()
 
     val multiHotEncoder = new MultiHotEncoder(uid = "multi_hot_encoder")
       .setInputCol("genre")
