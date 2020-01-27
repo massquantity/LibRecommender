@@ -333,7 +333,7 @@ class BaseFeat(object):
     def recommend_user(self, *args, **kwargs):
         raise NotImplementedError
 
-    def print_metrics(self):
+    def print_metrics(self, *args, **kwargs):
         return None
 
     def print_metrics_tf(self, *args, **kwargs):

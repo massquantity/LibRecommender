@@ -8,13 +8,11 @@ author: massquantity
 """
 import os
 import time
-import random
 import itertools
 import numpy as np
 import tensorflow as tf
-from .Base import BasePure, BaseFeat
-from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, recall_at_k, NDCG_at_k
-from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
+from .Base import BaseFeat
+from ..utils.sampling import NegativeSamplingFeat
 
 
 class Din(BaseFeat):
