@@ -1,9 +1,7 @@
 package com.libreco.example
 
-import org.apache.spark.sql.functions.{round, sum, lit, col}
-import org.apache.spark.sql.Column
+import org.apache.spark.ml.linalg.SparseVector
 import com.libreco.utils.{Context, ItemNameConverter}
-import com.libreco.data.DataSplitter
 import com.libreco.model.Regressor
 
 
@@ -44,14 +42,15 @@ object RegressorExample extends Context {
     ratings = ratings.sample(withReplacement = false, 0.1)
     val temp = ratings.join(users, Seq("user"), "left")
     val data = temp.join(items, Seq("item"), "left")
-
-    println(s"find and fill NAs for each column...")
-    data.columns.foreach(col => println(s"$col -> ${data.filter(data(col).isNull).count}"))
-  //  val allCols: Array[Column] = data.columns.map(col) // col is a function to get Column
-  //  val nullFilter: Column = allCols.map(_.isNotNull).reduce(_ && _)
-  //  data.select(allCols: _*).filter(nullFilter)
     data.show(4, truncate = false)
 
+  //  val model = new Regressor(Some("glr"))
+  //  time(model.train(data, evaluate = false), "Training")
+  //  val transformedData = model.transform(data)
+  //  transformedData.show(4, truncate = false)
+
+    val model = new Regressor(Some("gbdt"))
+    time(model.train(data, evaluate = true, debug = true), "Evaluating")
   }
 }
 
