@@ -42,6 +42,7 @@ object TestScala extends Context{
     var data = rating.join(anime, Seq("anime_id"), "inner")
     data.cache()
     data.show(4, truncate = false)
+
     val total_count = data.count()
     println(s"data count: $total_count")
     data.groupBy("rating").count().orderBy($"count".desc)

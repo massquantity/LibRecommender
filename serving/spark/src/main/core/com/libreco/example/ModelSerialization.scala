@@ -1,7 +1,7 @@
 package com.libreco.example
 
 import org.apache.spark.sql.types.{DoubleType, IntegerType, StringType, StructField, StructType}
-import com.libreco.model.Regressor
+import com.libreco.model.{Classifier, Regressor}
 import com.libreco.utils.Context
 import com.libreco.serving.jpmml.{ModelSerializer => ModelSerializerJPmml}
 import com.libreco.serving.mleap.{ModelSerializer => ModelSerializerMLeap}
@@ -53,7 +53,7 @@ object ModelSerialization extends Context{
   //    .na.fill("Missing", Seq("type"))
   //    .na.fill(7.6, Seq("web_rating"))
 
-    val model = new Regressor(algo = Some("gbdt"))
+    val model = new Classifier(algo = Some("mlp"), convertLabel = true)
     time(model.train(data), "Training")
     val transformedData = model.transform(data)
     transformedData.show(4, truncate = false)
