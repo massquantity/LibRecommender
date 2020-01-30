@@ -1,14 +1,11 @@
 package com.libreco.model
 
-import com.libreco.model.Regressor.time
 import com.libreco.utils.Context
-import ml.combust.mleap.core.classification.RandomForestClassifierModel
-import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.functions.{col, udf, when}
-import org.apache.spark.sql.{Column, DataFrame, SparkSession}
+import org.apache.spark.sql.{Column, DataFrame}
 import org.apache.spark.ml.{Pipeline, PipelineModel, PipelineStage}
 import org.apache.spark.ml.classification.{MultilayerPerceptronClassifier, RandomForestClassifier}
-import org.apache.spark.ml.evaluation.{BinaryClassificationEvaluator, MulticlassClassificationEvaluator}
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator
 import org.apache.spark.ml.tuning.{ParamGridBuilder, TrainValidationSplit}
 import org.apache.spark.ml.param.{ParamMap, Param}
 import org.apache.spark.sql.types._
@@ -47,10 +44,10 @@ class Classifier(evaluate: Boolean = false,
         case Some("mlp") => evaluateMLP(trainData, testData, prePipelineStages)
         case Some("rf") => evaluateRF(trainData, testData, prePipelineStages)
         case None =>
-          println("Model muse be MultilayerPerceptronClassifier or RandomForestClassifier")
+          println("Model muse either be MultilayerPerceptronClassifier or RandomForestClassifier")
           System.exit(1)
         case _ =>
-          println("Model muse be MultilayerPerceptronClassifier or RandomForestClassifier")
+          println("Model muse either be MultilayerPerceptronClassifier or RandomForestClassifier")
           System.exit(2)
       }
       trainData.unpersist()
@@ -222,7 +219,7 @@ object Classifier extends Context{
     println(s"data length: ${data.count()}")
     data.show(4, truncate = false)
 
-    val model = new Classifier(evaluate = false, algo = Some("rf"), convertLabel = true)
+    val model = new Classifier(evaluate = false, algo = Some("mlp"), convertLabel = true)
     time(model.train(data), "Training")
 
     val transformedData = model.transform(data)
