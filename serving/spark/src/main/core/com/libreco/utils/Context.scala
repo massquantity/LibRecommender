@@ -9,7 +9,7 @@ trait Context {
   Logger.getLogger("com").setLevel(Level.ERROR)
 
   lazy val sparkConf: SparkConf = new SparkConf()
-    .setAppName("Spark serving")
+    .setAppName("Spark Serving")
     .setMaster("local[*]")
   //  .set("spark.core.max", "4")
 
