@@ -239,8 +239,8 @@ class FmFeat(BaseFeat):
             self.lower_bound = None
             self.upper_bound = None
 
-        self.feature_indices = tf.placeholder(tf.int32, shape=[None, self.field_size])
-        self.feature_values = tf.placeholder(tf.float32, shape=[None, self.field_size])
+        self.feature_indices = tf.placeholder(tf.int32, shape=[None, self.field_size], name="indices")
+        self.feature_values = tf.placeholder(tf.float32, shape=[None, self.field_size], name="values")
         self.labels = tf.placeholder(tf.float32, shape=[None])
 
         self.w = tf.Variable(tf.truncated_normal([self.feature_size + 1, 1], 0.0, 0.01))  # feature_size + 1####
@@ -260,7 +260,7 @@ class FmFeat(BaseFeat):
         self.concat = tf.concat([self.linear_term, self.pairwise_term], axis=1)
 
         if self.task == "rating":
-            self.pred = tf.layers.dense(inputs=self.concat, units=1)
+            self.pred = tf.layers.dense(inputs=self.concat, units=1, name="pred")
             self.loss = tf.losses.mean_squared_error(labels=tf.reshape(self.labels, [-1, 1]),
                                                      predictions=self.pred)
 
@@ -280,10 +280,10 @@ class FmFeat(BaseFeat):
             self.loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels, logits=self.logits))
 
-            self.y_prob = tf.sigmoid(self.logits)
+            self.y_prob = tf.sigmoid(self.logits, name="prob")
             self.pred = tf.where(self.y_prob >= 0.5,
                                  tf.fill(tf.shape(self.logits), 1.0),
-                                 tf.fill(tf.shape(self.logits), 0.0))
+                                 tf.fill(tf.shape(self.logits), 0.0), name="pred")
             self.accuracy = tf.reduce_mean(tf.cast(tf.equal(self.pred, self.labels), tf.float32))
             self.precision = precision_tf(self.pred, self.labels)
 
@@ -321,9 +321,9 @@ class FmFeat(BaseFeat):
                         print("Epoch {}, training_time: {:.2f}".format(epoch, time.time() - t0))
                         metrics = kwargs.get("metrics", self.metrics)
                         if hasattr(self, "sess"):
-                            self.print_metrics_tf(dataset, epoch, **metrics)
+                            self.print_metrics_tf(dataset, epoch, verbose, **metrics)
                         else:
-                            self.print_metrics(dataset, epoch, **metrics)
+                            self.print_metrics(dataset, epoch, verbose, **metrics)
                         print()
 
             elif self.task == "ranking" and self.neg_sampling:
@@ -343,9 +343,9 @@ class FmFeat(BaseFeat):
                         print("Epoch {}: training time: {:.4f}".format(epoch, time.time() - t0))
                         metrics = kwargs.get("metrics", self.metrics)
                         if hasattr(self, "sess"):
-                            self.print_metrics_tf(dataset, epoch, **metrics)
+                            self.print_metrics_tf(dataset, epoch, verbose, **metrics)
                         else:
-                            self.print_metrics(dataset, epoch, **metrics)
+                            self.print_metrics(dataset, epoch, verbose, **metrics)
                         print()
 
     def predict(self, user, item):
