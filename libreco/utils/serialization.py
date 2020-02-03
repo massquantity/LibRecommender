@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import logging
 import pickle
@@ -24,12 +25,24 @@ def export_model_joblib(path, model):
         joblib.dump(model, f, compress=True)
 
 
-def export_model_tf(model, model_name, version, simple_save=False):
+def export_model_tf_serving(model, model_name, version, simple_save=False):
     model_base_path = os.path.realpath("..")
     export_path = os.path.join(model_base_path, "serving", "models", model_name, version)
     if os.path.isdir(export_path):
-        logging.warning("\tModel path \"%s\" already exists, removing..." % export_path)
-        shutil.rmtree(export_path)
+    #    logging.warning("\tModel path \"%s\" already exists, removing..." % export_path)
+        answered = False
+        while not answered:
+            print("Model path - \"%s\" already exists, would you like to remove it? [Y/n]"
+                  % export_path, end='')
+            choice = input().lower()
+            if choice in ["yes", "y"]:
+                shutil.rmtree(export_path)
+                answered = True
+            elif choice in ["no", "n"]:
+                answered = True
+                print("refused to remove, then exit...")
+                sys.exit(0)
+
     if simple_save:
         print("simple_save is deprecated, it will be removed in tensorflow xxx...")
         tf.saved_model.simple_save(model.sess, export_path,
@@ -59,6 +72,30 @@ def export_model_tf(model, model_name, version, simple_save=False):
         )
 
         builder.save()
+    logging.warning('\tDone exporting!')
+
+
+def export_model_tf_java(model, model_name):
+    model_base_path = os.path.realpath("..")
+    export_path = os.path.join(model_base_path, "serving", "models", "Java")
+    if os.path.isdir(export_path):
+        answered = False
+        while not answered:
+            print("Model path - \"%s\" already exists, would you like to remove it? [Y/n]"
+                  % export_path, end='')
+            choice = input().lower()
+            if choice in ["yes", "y"]:
+                shutil.rmtree(export_path)
+                answered = True
+            elif choice in ["no", "n"]:
+                answered = True
+                print("refused to remove, then exit...")
+                sys.exit(0)
+
+    graph = tf.compat.v1.graph_util.convert_variables_to_constants(model.sess,
+                                                                   model.sess.graph_def,
+                                                                   ["prob", "pred"])
+    tf.io.write_graph(graph, export_path, "%s.pb" % model_name, as_text=False)
     logging.warning('\tDone exporting!')
 
 
