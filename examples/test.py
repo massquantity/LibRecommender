@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     conf_movielens = {
         "data_path": os.path.join(os.path.expanduser("~"), ".libreco_data", "ml-1m", "merged_data.csv"),
-        "length": 100000,
+        "length": "all",
         "user_col": 0,
         "item_col": 1,
         "label_col": 2,
@@ -53,15 +53,15 @@ if __name__ == "__main__":
         "merged_categorical_col": [[6, 7, 8]],
         "user_feature_cols": [3, 4, 5],
         "item_feature_cols": [6, 7, 8],
-        "convert_implicit": True,
-        "build_negative": True,
+        "convert_implicit": False,
+        "build_negative": False,
         "num_neg": 1,
         "sep": ",",
         "k": 0.2,
         "split_mode": "leave_k_out",
         "normalize": None,
         "threshold": 0,
-        "pos_bound": 4,
+        "pos_bound": None,
     }
 
     conf_tianchi = {
