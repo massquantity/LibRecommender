@@ -53,19 +53,20 @@ object ModelSerialization extends Context{
   //    .na.fill("Missing", Seq("type"))
   //    .na.fill(7.6, Seq("web_rating"))
 
-    val model = new Classifier(algo = Some("mlp"), convertLabel = true)
+    val model = new Classifier(algo = Some("rf"), convertLabel = true)
     time(model.train(data), "Training")
     val transformedData = model.transform(data)
     transformedData.show(4, truncate = false)
 
-  //  val jpmmlModelPath = "serving/spark/src/main/resources/jpmml_model/GBDT_model.xml"
-  //  val jpmmlModelSerializer = new ModelSerializerJPmml()
-  //  jpmmlModelSerializer.serializeModel(model.pipelineModel, jpmmlModelPath, transformedData)
+    val jpmmlModelPath = "serving/spark/src/main/resources/jpmml_model/jpmml_model.xml"
+    val jpmmlModelSerializer = new ModelSerializerJPmml()
+    jpmmlModelSerializer.serializeModel(model.pipelineModel, jpmmlModelPath, transformedData)
 
-    val mleapModelPath = "jar:file:/home/massquantity/Workspace/LibRecommender/" +
-      "serving/spark/src/main/resources/mleap_model/GBDT_model.zip"
+    val mleapModelPath = "jar:" + this.getClass
+      .getResource("/mleap_model").toString + "/mleap_model.zip"
     val mleapModelSerializer = new ModelSerializerMLeap()
     mleapModelSerializer.serializeModel(model.pipelineModel, mleapModelPath, transformedData)
+
   }
 }
 

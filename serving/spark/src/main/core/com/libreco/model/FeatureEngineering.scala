@@ -31,7 +31,7 @@ object FeatureEngineering {
     val categoricalFeatureEncoder = new OneHotEncoderEstimator(uid = "one_hot_encoder")
       .setInputCols(categoricalIndexerCols)
       .setOutputCols(Array("one_hot_vector"))
-      .setHandleInvalid("keep")  // keep
+      .setHandleInvalid("error")  // keep, error
 
     // deal with textual features
     val regexTokenizer = new RegexTokenizer(uid = "regex_tokenizer")

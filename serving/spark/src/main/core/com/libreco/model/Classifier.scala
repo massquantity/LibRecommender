@@ -19,6 +19,7 @@ class Classifier(evaluate: Boolean = false,
   import spark.implicits._
   var pipelineModel: PipelineModel = _
   var data: DataFrame = _
+  var testData: DataFrame = _
 
   def train(dataset: DataFrame): Unit = {
     val prePipelineStages: Array[PipelineStage] = FeatureEngineering.preProcessPipeline(dataset)
@@ -64,6 +65,7 @@ class Classifier(evaluate: Boolean = false,
             .setProbabilityCol("prob")
             .setLayers(Array(29, 20, 10, 3))
             .setStepSize(0.02)
+            .setMaxIter(20)
           val pipelineStages = prePipelineStages ++ Array(model)
           val pipeline = new Pipeline().setStages(pipelineStages)
           pipelineModel = pipeline.fit(data)
@@ -92,7 +94,14 @@ class Classifier(evaluate: Boolean = false,
   }
 
   def transform(dataset: DataFrame): DataFrame = {
-    pipelineModel.transform(dataset)
+    if (convertLabel) {
+      val udfMapValue = udf(mapValue(_:Int): Double)
+      testData = dataset.withColumn("label", udfMapValue($"rating"))
+    } else {
+      testData = dataset.withColumn("label", $"rating")
+    }
+
+    pipelineModel.transform(testData)
   }
 
   def evaluateMLP(trainData: DataFrame,
