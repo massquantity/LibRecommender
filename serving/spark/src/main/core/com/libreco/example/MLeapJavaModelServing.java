@@ -25,7 +25,7 @@ public class MLeapJavaModelServing {
 
         Row features = builder.createRow("Gintama", "TV", 13, 8.8, 10000);
         JavaModelServer jms = new JavaModelServer(
-                "serving/spark/src/main/resources/mleap_model/GBDT_model.zip", schema);
+                "serving/spark/src/main/resources/mleap_model/mleap_model.zip", schema);
         Row result = jms.predict(features);
         for (int i = 0; i < result.size(); ++i) {
             System.out.println(result.get(i));
