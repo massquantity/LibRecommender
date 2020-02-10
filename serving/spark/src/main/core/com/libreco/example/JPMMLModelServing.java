@@ -10,7 +10,7 @@ import java.util.Map;
 public class JPMMLModelServing {
     public static void main(String[] args) {
         JavaModelServer jms = new JavaModelServer(
-                "serving/spark/src/main/resources/jpmml_model/GBDT_model.xml");
+                "serving/spark/src/main/resources/jpmml_model/jpmml_model.xml");
 
         HashMap<String, Object> featureMap = new HashMap<>();
         featureMap.put("episodes", 13);
@@ -20,14 +20,17 @@ public class JPMMLModelServing {
     //    featureMap.put("genre", "Action, Fantasy, Magic, Military, Shounen");
 
         Map<FieldName, ?> result = jms.predict(featureMap);
+        System.out.println(result);
         for (Map.Entry<FieldName, ?> field : result.entrySet()) {
             System.out.println(field.getKey() + "\t" + field.getValue());
         }
 
-        for (int i = 0; i < result.size(); ++i) {
-            System.out.println(result);
-        }
-
-        System.out.println(result.get(new FieldName("probability(1)")));
+        System.out.println();
+        System.out.println("prediction: " + result.get(new FieldName("pred")));
+        System.out.printf("probabilities:%n");
+        System.out.printf("label  prob%n");
+        System.out.printf(" 0.0  %.4f%n", result.get(new FieldName("prob(0)")));
+        System.out.printf(" 1.0  %.4f%n", result.get(new FieldName("prob(1)")));
+        System.out.printf(" 2.0  %.4f%n", result.get(new FieldName("prob(2)")));
     }
 }
