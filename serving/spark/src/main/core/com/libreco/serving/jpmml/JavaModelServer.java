@@ -36,9 +36,11 @@ public class JavaModelServer {
             this.model = mef.newModelEvaluator(pmml);
             this.model.verify();
             List<InputField> inputFields = model.getInputFields();
+            /*
             for (InputField inputField : inputFields) {
                 System.out.println(inputField.getName().getValue());
             }
+            */
         } catch (IOException | SAXException | JAXBException e) {
             System.err.println(e);
         } finally {
