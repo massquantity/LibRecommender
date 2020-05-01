@@ -436,7 +436,7 @@ class BaseFeat(object):
             feed_dict = {self.feature_indices: train_indices_implicit_batch,
                          self.feature_values: train_values_implicit_batch,
                          self.labels: train_labels_implicit_batch}
-            if self.__class__.__name__.lower()[:3] == "din":
+            if self.__class__.__name__.startswith("din"):
                 train_seq_len, train_items_seq = self.preprocess_data(train_indices_implicit_batch)
                 feed_dict[self.seq_matrix] = train_items_seq
                 feed_dict[self.seq_len] = train_seq_len
@@ -454,7 +454,7 @@ class BaseFeat(object):
                 feed_dict = {self.feature_indices: test_indices_implicit_batch,
                              self.feature_values: test_values_implicit_batch,
                              self.labels: test_labels_implicit_batch}
-                if self.__class__.__name__.lower()[:3] == "din":
+                if self.__class__.__name__.startswith("din"):
                     test_seq_len, test_items_seq = self.preprocess_data(test_indices_implicit_batch)
                     feed_dict[self.seq_matrix] = test_items_seq
                     feed_dict[self.seq_len] = test_seq_len
@@ -473,7 +473,7 @@ class BaseFeat(object):
                 feed_dict = {self.feature_indices: test_indices_implicit_batch,
                              self.feature_values: test_values_implicit_batch,
                              self.labels: test_labels_implicit_batch}
-                if self.__class__.__name__.lower()[:3] == "din":
+                if self.__class__.__name__.startswith("din"):
                     test_seq_len, test_items_seq = self.preprocess_data(test_indices_implicit_batch)
                     feed_dict[self.seq_matrix] = test_items_seq
                     feed_dict[self.seq_len] = test_seq_len
