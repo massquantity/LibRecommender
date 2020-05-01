@@ -22,7 +22,7 @@ import logging
 import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, dok_matrix
 from ..utils.initializers import truncated_normal
-from .Base import BasePure
+from .base import BasePure
 try:
     from . import Als_cy
 except ImportError:

@@ -13,7 +13,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import feature_column as feat_col
 # from tensorflow.python.estimator import estimator
-from .Base import BasePure, BaseFeat
+from .base import BasePure, BaseFeat
 from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, HitRatio_at_k, NDCG_at_k
 from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 

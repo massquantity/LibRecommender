@@ -8,7 +8,7 @@ author: massquantity
 import time
 import itertools
 import numpy as np
-from .Base import BasePure
+from .base import BasePure
 import tensorflow as tf
 from ..utils.sampling import NegativeSampling
 from ..evaluate.evaluate import precision_tf

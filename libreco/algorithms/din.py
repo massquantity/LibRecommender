@@ -11,7 +11,7 @@ import time
 import itertools
 import numpy as np
 import tensorflow as tf
-from .Base import BaseFeat
+from .base import BaseFeat
 from ..utils.sampling import NegativeSamplingFeat
 
 

@@ -12,7 +12,7 @@ import itertools
 from collections import OrderedDict
 import numpy as np
 import tensorflow as tf
-from .Base import BasePure, BaseFeat
+from .base import BasePure, BaseFeat
 from ..evaluate.evaluate import precision_tf, MAP_at_k, MAR_at_k, recall_at_k, NDCG_at_k
 from ..utils.sampling import NegativeSampling, NegativeSamplingFeat
 

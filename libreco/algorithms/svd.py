@@ -9,7 +9,7 @@ author: massquantity
 import time
 import itertools
 import numpy as np
-from .Base import BasePure
+from .base import BasePure
 from ..utils.initializers import truncated_normal
 from ..evaluate import precision_tf
 from ..utils import NegativeSampling

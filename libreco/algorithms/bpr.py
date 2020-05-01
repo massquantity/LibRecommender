@@ -13,7 +13,7 @@ import numpy as np
 from scipy.sparse import lil_matrix
 import tensorflow as tf
 from ..utils.sampling import PairwiseSampling
-from .Base import BasePure
+from .base import BasePure
 from ..evaluate.evaluate import binary_cross_entropy, MAP_at_k, MAR_at_k, NDCG_at_k, precision_tf
 from sklearn.metrics import roc_auc_score, average_precision_score, log_loss
 
