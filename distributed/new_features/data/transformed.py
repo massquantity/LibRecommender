@@ -1,3 +1,4 @@
+from array import array
 from collections import defaultdict
 from scipy.sparse import csr_matrix
 from distributed.new_features.utils.samplingNEW import NegativeSamplingFeat
@@ -20,8 +21,8 @@ class TransformedSet(object):
         self.label_samples = None
 
     def __interaction_consumed(self):
-        train_user_consumed = defaultdict(list)
-        train_item_consumed = defaultdict(list)
+        train_user_consumed = defaultdict(lambda: array("I"))
+        train_item_consumed = defaultdict(lambda: array("I"))
         for u, i in zip(self.user_indices, self.item_indices):
             train_user_consumed[u].append(i)
             train_item_consumed[i].append(u)
