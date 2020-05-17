@@ -1,4 +1,6 @@
 import time
+import math
+import random
 from collections import defaultdict
 from multiprocessing import Pool
 import numpy as np
@@ -11,37 +13,40 @@ class NegativeSamplingFeat:
         self.num_neg = num_neg
         self.batch_size = batch_size
 
-    def __call__(self, seed=42, dense=True, random=True):
+    def __call__(self, seed=42, dense=True, shuffle=False):
         np.random.seed(seed)
         total_length = len(self.dataset) * (self.num_neg + 1)
         random_mask = np.random.permutation(range(total_length))
 
         label_sampled = self._label_negative_sampling()
-        if random:
+        if shuffle:
             label_sampled = label_sampled[random_mask]
 
-        item_indices_sampled = self.sample_items()
+        item_indices_sampled = self.sample_items(seed=seed)
         sparse_sampled = self._sparse_negative_sampling(item_indices_sampled)
-        if random:
+        if shuffle:
             sparse_sampled = sparse_sampled[random_mask]
         if dense:
             dense_sampled = self._dense_negative_sampling(item_indices_sampled)
-            if random:
+            if shuffle:
                 dense_sampled = dense_sampled[random_mask]
             return sparse_sampled, dense_sampled, label_sampled
         return sparse_sampled, label_sampled
 
-    def sample_items(self):
+    def sample_items(self, seed=42):
+        np.random.seed(seed)
         item_indices_sampled = list()
         n_items = self.data_info.n_items
+        # set is much faster for search contains
+        train_user_consumed = {u: set(items) for u, items in self.dataset.train_user_consumed.items()}
         # sample negative items for every user
         t0 = time.time()
         for u, i in zip(self.dataset.user_indices, self.dataset.item_indices):
             item_indices_sampled.append(i)
             for _ in range(self.num_neg):
-                item_neg = np.random.randint(0, n_items)
-                while item_neg in self.dataset.train_user_consumed[u]:
-                    item_neg = np.random.randint(0, n_items)
+                item_neg = math.floor(random.random() * n_items)  # np.random.randint(n_items)
+                while item_neg in train_user_consumed[u]:
+                    item_neg = math.floor(random.random() * n_items)
                 item_indices_sampled.append(item_neg)
         print("neg: ", time.time() - t0)
         return np.array(item_indices_sampled)
