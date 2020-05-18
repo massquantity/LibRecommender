@@ -87,6 +87,13 @@ class DataInfo(namedtuple("DataInfo",
     def id2item(self):
         return {j: item for item, j in self.item2id.items()}
 
+    def __repr__(self):
+        n_users = self.n_users
+        n_items = self.n_items
+        n_labels = len(self.interaction_data)
+        return "n_users: %d, n_items: %d, data sparsity: %.4f" % (
+            n_users, n_items, n_labels / (n_users*n_items))
+
 
 """
 class DataInfo(namedtuple("DataInfo", ["a", "b"])):
