@@ -15,7 +15,8 @@ logging.warning("Item KNN method requires huge memory for constructing similarit
                 "\tFor large num of users or items, consider using sklearn sim_option, "
                 "which provides sparse similarity matrix. \n")
 
-class itemKNN(BasePure):
+
+class itemCF(BasePure):
     def __init__(self, sim_option="pearson", k=50, min_support=1, baseline=True, task="rating", neg_sampling=False):
         self.k = k
         self.min_support = min_support
@@ -30,7 +31,7 @@ class itemKNN(BasePure):
           self.sim_option = sk_sim
         else:
             raise ValueError("sim_option %s not allowed" % sim_option)
-        super(itemKNN, self).__init__()
+        super(itemCF, self).__init__()
 
     def fit(self, dataset, verbose=1, **kwargs):
         self.dataset = dataset

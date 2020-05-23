@@ -1,5 +1,5 @@
-from .user_knn import userKNN
-from .item_knn import itemKNN
+from .user_cf import userCF
+from .item_cf import itemCF
 from .svd import SVD
 from .svdpp import SVDpp
 from .als import Als

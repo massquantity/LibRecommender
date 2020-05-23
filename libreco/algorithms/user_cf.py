@@ -16,7 +16,7 @@ logging.warning("User KNN method requires huge memory for constructing similarit
                 "which provides sparse similarity matrix. \n")
 
 
-class userKNN(BasePure):
+class userCF(BasePure):
     def __init__(self, sim_option="pearson", k=50, min_support=1, baseline=True, task="rating", neg_sampling=False):
         self.k = k
         self.min_support = min_support
@@ -31,7 +31,7 @@ class userKNN(BasePure):
           self.sim_option = sk_sim
         else:
             raise ValueError("sim_option %s not allowed" % sim_option)
-        super(userKNN, self).__init__()
+        super(userCF, self).__init__()
 
     def fit(self, dataset, verbose=1, **kwargs):
         self.dataset = dataset
@@ -53,7 +53,7 @@ class userKNN(BasePure):
         else:
             item_user_list = {k: list(v.items()) for k, v in dataset.train_item.items()}
             self.sim = self.sim_option(dataset.n_users, item_user_list, min_support=self.min_support)
-            self.sim = np.array(self.sim)
+            self.sim = np.asarray(self.sim)
 
         #    n = len(self.train_user)
         #    ids = list(self.train_user.keys())
