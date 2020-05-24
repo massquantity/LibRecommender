@@ -6,32 +6,12 @@ from multiprocessing import Pool
 import numpy as np
 
 
-class NegativeSamplingFeat:
+class SamplingBase(object):
     def __init__(self, dataset, data_info, num_neg, batch_size=64):
         self.dataset = dataset
         self.data_info = data_info
         self.num_neg = num_neg
         self.batch_size = batch_size
-
-    def __call__(self, seed=42, dense=True, shuffle=False):
-        np.random.seed(seed)
-        total_length = len(self.dataset) * (self.num_neg + 1)
-        random_mask = np.random.permutation(range(total_length))
-
-        label_sampled = self._label_negative_sampling()
-        if shuffle:
-            label_sampled = label_sampled[random_mask]
-
-        item_indices_sampled = self.sample_items(seed=seed)
-        sparse_sampled = self._sparse_negative_sampling(item_indices_sampled)
-        if shuffle:
-            sparse_sampled = sparse_sampled[random_mask]
-        if dense:
-            dense_sampled = self._dense_negative_sampling(item_indices_sampled)
-            if shuffle:
-                dense_sampled = dense_sampled[random_mask]
-            return sparse_sampled, dense_sampled, label_sampled
-        return sparse_sampled, label_sampled
 
     def sample_items(self, seed=42):
         np.random.seed(seed)
@@ -50,6 +30,44 @@ class NegativeSamplingFeat:
                 item_indices_sampled.append(item_neg)
         print("neg: ", time.time() - t0)
         return np.array(item_indices_sampled)
+
+    def sample_user_part(self):
+        pass
+
+    def sample_item_part(self):
+        pass
+
+
+class NegativeSamplingFeat(SamplingBase):
+    def __init__(self, dataset, data_info, num_neg, batch_size=64):
+        super(NegativeSamplingFeat, self).__init__(dataset, data_info, num_neg, batch_size)
+
+    def __call__(self, seed=42, dense=True, shuffle=False, mode="random"):
+        if mode == "random":
+            return self.random_sampling(seed, dense, shuffle)
+        elif mode == "popular":
+            return
+        else:
+            raise ValueError("sampling mode must either be \"random\" or \"popular\"")
+
+    def random_sampling(self, seed=42, dense=True, shuffle=False):
+        item_indices_sampled = self.sample_items(seed=seed)
+        sparse_sampled = self._sparse_negative_sampling(item_indices_sampled)
+        dense_sampled = self._dense_negative_sampling(item_indices_sampled) if dense else None
+        label_sampled = self._label_negative_sampling()
+
+        if shuffle:
+            return self._shuffle_data(dense, sparse_sampled, dense_sampled, label_sampled, seed)
+        return sparse_sampled, dense_sampled, label_sampled
+
+    def _shuffle_data(self, dense, sparse_sampled, dense_sampled, label_sampled, seed=42):
+        np.random.seed(seed)
+        total_length = len(self.dataset) * (self.num_neg + 1)
+        random_mask = np.random.permutation(range(total_length))
+        if dense:
+            return sparse_sampled[random_mask], dense_sampled[random_mask], label_sampled[random_mask]
+        else:
+            return sparse_sampled[random_mask], None, label_sampled[random_mask]
 
     def _sparse_negative_sampling(self, item_indices_sampled):
         user_sparse_col = self.data_info.user_sparse_col.index
