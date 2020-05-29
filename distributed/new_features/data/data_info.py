@@ -91,8 +91,14 @@ class DataInfo(namedtuple("DataInfo",
         n_users = self.n_users
         n_items = self.n_items
         n_labels = len(self.interaction_data)
-        return "n_users: %d, n_items: %d, data sparsity: %.4f" % (
-            n_users, n_items, n_labels / (n_users*n_items))
+        return "n_users: %d, n_items: %d, data sparsity: %.2f %%" % (
+            n_users, n_items, n_labels / (n_users*n_items) * 100)
+
+    def get_indexed_interaction(self):
+        data = self.interaction_data.copy()
+        data.user = data.user.map(self.user2id)
+        data.item = data.item.map(self.item2id)
+        return data
 
 
 """
