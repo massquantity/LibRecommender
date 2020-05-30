@@ -50,7 +50,7 @@ def _extract_and_preprocess_data(par_path=None, feat=False):
 
     if feat and not os.path.exists(os.path.join(par_path, "ml-1m", "merged_data.csv")):
         ratings = pd.read_csv(os.path.join(par_path, "ml-1m", "ratings.dat"), sep="::",
-                              usecols=[0, 1, 2], names=["user", "item", "rating"])
+                              usecols=[0, 1, 2, 3], names=["user", "item", "rating", "time"])
         users = pd.read_csv(os.path.join(par_path, "ml-1m", "users.dat"), sep="::",
                             usecols=[0, 1, 2, 3], names=["user", "gender", "age", "occupation"])
         items = pd.read_csv(os.path.join(par_path, "ml-1m", "movies.dat"), sep="::",
@@ -61,13 +61,13 @@ def _extract_and_preprocess_data(par_path=None, feat=False):
         data = pd.merge(ratings, users, on="user")
         data = pd.merge(data, items, on="item")
 
-        user_unique = np.unique(data.user.values)
-        user_id_map = dict(zip(user_unique, np.arange(len(user_unique))))
-        data["user"] = data["user"].map(user_id_map)
+    #    user_unique = np.unique(data.user.values)
+    #    user_id_map = dict(zip(user_unique, np.arange(len(user_unique))))
+    #    data["user"] = data["user"].map(user_id_map)
 
-        item_unique = np.unique(data.item.values)
-        item_id_map = dict(zip(item_unique, np.arange(len(item_unique))))
-        data["item"] = data["item"].map(item_id_map)
+    #    item_unique = np.unique(data.item.values)
+    #    item_id_map = dict(zip(item_unique, np.arange(len(item_unique))))
+    #    data["item"] = data["item"].map(item_id_map)
 
         data.to_csv(os.path.join(par_path, "ml-1m", "merged_data.csv"), index=False, header=False)
         print("Merge Data Done !")

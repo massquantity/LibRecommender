@@ -40,12 +40,12 @@ class Dataset(object):
         if not np.all(["user" in data.columns,
                        "item" in data.columns,
                        "label" in data.columns]):
-            raise KeyError("data must contain \"user\", \"item\", \"label\" column names")
+            raise ValueError("data must contain 'user', 'item', 'label' column names")
 
     @classmethod
     def _check_subclass(cls):
         if not issubclass(cls, Dataset):
-            raise NameError("Please use \"DatasetPure\" or \"DatasetFeat\" to call method")
+            raise NameError("Please use 'DatasetPure' or 'DatasetFeat' to call method")
 
     @classmethod
     def _set_sparse_unique_vals(cls, train_data, sparse_col):
@@ -193,10 +193,12 @@ class DatasetFeat(Dataset):
                 train_sparse_indices, train_dense_values, item_sparse_col_indices, item_dense_col_indices)
         else:
             item_sparse_unique, item_dense_unique = None, None
+
         interaction_data = train_data[["user", "item", "label"]]
-        return TransformedSet(cls.user_indices, cls.item_indices, labels, train_sparse_indices,
-                              train_dense_indices, train_dense_values), \
-            DataInfo(col_name_mapping, interaction_data, item_sparse_unique, item_dense_unique)
+        transformed = TransformedSet(cls.user_indices, cls.item_indices, labels, train_sparse_indices,
+                                     train_dense_indices, train_dense_values)
+        data_info = DataInfo(col_name_mapping, interaction_data, item_sparse_unique, item_dense_unique)
+        return transformed, data_info
 
 """
     @classmethod

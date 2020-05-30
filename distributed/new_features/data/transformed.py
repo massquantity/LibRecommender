@@ -33,11 +33,11 @@ class TransformedSet(object):
     def build_negative_samples(self, data_info, num_neg=1, mode="random", seed=42):
         neg_generator = NegativeSamplingFeat(self, data_info, num_neg)
         if self.dense_values is None:
-            self.sparse_indices_sampled, self.dense_indices_sampled, \
-                self.dense_values_sampled, self.label_samples = neg_generator(seed, dense=False, mode=mode)
+            (self.sparse_indices_sampled, self.dense_indices_sampled,
+                self.dense_values_sampled, self.label_samples) = neg_generator(seed, dense=False, mode=mode)
         else:
-            self.sparse_indices_sampled, self.dense_indices_sampled, \
-                self.dense_values_sampled, self.label_samples = neg_generator(seed, dense=True, mode=mode)
+            (self.sparse_indices_sampled, self.dense_indices_sampled,
+                self.dense_values_sampled, self.label_samples) = neg_generator(seed, dense=True, mode=mode)
 
     def __len__(self):
         return len(self.sparse_indices)
