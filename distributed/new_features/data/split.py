@@ -9,7 +9,7 @@ def random_split(data, test_size=None, multi_ratios=None, shuffle=True, seed=42)
         ratios = list(ratios)
 
     # if we want to split data in multiple folds,
-    # then recursively split data based on ratios
+    # then iteratively split data based on modified ratios
     train_data = data.copy()
     split_data_all = []
     for i in range(n_splits - 1):
@@ -22,7 +22,8 @@ def random_split(data, test_size=None, multi_ratios=None, shuffle=True, seed=42)
     return split_data_all
 
 
-def split_by_ratio(data, order=True, shuffle=False, test_size=None, multi_ratios=None, seed=42):
+def split_by_ratio(data, order=True, shuffle=False, test_size=None, multi_ratios=None,
+                   seed=42):
     np.random.seed(seed)
     assert ("user" in data.columns), "data must contains user column"
     ratios, n_splits = _check_and_convert_ratio(test_size, multi_ratios)
@@ -39,7 +40,9 @@ def split_by_ratio(data, order=True, shuffle=False, test_size=None, multi_ratios
         if u_data_len <= 3:   # keep items of rare users in trainset
             split_indices_all[0].extend(u_data)
         else:
-            u_split_data = np.split(u_data, [round(cum * u_data_len) for cum in cum_ratios])
+            u_split_data = np.split(u_data, [
+                round(cum * u_data_len) for cum in cum_ratios
+            ])
             for i in range(n_splits):
                 split_indices_all[i].extend(u_split_data[i])
 
@@ -79,7 +82,8 @@ def split_by_num(data, order=True, shuffle=False, test_size=1, seed=42):
     return data.iloc[train_indices], data.iloc[test_indices]
 
 
-def split_by_ratio_chrono(data, order=True, shuffle=False, test_size=None, multi_ratios=None, seed=42):
+def split_by_ratio_chrono(data, order=True, shuffle=False, test_size=None,
+                          multi_ratios=None, seed=42):
     assert all([
         "user" in data.columns,
         "time" in data.columns
@@ -101,7 +105,8 @@ def split_by_num_chrono(data, order=True, shuffle=False, test_size=1, seed=42):
 
 def _groupby_user(user_indices, order):
     sort_kind = "mergesort" if order else "quicksort"
-    users, user_position, user_counts = np.unique(user_indices, return_inverse=True,
+    users, user_position, user_counts = np.unique(user_indices,
+                                                  return_inverse=True,
                                                   return_counts=True)
     user_split_indices = np.split(np.argsort(user_position, kind=sort_kind),
                                   np.cumsum(user_counts)[:-1])

@@ -15,7 +15,9 @@ class TransformedSet(object):
         self._dense_indices = dense_indices
         self._dense_values = dense_values
         if train:
-            self._sparse_interaction = csr_matrix((self.labels, (self.user_indices, self.item_indices)))
+            self._sparse_interaction = csr_matrix(
+                (self.labels, (self.user_indices, self.item_indices))
+            )
             self._train_user_consumed, self._train_item_consumed = self.__interaction_consumed()
         self.sparse_indices_sampled = None
         self.dense_indices_sampled = None
@@ -34,10 +36,12 @@ class TransformedSet(object):
         neg_generator = NegativeSamplingFeat(self, data_info, num_neg)
         if self.dense_values is None:
             (self.sparse_indices_sampled, self.dense_indices_sampled,
-                self.dense_values_sampled, self.label_samples) = neg_generator(seed, dense=False, mode=mode)
+                self.dense_values_sampled, self.label_samples) = neg_generator(
+                    seed, dense=False, mode=mode)
         else:
             (self.sparse_indices_sampled, self.dense_indices_sampled,
-                self.dense_values_sampled, self.label_samples) = neg_generator(seed, dense=True, mode=mode)
+                self.dense_values_sampled, self.label_samples) = neg_generator(
+                    seed, dense=True, mode=mode)
 
     def __len__(self):
         return len(self.sparse_indices)

@@ -6,16 +6,25 @@ Feature = namedtuple("Feature", ["name", "index"])
 
 
 class DataInfo(namedtuple("DataInfo",
-                          ["col_name_mapping", "interaction_data", "item_sparse_unique", "item_dense_unique"])):
+                          ["col_name_mapping", "interaction_data",
+                           "user_sparse_unique", "user_dense_unique",
+                           "item_sparse_unique", "item_dense_unique"])):
     __slots__ = ()
 
-    def __new__(cls, col_name_mapping=None, interaction_data=None, item_sparse_unique=None, item_dense_unique=None):
-        return super(DataInfo, cls).__new__(cls, col_name_mapping, interaction_data, item_sparse_unique,
-                                            item_dense_unique)
+    def __new__(cls, col_name_mapping=None, interaction_data=None,
+                user_sparse_unique=None, user_dense_unique=None,
+                item_sparse_unique=None, item_dense_unique=None):
+        return super(DataInfo, cls).__new__(cls, col_name_mapping, interaction_data,
+                                            user_sparse_unique, user_dense_unique,
+                                            item_sparse_unique, item_dense_unique)
 
     @property
     def global_mean(self):
         return self.interaction_data.label.mean()
+
+    @property
+    def min_max_rating(self):
+        return self.interaction_data.label.min(), self.interaction_data.label.max()
 
     @property
     def sparse_col(self):
@@ -50,12 +59,14 @@ class DataInfo(namedtuple("DataInfo",
     @property
     def user_col(self):
         # will be sorted by key
-        return self.col_name_mapping["user_sparse_col"].keys().__or__(self.col_name_mapping["user_dense_col"].keys())
+        return self.col_name_mapping["user_sparse_col"].keys().__or__(
+            self.col_name_mapping["user_dense_col"].keys())
 
     @property
     def item_col(self):
         # will be sorted by key
-        return self.col_name_mapping["item_sparse_col"].keys().__or__(self.col_name_mapping["item_dense_col"].keys())
+        return self.col_name_mapping["item_sparse_col"].keys().__or__(
+            self.col_name_mapping["item_dense_col"].keys())
 
     @property
     def n_users(self):
