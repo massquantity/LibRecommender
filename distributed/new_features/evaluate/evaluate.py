@@ -1,0 +1,239 @@
+import numbers
+import numpy as np
+from sklearn.metrics import (
+    mean_squared_error,
+    mean_absolute_error,
+    r2_score,
+    log_loss,
+    balanced_accuracy_score,
+    roc_auc_score,
+    precision_recall_curve,
+    auc
+)
+from .metrics import precision_at_k, recall_at_k, map_at_k, ndcg_at_k
+
+
+class EvalMixin(object):
+    def __init__(self, allowed_metrics=None):
+        self.task = None
+        self.lower_bound = None
+        self.upper_bound = None
+        self.sample_user = None
+        self.n_users = None
+        self.n_items = None
+        self.pointwise_metrics = {"log_loss", "balanced_accuracy", "roc_auc", "pr_auc"}
+        self.listwise_metrics = {"precision", "recall", "map", "ndcg"}
+    #    self.pairwise_metrics = bpr ??
+
+        if not allowed_metrics:
+            self.allowed_metrics = {
+                "rating_metrics": ["rmse", "mae", "r2"],
+                "ranking_metrics": ["log_loss", "balanced_accuracy", "roc_auc", "pr_auc",
+                                    "precision", "recall", "map", "ndcg"]
+            }
+
+    def _check_metrics(self, metrics, k):
+        if not isinstance(metrics, (list, tuple)):
+            metrics = [metrics]
+        if self.task == "rating":
+            for m in metrics:
+                if m not in self.allowed_metrics["rating_metrics"]:
+                    raise ValueError(f"metrics {m} is not suitable for rating task...")
+        elif self.task == "ranking":
+            for m in metrics:
+                if m not in self.allowed_metrics["ranking_metrics"]:
+                    raise ValueError(f"metrics {m} is not suitable for ranking task...")
+
+        if not isinstance(k, numbers.Integral):
+            raise TypeError("k must be integer")
+
+        return metrics
+
+    def evaluate(self, data, eval_batch_size=2**13, metrics=None, k=10,
+                 sample_user_num=1000, **kwargs):
+        metrics = self._check_metrics(metrics, k)
+        seed = kwargs.get("seed", 42)
+        eval_result = dict()
+
+        if self.task == "rating":
+            y_pred = compute_preds(self, data, eval_batch_size)
+            y_true = data.labels
+            for m in metrics:
+                if m == "rmse":
+                    eval_result[m] = np.sqrt(mean_squared_error(y_true, y_pred))
+                elif m == "mae":
+                    eval_result[m] = mean_absolute_error(y_true, y_pred)
+                elif m == "r_squared":
+                    eval_result[m] = r2_score(y_true, y_pred)
+
+        elif self.task == "ranking":
+            if self.pointwise_metrics.intersection(metrics):
+                y_prob = compute_probs(self, data, eval_batch_size)
+                y_true = data.labels
+            if self.listwise_metrics.intersection(metrics):
+                chosen_users = sample_user(data, seed, sample_user_num)
+                y_reco_list, users = compute_recommends(self, chosen_users, k)
+                y_true_list = data.user_consumed
+
+            for m in metrics:
+                if m == "log_loss":
+                    eval_result[m] = log_loss(y_true, y_prob, eps=1e-15)
+                elif m == "balanced_accuracy":
+                    y_pred = np.round(y_prob)
+                    eval_result[m] = balanced_accuracy_score(y_true, y_pred)
+                elif m == "roc_auc":
+                    eval_result[m] = roc_auc_score(y_true, y_prob)
+                elif m == "pr_auc":
+                    precision, recall, _ = precision_recall_curve(y_true, y_prob)
+                    eval_result[m] = auc(recall, precision)
+                elif m == "precision":
+                    eval_result[m] = precision_at_k(y_true_list, y_reco_list, users, k)
+                elif m == "recall":
+                    eval_result[m] = recall_at_k(y_true_list, y_reco_list, users, k)
+                elif m == "map":
+                    eval_result[m] = map_at_k(y_true_list, y_reco_list, users, k)
+                elif m == "ndcg":
+                    eval_result[m] = ndcg_at_k(y_true_list, y_reco_list, users, k)
+
+        return eval_result
+
+    # if hasattr(self, "sess"):
+    def print_metrics(self, train_data=None, eval_data=None, eval_batch_size=2**13,
+                      metrics=None, k=10, sample_user_num=1000, **kwargs):
+        metrics = self._check_metrics(metrics, k)
+        seed = kwargs.get("seed", 42)
+
+        if self.task == "rating":
+            if train_data:
+                y_pred = compute_preds(self, train_data, eval_batch_size)
+                y_true = train_data.labels
+                print_metrics_rating(metrics, y_true, y_pred, train=True, **kwargs)
+            if eval_data:
+                y_pred = compute_preds(self, eval_data, eval_batch_size)
+                y_true = eval_data.labels
+                print_metrics_rating(metrics, y_true, y_pred, train=False, **kwargs)
+
+        elif self.task == "ranking":
+            if train_data:
+                train_params = dict()
+                if self.pointwise_metrics.intersection(metrics):
+                    train_params["y_prob"] = compute_probs(self, train_data, eval_batch_size)
+                    train_params["y_true"] = train_data.labels
+
+                print_metrics_ranking(metrics, **train_params, train=True)
+
+            if eval_data:
+                test_params = dict()
+                if self.pointwise_metrics.intersection(metrics):
+                    test_params["y_prob"] = compute_probs(self, eval_data, eval_batch_size)
+                    test_params["y_true"] = eval_data.labels
+                if self.listwise_metrics.intersection(metrics):
+                    chosen_users = sample_user(eval_data, seed, sample_user_num)
+                    test_params["y_reco_list"], test_params["users"] = compute_recommends(
+                        self, chosen_users, k)
+                    test_params["y_true_list"] = eval_data.user_consumed
+
+                print_metrics_ranking(metrics, **test_params, k=k, train=False)
+
+
+def sample_user(data, seed, num):
+    np.random.seed(seed)
+    unique_users = np.unique(data.user_indices)
+    if num > 0 and isinstance(num, numbers.Integral):
+        users = np.random.choice(unique_users, num, replace=False)   # test_data.unique_users
+    else:
+        users = unique_users
+    if isinstance(users, np.ndarray):
+        users = list(users)
+    return users
+
+
+def compute_preds(model, data, batch_size):
+    y_pred = list()
+    for batch_data in range(0, len(data), batch_size):
+        users = data.user_indices[batch_data: batch_data + batch_size]
+        items = data.item_indices[batch_data: batch_data + batch_size]
+        preds = list(model.predict(users, items))
+        y_pred.extend(preds)
+    return y_pred
+
+
+def compute_probs(model, data, batch_size):
+    return compute_preds(model, data, batch_size)
+
+
+def compute_recommends(model, users, k):
+    y_recommends = dict()
+    no_rec_num = 0
+    no_rec_users = []
+    for u in users:
+        reco = model.recommend_user(u, k)
+        if not reco or reco == -1:   # user_cf
+            no_rec_num += 1
+            no_rec_users.append(u)
+            continue
+        y_recommends[u] = reco
+    if no_rec_num > 0:
+        print(f"{no_rec_num} users has no recommendation")
+        users = list(set(users).difference(no_rec_users))
+    return y_recommends, users
+
+
+def print_metrics_rating(metrics, y_true, y_pred, train=True, **kwargs):
+    if kwargs.get("lower_bound") and kwargs.get("upper_bound"):
+        lower_bound, upper_bound = kwargs.get("lower_bound"), kwargs.get("upper_bound")
+        y_pred = np.clip(y_pred, lower_bound, upper_bound)
+    if train:
+        for m in metrics:
+            if m == "rmse":
+                rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+                print(f"\t train rmse: {rmse:.4f}")
+    else:
+        for m in metrics:
+            if m == "rmse":
+                rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+                print(f"\t test rmse: {rmse:.4f}")
+            elif m == "mae":
+                mae = mean_absolute_error(y_true, y_pred)
+                print(f"\t test mae: {mae:.4f}")
+            elif m == "r_squared":
+                r_squared = r2_score(y_true, y_pred)
+                print(f"\t test r2: {r_squared:.4f}")
+
+
+def print_metrics_ranking(metrics, y_prob=None, y_true=None, y_reco_list=None,
+                          y_true_list=None, users=None, k=10, train=True):
+    if train:
+        for m in metrics:
+            if m == "log_loss":
+                log_loss_ = log_loss(y_true, y_prob, eps=1e-15)
+                print(f"\t train log_loss: {log_loss_:.4f}")
+    else:
+        for m in metrics:
+            if m == "log_loss":
+                log_loss_ = log_loss(y_true, y_prob, eps=1e-15)
+                print(f"\t test log_loss: {log_loss_:.4f}")
+            elif m == "balanced_accuracy":
+                y_pred = np.round(y_prob)
+                accuracy = balanced_accuracy_score(y_true, y_pred)
+                print(f"\t test balanced accuracy: {accuracy:.4f}")
+            elif m == "roc_auc":
+                roc_auc = roc_auc_score(y_true, y_prob)
+                print(f"\t test roc_auc: {roc_auc:.4f}")
+            elif m == "pr_auc":
+                precision, recall, _ = precision_recall_curve(y_true, y_prob)
+                pr_auc = auc(recall, precision)
+                print(f"\t test pr_auc: {pr_auc:.4f}")
+            elif m == "precision":
+                precision_all = precision_at_k(y_true_list, y_reco_list, users, k)
+                print(f"\t test precision@{k}: {precision_all:.4f}")
+            elif m == "recall":
+                recall_all = recall_at_k(y_true_list, y_reco_list, users, k)
+                print(f"\t test recall@{k}: {recall_all:.4f}")
+            elif m == "map":
+                map_all = map_at_k(y_true_list, y_reco_list, users, k)
+                print(f"\t test map@{k}: {map_all:.4f}")
+            elif m == "ndcg":
+                ndcg_all = ndcg_at_k(y_true_list, y_reco_list, users, k)
+                print(f"\t test ndcg@{k}: {ndcg_all:.4f}")
+
