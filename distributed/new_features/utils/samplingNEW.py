@@ -1,7 +1,8 @@
 import time
-import math
+from math import floor
 import random
 import numpy as np
+from .timing import time_block, time_func
 
 
 class SamplingBase(object):
@@ -23,34 +24,34 @@ class SamplingBase(object):
         total_length = len(self.dataset) * (self.num_neg + 1)
         random_mask = np.random.permutation(range(total_length))
         if dense:
-            return sparse_indices_sampled[random_mask], dense_indices_sampled[random_mask], \
-                   dense_values_sampled[random_mask], label_sampled[random_mask]
+            return (sparse_indices_sampled[random_mask], dense_indices_sampled[random_mask],
+                    dense_values_sampled[random_mask], label_sampled[random_mask])
         else:
             return sparse_indices_sampled[random_mask], None, None, label_sampled[random_mask]
 
     def sample_items_random(self, seed=42):
         np.random.seed(seed)
-        item_indices_sampled = list()
         n_items = self.data_info.n_items
+        item_indices_sampled = list()
+        item_append = item_indices_sampled.append  # use local variable to speed up
         # set is much faster for search contains
-        train_user_consumed = {u: set(items) for u, items in self.dataset.train_user_consumed.items()}
+        user_consumed = {u: set(items) for u, items in self.dataset.user_consumed.items()}
         # sample negative items for every user
-        t0 = time.time()
-        for u, i in zip(self.dataset.user_indices, self.dataset.item_indices):
-            item_indices_sampled.append(i)
-            for _ in range(self.num_neg):
-                item_neg = math.floor(random.random() * n_items)
-                while item_neg in train_user_consumed[u]:
-                    item_neg = math.floor(random.random() * n_items)
-                item_indices_sampled.append(item_neg)
-        print("neg: ", time.time() - t0)
+        with time_block("neg"):
+            for u, i in zip(self.dataset.user_indices, self.dataset.item_indices):
+                item_append(i)
+                for _ in range(self.num_neg):
+                    item_neg = floor(random.random() * n_items)
+                    while item_neg in user_consumed[u]:
+                        item_neg = floor(random.random() * n_items)
+                    item_append(item_neg)
         return np.array(item_indices_sampled)
 
     def sample_items_popular(self, seed=42):
         np.random.seed(seed)
         data = self.data_info.get_indexed_interaction()
         item_counts = data.groupby("item")["user"].count()
-        train_user_consumed = self.dataset.train_user_consumed
+        user_consumed = self.dataset.user_consumed
         items = np.arange(self.data_info.n_items)
 
         item_order = list()
@@ -62,11 +63,11 @@ class SamplingBase(object):
             item_order.extend(item_indices)
 
             item_indices_sampled.extend(u_data.item.tolist())  # add positive items
-            user_consumed = list(train_user_consumed[user])
+            u_consumed = list(user_consumed[user])
             u_item_counts = item_counts.to_numpy().copy()
-            u_item_counts[user_consumed] = 0
+            u_item_counts[u_consumed] = 0
             item_prob = u_item_counts / np.sum(u_item_counts)
-            neg_size = len(user_consumed) * self.num_neg
+            neg_size = len(u_consumed) * self.num_neg
             neg_sampled = np.random.choice(items, size=neg_size, p=item_prob, replace=True)
             item_indices_sampled.extend(neg_sampled)
         print("neg: ", time.time() - t1)
@@ -93,7 +94,8 @@ class NegativeSamplingFeat(SamplingBase):
 
         if shuffle:
             return self._shuffle_data(
-                dense, sparse_indices_sampled, dense_indices_sampled, dense_values_sampled, label_sampled, seed)
+                dense, sparse_indices_sampled, dense_indices_sampled,
+                dense_values_sampled, label_sampled, seed)
         return sparse_indices_sampled, dense_indices_sampled, dense_values_sampled, label_sampled
 
     def _sparse_indices_sampling(self, item_indices_sampled):
@@ -104,8 +106,8 @@ class NegativeSamplingFeat(SamplingBase):
         item_sparse_col = self.data_info.item_sparse_col.index
         item_sparse_sampled = self.data_info.item_sparse_unique[item_indices_sampled]
 
-        assert len(user_sparse_sampled) == len(item_sparse_sampled), \
-            "num of user sampled must equal to num of item sampled"
+        assert len(user_sparse_sampled) == len(item_sparse_sampled), (
+            "num of user sampled must equal to num of item sampled")
         # keep column names in original order
         orig_cols = user_sparse_col + item_sparse_col
         col_reindex = np.arange(len(orig_cols))[np.argsort(orig_cols)]
@@ -126,8 +128,8 @@ class NegativeSamplingFeat(SamplingBase):
             user_dense_sampled = np.repeat(user_dense_values, self.num_neg + 1, axis=0)
             item_dense_sampled = self.data_info.item_dense_unique[item_indices_sampled]
 
-            assert len(user_dense_sampled) == len(item_dense_sampled), \
-                "num of user sampled must equal to num of item sampled"
+            assert len(user_dense_sampled) == len(item_dense_sampled), (
+                "num of user sampled must equal to num of item sampled")
             # keep column names in original order
             orig_cols = user_dense_col + item_dense_col
             col_reindex = np.arange(len(orig_cols))[np.argsort(orig_cols)]
