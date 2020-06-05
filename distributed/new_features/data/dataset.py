@@ -36,13 +36,12 @@ class Dataset(object):
 #            raise ValueError("data kind must either be 'pure' or 'feat'.")
 
     @staticmethod
-    def _check_col_names(data):
-        if not np.all(["user" == data.columns[0],
-                       "item" == data.columns[1],
-                       "label" == data.columns[2]
-                       ]):
+    def _check_col_names(data, mode="train"):
+        if not np.all(["user" == data.columns[0], "item" == data.columns[1]]):
             #    raise ValueError("data must contain 'user', 'item', 'label' column names")
-            raise ValueError("'user', 'item', 'label' must be the first three columns of the data")
+            raise ValueError("'user', 'item' must be the first two columns of the data")
+        if mode == "train":
+            assert "label" in data.columns, "train data should contain label column"
 
     @classmethod
     def _check_subclass(cls):
@@ -59,7 +58,7 @@ class Dataset(object):
         if cls.__name__.lower().endswith("pure"):
             unique_values = [len(cls.sparse_unique_vals[col]) for col in sparse_col]
         elif cls.__name__.lower().endswith("feat"):
-            # plus one for unknown value
+            # plus one for value only in test data
             unique_values = [len(cls.sparse_unique_vals[col]) + 1 for col in sparse_col]
         return np.cumsum(np.array([0] + unique_values))
 
@@ -105,51 +104,141 @@ class Dataset(object):
 
 
 class DatasetPure(Dataset):
+    """A derived class from :class:`Dataset`, used for pure collaborative filtering"""
 
     @classmethod
-    def build_trainset(cls, train_data, sparse_col):
+    def build_trainset(cls, train_data, sparse_col=("user", "item"), shuffle=True, seed=42):
+        """Build transformed pure train_data from original data.
+
+        Normally, pure data only contains `user` and `item` columns,
+        so only `sparse_col` is needed.
+
+        Parameters
+        ----------
+        train_data : `pandas.DataFrame`
+            Data must at least contains three columns, i.e. `user`, `item`, `label`.
+        sparse_col : list of str
+            List of sparse feature columns names, usually include `user` and `item`,
+            so it must be provided
+        shuffle : bool, optional
+            Whether to fully shuffle data
+        seed: int, optional
+            random seed
+
+        Returns
+        -------
+        trainset : `TransformedSet` object
+            Data object used for training.
+        data_info : `DataInfo` object
+            Object that contains some useful information for training and predicting
+        """
+
         cls._check_subclass()
-        cls._check_col_names(train_data)
+        cls._check_col_names(train_data, mode="train")
         cls._set_sparse_unique_vals(train_data, sparse_col)
+        if shuffle:
+            train_data = train_data.sample(frac=1, random_state=seed).reset_index(drop=True)
+
         train_sparse_indices = cls._get_sparse_indices_matrix(
-            train_data, ["user", "item"], mode="train")
+            train_data, sparse_col, mode="train")
         labels = train_data["label"].to_numpy(dtype=np.float32)
-        #    user_indices = train_sparse_indices[:, 0]
-        #    n_users = len(np.unique(user_indices))
-        #    item_indices = train_sparse_indices[:, 1] - n_users
-        return TransformedSet(cls.user_indices, cls.item_indices, labels), DataInfo(...)  ########
-"""
+
+        interaction_data = train_data[["user", "item", "label"]]
+        train_transformed = TransformedSet(cls.user_indices, cls.item_indices, labels,
+                                           train_sparse_indices, train=True)
+        data_info = DataInfo(interaction_data=interaction_data)
+        return train_transformed, data_info
+
     @classmethod
-    def build_testset(cls, test_data):
+    def build_testset(cls, test_data, sparse_col=("user", "item"), shuffle=False, seed=42):
+        """Build transformed pure eval_data or test_data from original data.
+
+        Normally, pure data only contains `user` and `item` columns,
+        so only `sparse_col` is needed.
+
+        Parameters
+        ----------
+        test_data : `pandas.DataFrame`
+            Data must at least contains two columns, i.e. `user`, `item`.
+        sparse_col : list of str
+            List of sparse feature columns names, usually include `user` and `item`,
+            so it must be provided
+        shuffle : bool, optional
+            Whether to fully shuffle data
+        seed: int, optional
+            random seed
+
+        Returns
+        -------
+        testset : `TransformedSet` object
+            Data object used for evaluate and test.
+        """
+
         cls._check_subclass()
-        cls._check_col_names(test_data)
-        DatasetFeat._check_col_names(test_data)
-        test_sparse_indices = cls._get_sparse_indices_matrix(test_data, ["user", "item"], mode="test")
-        return TestSet(sparse_indices=test_sparse_indices)
+        cls._check_col_names(test_data, mode="test")
+        if shuffle:
+            test_data = test_data.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+        test_sparse_indices = cls._get_sparse_indices_matrix(
+            test_data, sparse_col, mode="test")
+        if "label" in test_data.columns:
+            labels = test_data["label"].to_numpy(dtype=np.float32)
+        else:
+            # in case test_data has no label column,
+            # create dummy labels for consistency
+            labels = np.zeros(len(test_data))
+
+        test_transformed = TransformedSet(cls.user_indices, cls.item_indices, labels,
+                                          test_sparse_indices, train=False)
+        return test_transformed
 
     @classmethod
-    def build_train_test(cls, train_data, test_data):
-        trainset = cls.build_trainset(train_data)
-        testset = cls.build_testset(test_data)
-        return trainset, testset
-"""
+    def build_train_test(cls, train_data, test_data, sparse_col,
+                         shuffle=(True, False), seed=42):
+        """Build transformed pure train_data and test_data from original data.
+
+        Normally, pure data only contains `user` and `item` columns,
+        so only `sparse_col` is needed.
+
+        Parameters
+        ----------
+        train_data : `pandas.DataFrame`
+            Data must at least contains three columns, i.e. `user`, `item`, `label`.
+        test_data : `pandas.DataFrame`
+            Data must at least contains two columns, i.e. `user`, `item`.
+        sparse_col : list of str
+            List of sparse feature columns names, usually include `user` and `item`,
+            so it must be provided
+        shuffle : list of bool, optional
+            Whether to fully shuffle train and test data
+        seed: int, optional
+            random seed
+
+        Returns
+        -------
+        trainset : `TransformedSet` object
+            Data object used for training.
+        testset : `TransformedSet` object
+            Data object used for evaluation and test.
+        data_info : `DataInfo` object
+            Object that contains some useful information for training and predicting
+        """
+
+        trainset, data_info = cls.build_trainset(train_data, sparse_col, shuffle[0], seed)
+        testset = cls.build_testset(test_data, sparse_col, shuffle[1], seed)
+        return trainset, testset, data_info
 
 
-# TODO shuffle data
 class DatasetFeat(Dataset):
     """A derived class from :class:`Dataset`, used for data that contains features"""
 
     @classmethod
     def build_trainset(cls, train_data, user_col, item_col, sparse_col, dense_col=None,
                        shuffle=True, seed=42):
-        """Build trainset from training data.
+        """Build transformed feat train_data from original data.
 
         Normally, `user` and `item` column will be transformed into sparse indices,
         so `sparse_col` must be provided.
-
-        If you want to do negative sampling afterwards, `user_col` and `item_col`
-        also should be provided, otherwise the model doesn't known how to sample.
-        In that case, the four kind of column names may overlap.
 
         Parameters
         ----------
@@ -178,7 +267,7 @@ class DatasetFeat(Dataset):
         """
 
         cls._check_subclass()
-        cls._check_col_names(train_data)
+        cls._check_col_names(train_data, mode="train")
         cls._set_sparse_unique_vals(train_data, sparse_col)
         if shuffle:
             train_data = train_data.sample(frac=1, random_state=seed).reset_index(drop=True)
@@ -197,32 +286,108 @@ class DatasetFeat(Dataset):
         item_dense_col_indices = list(col_name_mapping["item_dense_col"].values())
 
         (user_sparse_unique, user_dense_unique, item_sparse_unique,
-         item_dense_unique) = construct_unique_feat(train_sparse_indices, train_dense_values,
-                                                    user_sparse_col_indices, user_dense_col_indices,
-                                                    item_sparse_col_indices, item_dense_col_indices)
+         item_dense_unique) = construct_unique_feat(
+            train_sparse_indices, train_dense_values, user_sparse_col_indices,
+            user_dense_col_indices, item_sparse_col_indices, item_dense_col_indices)
 
         interaction_data = train_data[["user", "item", "label"]]
-        transformed = TransformedSet(cls.user_indices, cls.item_indices, labels, train_sparse_indices,
-                                     train_dense_indices, train_dense_values, train=True)
+        train_transformed = TransformedSet(cls.user_indices, cls.item_indices, labels,
+                                           train_sparse_indices, train_dense_indices,
+                                           train_dense_values, train=True)
         data_info = DataInfo(col_name_mapping, interaction_data, user_sparse_unique,
                              user_dense_unique, item_sparse_unique, item_dense_unique)
-        return transformed, data_info
+        return train_transformed, data_info
 
-"""
     @classmethod
-    def build_testset(cls, test_data, sparse_col, dense_col=None):
+    def build_testset(cls, test_data, sparse_col, dense_col=None, shuffle=False, seed=42):
+        """Build transformed feat eval_data or test_data from original data.
+
+        Normally, `user` and `item` column will be transformed into sparse indices,
+        so `sparse_col` must be provided.
+
+        Parameters
+        ----------
+        test_data : `pandas.DataFrame`
+            Data must at least contains two columns, i.e. `user`, `item`.
+        sparse_col : list of str
+            List of sparse feature columns names, usually include `user` and `item`,
+            so it must be provided
+        dense_col : list of str, optional
+            List of dense feature column names
+        shuffle : bool, optional
+            Whether to fully shuffle data
+        seed: int, optional
+            random seed
+
+        Returns
+        -------
+        testset : `TransformedSet` object
+            Data object used for evaluation and test.
+        """
+
         cls._check_subclass()
-        DatasetFeat._check_col_names(test_data)
-        test_sparse_indices = cls._get_sparse_indices_matrix(test_data, sparse_col, mode="test")
-        test_dense_values = test_data[dense_col].to_numpy() if dense_col is not None else None
-        return TestSet(test_sparse_indices, test_dense_values)
+        cls._check_col_names(test_data, "test")
+        if shuffle:
+            test_data = test_data.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+        test_sparse_indices = cls._get_sparse_indices_matrix(
+            test_data, sparse_col, mode="test")
+        test_dense_indices = cls._get_dense_indices_matrix(
+            test_data, dense_col) if dense_col else None
+        test_dense_values = test_data[dense_col].to_numpy() if dense_col else None
+        if "label" in test_data.columns:
+            labels = test_data["label"].to_numpy(dtype=np.float32)
+        else:
+            # in case test_data has no label column,
+            # create dummy labels for consistency
+            labels = np.zeros(len(test_data))
+
+        test_transformed = TransformedSet(cls.user_indices, cls.item_indices, labels,
+                                          test_sparse_indices, test_dense_indices,
+                                          test_dense_values, train=False)
+
+        return test_transformed
 
     @classmethod
-    def build_train_test(cls, train_data, test_data, sparse_col, dense_col=None):
-        trainset, data_info = cls.build_trainset(train_data, sparse_col, dense_col)
-        testset = cls.build_testset(test_data, sparse_col, dense_col)
-        return trainset, testset, data_info
-"""
+    def build_train_test(cls, train_data, test_data, user_col, item_col, sparse_col,
+                         dense_col=None, shuffle=(True, False), seed=42):
+        """Build transformed feat train_data and test_data from original data.
 
+        Normally, `user` and `item` column will be transformed into sparse indices,
+        so `sparse_col` must be provided.
+
+        Parameters
+        ----------
+        train_data : `pandas.DataFrame`
+            Data must at least contains three columns, i.e. `user`, `item`, `label`.
+        test_data : `pandas.DataFrame`
+            Data must at least contains two columns, i.e. `user`, `item`.
+        user_col : list of str
+            List of user feature column names
+        item_col : list of str
+            List of item feature column names
+        sparse_col : list of str
+            List of sparse feature columns names, usually include `user` and `item`,
+            so it must be provided
+        dense_col : list of str, optional
+            List of dense feature column names
+        shuffle : list of bool, optional
+            Whether to fully shuffle data
+        seed: int, optional
+            random seed
+
+        Returns
+        -------
+        trainset : `TransformedSet` object
+            Data object used for training.
+        testset : `TransformedSet` object
+            Data object used for evaluation and test.
+        data_info : `DataInfo` object
+            Object that contains some useful information for training and predicting
+        """
+        trainset, data_info = cls.build_trainset(train_data, user_col, item_col,
+                                                 sparse_col, dense_col, shuffle[0], seed)
+        testset = cls.build_testset(test_data, sparse_col, dense_col, shuffle[1], seed)
+        return trainset, testset, data_info
 
 
