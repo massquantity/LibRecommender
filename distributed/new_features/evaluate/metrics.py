@@ -1,5 +1,13 @@
 import numpy as np
-import pandas as pd
+
+# pairwise_metrics = bpr ??
+POINTWISE_METRICS = {"log_loss", "balanced_accuracy", "roc_auc", "pr_auc"}
+LISTWISE_METRICS = {"precision", "recall", "map", "ndcg"}
+ALLOWED_METRICS = {
+    "rating_metrics": ["rmse", "mae", "r2"],
+    "ranking_metrics": ["log_loss", "balanced_accuracy", "roc_auc", "pr_auc",
+                        "precision", "recall", "map", "ndcg"]
+}
 
 
 def precision_at_k(y_true_list, y_reco_list, users, k):

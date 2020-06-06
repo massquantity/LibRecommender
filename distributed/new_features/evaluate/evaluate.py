@@ -11,37 +11,28 @@ from sklearn.metrics import (
     auc
 )
 from .metrics import precision_at_k, recall_at_k, map_at_k, ndcg_at_k
+from .metrics import POINTWISE_METRICS, LISTWISE_METRICS, ALLOWED_METRICS
 
 
 class EvalMixin(object):
-    def __init__(self, allowed_metrics=None):
+    def __init__(self):
         self.task = None
         self.lower_bound = None
         self.upper_bound = None
         self.sample_user = None
         self.n_users = None
         self.n_items = None
-        self.pointwise_metrics = {"log_loss", "balanced_accuracy", "roc_auc", "pr_auc"}
-        self.listwise_metrics = {"precision", "recall", "map", "ndcg"}
-    #    self.pairwise_metrics = bpr ??
-
-        if not allowed_metrics:
-            self.allowed_metrics = {
-                "rating_metrics": ["rmse", "mae", "r2"],
-                "ranking_metrics": ["log_loss", "balanced_accuracy", "roc_auc", "pr_auc",
-                                    "precision", "recall", "map", "ndcg"]
-            }
 
     def _check_metrics(self, metrics, k):
         if not isinstance(metrics, (list, tuple)):
             metrics = [metrics]
         if self.task == "rating":
             for m in metrics:
-                if m not in self.allowed_metrics["rating_metrics"]:
+                if m not in ALLOWED_METRICS["rating_metrics"]:
                     raise ValueError(f"metrics {m} is not suitable for rating task...")
         elif self.task == "ranking":
             for m in metrics:
-                if m not in self.allowed_metrics["ranking_metrics"]:
+                if m not in ALLOWED_METRICS["ranking_metrics"]:
                     raise ValueError(f"metrics {m} is not suitable for ranking task...")
 
         if not isinstance(k, numbers.Integral):
@@ -67,10 +58,10 @@ class EvalMixin(object):
                     eval_result[m] = r2_score(y_true, y_pred)
 
         elif self.task == "ranking":
-            if self.pointwise_metrics.intersection(metrics):
+            if POINTWISE_METRICS.intersection(metrics):
                 y_prob = compute_probs(self, data, eval_batch_size)
                 y_true = data.labels
-            if self.listwise_metrics.intersection(metrics):
+            if LISTWISE_METRICS.intersection(metrics):
                 chosen_users = sample_user(data, seed, sample_user_num)
                 y_reco_list, users = compute_recommends(self, chosen_users, k)
                 y_true_list = data.user_consumed
@@ -116,7 +107,7 @@ class EvalMixin(object):
         elif self.task == "ranking":
             if train_data:
                 train_params = dict()
-                if self.pointwise_metrics.intersection(metrics):
+                if POINTWISE_METRICS.intersection(metrics):
                     train_params["y_prob"] = compute_probs(self, train_data, eval_batch_size)
                     train_params["y_true"] = train_data.labels
 
@@ -124,10 +115,10 @@ class EvalMixin(object):
 
             if eval_data:
                 test_params = dict()
-                if self.pointwise_metrics.intersection(metrics):
+                if POINTWISE_METRICS.intersection(metrics):
                     test_params["y_prob"] = compute_probs(self, eval_data, eval_batch_size)
                     test_params["y_true"] = eval_data.labels
-                if self.listwise_metrics.intersection(metrics):
+                if LISTWISE_METRICS.intersection(metrics):
                     chosen_users = sample_user(eval_data, seed, sample_user_num)
                     test_params["y_reco_list"], test_params["users"] = compute_recommends(
                         self, chosen_users, k)
