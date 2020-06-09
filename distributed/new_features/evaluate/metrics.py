@@ -13,17 +13,10 @@ ALLOWED_METRICS = {
 def precision_at_k(y_true_list, y_reco_list, users, k):
     precision_all = list()
     for u in users:
-        rank_list = np.zeros(k)
         y_true = y_true_list[u]
         y_reco = y_reco_list[u]
-        common_items, indices_in_true, indices_in_reco = np.intersect1d(
-            y_true, y_reco, assume_unique=True, return_indices=True)
-
-        if common_items.size > 0:
-            rank_list[indices_in_reco] = 1
-            precision = np.mean(rank_list)
-        else:
-            precision = 0
+        common_items = set(y_reco).intersection(y_true)
+        precision = len(common_items) / k
         precision_all.append(precision)
     return np.mean(precision_all)
 
@@ -33,11 +26,8 @@ def recall_at_k(y_true_list, y_reco_list, users, k):
     for u in users:
         y_true = y_true_list[u]
         y_reco = y_reco_list[u]
-        common_items = np.intersect1d(y_true, y_reco, assume_unique=True)
-        if common_items.size > 0:
-            recall = len(common_items) / len(y_true)
-        else:
-            recall = 0
+        common_items = set(y_reco).intersection(y_true)
+        recall = len(common_items) / len(y_true)
         recall_all.append(recall)
     return np.mean(recall_all)
 

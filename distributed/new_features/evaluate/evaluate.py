@@ -15,8 +15,8 @@ from .metrics import POINTWISE_METRICS, LISTWISE_METRICS, ALLOWED_METRICS
 
 
 class EvalMixin(object):
-    def __init__(self):
-        self.task = None
+    def __init__(self, task):
+        self.task = task
         self.lower_bound = None
         self.upper_bound = None
         self.sample_user = None
@@ -42,6 +42,8 @@ class EvalMixin(object):
 
     def evaluate(self, data, eval_batch_size=2**13, metrics=None, k=10,
                  sample_user_num=1000, **kwargs):
+        if not metrics:
+            metrics = ["loss"]
         metrics = self._check_metrics(metrics, k)
         seed = kwargs.get("seed", 42)
         eval_result = dict()
@@ -50,7 +52,7 @@ class EvalMixin(object):
             y_pred = compute_preds(self, data, eval_batch_size)
             y_true = data.labels
             for m in metrics:
-                if m == "rmse":
+                if m in ["rmse", "loss"]:
                     eval_result[m] = np.sqrt(mean_squared_error(y_true, y_pred))
                 elif m == "mae":
                     eval_result[m] = mean_absolute_error(y_true, y_pred)
@@ -67,7 +69,7 @@ class EvalMixin(object):
                 y_true_list = data.user_consumed
 
             for m in metrics:
-                if m == "log_loss":
+                if m in ["log_loss", "loss"]:
                     eval_result[m] = log_loss(y_true, y_prob, eps=1e-15)
                 elif m == "balanced_accuracy":
                     y_pred = np.round(y_prob)
@@ -88,9 +90,10 @@ class EvalMixin(object):
 
         return eval_result
 
-    # if hasattr(self, "sess"):
     def print_metrics(self, train_data=None, eval_data=None, eval_batch_size=2**13,
                       metrics=None, k=10, sample_user_num=1000, **kwargs):
+        if not metrics:
+            metrics = ["loss"]
         metrics = self._check_metrics(metrics, k)
         seed = kwargs.get("seed", 42)
 
@@ -142,8 +145,9 @@ def sample_user(data, seed, num):
 def compute_preds(model, data, batch_size):
     y_pred = list()
     for batch_data in range(0, len(data), batch_size):
-        users = data.user_indices[batch_data: batch_data + batch_size]
-        items = data.item_indices[batch_data: batch_data + batch_size]
+        batch_slice = slice(batch_data, batch_data + batch_size)
+        users = data.user_indices[batch_slice]
+        items = data.item_indices[batch_slice]
         preds = list(model.predict(users, items))
         y_pred.extend(preds)
     return y_pred
@@ -176,12 +180,12 @@ def print_metrics_rating(metrics, y_true, y_pred, train=True, **kwargs):
         y_pred = np.clip(y_pred, lower_bound, upper_bound)
     if train:
         for m in metrics:
-            if m == "rmse":
+            if m in ["rmse", "loss"]:
                 rmse = np.sqrt(mean_squared_error(y_true, y_pred))
                 print(f"\t train rmse: {rmse:.4f}")
     else:
         for m in metrics:
-            if m == "rmse":
+            if m in ["rmse", "loss"]:
                 rmse = np.sqrt(mean_squared_error(y_true, y_pred))
                 print(f"\t test rmse: {rmse:.4f}")
             elif m == "mae":
@@ -196,12 +200,12 @@ def print_metrics_ranking(metrics, y_prob=None, y_true=None, y_reco_list=None,
                           y_true_list=None, users=None, k=10, train=True):
     if train:
         for m in metrics:
-            if m == "log_loss":
+            if m in ["log_loss", "loss"]:
                 log_loss_ = log_loss(y_true, y_prob, eps=1e-15)
                 print(f"\t train log_loss: {log_loss_:.4f}")
     else:
         for m in metrics:
-            if m == "log_loss":
+            if m in ["log_loss", "loss"]:
                 log_loss_ = log_loss(y_true, y_prob, eps=1e-15)
                 print(f"\t test log_loss: {log_loss_:.4f}")
             elif m == "balanced_accuracy":
