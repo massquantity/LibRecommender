@@ -10,7 +10,7 @@ warnings.filterwarnings("ignore")
 
 
 class Dataset(object):
-    """Base class for loading dataset
+    """Base class for loading dataset.
 
     Warning: This class should not be used directly. Use derived class instead.
     """
@@ -119,11 +119,11 @@ class DatasetPure(Dataset):
             Data must at least contains three columns, i.e. `user`, `item`, `label`.
         sparse_col : list of str
             List of sparse feature columns names, usually include `user` and `item`,
-            so it must be provided
+            so it must be provided.
         shuffle : bool, optional
-            Whether to fully shuffle data
+            Whether to fully shuffle data.
         seed: int, optional
-            random seed
+            random seed.
 
         Returns
         -------
@@ -162,11 +162,11 @@ class DatasetPure(Dataset):
             Data must at least contains two columns, i.e. `user`, `item`.
         sparse_col : list of str
             List of sparse feature columns names, usually include `user` and `item`,
-            so it must be provided
+            so it must be provided.
         shuffle : bool, optional
-            Whether to fully shuffle data
+            Whether to fully shuffle data.
         seed: int, optional
-            random seed
+            random seed.
 
         Returns
         -------
@@ -245,18 +245,18 @@ class DatasetFeat(Dataset):
         train_data : `pandas.DataFrame`
             Data must at least contains three columns, i.e. `user`, `item`, `label`.
         user_col : list of str
-            List of user feature column names
+            List of user feature column names.
         item_col : list of str
-            List of item feature column names
+            List of item feature column names.
         sparse_col : list of str
             List of sparse feature columns names, usually include `user` and `item`,
-            so it must be provided
+            so it must be provided.
         dense_col : list of str, optional
-            List of dense feature column names
+            List of dense feature column names.
         shuffle : bool, optional
-            Whether to fully shuffle data
+            Whether to fully shuffle data.
         seed: int, optional
-            random seed
+            random seed.
 
         Returns
         -------
@@ -311,13 +311,13 @@ class DatasetFeat(Dataset):
             Data must at least contains two columns, i.e. `user`, `item`.
         sparse_col : list of str
             List of sparse feature columns names, usually include `user` and `item`,
-            so it must be provided
+            so it must be provided.
         dense_col : list of str, optional
-            List of dense feature column names
+            List of dense feature column names.
         shuffle : bool, optional
-            Whether to fully shuffle data
+            Whether to fully shuffle data.
         seed: int, optional
-            random seed
+            random seed.
 
         Returns
         -------
@@ -363,18 +363,18 @@ class DatasetFeat(Dataset):
         test_data : `pandas.DataFrame`
             Data must at least contains two columns, i.e. `user`, `item`.
         user_col : list of str
-            List of user feature column names
+            List of user feature column names.
         item_col : list of str
-            List of item feature column names
+            List of item feature column names.
         sparse_col : list of str
             List of sparse feature columns names, usually include `user` and `item`,
-            so it must be provided
+            so it must be provided.
         dense_col : list of str, optional
-            List of dense feature column names
+            List of dense feature column names.
         shuffle : list of bool, optional
-            Whether to fully shuffle data
+            Whether to fully shuffle data.
         seed: int, optional
-            random seed
+            random seed.
 
         Returns
         -------

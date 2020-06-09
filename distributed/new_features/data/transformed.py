@@ -4,7 +4,6 @@ from scipy.sparse import csr_matrix
 from distributed.new_features.utils.samplingNEW import NegativeSamplingFeat
 
 
-# TrainSet
 class TransformedSet(object):
     def __init__(self, user_indices=None, item_indices=None, labels=None, sparse_indices=None,
                  dense_indices=None, dense_values=None, train=True):
@@ -18,19 +17,19 @@ class TransformedSet(object):
             self._sparse_interaction = csr_matrix(
                 (self.labels, (self.user_indices, self.item_indices))
             )
-            self._train_user_consumed, self._train_item_consumed = self.__interaction_consumed()
+        self._user_consumed, self._item_consumed = self.__interaction_consumed()
         self.sparse_indices_sampled = None
         self.dense_indices_sampled = None
         self.dense_values_sampled = None
         self.label_samples = None
 
     def __interaction_consumed(self):
-        train_user_consumed = defaultdict(lambda: array("I"))
-        train_item_consumed = defaultdict(lambda: array("I"))
+        user_consumed = defaultdict(lambda: array("I"))
+        item_consumed = defaultdict(lambda: array("I"))
         for u, i in zip(self.user_indices, self.item_indices):
-            train_user_consumed[u].append(i)
-            train_item_consumed[i].append(u)
-        return train_user_consumed, train_item_consumed
+            user_consumed[u].append(i)
+            item_consumed[i].append(u)
+        return user_consumed, item_consumed
 
     def build_negative_samples(self, data_info, num_neg=1, mode="random", seed=42):
         neg_generator = NegativeSamplingFeat(self, data_info, num_neg)
@@ -75,37 +74,10 @@ class TransformedSet(object):
         return self._sparse_interaction
 
     @property
-    def train_user_consumed(self):
-        return self._train_user_consumed
+    def user_consumed(self):
+        return self._user_consumed
 
     @property
-    def train_item_consumed(self):
-        return self._train_item_consumed
+    def item_consumed(self):
+        return self._item_consumed
 
-
-class TestSet:
-    def __init__(self, labels, sparse_indices, dense_values=None, mode="pure"):
-        self.sparse_indices = sparse_indices
-        self.dense_values = dense_values
-        self.labels = labels
-        self.mode = mode
-        self.sparse_indices_plus_neg = None
-        self.dense_values_plus_neg = None
-
-    def build_negative(self, num_neg=1, item_feat_cols=None):
-        pass
-
-    def user_indices(self, data_info):
-        pass
-
-    def item_indices(self, data_info):
-        """indices used for construct embedding"""
-        pass
-
-    @property
-    def sparse_indices(self):
-        return self.sparse_indices
-
-    @property
-    def dense_values(self):
-        return self.dense_values
