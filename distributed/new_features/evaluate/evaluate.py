@@ -17,11 +17,6 @@ from .metrics import POINTWISE_METRICS, LISTWISE_METRICS, ALLOWED_METRICS
 class EvalMixin(object):
     def __init__(self, task):
         self.task = task
-        self.lower_bound = None
-        self.upper_bound = None
-        self.sample_user = None
-        self.n_users = None
-        self.n_items = None
 
     def _check_metrics(self, metrics, k):
         if not isinstance(metrics, (list, tuple)):
@@ -40,7 +35,7 @@ class EvalMixin(object):
 
         return metrics
 
-    def evaluate(self, data, eval_batch_size=2**13, metrics=None, k=10,
+    def evaluate(self, data, eval_batch_size=8192, metrics=None, k=10,
                  sample_user_num=1000, **kwargs):
         if not metrics:
             metrics = ["loss"]
@@ -90,8 +85,8 @@ class EvalMixin(object):
 
         return eval_result
 
-    def print_metrics(self, train_data=None, eval_data=None, eval_batch_size=2**13,
-                      metrics=None, k=10, sample_user_num=1000, **kwargs):
+    def print_metrics(self, train_data=None, eval_data=None, metrics=None,
+                      eval_batch_size=8192, k=10, sample_user_num=1000, **kwargs):
         if not metrics:
             metrics = ["loss"]
         metrics = self._check_metrics(metrics, k)
@@ -187,13 +182,13 @@ def print_metrics_rating(metrics, y_true, y_pred, train=True, **kwargs):
         for m in metrics:
             if m in ["rmse", "loss"]:
                 rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-                print(f"\t test rmse: {rmse:.4f}")
+                print(f"\t eval rmse: {rmse:.4f}")
             elif m == "mae":
                 mae = mean_absolute_error(y_true, y_pred)
-                print(f"\t test mae: {mae:.4f}")
+                print(f"\t eval mae: {mae:.4f}")
             elif m == "r_squared":
                 r_squared = r2_score(y_true, y_pred)
-                print(f"\t test r2: {r_squared:.4f}")
+                print(f"\t eval r2: {r_squared:.4f}")
 
 
 def print_metrics_ranking(metrics, y_prob=None, y_true=None, y_reco_list=None,
@@ -207,28 +202,28 @@ def print_metrics_ranking(metrics, y_prob=None, y_true=None, y_reco_list=None,
         for m in metrics:
             if m in ["log_loss", "loss"]:
                 log_loss_ = log_loss(y_true, y_prob, eps=1e-15)
-                print(f"\t test log_loss: {log_loss_:.4f}")
+                print(f"\t eval log_loss: {log_loss_:.4f}")
             elif m == "balanced_accuracy":
                 y_pred = np.round(y_prob)
                 accuracy = balanced_accuracy_score(y_true, y_pred)
-                print(f"\t test balanced accuracy: {accuracy:.4f}")
+                print(f"\t eval balanced accuracy: {accuracy:.4f}")
             elif m == "roc_auc":
                 roc_auc = roc_auc_score(y_true, y_prob)
-                print(f"\t test roc_auc: {roc_auc:.4f}")
+                print(f"\t eval roc_auc: {roc_auc:.4f}")
             elif m == "pr_auc":
                 precision, recall, _ = precision_recall_curve(y_true, y_prob)
                 pr_auc = auc(recall, precision)
-                print(f"\t test pr_auc: {pr_auc:.4f}")
+                print(f"\t eval pr_auc: {pr_auc:.4f}")
             elif m == "precision":
                 precision_all = precision_at_k(y_true_list, y_reco_list, users, k)
-                print(f"\t test precision@{k}: {precision_all:.4f}")
+                print(f"\t eval precision@{k}: {precision_all:.4f}")
             elif m == "recall":
                 recall_all = recall_at_k(y_true_list, y_reco_list, users, k)
-                print(f"\t test recall@{k}: {recall_all:.4f}")
+                print(f"\t eval recall@{k}: {recall_all:.4f}")
             elif m == "map":
                 map_all = map_at_k(y_true_list, y_reco_list, users, k)
-                print(f"\t test map@{k}: {map_all:.4f}")
+                print(f"\t eval map@{k}: {map_all:.4f}")
             elif m == "ndcg":
                 ndcg_all = ndcg_at_k(y_true_list, y_reco_list, users, k)
-                print(f"\t test ndcg@{k}: {ndcg_all:.4f}")
+                print(f"\t eval ndcg@{k}: {ndcg_all:.4f}")
 
