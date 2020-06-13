@@ -1,6 +1,7 @@
 import time
 from math import floor
-import random
+
+from random import random
 import numpy as np
 from .timing import time_block, time_func
 
@@ -41,36 +42,35 @@ class SamplingBase(object):
             for u, i in zip(self.dataset.user_indices, self.dataset.item_indices):
                 item_append(i)
                 for _ in range(self.num_neg):
-                    item_neg = floor(random.random() * n_items)
+                    item_neg = floor(random() * n_items)
                     while item_neg in user_consumed[u]:
-                        item_neg = floor(random.random() * n_items)
+                        item_neg = floor(random() * n_items)
                     item_append(item_neg)
         return np.array(item_indices_sampled)
 
     def sample_items_popular(self, seed=42):
         np.random.seed(seed)
         data = self.data_info.get_indexed_interaction()
-        item_counts = data.groupby("item")["user"].count()
+        item_counts = data.item.value_counts().sort_index().to_numpy()
         user_consumed = self.dataset.user_consumed
         items = np.arange(self.data_info.n_items)
 
         item_order = list()
         item_indices_sampled = list()
-        t1 = time.time()
-        for user, u_data in data.groupby("user", sort=False):
-            item_indices = u_data.index.to_list()
-            item_indices = item_indices * (self.num_neg + 1)
-            item_order.extend(item_indices)
+        with time_block("neg popular"):
+            for user, u_data in data.groupby("user", sort=False):
+                item_indices = u_data.index.to_list()
+                item_indices = item_indices * (self.num_neg + 1)
+                item_order.extend(item_indices)
 
-            item_indices_sampled.extend(u_data.item.tolist())  # add positive items
-            u_consumed = list(user_consumed[user])
-            u_item_counts = item_counts.to_numpy().copy()
-            u_item_counts[u_consumed] = 0
-            item_prob = u_item_counts / np.sum(u_item_counts)
-            neg_size = len(u_consumed) * self.num_neg
-            neg_sampled = np.random.choice(items, size=neg_size, p=item_prob, replace=True)
-            item_indices_sampled.extend(neg_sampled)
-        print("neg: ", time.time() - t1)
+                item_indices_sampled.extend(u_data.item.tolist())  # add positive items
+                u_consumed = user_consumed[user]
+                u_item_counts = item_counts.copy()
+                u_item_counts[u_consumed] = 0
+                item_prob = u_item_counts / np.sum(u_item_counts)
+                neg_size = len(u_consumed) * self.num_neg
+                neg_sampled = np.random.choice(items, size=neg_size, p=item_prob, replace=True)
+                item_indices_sampled.extend(neg_sampled)
 
         item_indices_sampled = np.asarray(item_indices_sampled)
         item_order = np.argsort(item_order, kind="mergesort")  # must be stable sort to keep order
