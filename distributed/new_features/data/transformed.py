@@ -1,27 +1,38 @@
+import numpy as np
 from array import array
 from collections import defaultdict
 from scipy.sparse import csr_matrix
-from distributed.new_features.utils.samplingNEW import NegativeSamplingFeat
+from distributed.new_features.utils.samplingNEW import NegativeSamplingPure, NegativeSamplingFeat
 
 
 class TransformedSet(object):
-    def __init__(self, user_indices=None, item_indices=None, labels=None, sparse_indices=None,
-                 dense_indices=None, dense_values=None, train=True):
+    def __init__(self, user_indices=None, item_indices=None, labels=None,
+                 sparse_indices=None, dense_indices=None, dense_values=None,
+                 train=True, feat=True):
         self._user_indices = user_indices
         self._item_indices = item_indices
         self._labels = labels
         self._sparse_indices = sparse_indices
         self._dense_indices = dense_indices
         self._dense_values = dense_values
+        self.feat = feat
+        self.has_sampled = False
         if train:
             self._sparse_interaction = csr_matrix(
-                (self.labels, (self.user_indices, self.item_indices))
+                (labels, (user_indices, item_indices)), dtype=np.float32
             )
         self._user_consumed, self._item_consumed = self.__interaction_consumed()
-        self.sparse_indices_sampled = None
-        self.dense_indices_sampled = None
-        self.dense_values_sampled = None
-        self.label_samples = None
+   #     self.sparse_indices_sampled = None
+   #     self.dense_indices_sampled = None
+   #     self.dense_values_sampled = None
+   #     self.label_samples = None
+
+        self.user_indices_orig = None
+        self.item_indices_orig = None
+    #    self.labels_orig = None
+        self.sparse_indices_orig = None
+        self.dense_indices_orig = None
+        self.dense_values_orig = None
 
     def __interaction_consumed(self):
         user_consumed = defaultdict(lambda: array("I"))
@@ -32,18 +43,35 @@ class TransformedSet(object):
         return user_consumed, item_consumed
 
     def build_negative_samples(self, data_info, num_neg=1, mode="random", seed=42):
-        neg_generator = NegativeSamplingFeat(self, data_info, num_neg)
+        self.has_sampled = True
+        if not self.feat:
+            self.user_indices_orig = self._user_indices
+            self.item_indices_orig = self._item_indices
+            self.build_negative_samples_pure(data_info, num_neg, mode, seed)
+        else:
+            self.sparse_indices_orig = self._sparse_indices
+            self.dense_indices_orig = self._dense_indices
+            self.dense_values_orig = self._dense_values
+            self.build_negative_samples_feat(data_info, num_neg, mode, seed)
+
+    def build_negative_samples_pure(self, data_info, num_neg=1, mode="random", seed=42):
+        neg = NegativeSamplingPure(self, data_info, num_neg, batch_sampling=False)
+        (self._user_indices, self._item_indices,
+            self._labels) = neg.generate_all(seed, shuffle=False, mode=mode)
+
+    def build_negative_samples_feat(self, data_info, num_neg=1, mode="random", seed=42):
+        neg = NegativeSamplingFeat(self, data_info, num_neg)
         if self.dense_values is None:
-            (self.sparse_indices_sampled, self.dense_indices_sampled,
-                self.dense_values_sampled, self.label_samples) = neg_generator(
+            (self._sparse_indices, self._dense_indices,
+                self._dense_values, self._labels) = neg.generate_all(
                     seed, dense=False, mode=mode)
         else:
-            (self.sparse_indices_sampled, self.dense_indices_sampled,
-                self.dense_values_sampled, self.label_samples) = neg_generator(
+            (self._sparse_indices, self._dense_indices,
+                self._dense_values, self._labels) = neg.generate_all(
                     seed, dense=True, mode=mode)
 
     def __len__(self):
-        return len(self.sparse_indices)
+        return len(self.labels)
 
     @property
     def user_indices(self):
