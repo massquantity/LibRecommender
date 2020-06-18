@@ -11,10 +11,12 @@ from ..evaluate.evaluate import EvalMixin
 
 
 class UserCF(Base, EvalMixin):
-    def __init__(self, data_info, task="rating", sim_type="pearson", k=50,
+    def __init__(self, task, data_info, sim_type="pearson", k=50,
                  lower_upper_bound=None):
-        self.k = k
+        Base.__init__(self, data_info, task, lower_upper_bound)
+        EvalMixin.__init__(self, task)
         self.task = task
+        self.k = k
         self.default_prediction = data_info.global_mean if task == "rating" else 0.0
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
@@ -22,8 +24,6 @@ class UserCF(Base, EvalMixin):
         self.interaction_user = None   # matrix that user as row and item as column
         self.interaction_item = None
         self.sim_matrix = None
-        Base.__init__(self, data_info, task, lower_upper_bound)
-        EvalMixin.__init__(self, task)
 
     def fit(self, train_data, block_size=None, num_threads=1, min_support=1,
             mode="invert", verbose=1, eval_data=None, metrics=None):
