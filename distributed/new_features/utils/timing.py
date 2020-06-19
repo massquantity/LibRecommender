@@ -22,7 +22,7 @@ def time_block(block_name="block", verbose=1):
             yield
         except Exception:
             raise
-        finally:
+        else:
             end = time.perf_counter()
             print(f"{block_name} elapsed: {(end - start):3.3f}s")
 

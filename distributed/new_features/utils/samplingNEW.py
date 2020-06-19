@@ -9,7 +9,7 @@ from .timing import time_block, time_func
 class SamplingBase(object):
     def __init__(self, dataset, data_info, num_neg=1, batch_size=64):
         self.dataset = dataset
-        self.data_size = len(dataset)
+    #    self.data_size = len(dataset)
         self.data_info = data_info
         self.num_neg = num_neg
         self.batch_size = batch_size
@@ -78,13 +78,17 @@ class SamplingBase(object):
 
 
 class NegativeSamplingPure(SamplingBase):
-    def __init__(self, dataset, data_info, num_neg=1, batch_size=64):
+    def __init__(self, dataset, data_info, num_neg=1, batch_size=64, batch_sampling=False):
         super(NegativeSamplingPure, self).__init__(dataset, data_info, num_neg, batch_size)
-        self.user_indices = dataset.user_indices
-        self.item_indices = dataset.item_indices
-    #    self.labels = dataset.labels
+        if batch_sampling:
+            self.user_indices = dataset.user_indices_orig
+            self.item_indices = dataset.item_indices_orig
+        else:
+            self.user_indices = dataset.user_indices
+            self.item_indices = dataset.item_indices
+        self.data_size = len(self.user_indices)
 
-    def generate_all(self, seed=42, dense=True, shuffle=False, mode="random"):
+    def generate_all(self, seed=42, shuffle=False, mode="random"):
         if mode not in ["random", "popular"]:
             raise ValueError("sampling mode must either be 'random' or 'popular'")
         elif mode == "random":
@@ -128,11 +132,11 @@ class NegativeSamplingPure(SamplingBase):
                     item_neg = floor(random() * n_items)
                     while item_neg in user_consumed[u]:
                         item_neg = floor(random() * n_items)
-                        item_indices_sampled.append(item_neg)
+                    item_indices_sampled.append(item_neg)
 
             item_sampled = np.asarray(item_indices_sampled)
             user_sampled = np.repeat(batch_user_indices, self.num_neg + 1, axis=0)
-            label_sampled = self._label_negative_sampling(self.batch_size)
+            label_sampled = self._label_negative_sampling(len(batch_user_indices))
 
             yield user_sampled, item_sampled, label_sampled
 
@@ -143,6 +147,7 @@ class NegativeSamplingFeat(SamplingBase):
         self.sparse_indices = dataset.sparse_indices
         self.dense_values = dataset.dense_values
     #    self.labels = dataset.labels
+        self.data_size = len(self.sparse_indices)
 
     def generate_all(self, seed=42, dense=True, shuffle=False, mode="random"):
         if mode not in ["random", "popular"]:
