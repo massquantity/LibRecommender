@@ -1,6 +1,7 @@
 import numpy as np
 from array import array
 from collections import defaultdict
+from functools import partial
 from scipy.sparse import csr_matrix
 from distributed.new_features.utils.samplingNEW import NegativeSamplingPure, NegativeSamplingFeat
 
@@ -21,7 +22,9 @@ class TransformedSet(object):
             self._sparse_interaction = csr_matrix(
                 (labels, (user_indices, item_indices)), dtype=np.float32
             )
-        self._user_consumed, self._item_consumed = self.__interaction_consumed()
+
+        (self._user_consumed,
+         self._item_consumed) = self.__interaction_consumed()
    #     self.sparse_indices_sampled = None
    #     self.dense_indices_sampled = None
    #     self.dense_values_sampled = None
@@ -42,7 +45,8 @@ class TransformedSet(object):
             item_consumed[i].append(u)
         return user_consumed, item_consumed
 
-    def build_negative_samples(self, data_info, num_neg=1, mode="random", seed=42):
+    def build_negative_samples(self, data_info, num_neg=1,
+                               mode="random", seed=42):
         self.has_sampled = True
         if not self.feat:
             self.user_indices_orig = self._user_indices
@@ -54,21 +58,26 @@ class TransformedSet(object):
             self.dense_values_orig = self._dense_values
             self.build_negative_samples_feat(data_info, num_neg, mode, seed)
 
-    def build_negative_samples_pure(self, data_info, num_neg=1, mode="random", seed=42):
-        neg = NegativeSamplingPure(self, data_info, num_neg, batch_sampling=False)
+    def build_negative_samples_pure(self, data_info, num_neg=1,
+                                    mode="random", seed=42):
+
+        neg = NegativeSamplingPure(
+            self, data_info, num_neg, batch_sampling=False)
+
         (self._user_indices, self._item_indices,
             self._labels) = neg.generate_all(seed, shuffle=False, mode=mode)
 
-    def build_negative_samples_feat(self, data_info, num_neg=1, mode="random", seed=42):
+    def build_negative_samples_feat(self, data_info, num_neg=1,
+                                    mode="random", seed=42):
+
         neg = NegativeSamplingFeat(self, data_info, num_neg)
         if self.dense_values is None:
-            (self._sparse_indices, self._dense_indices,
-                self._dense_values, self._labels) = neg.generate_all(
-                    seed, dense=False, mode=mode)
+            neg_generator = partial(neg.generate_all, dense=False)
         else:
-            (self._sparse_indices, self._dense_indices,
-                self._dense_values, self._labels) = neg.generate_all(
-                    seed, dense=True, mode=mode)
+            neg_generator = partial(neg.generate_all, dense=True)
+
+        (self._sparse_indices, self._dense_indices,
+            self._dense_values, self._labels) = neg_generator(seed, mode=mode)
 
     def __len__(self):
         return len(self.labels)
