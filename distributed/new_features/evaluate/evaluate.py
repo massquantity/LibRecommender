@@ -51,7 +51,7 @@ class EvalMixin(object):
                     eval_result[m] = np.sqrt(mean_squared_error(y_true, y_pred))
                 elif m == "mae":
                     eval_result[m] = mean_absolute_error(y_true, y_pred)
-                elif m == "r_squared":
+                elif m == "r2":
                     eval_result[m] = r2_score(y_true, y_pred)
 
         elif self.task == "ranking":
@@ -116,6 +116,7 @@ class EvalMixin(object):
                 if POINTWISE_METRICS.intersection(metrics):
                     test_params["y_prob"] = compute_probs(self, eval_data, eval_batch_size)
                     test_params["y_true"] = eval_data.labels
+
                 if LISTWISE_METRICS.intersection(metrics):
                     chosen_users = sample_user(eval_data, seed, sample_user_num)
                     test_params["y_reco_list"], test_params["users"] = compute_recommends(
@@ -158,6 +159,7 @@ def compute_recommends(model, users, k):
     no_rec_users = []
     for u in users:
         reco = model.recommend_user(u, k)
+        reco = [r[0] for r in reco]
         if not reco or reco == -1:   # user_cf
             no_rec_num += 1
             no_rec_users.append(u)
@@ -186,7 +188,7 @@ def print_metrics_rating(metrics, y_true, y_pred, train=True, **kwargs):
             elif m == "mae":
                 mae = mean_absolute_error(y_true, y_pred)
                 print(f"\t eval mae: {mae:.4f}")
-            elif m == "r_squared":
+            elif m == "r2":
                 r_squared = r2_score(y_true, y_pred)
                 print(f"\t eval r2: {r_squared:.4f}")
 

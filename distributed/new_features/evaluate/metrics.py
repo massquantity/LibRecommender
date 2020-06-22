@@ -1,7 +1,7 @@
 import numpy as np
 
 # pairwise_metrics = bpr ??
-POINTWISE_METRICS = {"log_loss", "balanced_accuracy", "roc_auc", "pr_auc"}
+POINTWISE_METRICS = {"loss", "log_loss", "balanced_accuracy", "roc_auc", "pr_auc"}
 LISTWISE_METRICS = {"precision", "recall", "map", "ndcg"}
 ALLOWED_METRICS = {
     "rating_metrics": ["loss", "rmse", "mae", "r2"],
