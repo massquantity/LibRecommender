@@ -24,9 +24,10 @@ from ..utils.colorize import colorize
 
 
 class SVDpp(Base, TfMixin, EvalMixin):
-    def __init__(self, task, data_info, embed_size=16, n_epochs=20, lr=0.01, reg=None,
-                 batch_size=256, batch_sampling=False, num_neg=1, seed=42,
-                 lower_upper_bound=None):
+    def __init__(self, task, data_info, embed_size=16, n_epochs=20, lr=0.01,
+                 reg=None, batch_size=256, batch_sampling=False, num_neg=1,
+                 seed=42, lower_upper_bound=None):
+
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self)
         EvalMixin.__init__(self, task)
@@ -43,7 +44,8 @@ class SVDpp(Base, TfMixin, EvalMixin):
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
         self.global_mean = data_info.global_mean
-        self.default_prediction = data_info.global_mean if task == "rating" else 0.0
+        self.default_prediction = data_info.global_mean if (
+                task == "rating") else 0.0
         self.seed = seed
         self.sess = tf.Session()
         self.user_consumed = None
@@ -66,11 +68,13 @@ class SVDpp(Base, TfMixin, EvalMixin):
                                       regularizer=self.reg)
         self.pu_var = tf.get_variable(name="pu_var",
                                       shape=[self.n_users, self.embed_size],
-                                      initializer=tf_truncated_normal(0.0, 0.03),
+                                      initializer=tf_truncated_normal(
+                                          0.0, 0.03),
                                       regularizer=self.reg)
         self.qi_var = tf.get_variable(name="pi_var",
                                       shape=[self.n_items, self.embed_size],
-                                      initializer=tf_truncated_normal(0.0, 0.03),
+                                      initializer=tf_truncated_normal(
+                                          0.0, 0.03),
                                       regularizer=self.reg)
 
         yj_var = tf.get_variable(name="yj_var",
@@ -92,13 +96,12 @@ class SVDpp(Base, TfMixin, EvalMixin):
         self.output = bias_user + bias_item + tf.reduce_sum(
             tf.multiply(embed_user, embed_item), axis=1)
 
-    # TODO: move to TfMixin
     def _build_train_ops(self):
         if self.task == "rating":
             pred = self.output + self.global_mean
-            self.loss = tf.losses.mean_squared_error(labels=self.labels, predictions=pred)
+            self.loss = tf.losses.mean_squared_error(labels=self.labels,
+                                                     predictions=pred)
         elif self.task == "ranking":
-        #    logits = tf.reshape(self.output, [-1])
             self.loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels,
                                                         logits=self.output)
@@ -116,6 +119,7 @@ class SVDpp(Base, TfMixin, EvalMixin):
 
     def fit(self, train_data, verbose=1, shuffle=True, sample_rate=None,
             eval_data=None, metrics=None):
+
         start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         print(f"training start time: {colorize(start_time, 'magenta')}")
         self.user_consumed = train_data.user_consumed
@@ -127,8 +131,10 @@ class SVDpp(Base, TfMixin, EvalMixin):
 
         if self.task == "ranking" and self.batch_sampling:
             self._check_has_sampled(train_data, verbose)
-            data_generator = NegativeSamplingPure(train_data, self.data_info,
-                                                  self.num_neg, self.batch_size,
+            data_generator = NegativeSamplingPure(train_data,
+                                                  self.data_info,
+                                                  self.num_neg,
+                                                  self.batch_size,
                                                   batch_sampling=True)
         else:
             data_generator = DataGenPure(train_data, self.batch_size)
@@ -137,15 +143,20 @@ class SVDpp(Base, TfMixin, EvalMixin):
         self._set_latent_factors()
 
     def predict(self, user, item):
-        user = np.asarray([user]) if isinstance(user, int) else np.asarray(user)
-        item = np.asarray([item]) if isinstance(item, int) else np.asarray(item)
+        user = np.asarray(
+            [user]) if isinstance(user, int) else np.asarray(user)
+        item = np.asarray(
+            [item]) if isinstance(item, int) else np.asarray(item)
 
-        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
+        unknown_num, unknown_index, user, item = self._check_unknown(
+            user, item)
+
         preds = self.bu[user] + self.bi[item] + np.sum(
             np.multiply(self.puj[user], self.qi[item]), axis=1)
 
         if self.task == "rating":
-            preds = np.clip(preds + self.global_mean, self.lower_bound, self.upper_bound)
+            preds = np.clip(
+                preds + self.global_mean, self.lower_bound, self.upper_bound)
         elif self.task == "ranking":
             preds = 1 / (1 + np.exp(-preds))
 
@@ -169,7 +180,11 @@ class SVDpp(Base, TfMixin, EvalMixin):
             recos = 1 / (1 + np.exp(-recos))
         ids = np.argpartition(recos, -count)[-count:]
         rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
-        return list(islice((rec for rec in rank if rec[0] not in consumed), n_rec))
+        return list(
+            islice(
+                (rec for rec in rank if rec[0] not in consumed), n_rec
+            )
+        )
 
     def _set_latent_factors(self):
         self.bu, self.bi, self.pu, self.qi, self.puj = self.sess.run(

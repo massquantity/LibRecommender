@@ -26,6 +26,7 @@ class SVD(Base, TfMixin, EvalMixin):
     def __init__(self, task, data_info, embed_size=16, n_epochs=20, lr=0.01,
                  reg=None, batch_size=256, batch_sampling=False, num_neg=1,
                  seed=42, lower_upper_bound=None):
+
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self)
         EvalMixin.__init__(self, task)
@@ -137,6 +138,7 @@ class SVD(Base, TfMixin, EvalMixin):
 
         unknown_num, unknown_index, user, item = self._check_unknown(
             user, item)
+
         preds = self.bu[user] + self.bi[item] + np.sum(
             np.multiply(self.pu[user], self.qi[item]), axis=1)
 
@@ -159,6 +161,7 @@ class SVD(Base, TfMixin, EvalMixin):
         consumed = self.user_consumed[user]
         count = n_rec + len(consumed)
         recos = self.bu[user] + self.bi + self.pu[user] @ self.qi.T
+
         if self.task == "rating":
             recos += self.global_mean
         elif self.task == "ranking":
