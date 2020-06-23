@@ -22,7 +22,6 @@ from ..utils.samplingNEW import PairwiseSampling
 from ..utils.colorize import colorize
 from ..utils.timing import time_block
 from ..utils.initializers import truncated_normal
-from ..utils.misc import shuffle_data
 try:
     from ._bpr import bpr_update
 except ImportError:
@@ -55,10 +54,10 @@ class BPR(Base, TfMixin, EvalMixin):
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
         self.default_prediction = 0.0
+        self.use_tf = use_tf
         self.seed = seed
 
         self.user_consumed = None
-        self.item_bias = None
         self.user_embed = None
         self.item_embed = None
 
@@ -77,83 +76,6 @@ class BPR(Base, TfMixin, EvalMixin):
         self.user_embed[:, self.embed_size] = 1.0
         self.item_embed = truncated_normal(
             shape=(self.n_items, self.embed_size + 1), mean=0.0, scale=0.03)
-
-    def fit_cython(self, train_data, verbose=1, shuffle=True, num_threads=1,
-                   eval_data=None, metrics=None):
-
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
-        self.user_consumed = train_data.user_consumed
-        if not self.reg:
-            self.reg = 0.0
-
-        for epoch in range(1, self.n_epochs + 1):
-            with time_block(f"Epoch {epoch}", verbose):
-                bpr_update(train_data,
-                           self.user_embed,
-                           self.item_embed,
-                           self.lr,
-                           self.reg,
-                           self.n_users,
-                           self.n_items,
-                           shuffle,
-                           num_threads,
-                           self.seed)
-
-            if verbose > 1:
-                self.print_metrics(eval_data=eval_data, metrics=metrics)
-                print("="*30)
-
-    def fit_normal(self, train_data, verbose=1, shuffle=True):
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
-        self.user_consumed = train_data.user_consumed
-        if not self.reg:
-            self.reg = 0.0
-
-        self._check_has_sampled(train_data, verbose)
-        data_generator = PairwiseSampling(train_data,
-                                          self.data_info,
-                                          self.num_neg,
-                                          self.batch_size)
-
-        for epoch in range(1, self.n_epochs + 1):
-            with time_block(f"Epoch {epoch}", verbose):
-                for user, item_pos, item_neg in data_generator(shuffle=shuffle):
-                    bias_item_pos = self.item_bias[item_pos]
-                    bias_item_neg = self.item_bias[item_neg]
-                    embed_user = self.user_embed[user]
-                    embed_item_pos = self.item_embed[item_pos]
-                    embed_item_neg = self.item_embed[item_neg]
-
-                    item_diff = (bias_item_pos - bias_item_neg) + np.sum(
-                        np.multiply(
-                            embed_user, (embed_item_pos - embed_item_neg)
-                        ), axis=1, keepdims=True
-                    )
-                    log_sigmoid_grad = 1.0 / (1.0 + np.exp(item_diff))
-            #        log_sigmoid_grad = log_sigmoid_grad[None, :]
-
-                    self.item_bias[item_pos] += self.lr * (
-                            log_sigmoid_grad -
-                            self.reg * self.item_bias[item_pos]
-                    )
-                    self.item_bias[item_neg] += self.lr * (
-                            -log_sigmoid_grad -
-                            self.reg * self.item_bias[item_neg]
-                    )
-                    self.user_embed[user] += self.lr * (
-                        log_sigmoid_grad * (embed_item_pos - embed_item_neg)
-                        - self.reg * self.user_embed[user]
-                    )
-                    self.item_embed[item_pos] += self.lr * (
-                        log_sigmoid_grad * embed_user
-                        - self.reg * self.item_embed[item_pos]
-                    )
-                    self.item_embed[item_neg] += self.lr * (
-                        log_sigmoid_grad * (-embed_user)
-                        - self.reg * self.item_embed[item_neg]
-                    )
 
     def _build_model_tf(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
@@ -204,19 +126,49 @@ class BPR(Base, TfMixin, EvalMixin):
         else:
             total_loss = self.loss
 
-#        optimizer = tf.train.FtrlOptimizer(learning_rate=self.lr, l1_regularization_strength=1e-3)
         optimizer = tf.train.AdamOptimizer(self.lr)
         self.training_op = optimizer.minimize(total_loss)
         self.sess.run(tf.global_variables_initializer())
 
-    def fit(self, train_data, verbose=1, shuffle=True,
-            eval_data=None, metrics=None):
+    def fit(self, train_data, verbose=1, shuffle=True, num_threads=1,
+                   eval_data=None, metrics=None):
 
         start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         print(f"training start time: {colorize(start_time, 'magenta')}")
         self.user_consumed = train_data.user_consumed
-
         self._check_has_sampled(train_data, verbose)
+
+        if self.use_tf:
+            self._fit_tf(train_data, verbose=verbose, shuffle=shuffle,
+                         eval_data=eval_data, metrics=metrics)
+        else:
+            self._fit_cython(train_data, verbose=verbose, shuffle=shuffle,
+                             num_threads=num_threads, eval_data=eval_data,
+                             metrics=metrics)
+
+    def _fit_cython(self, train_data, verbose=1, shuffle=True, num_threads=1,
+                    eval_data=None, metrics=None):
+
+        for epoch in range(1, self.n_epochs + 1):
+            with time_block(f"Epoch {epoch}", verbose):
+                bpr_update(train_data,
+                           self.user_embed,
+                           self.item_embed,
+                           self.lr,
+                           self.reg,
+                           self.n_users,
+                           self.n_items,
+                           shuffle,
+                           num_threads,
+                           self.seed)
+
+            if verbose > 1:
+                self.print_metrics(eval_data=eval_data, metrics=metrics)
+                print("="*30)
+
+    def _fit_tf(self, train_data, verbose=1, shuffle=True,
+                eval_data=None, metrics=None):
+
         data_generator = PairwiseSampling(train_data,
                                           self.data_info,
                                           self.num_neg,
@@ -224,7 +176,10 @@ class BPR(Base, TfMixin, EvalMixin):
 
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
-                for user, item_pos, item_neg in data_generator(shuffle=shuffle):
+                for (user,
+                     item_pos,
+                     item_neg) in data_generator(shuffle=shuffle):
+
                     self.sess.run(self.training_op,
                                   feed_dict={self.user_indices: user,
                                              self.item_indices_pos: item_pos,
@@ -236,7 +191,7 @@ class BPR(Base, TfMixin, EvalMixin):
                 self.print_metrics(eval_data=eval_data, metrics=metrics)
                 print("="*30)
 
-        self._set_latent_factors()  # for prediction and recommend
+        self._set_latent_factors()  # for predict and recommending
 
     def predict(self, user, item):
         user = np.asarray(
@@ -246,6 +201,7 @@ class BPR(Base, TfMixin, EvalMixin):
 
         unknown_num, unknown_index, user, item = self._check_unknown(
             user, item)
+
         preds = np.sum(
             np.multiply(self.user_embed[user],
                         self.item_embed[item]),
@@ -275,24 +231,17 @@ class BPR(Base, TfMixin, EvalMixin):
             )
         )
 
+    def _set_latent_factors(self):
+        item_bias, user_embed, item_embed = self.sess.run(
+            [self.item_bias_var, self.user_embed_var, self.item_embed_var]
+        )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        # to be compatible with cython version,
+        # bias is concatenated with embedding
+        user_bias = np.ones([len(user_embed), 1], dtype=user_embed.dtype)
+        item_bias = item_bias[:, None]
+        self.user_embed = np.hstack([user_embed, user_bias])
+        self.item_embed = np.hstack([item_embed, item_bias])
 
 
 
