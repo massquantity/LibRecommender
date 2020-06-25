@@ -9,6 +9,7 @@ author: massquantity
 import time
 import logging
 from itertools import islice
+from functools import partial
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.initializers import (
@@ -21,9 +22,9 @@ from ..utils.tf_ops import reg_config
 from ..utils.samplingNEW import PairwiseSampling
 from ..utils.colorize import colorize
 from ..utils.timing import time_block
-from ..utils.initializers import truncated_normal
+from ..utils.initializers import truncated_normal, xavier_init, he_init
 try:
-    from ._bpr import bpr_update
+    from ._bpr import bpr_update, bpr_update2
 except ImportError:
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
     logging.basicConfig(format=LOG_FORMAT)
@@ -48,7 +49,7 @@ class BPR(Base, TfMixin, EvalMixin):
         self.embed_size = embed_size
         self.n_epochs = n_epochs
         self.lr = lr
-        self.reg = reg_config(reg)
+        self.reg = reg
         self.batch_size = batch_size
         self.num_neg = num_neg
         self.n_users = data_info.n_users
@@ -70,14 +71,20 @@ class BPR(Base, TfMixin, EvalMixin):
 
     def _build_model(self):
         np.random.seed(self.seed)
-        # last dimension is item bias, so for user all set to 0
+        # last dimension is item bias, so for user all set to 1.0
         self.user_embed = truncated_normal(
             shape=(self.n_users, self.embed_size + 1), mean=0.0, scale=0.03)
         self.user_embed[:, self.embed_size] = 1.0
         self.item_embed = truncated_normal(
             shape=(self.n_items, self.embed_size + 1), mean=0.0, scale=0.03)
+        self.item_embed[:, self.embed_size] = 0.0
 
     def _build_model_tf(self):
+        if isinstance(self.reg, float) and self.reg > 0.0:
+            tf_reg = tf.keras.regularizers.l2(self.reg)
+        else:
+            tf_reg = None
+
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices_pos = tf.placeholder(tf.int32, shape=[None])
         self.item_indices_neg = tf.placeholder(tf.int32, shape=[None])
@@ -85,19 +92,19 @@ class BPR(Base, TfMixin, EvalMixin):
         self.item_bias_var = tf.get_variable(name="item_bias_var",
                                              shape=[self.n_items],
                                              initializer=tf_zeros,
-                                             regularizer=self.reg)
+                                             regularizer=tf_reg)
         self.user_embed_var = tf.get_variable(name="user_embed_var",
                                               shape=[self.n_users,
                                                      self.embed_size],
                                               initializer=tf_truncated_normal(
                                                   0.0, 0.03),
-                                              regularizer=self.reg)
+                                              regularizer=tf_reg)
         self.item_embed_var = tf.get_variable(name="item_embed_var",
                                               shape=[self.n_items,
                                                      self.embed_size],
                                               initializer=tf_truncated_normal(
                                                   0.0, 0.03),
-                                              regularizer=self.reg)
+                                              regularizer=tf_reg)
 
         bias_item_pos = tf.nn.embedding_lookup(
             self.item_bias_var, self.item_indices_pos)
@@ -131,7 +138,7 @@ class BPR(Base, TfMixin, EvalMixin):
         self.sess.run(tf.global_variables_initializer())
 
     def fit(self, train_data, verbose=1, shuffle=True, num_threads=1,
-                   eval_data=None, metrics=None):
+                   eval_data=None, metrics=None, optimizer="sgd"):
 
         start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         print(f"training start time: {colorize(start_time, 'magenta')}")
@@ -144,23 +151,57 @@ class BPR(Base, TfMixin, EvalMixin):
         else:
             self._fit_cython(train_data, verbose=verbose, shuffle=shuffle,
                              num_threads=num_threads, eval_data=eval_data,
-                             metrics=metrics)
+                             metrics=metrics, optimizer=optimizer)
 
     def _fit_cython(self, train_data, verbose=1, shuffle=True, num_threads=1,
-                    eval_data=None, metrics=None):
+                    eval_data=None, metrics=None, optimizer="sgd"):
+
+        if optimizer == "sgd":
+            trainer = partial(bpr_update)
+
+        elif optimizer == "momentum":
+            user_velocity = np.zeros_like(self.user_embed, dtype=np.float32)
+            item_velocity = np.zeros_like(self.item_embed, dtype=np.float32)
+            momentum = 0.9
+            trainer = partial(bpr_update,
+                              u_velocity=user_velocity,
+                              i_velocity=item_velocity,
+                              momentum=momentum)
+
+        elif optimizer == "adam":
+            # refer to the "Deep Learning" book,
+            # which is called first and second moment
+            user_1st_moment = np.zeros_like(self.user_embed, dtype=np.float32)
+            item_1st_moment = np.zeros_like(self.item_embed, dtype=np.float32)
+            user_2nd_moment = np.zeros_like(self.user_embed, dtype=np.float32)
+            item_2nd_moment = np.zeros_like(self.item_embed, dtype=np.float32)
+            rho1, rho2 = 0.9, 0.999
+            trainer = partial(bpr_update,
+                              u_1st_mom=user_1st_moment,
+                              i_1st_mom=item_1st_moment,
+                              u_2nd_mom=user_2nd_moment,
+                              i_2nd_mom=item_2nd_moment,
+                              rho1=rho1,
+                              rho2=rho2)
+
+        else:
+            raise ValueError("optimizer must be one of these: "
+                             "('sgd', 'momentum', 'adam')")
 
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
-                bpr_update(train_data,
-                           self.user_embed,
-                           self.item_embed,
-                           self.lr,
-                           self.reg,
-                           self.n_users,
-                           self.n_items,
-                           shuffle,
-                           num_threads,
-                           self.seed)
+                trainer(optimizer=optimizer,
+                        train_data=train_data,
+                        user_embed=self.user_embed,
+                        item_embed=self.item_embed,
+                        lr=self.lr,
+                        reg=self.reg,
+                        n_users=self.n_users,
+                        n_items=self.n_items,
+                        shuffle=shuffle,
+                        num_threads=num_threads,
+                        seed=self.seed,
+                        epoch=epoch)
 
             if verbose > 1:
                 self.print_metrics(eval_data=eval_data, metrics=metrics)
