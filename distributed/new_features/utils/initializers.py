@@ -3,7 +3,7 @@ import numpy as np
 
 def truncated_normal(shape, mean=0.0, scale=0.05):
     total_num = np.multiply(*shape)
-    array = np.random.normal(mean, scale, total_num)
+    array = np.random.normal(mean, scale, total_num).astype(np.float32)
     for i, sample in enumerate(array):
         while sample > mean + 2 * scale or sample < mean - 2 * scale:
             sample = np.random.normal(mean, scale, 1)
