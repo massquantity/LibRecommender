@@ -1,61 +1,41 @@
 import numbers
 import numpy as np
 
-"""
-def construct_unique_item_feat(sparse_indices, dense_values, item_sparse_col, item_dense_col):
-    neg_item_sparse_matrix = _item_sparse_unique(sparse_indices, item_sparse_col)
-    if dense_values is None or not item_dense_col:
-        return neg_item_sparse_matrix, None
 
-    assert len(sparse_indices) == len(dense_values), "length of sparse and dense columns must be equal"
-    neg_item_dense_matrix = _item_dense_unique(sparse_indices, dense_values, item_dense_col)
-    return neg_item_sparse_matrix, neg_item_dense_matrix
+def construct_unique_feat(user_indices, item_indices, sparse_indices,
+                          dense_values, user_sparse_col, user_dense_col,
+                          item_sparse_col, item_dense_col):
 
+    if user_sparse_col:
+        user_sparse_matrix = _compress_unique_values(sparse_indices, user_sparse_col, user_indices)
+    else:
+        user_sparse_matrix = None
 
-def _item_sparse_unique(sparse_indices, item_sparse_col):
-    # np.unique(axis=0) will sort the data based on first column, so we can do direct mapping
-    return np.unique(np.take(sparse_indices, item_sparse_col, axis=1), axis=0)
+    if item_sparse_col:
+        item_sparse_matrix = _compress_unique_values(sparse_indices, item_sparse_col, item_indices)
+    else:
+        item_sparse_matrix = None
 
+    if user_dense_col:
+        user_dense_matrix = _compress_unique_values(dense_values, user_dense_col, user_indices)
+    else:
+        user_dense_matrix = None
 
-def _item_dense_unique(sparse_indices, dense_values, item_dense_col):
-    item_indices = sparse_indices[:, 1].reshape(-1, 1)
-    dense_values = np.take(dense_values, item_dense_col, axis=1)
-    dense_values = dense_values.reshape(-1, 1) if dense_values.ndim == 1 else dense_values
-    indices_plus_dense_values = np.concatenate([item_indices, dense_values], axis=-1)
-    return np.unique(indices_plus_dense_values, axis=0)[:, 1:]  # remove redundant item_indices
-"""
+    if item_dense_col:
+        item_dense_matrix = _compress_unique_values(dense_values, item_dense_col, item_indices)
+    else:
+        item_dense_matrix = None
 
-
-def construct_unique_feat(sparse_indices, dense_values, user_sparse_col,
-                          user_dense_col, item_sparse_col, item_dense_col):
-    user_sparse_matrix = _sparse_unique(sparse_indices, user_sparse_col)
-    item_sparse_matrix = _sparse_unique(sparse_indices, item_sparse_col)
-    if dense_values is None or not item_dense_col:
-        return user_sparse_matrix, None, item_sparse_matrix, None
-
-    assert len(sparse_indices) == len(dense_values), (
-        "length of sparse and dense columns must equal")
-
-    user_dense_matrix = _dense_unique(sparse_indices, dense_values, user_dense_col, "user")
-    item_dense_matrix = _dense_unique(sparse_indices, dense_values, item_dense_col, "item")
     return user_sparse_matrix, user_dense_matrix, item_sparse_matrix, item_dense_matrix
 
 
-def _sparse_unique(sparse_indices, sparse_col):
+def _compress_unique_values(orig_val, col, unique_indices):
+    values = np.take(orig_val, col, axis=1)
+    values = values.reshape(-1, 1) if orig_val.ndim == 1 else values
+    unique_indices = unique_indices.reshape(-1, 1)
+    indices_plus_values = np.concatenate([unique_indices, values], axis=-1)
     # np.unique(axis=0) will sort the data based on first column, so we can do direct mapping
-    return np.unique(np.take(sparse_indices, sparse_col, axis=1), axis=0)
-
-
-def _dense_unique(sparse_indices, dense_values, dense_col, unique_col):
-    if unique_col == "user":
-        unique_indices = sparse_indices[:, 0].reshape(-1, 1)
-    elif unique_col == "item":
-        unique_indices = sparse_indices[:, 1].reshape(-1, 1)
-
-    dense_values = np.take(dense_values, dense_col, axis=1)
-    dense_values = dense_values.reshape(-1, 1) if dense_values.ndim == 1 else dense_values
-    indices_plus_dense_values = np.concatenate([unique_indices, dense_values], axis=-1)
-    return np.unique(indices_plus_dense_values, axis=0)[:, 1:]  # remove redundant unique_indices
+    return np.unique(indices_plus_values, axis=0)[:, 1:]  # remove redundant unique_indices
 
 
 def get_predict_indices_and_values(data_info, user, item, n_items):
@@ -88,15 +68,28 @@ def get_sparse_indices(data_info, user, item=None, n_items=None, mode="predict")
     col_reindex = np.arange(len(orig_cols))[np.argsort(orig_cols)]
 
     if mode == "predict":
-        user_sparse_part = data_info.user_sparse_unique[user]
-        item_sparse_part = data_info.item_sparse_unique[item]
-    elif mode == "recommend":
-        user_sparse_part = np.tile(data_info.user_sparse_unique[user], (n_items, 1))
-        item_sparse_part = data_info.item_sparse_unique
+        if user_sparse_col and item_sparse_col:
+            user_sparse_part = data_info.user_sparse_unique[user]
+            item_sparse_part = data_info.item_sparse_unique[item]
+            sparse_indices = np.concatenate(
+                [user_sparse_part, item_sparse_part], axis=-1)[:, col_reindex]
+            return sparse_indices
+        elif user_sparse_col:
+            return data_info.user_sparse_unique[user]
+        elif item_sparse_col:
+            return data_info.item_sparse_unique[item]
 
-    sparse_indices = np.concatenate(
-        [user_sparse_part, item_sparse_part], axis=-1)[:, col_reindex]
-    return sparse_indices
+    elif mode == "recommend":
+        if user_sparse_col and item_sparse_col:
+            user_sparse_part = np.tile(data_info.user_sparse_unique[user], (n_items, 1))
+            item_sparse_part = data_info.item_sparse_unique
+            sparse_indices = np.concatenate(
+                [user_sparse_part, item_sparse_part], axis=-1)[:, col_reindex]
+            return sparse_indices
+        elif user_sparse_col:
+            return np.tile(data_info.user_sparse_unique[user], (n_items, 1))
+        elif item_sparse_col:
+            return data_info.item_sparse_unique
 
 
 def get_dense_indices(data_info, n_items=None, mode="predict"):
