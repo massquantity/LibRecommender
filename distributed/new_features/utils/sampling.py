@@ -96,13 +96,13 @@ class NegativeSamplingPure(SamplingBase):
             self.item_indices = dataset.item_indices
         self.data_size = len(self.user_indices)
 
-    def generate_all(self, seed=42, shuffle=False, mode="random"):
-        if mode not in ["random", "popular"]:
+    def generate_all(self, seed=42, shuffle=False, item_gen_mode="random"):
+        if item_gen_mode not in ["random", "popular"]:
             raise ValueError(
-                "sampling mode must either be 'random' or 'popular'")
-        elif mode == "random":
+                "sampling item_gen_mode must either be 'random' or 'popular'")
+        elif item_gen_mode == "random":
             item_indices_sampled = self.sample_items_random(seed=seed)
-        elif mode == "popular":
+        elif item_gen_mode == "popular":
             item_indices_sampled = self.sample_items_popular(seed=seed)
 
         user_indices_sampled = np.repeat(
@@ -164,13 +164,14 @@ class NegativeSamplingFeat(SamplingBase):
     #    self.labels = dataset.labels
         self.data_size = len(self.sparse_indices)
 
-    def generate_all(self, seed=42, dense=True, shuffle=False, mode="random"):
-        if mode not in ["random", "popular"]:
+    def generate_all(self, seed=42, dense=True, shuffle=False,
+                     item_gen_mode="random"):
+        if item_gen_mode not in ["random", "popular"]:
             raise ValueError(
-                "sampling mode must either be 'random' or 'popular'")
-        elif mode == "random":
+                "sampling item_gen_mode must either be 'random' or 'popular'")
+        elif item_gen_mode == "random":
             item_indices_sampled = self.sample_items_random(seed=seed)
-        elif mode == "popular":
+        elif item_gen_mode == "popular":
             item_indices_sampled = self.sample_items_popular(seed=seed)
 
         sparse_indices_sampled = self._sparse_indices_sampling(
@@ -190,22 +191,34 @@ class NegativeSamplingFeat(SamplingBase):
 
     def _sparse_indices_sampling(self, sparse_indices, item_indices_sampled):
         user_sparse_col = self.data_info.user_sparse_col.index
-        user_sparse_indices = np.take(sparse_indices, user_sparse_col, axis=1)
-        user_sparse_sampled = np.repeat(
-            user_sparse_indices, self.num_neg + 1, axis=0)
-
         item_sparse_col = self.data_info.item_sparse_col.index
-        item_sparse_sampled = self.data_info.item_sparse_unique[
-            item_indices_sampled]
 
-        assert len(user_sparse_sampled) == len(item_sparse_sampled), (
-            "num of user sampled must equal to num of item sampled")
-        # keep column names in original order
-        orig_cols = user_sparse_col + item_sparse_col
-        col_reindex = np.arange(len(orig_cols))[np.argsort(orig_cols)]
-        return np.concatenate(
-            [user_sparse_sampled, item_sparse_sampled], axis=-1
-        )[:, col_reindex]
+        if user_sparse_col and item_sparse_col:
+            user_sparse_indices = np.take(sparse_indices, user_sparse_col, axis=1)
+            user_sparse_sampled = np.repeat(
+                user_sparse_indices, self.num_neg + 1, axis=0)
+            item_sparse_sampled = self.data_info.item_sparse_unique[
+                item_indices_sampled]
+
+            assert len(user_sparse_sampled) == len(item_sparse_sampled), (
+                "num of user sampled must equal to num of item sampled")
+            # keep column names in original order
+            orig_cols = user_sparse_col + item_sparse_col
+            col_reindex = np.arange(len(orig_cols))[np.argsort(orig_cols)]
+            return np.concatenate(
+                [user_sparse_sampled, item_sparse_sampled], axis=-1
+            )[:, col_reindex]
+
+        elif user_sparse_col:
+            user_sparse_indices = np.take(sparse_indices, user_sparse_col, axis=1)
+            user_sparse_sampled = np.repeat(
+                user_sparse_indices, self.num_neg + 1, axis=0)
+            return user_sparse_sampled
+
+        elif item_sparse_col:
+            item_sparse_sampled = self.data_info.item_sparse_unique[
+                item_indices_sampled]
+            return item_sparse_sampled
 
     def _dense_indices_sampling(self, item_indices_sampled):
         n_samples = len(item_indices_sampled)
