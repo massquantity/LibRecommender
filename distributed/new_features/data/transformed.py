@@ -3,20 +3,19 @@ from array import array
 from collections import defaultdict
 from functools import partial
 from scipy.sparse import csr_matrix
-from distributed.new_features.utils.samplingNEW import NegativeSamplingPure, NegativeSamplingFeat
+from distributed.new_features.utils.sampling import NegativeSamplingPure, NegativeSamplingFeat
 
 
 class TransformedSet(object):
     def __init__(self, user_indices=None, item_indices=None, labels=None,
                  sparse_indices=None, dense_indices=None, dense_values=None,
-                 train=True, feat=True):
+                 train=True):
         self._user_indices = user_indices
         self._item_indices = item_indices
         self._labels = labels
         self._sparse_indices = sparse_indices
         self._dense_indices = dense_indices
         self._dense_values = dense_values
-        self.feat = feat
         self.has_sampled = False
         if train:
             self._sparse_interaction = csr_matrix(
@@ -45,30 +44,36 @@ class TransformedSet(object):
             item_consumed[i].append(u)
         return user_consumed, item_consumed
 
-    def build_negative_samples(self, data_info, num_neg=1,
-                               mode="random", seed=42):
+    def build_negative_samples(self, data_info, sample_mode=None, num_neg=1,
+                               item_gen_mode="random", seed=42):
+        if not sample_mode or sample_mode not in ["pure", "feat"]:
+            raise ValueError("sample_mode must either be 'pure' or 'feat'.")
         self.has_sampled = True
-        if not self.feat:
+
+        if sample_mode == "pure":
             self.user_indices_orig = self._user_indices
             self.item_indices_orig = self._item_indices
-            self.build_negative_samples_pure(data_info, num_neg, mode, seed)
-        else:
+            self.build_negative_samples_pure(data_info, num_neg,
+                                             item_gen_mode, seed)
+        elif sample_mode == "feat":
             self.sparse_indices_orig = self._sparse_indices
             self.dense_indices_orig = self._dense_indices
             self.dense_values_orig = self._dense_values
-            self.build_negative_samples_feat(data_info, num_neg, mode, seed)
+            self.build_negative_samples_feat(data_info, num_neg,
+                                             item_gen_mode, seed)
 
     def build_negative_samples_pure(self, data_info, num_neg=1,
-                                    mode="random", seed=42):
+                                    item_gen_mode="random", seed=42):
 
         neg = NegativeSamplingPure(
             self, data_info, num_neg, batch_sampling=False)
 
         (self._user_indices, self._item_indices,
-            self._labels) = neg.generate_all(seed, shuffle=False, mode=mode)
+            self._labels) = neg.generate_all(seed, shuffle=False,
+                                             item_gen_mode=item_gen_mode)
 
     def build_negative_samples_feat(self, data_info, num_neg=1,
-                                    mode="random", seed=42):
+                                    item_gen_mode="random", seed=42):
 
         neg = NegativeSamplingFeat(self, data_info, num_neg)
         if self.dense_values is None:
@@ -77,7 +82,8 @@ class TransformedSet(object):
             neg_generator = partial(neg.generate_all, dense=True)
 
         (self._sparse_indices, self._dense_indices,
-            self._dense_values, self._labels) = neg_generator(seed, mode=mode)
+            self._dense_values, self._labels) = neg_generator(
+                seed=seed, item_gen_mode=item_gen_mode)
 
     def __len__(self):
         return len(self.labels)
