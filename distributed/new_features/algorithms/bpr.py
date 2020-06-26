@@ -41,7 +41,6 @@ class BPR(Base, TfMixin, EvalMixin):
                  num_neg=1, use_tf=True, seed=42):
 
         Base.__init__(self, task, data_info)
-        TfMixin.__init__(self)
         EvalMixin.__init__(self, task)
 
         self.task = task
@@ -63,7 +62,8 @@ class BPR(Base, TfMixin, EvalMixin):
         self.item_embed = None
 
         if use_tf:
-            self.sess = tf.Session()
+            TfMixin.__init__(self)
+        #    self.sess = tf.Session()
             self._build_model_tf()
             self._build_train_ops()
         else:

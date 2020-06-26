@@ -70,12 +70,12 @@ class SVD(Base, TfMixin, EvalMixin):
         self.pu_var = tf.get_variable(name="pu_var",
                                       shape=[self.n_users, self.embed_size],
                                       initializer=tf_truncated_normal(
-                                          0.0, 0.03),
+                                          0.0, 0.05),
                                       regularizer=self.reg)
         self.qi_var = tf.get_variable(name="pi_var",
                                       shape=[self.n_items, self.embed_size],
                                       initializer=tf_truncated_normal(
-                                          0.0, 0.03),
+                                          0.0, 0.05),
                                       regularizer=self.reg)
 
         bias_user = tf.nn.embedding_lookup(self.bu_var, self.user_indices)
@@ -93,7 +93,7 @@ class SVD(Base, TfMixin, EvalMixin):
             self.loss = tf.losses.mean_squared_error(labels=self.labels,
                                                      predictions=pred)
         elif self.task == "ranking":
-        #    logits = tf.reshape(self.output, [-1])
+            # logits = tf.reshape(self.output, [-1])
             self.loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels,
                                                         logits=self.output)
