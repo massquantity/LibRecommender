@@ -19,7 +19,7 @@ from tensorflow.python.keras.initializers import (
 from .base import Base, TfMixin
 from ..evaluate.evaluate import EvalMixin
 from ..utils.tf_ops import reg_config
-from ..utils.samplingNEW import PairwiseSampling
+from ..utils.sampling import PairwiseSampling
 from ..utils.colorize import colorize
 from ..utils.timing import time_block
 from ..utils.initializers import truncated_normal, xavier_init, he_init
@@ -232,7 +232,7 @@ class BPR(Base, TfMixin, EvalMixin):
                 self.print_metrics(eval_data=eval_data, metrics=metrics)
                 print("="*30)
 
-        self._set_latent_factors()  # for predict and recommending
+        self._set_latent_factors()  # for prediction and recommendation
 
     def predict(self, user, item):
         user = np.asarray(

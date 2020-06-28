@@ -17,7 +17,7 @@ from tensorflow.python.keras.initializers import (
 from .base import Base, TfMixin
 from ..evaluate.evaluate import EvalMixin
 from ..utils.tf_ops import reg_config
-from ..utils.samplingNEW import NegativeSamplingPure
+from ..utils.sampling import NegativeSamplingPure
 from ..data.data_generator import DataGenPure
 from ..utils.colorize import colorize
 

@@ -17,7 +17,7 @@ from tensorflow.python.keras.initializers import (
 from .base import Base, TfMixin
 from ..evaluate.evaluate import EvalMixin
 from ..utils.tf_ops import reg_config
-from ..utils.samplingNEW import NegativeSamplingPure
+from ..utils.sampling import NegativeSamplingPure
 from ..data.data_generator import DataGenPure
 from ..utils.tf_ops import sparse_tensor_interaction
 from ..utils.colorize import colorize
@@ -118,13 +118,13 @@ class SVDpp(Base, TfMixin, EvalMixin):
         self.sess.run(tf.global_variables_initializer())
 
     def fit(self, train_data, verbose=1, shuffle=True, sample_rate=None,
-            eval_data=None, metrics=None):
+            recent_num=None, eval_data=None, metrics=None):
 
         start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         print(f"training start time: {colorize(start_time, 'magenta')}")
         self.user_consumed = train_data.user_consumed
         sparse_implicit_interaction = sparse_tensor_interaction(
-            train_data, sample_rate=sample_rate)
+            train_data, random_sample_rate=sample_rate, recent_num=recent_num)
 
         self._build_model(sparse_implicit_interaction)
         self._build_train_ops()

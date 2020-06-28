@@ -67,19 +67,19 @@ class NCF(Base, TfMixin, EvalMixin):
 
         user_gmf = tf.get_variable(name="user_gmf",
                                    shape=[self.n_users, self.embed_size],
-                                   initializer=tf_truncated_normal(0.0, 0.05),
+                                   initializer=tf_truncated_normal(0.0, 0.01),
                                    regularizer=self.reg)
         item_gmf = tf.get_variable(name="item_gmf",
                                    shape=[self.n_items, self.embed_size],
-                                   initializer=tf_truncated_normal(0.0, 0.05),
+                                   initializer=tf_truncated_normal(0.0, 0.01),
                                    regularizer=self.reg)
         user_mlp = tf.get_variable(name="user_mlp",
                                    shape=[self.n_users, self.embed_size],
-                                   initializer=tf_truncated_normal(0.0, 0.05),
+                                   initializer=tf_truncated_normal(0.0, 0.01),
                                    regularizer=self.reg)
         item_mlp = tf.get_variable(name="item_mlp",
                                    shape=[self.n_items, self.embed_size],
-                                   initializer=tf_truncated_normal(0.0, 0.05),
+                                   initializer=tf_truncated_normal(0.0, 0.01),
                                    regularizer=self.reg)
 
         user_gmf_embed = tf.nn.embedding_lookup(user_gmf, self.user_indices)
