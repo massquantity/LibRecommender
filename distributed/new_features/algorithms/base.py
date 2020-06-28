@@ -1,5 +1,8 @@
 import abc
+import os
+import multiprocessing
 import numpy as np
+import tensorflow as tf
 from ..utils.timing import time_block
 from ..utils.colorize import colorize
 from ..utils.exception import NotSamplingError
@@ -122,25 +125,57 @@ class Base(abc.ABC):
                              f"before evaluating on epochs.")
             raise NotSamplingError(f"{colorize(exception_str, 'red')}")
 
+    def _decide_dense_values(self, data_info):
+        return False if not data_info.dense_col else True
+
+    def _sparse_feat_size(self, data_info):
+        if (data_info.user_sparse_unique is not None
+                and data_info.item_sparse_unique is not None):
+            return max(np.max(data_info.user_sparse_unique),
+                       np.max(data_info.item_sparse_unique)) + 1
+        elif data_info.user_sparse_unique is not None:
+            return np.max(data_info.user_sparse_unique) + 1
+        elif data_info.item_sparse_unique is not None:
+            return np.max(data_info.item_sparse_unique) + 1
+
+    def _sparse_field_size(self, data_info):
+        return len(data_info.sparse_col.name)
+
+    def _dense_field_size(self, data_info):
+        return len(data_info.dense_col.name)
+
 
 class TfMixin(object):
-    def __init__(self, config=None, reg=None):
-        self.reg_ = None
+    def __init__(self, tf_sess_config=None):
+        self.cpu_num = multiprocessing.cpu_count()
+        self.sess = self._sess_config(tf_sess_config)
 
-    def _reg_config(self):
-        pass
+    def _sess_config(self, tf_sess_config=None):
+        if not tf_sess_config:
+            # Session config based on:
+            # https://software.intel.com/content/www/us/en/develop/articles/tips-to-improve-performance-for-popular-deep-learning-frameworks-on-multi-core-cpus.html
+            tf_sess_config = {
+                "intra_op_parallelism_threads": 0,
+                "inter_op_parallelism_threads": 0,
+                "allow_soft_placement": True,
+                "device_count": {"CPU": self.cpu_num}
+            }
+        #    os.environ["OMP_NUM_THREADS"] = f"{self.cpu_num}"
+
+        config = tf.ConfigProto(**tf_sess_config)
+        return tf.Session(config=config)
 
     def train_pure(self, data_generator, verbose, shuffle, eval_data, metrics):
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
                 for user, item, label in data_generator(shuffle=shuffle):
-                    train_loss, _ = self.sess.run([
-                        self.loss, self.training_op
-                    ],
+                    train_loss, _ = self.sess.run(
+                        [self.loss, self.training_op],
                         feed_dict={self.user_indices: user,
                                    self.item_indices: item,
-                                   self.labels: label})
+                                   self.labels: label,
+                                   self.is_training: True})
 
                     train_total_loss.append(train_loss)
 
@@ -158,15 +193,31 @@ class TfMixin(object):
                 self.print_metrics(eval_data=eval_data, metrics=metrics)
                 print("="*30)
 
+    def train_feat(self, data_generator, verbose, shuffle, eval_data, metrics):
+        for epoch in range(1, self.n_epochs + 1):
+            with time_block(f"Epoch {epoch}", verbose):
+                train_total_loss = []
+                for si, di, dv, label in data_generator(shuffle=shuffle):
+                    feed_dict = self._get_feed_dict(si, di, dv, label, True)
+                    train_loss, _ = self.sess.run(
+                        [self.loss, self.training_op], feed_dict)
+                    train_total_loss.append(train_loss)
 
+            if verbose > 1:
+                train_loss_str = "train_loss: " + str(
+                    round(np.mean(train_total_loss), 4)
+                )
+                print(f"\t {colorize(train_loss_str, 'green')}")
+                self.print_metrics(eval_data=eval_data, metrics=metrics)
+                print("="*30)
 
-
-
-
-
-
-
-
-
-
-
+    def _get_feed_dict(self, sparse_indices, dense_indices,
+                       dense_values, label, is_training):
+        feed_dict = {self.sparse_indices: sparse_indices,
+                     self.is_training: is_training}
+        if self.dense:
+            feed_dict.update({self.dense_indices: dense_indices,
+                              self.dense_values: dense_values})
+        if label is not None:
+            feed_dict.update({self.labels: label})
+        return feed_dict
