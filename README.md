@@ -95,7 +95,7 @@ From pypi : &nbsp;  `pip install LibRecommender`
 
 ##### Required Dependencies:
 - Python >= 3.6
-- tensorflow >= 1.14 (but not tf2.0 :)
+- tensorflow >= 1.14 (but not tf 2.0 :)
 - numpy >= 1.15.4
 - pandas >= 0.23.4
 - scipy >= 1.2.1

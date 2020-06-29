@@ -38,26 +38,32 @@ def _compress_unique_values(orig_val, col, unique_indices):
     return np.unique(indices_plus_values, axis=0)[:, 1:]  # remove redundant unique_indices
 
 
-def get_predict_indices_and_values(data_info, user, item, n_items):
+def get_predict_indices_and_values(data_info, user, item, n_items, dense):
     if isinstance(user, numbers.Integral):
         user = list([user])
     if isinstance(item, numbers.Integral):
         item = list([item])
     sparse_indices = get_sparse_indices(data_info, user, item, mode="predict")
-    dense_indices = get_dense_indices(data_info, n_items, mode="predict")
-    dense_values = get_dense_values(data_info, user, item, mode="predict")
-    assert len(sparse_indices) == len(dense_indices) == len(dense_values), (
-        "indices and values length must equal")
-    return sparse_indices, dense_indices, dense_values
+    if dense:
+        dense_indices = get_dense_indices(data_info, user, n_items, mode="predict")
+        dense_values = get_dense_values(data_info, user, item, mode="predict")
+        assert len(sparse_indices) == len(dense_indices) == len(dense_values), (
+            "indices and values length must equal")
+        return sparse_indices, dense_indices, dense_values
+    else:
+        return sparse_indices, None, None
 
 
-def get_recommend_indices_and_values(data_info, user, n_items):
+def get_recommend_indices_and_values(data_info, user, n_items, dense):
     sparse_indices = get_sparse_indices(data_info, user, n_items=n_items, mode="recommend")
-    dense_indices = get_dense_indices(data_info, n_items=n_items, mode="recommend")
-    dense_values = get_dense_values(data_info, user, n_items=n_items, mode="recommend")
-    assert len(sparse_indices) == len(dense_indices) == len(dense_values), (
-        "indices and values length must equal")
-    return sparse_indices, dense_indices, dense_values
+    if dense:
+        dense_indices = get_dense_indices(data_info, user, n_items=n_items, mode="recommend")
+        dense_values = get_dense_values(data_info, user, n_items=n_items, mode="recommend")
+        assert len(sparse_indices) == len(dense_indices) == len(dense_values), (
+            "indices and values length must equal")
+        return sparse_indices, dense_indices, dense_values
+    else:
+        return sparse_indices, None, None
 
 
 def get_sparse_indices(data_info, user, item=None, n_items=None, mode="predict"):
@@ -92,12 +98,12 @@ def get_sparse_indices(data_info, user, item=None, n_items=None, mode="predict")
             return data_info.item_sparse_unique
 
 
-def get_dense_indices(data_info, n_items=None, mode="predict"):
+def get_dense_indices(data_info, user, n_items=None, mode="predict"):
     user_dense_col = data_info.user_dense_col.index
     item_dense_col = data_info.item_dense_col.index
     total_dense_cols = len(user_dense_col) + len(item_dense_col)
     if mode == "predict":
-        return np.arange(total_dense_cols).reshape(1, -1)
+        return np.tile(np.arange(total_dense_cols), (len(user), 1))
     elif mode == "recommend":
         return np.tile(np.arange(total_dense_cols), (n_items, 1))
 

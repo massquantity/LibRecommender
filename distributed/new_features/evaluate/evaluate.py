@@ -65,7 +65,7 @@ class EvalMixin(object):
 
             for m in metrics:
                 if m in ["log_loss", "loss"]:
-                    eval_result[m] = log_loss(y_true, y_prob, eps=1e-15)
+                    eval_result[m] = log_loss(y_true, y_prob, eps=1e-7)
                 elif m == "balanced_accuracy":
                     y_pred = np.round(y_prob)
                     eval_result[m] = balanced_accuracy_score(y_true, y_pred)
@@ -198,12 +198,12 @@ def print_metrics_ranking(metrics, y_prob=None, y_true=None, y_reco_list=None,
     if train:
         for m in metrics:
             if m in ["log_loss", "loss"]:
-                log_loss_ = log_loss(y_true, y_prob, eps=1e-15)
+                log_loss_ = log_loss(y_true, y_prob, eps=1e-7)
                 print(f"\t train log_loss: {log_loss_:.4f}")
     else:
         for m in metrics:
             if m in ["log_loss", "loss"]:
-                log_loss_ = log_loss(y_true, y_prob, eps=1e-15)
+                log_loss_ = log_loss(y_true, y_prob, eps=1e-7)
                 print(f"\t eval log_loss: {log_loss_:.4f}")
             elif m == "balanced_accuracy":
                 y_pred = np.round(y_prob)

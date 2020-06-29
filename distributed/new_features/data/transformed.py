@@ -24,10 +24,6 @@ class TransformedSet(object):
 
         (self._user_consumed,
          self._item_consumed) = self.__interaction_consumed()
-   #     self.sparse_indices_sampled = None
-   #     self.dense_indices_sampled = None
-   #     self.dense_values_sampled = None
-   #     self.label_samples = None
 
         self.user_indices_orig = None
         self.item_indices_orig = None
@@ -56,6 +52,8 @@ class TransformedSet(object):
             self.build_negative_samples_pure(data_info, num_neg,
                                              item_gen_mode, seed)
         elif sample_mode == "feat":
+            self.user_indices_orig = self._user_indices
+            self.item_indices_orig = self._item_indices
             self.sparse_indices_orig = self._sparse_indices
             self.dense_indices_orig = self._dense_indices
             self.dense_values_orig = self._dense_values
@@ -69,8 +67,7 @@ class TransformedSet(object):
             self, data_info, num_neg, batch_sampling=False)
 
         (self._user_indices, self._item_indices,
-            self._labels) = neg.generate_all(seed, shuffle=False,
-                                             item_gen_mode=item_gen_mode)
+            self._labels) = neg.generate_all(seed, item_gen_mode=item_gen_mode)
 
     def build_negative_samples_feat(self, data_info, num_neg=1,
                                     item_gen_mode="random", seed=42):
@@ -81,9 +78,9 @@ class TransformedSet(object):
         else:
             neg_generator = partial(neg.generate_all, dense=True)
 
-        (self._sparse_indices, self._dense_indices,
-            self._dense_values, self._labels) = neg_generator(
-                seed=seed, item_gen_mode=item_gen_mode)
+        (self._user_indices, self._item_indices, self._sparse_indices,
+         self._dense_indices, self._dense_values, self._labels
+         ) = neg_generator(seed=seed, item_gen_mode=item_gen_mode)
 
     def __len__(self):
         return len(self.labels)
