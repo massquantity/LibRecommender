@@ -166,8 +166,7 @@ class NCF(Base, TfMixin, EvalMixin):
         })
 
         if self.task == "rating":
-            preds = np.clip(
-                preds, self.lower_bound, self.upper_bound)
+            preds = np.clip(preds, self.lower_bound, self.upper_bound)
         elif self.task == "ranking":
             preds = 1 / (1 + np.exp(-preds))
 
@@ -188,7 +187,6 @@ class NCF(Base, TfMixin, EvalMixin):
             self.item_indices: item_indices,
             self.is_training: False
         })
-
         if self.task == "ranking":
             recos = 1 / (1 + np.exp(-recos))
 
