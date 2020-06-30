@@ -125,8 +125,11 @@ class Base(abc.ABC):
                              f"before evaluating on epochs.")
             raise NotSamplingError(f"{colorize(exception_str, 'red')}")
 
+    def _decide_sparse_indices(self, data_info):
+        return False if not data_info.sparse_col.name else True
+
     def _decide_dense_values(self, data_info):
-        return False if not data_info.dense_col else True
+        return False if not data_info.dense_col.name else True
 
     def _sparse_feat_size(self, data_info):
         if (data_info.user_sparse_unique is not None
@@ -169,7 +172,7 @@ class TfMixin(object):
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
-                for user, item, label in data_generator(shuffle=shuffle):
+                for user, item, label in data_generator(shuffle, self.batch_size):
                     train_loss, _ = self.sess.run(
                         [self.loss, self.training_op],
                         feed_dict={self.user_indices: user,
@@ -195,10 +198,13 @@ class TfMixin(object):
 
     def train_feat(self, data_generator, verbose, shuffle, eval_data, metrics):
         for epoch in range(1, self.n_epochs + 1):
+            if self.lr_decay:
+                print(f"With lr_decay, epoch {epoch} learning rate: "
+                      f"{self.sess.run(self.lr)}")
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
-                for si, di, dv, label in data_generator(shuffle=shuffle):
-                    feed_dict = self._get_feed_dict(si, di, dv, label, True)
+                for u, i, label, si, di, dv in data_generator(shuffle, self.batch_size):
+                    feed_dict = self._get_feed_dict(u, i, si, di, dv, label, True)
                     train_loss, _ = self.sess.run(
                         [self.loss, self.training_op], feed_dict)
                     train_total_loss.append(train_loss)
@@ -211,10 +217,13 @@ class TfMixin(object):
                 self.print_metrics(eval_data=eval_data, metrics=metrics)
                 print("="*30)
 
-    def _get_feed_dict(self, sparse_indices, dense_indices,
-                       dense_values, label, is_training):
-        feed_dict = {self.sparse_indices: sparse_indices,
+    def _get_feed_dict(self, user_indices, item_indices, sparse_indices,
+                       dense_indices, dense_values, label, is_training):
+        feed_dict = {self.user_indices: user_indices,
+                     self.item_indices: item_indices,
                      self.is_training: is_training}
+        if self.sparse:
+            feed_dict.update({self.sparse_indices: sparse_indices})
         if self.dense:
             feed_dict.update({self.dense_indices: dense_indices,
                               self.dense_values: dense_values})
