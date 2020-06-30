@@ -1,4 +1,5 @@
 import numpy as np
+from .sparse import sparse_indices_and_values
 
 
 class DataGenPure(object):
@@ -28,112 +29,150 @@ class DataGenPure(object):
 
 
 class DataGenFeat(object):
-    def __init__(self, data, batch_size, dense, class_name=None):
+    def __init__(self, data, sparse, dense, class_name=None):
+        self.user_indices = data.user_indices
+        self.item_indices = data.item_indices
+        self.labels = data.labels
+        self.sparse_indices = data.sparse_indices
+        self.dense_indices = data.dense_indices
+        self.dense_values = data.dense_values
+        self.sparse = sparse
+        self.dense = dense
         self.data_size = len(data)
-    #    self.user_indices = data.user_indices
-    #    self.item_indices = data.item_indices
-        self.labels = data.labels
-        self.sparse_indices = data.sparse_indices
-        self.dense_indices = data.dense_indices
-        self.dense_values = data.dense_values
-        self.batch_size = batch_size
         self.class_name = class_name
-        self.dense = dense
 
-    def __iter__(self):
-        for i in range(0, self.data_size, self.batch_size):
-            batch_slice = slice(i, i + self.batch_size)
-            if self.dense:
-                yield(
+    def __iter__(self, batch_size):
+        for i in range(0, self.data_size, batch_size):
+            batch_slice = slice(i, i + batch_size)
+            res = (
+                self.user_indices[batch_slice],
+                self.item_indices[batch_slice],
+                self.labels[batch_slice]
+            )
+            if self.sparse and self.dense:
+                res_other = (
                     self.sparse_indices[batch_slice],
                     self.dense_indices[batch_slice],
-                    self.dense_values[batch_slice],
-                    self.labels[batch_slice]
+                    self.dense_values[batch_slice]
                 )
-            else:
-                yield(
+            elif self.sparse:
+                res_other =  (
                     self.sparse_indices[batch_slice],
                     None,
-                    None,
-                    self.labels[batch_slice]
+                    None
                 )
+            elif self.dense:
+                res_other = (
+                    None,
+                    self.dense_indices[batch_slice],
+                    self.dense_values[batch_slice]
+                )
+            else:
+                res_other = (
+                    None,
+                    None,
+                    None
+                )
+            yield res + res_other
 
-    def __call__(self, shuffle=True):
+    def __call__(self, shuffle=True, batch_size=None):
         if shuffle:
             mask = np.random.permutation(range(self.data_size))
-            if self.dense:
+            if self.sparse:
                 self.sparse_indices = self.sparse_indices[mask]
+            if self.dense:
                 self.dense_indices = self.dense_indices[mask]
                 self.dense_values = self.dense_values[mask]
-                self.labels = self.labels[mask]
-            else:
-                self.sparse_indices = self.sparse_indices[mask]
-                self.labels = self.labels[mask]
+            self.user_indices = self.user_indices[mask]
+            self.item_indices = self.item_indices[mask]
+            self.labels = self.labels[mask]
 
-        return self
+        return self.__iter__(batch_size)
 
 
-class DataGenYoutube(object):
-    def __init__(self, data, batch_size, dense, mode, num_neg=1):
-        if mode == "match":
-            if data.has_sampled:
-                self.user_indices = data.user_indices_orig
-                self.item_indices = data.item_indices_orig
-            else:
-                self.user_indices = data.user_indices
-                self.item_indices = data.item_indices
-        elif mode == "ranking":
-            self.user_indices = data.user_indices
-            # no need for item_indices, just for consistency's sake
-            self.item_indices = np.zeros_like(self.user_indices)
+class DataGenSequence(object):
+    def __init__(self, data, sparse, dense, recent_num=10,
+                 random_num=None, model=None):
+        if model == "YoutubeMatch" and data.has_sampled:
+            self.user_indices = data.user_indices_orig
+            self.item_indices = data.item_indices_orig
+            self.labels = data.labels_orig
+            self.sparse_indices = data.sparse_indices_orig
+            self.dense_indices = data.dense_indices_orig
+            self.dense_values = data.dense_values_orig
         else:
-            raise ValueError("mode must either be 'match' or 'ranking'")
-        self.data_size = len(self.user_indices)
-        self.sparse_indices = data.sparse_indices
-        self.dense_indices = data.dense_indices
-        self.dense_values = data.dense_values
-        self.labels = data.labels
-        self.batch_size = batch_size
+            self.user_indices = data.user_indices
+            self.item_indices = data.item_indices
+            self.labels = data.labels
+            self.sparse_indices = data.sparse_indices
+            self.dense_indices = data.dense_indices
+            self.dense_values = data.dense_values
+        self.sparse = sparse
         self.dense = dense
+        self.data_size = len(self.user_indices)
+        self.recent_num = recent_num
+        self.random_num = random_num
+        self.user_consumed = data.user_consumed
+    #    self.zero_item = data.n_items
 
-    def __iter__(self):
-        for i in range(0, self.data_size, self.batch_size):
-            batch_slice = slice(i, i + self.batch_size)
-            if self.dense:
-                yield(
-                    self.user_indices[batch_slice],
-                    self.item_indices[batch_slice],
+    def __iter__(self, batch_size):
+        for i in range(0, self.data_size, batch_size):
+            batch_slice = slice(i, i + batch_size)
+            (interacted_indices,
+             interacted_values,
+             modified_batch_size) = sparse_indices_and_values(
+                self.user_indices[batch_slice],
+                self.item_indices[batch_slice],
+                self.user_consumed,
+                self.recent_num,
+                self.random_num
+            )
+            res = (
+                modified_batch_size,
+                interacted_indices,
+                interacted_values,
+                self.user_indices[batch_slice],
+                self.item_indices[batch_slice],
+                self.labels[batch_slice]
+            )
+            if self.sparse and self.dense:
+                res_other = (
                     self.sparse_indices[batch_slice],
                     self.dense_indices[batch_slice],
-                    self.dense_values[batch_slice],
-                    self.labels[batch_slice],
+                    self.dense_values[batch_slice]
                 )
-            else:
-                yield(
-                    self.user_indices[batch_slice],
-                    self.item_indices[batch_slice],
+            elif self.sparse:
+                res_other = (
                     self.sparse_indices[batch_slice],
                     None,
-                    None,
-                    self.labels[batch_slice],
+                    None
                 )
+            elif self.dense:
+                res_other = (
+                    None,
+                    self.dense_indices[batch_slice],
+                    self.dense_values[batch_slice]
+                )
+            else:
+                res_other = (
+                    None,
+                    None,
+                    None
+                )
+            yield res + res_other
 
-    def __call__(self, shuffle=True):
+    def __call__(self, shuffle=True, batch_size=None):
         if shuffle:
             mask = np.random.permutation(range(self.data_size))
-            if self.dense:
-                self.user_indices = self.user_indices[mask]
-                self.item_indices = self.item_indices[mask]
+            if self.sparse:
                 self.sparse_indices = self.sparse_indices[mask]
+            if self.dense:
                 self.dense_indices = self.dense_indices[mask]
                 self.dense_values = self.dense_values[mask]
-                self.labels = self.labels[mask]
-            else:
-                self.user_indices = self.user_indices[mask]
-                self.item_indices = self.item_indices[mask]
-                self.sparse_indices = self.sparse_indices[mask]
-                self.labels = self.labels[mask]
+            self.user_indices = self.user_indices[mask]
+            self.item_indices = self.item_indices[mask]
+            self.labels = self.labels[mask]
 
-        return self
+        return self.__iter__(batch_size)
 
 
