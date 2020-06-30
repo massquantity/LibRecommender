@@ -22,7 +22,8 @@ from ..utils.tf_ops import (
     dense_nn,
     lr_decay_config
 )
-from ..data.data_generator import DataGenYoutube
+from ..data.data_generator import DataGenSequence
+from ..data.sparse import user_last_interacted_items
 from ..utils.tf_ops import sparse_tensor_interaction
 from ..utils.colorize import colorize
 from ..utils.timing import time_block
@@ -36,8 +37,9 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
     def __init__(self, task="ranking", data_info=None, embed_size=16,
                  n_epochs=20, lr=0.01, lr_decay=False, reg=None,
                  batch_size=256, num_neg=1, use_bn=True, dropout_rate=None,
-                 hidden_units="128,64,32", loss_type="nce", seed=42,
-                 lower_upper_bound=None, tf_sess_config=None):
+                 hidden_units="128,64,32", loss_type="nce", recent_num=10,
+                 random_num=None, seed=42, lower_upper_bound=None,
+                 tf_sess_config=None):
 
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self, tf_sess_config)
@@ -63,79 +65,109 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self.global_mean = data_info.global_mean
         self.default_prediction = data_info.global_mean if (
                 task == "rating") else 0.0
+        self.recent_num = recent_num
+        self.random_num = random_num
         self.seed = seed
     #    self.sess = tf.Session()
         self.user_vector = None
         self.item_weights = None
         self.item_biases = None
         self.user_consumed = None
+        self.sparse = self._decide_sparse_indices(data_info)
         self.dense = self._decide_dense_values(data_info)
-        self.sparse_feature_size = self._sparse_feat_size(data_info)
-        self.sparse_field_size = self._sparse_field_size(data_info)
+        if self.sparse:
+            self.sparse_feature_size = self._sparse_feat_size(data_info)
+            self.sparse_field_size = self._sparse_field_size(data_info)
         if self.dense:
             self.dense_field_size = self._dense_field_size(data_info)
 
-    def _build_model(self, sparse_item_interaction):
+    def _build_model(self):
         tf.set_random_seed(self.seed)
-        self.user_indices = tf.placeholder(tf.int32, shape=[None])
-        # item_indices actually serve as label
+    #    self.user_indices = tf.placeholder(tf.int32, shape=[None])
+        # item_indices actually served as label in YouTubeMatch model
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
-        self.sparse_indices = tf.placeholder(
-            tf.int32, shape=[None, self.sparse_field_size])
         self.is_training = tf.placeholder_with_default(True, shape=[])
+        self.concat_embed = []
+
+        self._build_item_interaction()
+        if self.sparse:
+            self._build_sparse()
+        if self.dense:
+            self._build_dense()
+
+        concat_features = tf.concat(self.concat_embed, axis=1)
+        self.user_vector_repr = dense_nn(concat_features,
+                                         self.hidden_units,
+                                         use_bn=self.use_bn,
+                                         dropout_rate=self.dropout_rate,
+                                         is_training=self.is_training)
+
+    def _build_item_interaction(self):
+        self.item_interaction_indices = tf.placeholder(
+            tf.int64, shape=[None, 2])
+        self.item_interaction_values = tf.placeholder(tf.int32, shape=[None])
+        self.modified_batch_size = tf.placeholder(tf.int32, shape=[])
 
         item_interaction_features = tf.get_variable(
             name="item_interaction_features",
             shape=[self.n_items, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
+    #    dummy_item_variable = tf.get_variable(  # for unknown items set all zero
+    #        name="dummy_item_variable",
+    #        shape=[1, self.embed_size],
+    #        initializer=tf_zeros,
+    #        trainable=False)
+    #    item_interaction_features = tf.concat(
+    #        [item_interaction_features, dummy_item_variable], axis=0)
+
+        sparse_item_interaction = tf.SparseTensor(
+            self.item_interaction_indices,
+            self.item_interaction_values,
+            [self.modified_batch_size, self.n_items]
+        )
+        pooled_embed = tf.nn.safe_embedding_lookup_sparse(
+            item_interaction_features, sparse_item_interaction,
+            sparse_weights=None, combiner="sqrtn", default_id=None
+        )  # unknown user will return 0-vector
+        #    pooled_embed = tf.nn.embedding_lookup(
+        #        pooled_items, self.user_indices)
+        self.concat_embed.append(pooled_embed)
+
+    def _build_sparse(self):
+        self.sparse_indices = tf.placeholder(
+            tf.int32, shape=[None, self.sparse_field_size])
         sparse_features = tf.get_variable(
             name="sparse_features",
             shape=[self.sparse_feature_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
 
-        pooled_items = tf.nn.safe_embedding_lookup_sparse(
-            item_interaction_features, sparse_item_interaction,
-            sparse_weights=None, combiner="sqrtn", default_id=None
-        )   # unknown user will return 0-vector
-        pooled_embed = tf.nn.embedding_lookup(
-            pooled_items, self.user_indices)
-
         sparse_embed = tf.nn.embedding_lookup(
             sparse_features, self.sparse_indices)
         sparse_embed = tf.reshape(
             sparse_embed, [-1, self.sparse_field_size * self.embed_size])
+        self.concat_embed.append(sparse_embed)
 
-        concat_features = tf.concat(
-            [pooled_embed, sparse_embed], axis=1)
+    def _build_dense(self):
+        self.dense_indices = tf.placeholder(
+            tf.int32, shape=[None, self.dense_field_size])
+        self.dense_values = tf.placeholder(
+            tf.float32, shape=[None, self.dense_field_size])
 
-        if self.dense:  # build dense part if present
-            self.dense_indices = tf.placeholder(
-                tf.int32, shape=[None, self.dense_field_size])
-            self.dense_values = tf.placeholder(
-                tf.float32, shape=[None, self.dense_field_size])
-
-            dense_features = tf.get_variable(
-                name="dense_features",
-                shape=[self.dense_field_size, self.embed_size],
-                initializer=tf_truncated_normal(0.0, 0.01),
-                regularizer=self.reg)
-            dense_embed = tf.nn.embedding_lookup(
-                dense_features, self.dense_indices)
-            dense_values = tf.reshape(
-                self.dense_values, [-1, self.dense_field_size, 1])
-            dense_embed = tf.multiply(dense_embed, dense_values)
-            dense_embed = tf.reshape(
-                dense_embed, [-1, self.dense_field_size * self.embed_size])
-            concat_features = tf.concat(
-                [concat_features, dense_embed], axis=1)
-
-        self.user_vector_repr = dense_nn(concat_features,
-                                         self.hidden_units,
-                                         use_bn=self.use_bn,
-                                         dropout_rate=self.dropout_rate,
-                                         is_training=self.is_training)
+        dense_features = tf.get_variable(
+            name="dense_features",
+            shape=[self.dense_field_size, self.embed_size],
+            initializer=tf_truncated_normal(0.0, 0.01),
+            regularizer=self.reg)
+        dense_embed = tf.nn.embedding_lookup(
+            dense_features, self.dense_indices)
+        dense_values = tf.reshape(
+            self.dense_values, [-1, self.dense_field_size, 1])
+        dense_embed = tf.multiply(dense_embed, dense_values)
+        dense_embed = tf.reshape(
+            dense_embed, [-1, self.dense_field_size * self.embed_size])
+        self.concat_embed.append(dense_embed)
 
     def _build_train_ops(self, global_steps=None):
         self.nce_weights = tf.get_variable(
@@ -189,8 +221,8 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self.training_op = tf.group([optimizer_op, update_ops])
         self.sess.run(tf.global_variables_initializer())
 
-    def fit(self, train_data, verbose=1, shuffle=True, sample_rate=None,
-            recent_num=None, eval_data=None, metrics=None, **kwargs):
+    def fit(self, train_data, verbose=1, shuffle=True, eval_data=None,
+            metrics=None, **kwargs):
         self._check_item_col()
         start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         print(f"training start time: {colorize(start_time, 'magenta')}")
@@ -202,21 +234,29 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         else:
             global_steps = None
 
-        sparse_item_interaction = sparse_tensor_interaction(
-            train_data, random_sample_rate=sample_rate, recent_num=recent_num)
-        self._build_model(sparse_item_interaction)
+    #    sparse_item_interaction = sparse_tensor_interaction(
+    #        train_data, random_sample_rate=sample_rate, recent_num=recent_num)
+        self._build_model()
         self._build_train_ops(global_steps)
 
-        data_generator = DataGenYoutube(train_data, self.batch_size,
-                                        self.dense, mode="match")
+        data_generator = DataGenSequence(
+            train_data, self.batch_size, self.dense,
+            recent_num=self.recent_num, random_num=self.random_num,
+            model="YoutubeMatch"
+        )
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
-                for user, item, si, di, dv, _ in data_generator(shuffle):
-                    feed_dict = {self.user_indices: user,
+                for b, ii, iv, user, item, _, si, di, dv in data_generator(
+                        shuffle, self.batch_size):
+                    feed_dict = {# self.user_indices: user,
+                                 self.modified_batch_size: b,
+                                 self.item_interaction_indices: ii,
+                                 self.item_interaction_values: iv,
                                  self.item_indices: item,
-                                 self.sparse_indices: si,
                                  self.is_training: True}
+                    if self.sparse:
+                        feed_dict.update({self.sparse_indices: si})
                     if self.dense:
                         feed_dict.update({self.dense_indices: di,
                                           self.dense_values: dv})
@@ -277,10 +317,18 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
 
     def _set_latent_vectors(self):
         user_indices = np.arange(self.n_users)
-        user_sparse_indices = self.data_info.user_sparse_unique
 
-        feed_dict = {self.user_indices: user_indices,
-                     self.sparse_indices: user_sparse_indices}
+        (interacted_indices,
+         interacted_values) = user_last_interacted_items(
+            user_indices, self.user_consumed, self.recent_num)
+        feed_dict = {self.item_interaction_indices: interacted_indices,
+                     self.item_interaction_values: interacted_values,
+                     self.modified_batch_size: self.n_users,
+                     self.is_training: False}
+
+        if self.sparse:
+            user_sparse_indices = self.data_info.user_sparse_unique
+            feed_dict.update({self.sparse_indices: user_sparse_indices})
         if self.dense:
             user_dense_indices = np.tile(np.arange(self.dense_field_size),
                                          (self.n_users, 1))
