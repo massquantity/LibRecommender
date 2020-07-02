@@ -36,7 +36,7 @@ from ..utils.unique_features import (
 
 class FM(Base, TfMixin, EvalMixin):
     """
-    This implementation is actually a mixture of FM and NFM,
+    Note this implementation is actually a mixture of FM and NFM,
     since it uses one dense layer in the final output
     """
     def __init__(self, task, data_info=None, embed_size=16,
@@ -95,14 +95,16 @@ class FM(Base, TfMixin, EvalMixin):
     #    linear_term = tf.reduce_sum(linear_embed, axis=1,
     #                                keepdims=True)
 
-        linear_term = tf.layers.dense(linear_embed, units=1, activation=None) # B * 1
-        pairwise_term = 0.5 * tf.subtract(                  # B * K
+        # B * 1
+        linear_term = tf.layers.dense(linear_embed, units=1, activation=None)
+        # B * K
+        pairwise_term = 0.5 * tf.subtract(
             tf.square(tf.reduce_sum(pairwise_embed, axis=1)),
             tf.reduce_sum(tf.square(pairwise_embed), axis=1)
         )
 
     #    For original FM, just add K dim together
-    #    pairwise_term = tf.reduce_sum(pairwise_term, axis=1)
+    #    pairwise_term = 0.5 * tf.reduce_sum(pairwise_term, axis=1)
         if self.use_bn:
             pairwise_term = tf.layers.batch_normalization(
                 pairwise_term, training=self.is_training)

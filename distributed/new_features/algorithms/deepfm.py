@@ -1,7 +1,7 @@
 """
 
 Reference: Huifeng Guo et al. "DeepFM: A Factorization-Machine based Neural Network for CTR Prediction"
-                              (https://arxiv.org/pdf/1703.04247.pdf)
+           (https://arxiv.org/pdf/1703.04247.pdf)
 
 author: massquantity
 
@@ -32,10 +32,7 @@ from ..utils.unique_features import (
 
 
 class DeepFM(Base, TfMixin, EvalMixin):
-    """
-    This implementation is actually a mixture of FM and NFM,
-    since it uses one dense layer in the final output
-    """
+
     def __init__(self, task, data_info=None, embed_size=16,
                  n_epochs=20, lr=0.001, lr_decay=False, reg=None,
                  batch_size=256, num_neg=1, use_bn=True, dropout_rate=None,
@@ -96,10 +93,10 @@ class DeepFM(Base, TfMixin, EvalMixin):
             tf.reduce_sum(tf.square(pairwise_embed), axis=1)
         )
         deep_term = dense_nn(deep_embed,
-                              self.hidden_units,
-                              use_bn=self.use_bn,
-                              dropout_rate=self.dropout_rate,
-                              is_training=self.is_training)
+                             self.hidden_units,
+                             use_bn=self.use_bn,
+                             dropout_rate=self.dropout_rate,
+                             is_training=self.is_training)
 
         concat_layer = tf.concat(
             [linear_term, pairwise_term, deep_term], axis=1)

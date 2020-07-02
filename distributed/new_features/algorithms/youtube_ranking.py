@@ -111,7 +111,7 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         )
         with tf.control_dependencies([zero_padding_op]):
             multi_item_embed = tf.nn.embedding_lookup(
-                item_features, self.user_interacted_indices)  # B * F * K
+                item_features, self.user_interacted_indices)  # B * seq * K
         pooled_embed = tf.div_no_nan(
             tf.reduce_sum(multi_item_embed, axis=1),
             tf.expand_dims(tf.sqrt(self.user_interacted_len), axis=1))

@@ -23,7 +23,7 @@ from ..utils.tf_ops import (
     lr_decay_config
 )
 from ..data.data_generator import DataGenSequence
-from ..data.sparse import user_last_interacted_items
+from ..data.sequence import sparse_user_last_interacted, user_last_interacted
 from ..utils.tf_ops import sparse_tensor_interaction
 from ..utils.colorize import colorize
 from ..utils.timing import time_block
@@ -32,7 +32,7 @@ from ..utils.timing import time_block
 class YouTubeMatch(Base, TfMixin, EvalMixin):
     """
     The model implemented mainly correspond to the candidate generation
-    part based on the original paper.
+    phase based on the original paper.
     """
     def __init__(self, task="ranking", data_info=None, embed_size=16,
                  n_epochs=20, lr=0.01, lr_decay=False, reg=None,
@@ -65,10 +65,10 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self.global_mean = data_info.global_mean
         self.default_prediction = data_info.global_mean if (
                 task == "rating") else 0.0
-        self.recent_num = recent_num
-        self.random_num = random_num
+        (self.interaction_mode,
+         self.interaction_num) = self._check_interaction_mode(
+            recent_num, random_num)
         self.seed = seed
-    #    self.sess = tf.Session()
         self.user_vector = None
         self.item_weights = None
         self.item_biases = None
@@ -113,13 +113,6 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             shape=[self.n_items, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
-    #    dummy_item_variable = tf.get_variable(  # for unknown items set all zero
-    #        name="dummy_item_variable",
-    #        shape=[1, self.embed_size],
-    #        initializer=tf_zeros,
-    #        trainable=False)
-    #    item_interaction_features = tf.concat(
-    #        [item_interaction_features, dummy_item_variable], axis=0)
 
         sparse_item_interaction = tf.SparseTensor(
             self.item_interaction_indices,
@@ -130,8 +123,6 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             item_interaction_features, sparse_item_interaction,
             sparse_weights=None, combiner="sqrtn", default_id=None
         )  # unknown user will return 0-vector
-        #    pooled_embed = tf.nn.embedding_lookup(
-        #        pooled_items, self.user_indices)
         self.concat_embed.append(pooled_embed)
 
     def _build_sparse(self):
@@ -234,23 +225,20 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         else:
             global_steps = None
 
-    #    sparse_item_interaction = sparse_tensor_interaction(
-    #        train_data, random_sample_rate=sample_rate, recent_num=recent_num)
         self._build_model()
         self._build_train_ops(global_steps)
 
         data_generator = DataGenSequence(
-            train_data, self.batch_size, self.dense,
-            recent_num=self.recent_num, random_num=self.random_num,
-            model="YoutubeMatch"
+            train_data, self.sparse, self.dense,
+            mode=self.interaction_mode, num=self.interaction_num,
+            class_name="YoutubeMatch", n_items=self.n_items
         )
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
                 for b, ii, iv, user, item, _, si, di, dv in data_generator(
                         shuffle, self.batch_size):
-                    feed_dict = {# self.user_indices: user,
-                                 self.modified_batch_size: b,
+                    feed_dict = {self.modified_batch_size: b,
                                  self.item_interaction_indices: ii,
                                  self.item_interaction_values: iv,
                                  self.item_indices: item,
@@ -319,8 +307,8 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         user_indices = np.arange(self.n_users)
 
         (interacted_indices,
-         interacted_values) = user_last_interacted_items(
-            user_indices, self.user_consumed, self.recent_num)
+         interacted_values) = sparse_user_last_interacted(
+            user_indices, self.user_consumed, self.interaction_num)
         feed_dict = {self.item_interaction_indices: interacted_indices,
                      self.item_interaction_values: interacted_values,
                      self.modified_batch_size: self.n_users,
@@ -343,5 +331,19 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
     def _check_item_col(self):
         if len(self.data_info.item_col) > 0:
             raise ValueError("The YouTubeMatch model assumes no item features.")
+
+    def _check_interaction_mode(self, recent_num, random_num):
+        if recent_num is not None:
+            assert isinstance(recent_num, int), "recent_num must be integer"
+            mode = "recent"
+            num = recent_num
+        elif random_num is not None:
+            assert isinstance(random_num, int), "random_num must be integer"
+            mode = "random"
+            num = random_num
+        else:
+            mode = "recent"
+            num = 10  # by default choose 10 recent interactions
+        return mode, num
 
 
