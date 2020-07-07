@@ -22,12 +22,11 @@ from ..evaluate.evaluate import EvalMixin
 from ..utils.tf_ops import (
     reg_config,
     dropout_config,
-    dense_nn,
     lr_decay_config
 )
 from ..data.data_generator import DataGenFeat
 from ..utils.sampling import NegativeSampling
-from ..utils.colorize import colorize
+from ..utils.misc import colorize
 from ..utils.unique_features import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
@@ -42,8 +41,8 @@ class FM(Base, TfMixin, EvalMixin):
     def __init__(self, task, data_info=None, embed_size=16,
                  n_epochs=20, lr=0.01, lr_decay=False, reg=None,
                  batch_size=256, num_neg=1, use_bn=True, dropout_rate=None,
-                 hidden_units="128,64,32", batch_sampling=False, seed=42,
-                 lower_upper_bound=None, tf_sess_config=None):
+                 batch_sampling=False, seed=42, lower_upper_bound=None,
+                 tf_sess_config=None):
 
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self, tf_sess_config)
@@ -61,7 +60,6 @@ class FM(Base, TfMixin, EvalMixin):
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
         self.batch_sampling = batch_sampling
-        self.hidden_units = list(map(int, hidden_units.split(",")))
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
         self.global_mean = data_info.global_mean
@@ -103,7 +101,7 @@ class FM(Base, TfMixin, EvalMixin):
             tf.reduce_sum(tf.square(pairwise_embed), axis=1)
         )
 
-    #    For original FM, just add K dim together
+    #    For original FM, just add K dim together:
     #    pairwise_term = 0.5 * tf.reduce_sum(pairwise_term, axis=1)
         if self.use_bn:
             pairwise_term = tf.layers.batch_normalization(
@@ -177,10 +175,11 @@ class FM(Base, TfMixin, EvalMixin):
         self.pairwise_embed.append(pairwise_sparse_embed)
 
     def _build_dense(self):
-        self.dense_indices = tf.placeholder(
-            tf.int32, shape=[None, self.dense_field_size])
         self.dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size])
+        dense_values_reshape = tf.reshape(
+            self.dense_values, [-1, self.dense_field_size, 1])
+        batch_size = tf.shape(self.dense_values)[0]
 
         linear_dense_feat = tf.get_variable(
             name="linear_dense_feat",
@@ -193,15 +192,17 @@ class FM(Base, TfMixin, EvalMixin):
             initializer=tf_truncated_normal(0.0, 0.03),
             regularizer=self.reg)
 
-        linear_dense_embed = tf.nn.embedding_lookup(    # B * F2
-            linear_dense_feat, self.dense_indices)
+        # B * F2
+        linear_dense_embed = tf.tile(linear_dense_feat, [batch_size])
+        linear_dense_embed = tf.reshape(
+            linear_dense_embed, [-1, self.dense_field_size])
         linear_dense_embed = tf.multiply(
             linear_dense_embed, self.dense_values)
 
-        pairwise_dense_embed = tf.nn.embedding_lookup(  # B * F2 * K
-            pairwise_dense_feat, self.dense_indices)
-        dense_values_reshape = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1])
+        pairwise_dense_embed = tf.expand_dims(pairwise_dense_feat, axis=0)
+        # B * F2 * K
+        pairwise_dense_embed = tf.tile(
+            pairwise_dense_embed, [batch_size, 1, 1])
         pairwise_dense_embed = tf.multiply(
             pairwise_dense_embed, dense_values_reshape)
 
@@ -232,9 +233,7 @@ class FM(Base, TfMixin, EvalMixin):
 
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None, **kwargs):
-
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
+        self.show_start_time()
         self.user_consumed = train_data.user_consumed
         if self.lr_decay:
             n_batches = int(len(train_data) / self.batch_size)
@@ -274,12 +273,11 @@ class FM(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-         dense_indices,
          dense_values) = get_predict_indices_and_values(
             self.data_info, user, item, self.n_items, self.sparse, self.dense)
         feed_dict = self._get_feed_dict(user_indices, item_indices,
-                                        sparse_indices, dense_indices,
-                                        dense_values, None, False)
+                                        sparse_indices, dense_values,
+                                        None, False)
 
         preds = self.sess.run(self.output, feed_dict)
         if self.task == "rating":
@@ -300,12 +298,11 @@ class FM(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-         dense_indices,
          dense_values) = get_recommend_indices_and_values(
             self.data_info, user, self.n_items, self.sparse, self.dense)
         feed_dict = self._get_feed_dict(user_indices, item_indices,
-                                        sparse_indices, dense_indices,
-                                        dense_values, None, False)
+                                        sparse_indices, dense_values,
+                                        None, False)
 
         recos = self.sess.run(self.output, feed_dict)
         if self.task == "ranking":

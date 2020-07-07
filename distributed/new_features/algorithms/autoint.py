@@ -10,21 +10,16 @@ import time
 from itertools import islice
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.keras.initializers import (
-    zeros as tf_zeros,
-    truncated_normal as tf_truncated_normal
-)
+from tensorflow.python.keras.initializers import truncated_normal
 from .base import Base, TfMixin
 from ..evaluate.evaluate import EvalMixin
 from ..utils.tf_ops import (
     reg_config,
     dropout_config,
-    dense_nn,
     lr_decay_config
 )
 from ..data.data_generator import DataGenFeat
 from ..utils.sampling import NegativeSampling
-from ..utils.colorize import colorize
 from ..utils.unique_features import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
@@ -90,8 +85,8 @@ class AutoInt(Base, TfMixin, EvalMixin):
 
         attention_layer = tf.concat(self.concat_embed, axis=1)
         for i in range(self.att_layer_num):
-            attention_layer = self.multi_head_attention(attention_layer,
-                                                        self.att_embed_size[i])
+            attention_layer = self.multi_head_attention(
+                attention_layer, self.att_embed_size[i])
         attention_layer = tf.layers.flatten(attention_layer)
         self.output = tf.squeeze(tf.layers.dense(attention_layer, units=1))
 
@@ -102,12 +97,12 @@ class AutoInt(Base, TfMixin, EvalMixin):
         user_feat = tf.get_variable(
             name="user_feat",
             shape=[self.n_users, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=truncated_normal(0.0, 0.01),
             regularizer=self.reg)
         item_feat = tf.get_variable(
             name="item_feat",
             shape=[self.n_items, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=truncated_normal(0.0, 0.01),
             regularizer=self.reg)
 
         user_embed = tf.expand_dims(
@@ -123,57 +118,59 @@ class AutoInt(Base, TfMixin, EvalMixin):
         sparse_feat = tf.get_variable(
             name="sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=truncated_normal(0.0, 0.01),
             regularizer=self.reg)
 
         sparse_embed = tf.nn.embedding_lookup(sparse_feat, self.sparse_indices)
         self.concat_embed.append(sparse_embed)
 
     def _build_dense(self):
-        self.dense_indices = tf.placeholder(
-            tf.int32, shape=[None, self.dense_field_size])
         self.dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size])
+        dense_values_reshape = tf.reshape(
+            self.dense_values, [-1, self.dense_field_size, 1])
 
         dense_feat = tf.get_variable(
             name="dense_feat",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=truncated_normal(0.0, 0.01),
             regularizer=self.reg)
 
-        dense_values_reshape = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1])
-        dense_embed = tf.nn.embedding_lookup(
-            dense_feat, self.dense_indices)
+        batch_size = tf.shape(self.dense_values)[0]
+        # 1 * F_dense * K
+        dense_embed = tf.expand_dims(dense_feat, axis=0)
+        # B * F_dense * K
+        dense_embed = tf.tile(dense_embed, [batch_size, 1, 1])
         dense_embed = tf.multiply(dense_embed, dense_values_reshape)
         self.concat_embed.append(dense_embed)
 
     # inputs: B * F * Ki, new_embed_size: K, num_heads: H
     def multi_head_attention(self, inputs, new_embed_size):
         multi_embed_size = self.num_heads * new_embed_size
-        queries = tf.layers.dense(inputs=inputs,             # B * F * (K*H)
+        # B * F * (K*H)
+        queries = tf.layers.dense(inputs=inputs,
                                   units=multi_embed_size,
                                   activation=None,
-                                  kernel_initializer=tf_truncated_normal(
+                                  kernel_initializer=truncated_normal(
                                       0.0, 0.01),
                                   use_bias=False)
         keys = tf.layers.dense(inputs=inputs,
                                units=multi_embed_size,
                                activation=None,
-                               kernel_initializer=tf_truncated_normal(
+                               kernel_initializer=truncated_normal(
                                    0.0, 0.01),
                                use_bias=False)
         values = tf.layers.dense(inputs=inputs,
                                  units=multi_embed_size,
                                  activation=None,
-                                 kernel_initializer=tf_truncated_normal(
+                                 kernel_initializer=truncated_normal(
                                      0.0, 0.01),
                                  use_bias=False)
         if self.use_residual:
             residual = tf.layers.dense(inputs=inputs,
                                        units=multi_embed_size,
                                        activation=None,
-                                       kernel_initializer=tf_truncated_normal(
+                                       kernel_initializer=truncated_normal(
                                            0.0, 0.01),
                                        use_bias=False)
 
@@ -188,27 +185,14 @@ class AutoInt(Base, TfMixin, EvalMixin):
         weights = tf.nn.softmax(weights)
         # H * B * F * K
         outputs = weights @ values
-        # 1 * B * F (K*H)
+        # 1 * B * F * (K*H)
         outputs = tf.concat(tf.split(outputs, self.num_heads, axis=0), axis=-1)
         # B * F * (K*H)
         outputs = tf.squeeze(outputs, axis=0)
         if self.use_residual:
             outputs += residual
         outputs = tf.nn.relu(outputs)
-
         return outputs
-
-    def _att_config(self, att_embed_size):
-        if not att_embed_size:
-            att_embed_size = (8, 8, 8)
-            att_layer_num = 3
-        elif isinstance(att_embed_size, int):
-            att_embed_size = [att_embed_size]
-            att_layer_num = 1
-        elif isinstance(att_embed_size, (list, tuple)):
-            att_layer_num = len(att_embed_size)
-
-        return att_embed_size, att_layer_num
 
     def _build_train_ops(self, global_steps=None):
         if self.task == "rating":
@@ -234,9 +218,7 @@ class AutoInt(Base, TfMixin, EvalMixin):
 
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None, **kwargs):
-
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
+        self.show_start_time()
         self.user_consumed = train_data.user_consumed
         if self.lr_decay:
             n_batches = int(len(train_data) / self.batch_size)
@@ -276,12 +258,11 @@ class AutoInt(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-         dense_indices,
          dense_values) = get_predict_indices_and_values(
             self.data_info, user, item, self.n_items, self.sparse, self.dense)
         feed_dict = self._get_feed_dict(user_indices, item_indices,
-                                        sparse_indices, dense_indices,
-                                        dense_values, None, False)
+                                        sparse_indices, dense_values,
+                                        None, False)
 
         preds = self.sess.run(self.output, feed_dict)
         if self.task == "rating":
@@ -302,12 +283,11 @@ class AutoInt(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-         dense_indices,
          dense_values) = get_recommend_indices_and_values(
             self.data_info, user, self.n_items, self.sparse, self.dense)
         feed_dict = self._get_feed_dict(user_indices, item_indices,
-                                        sparse_indices, dense_indices,
-                                        dense_values, None, False)
+                                        sparse_indices, dense_values,
+                                        None, False)
 
         recos = self.sess.run(self.output, feed_dict)
         if self.task == "ranking":
@@ -322,5 +302,17 @@ class AutoInt(Base, TfMixin, EvalMixin):
                 (rec for rec in rank if rec[0] not in consumed), n_rec
             )
         )
+
+    @staticmethod
+    def _att_config(att_embed_size):
+        if not att_embed_size:
+            att_embed_size = (8, 8, 8)
+            att_layer_num = 3
+        elif isinstance(att_embed_size, int):
+            att_embed_size = [att_embed_size]
+            att_layer_num = 1
+        elif isinstance(att_embed_size, (list, tuple)):
+            att_layer_num = len(att_embed_size)
+        return att_embed_size, att_layer_num
 
 

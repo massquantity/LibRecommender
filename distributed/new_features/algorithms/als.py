@@ -20,7 +20,7 @@ from functools import partial
 import numpy as np
 from .base import Base
 from ..evaluate.evaluate import EvalMixin
-from ..utils.timing import time_block
+from ..utils.misc import time_block
 from ..utils.initializers import truncated_normal
 try:
     from ._als import als_update

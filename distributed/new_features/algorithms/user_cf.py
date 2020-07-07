@@ -7,8 +7,7 @@ import numpy as np
 from scipy.sparse import issparse
 from .base import Base
 from ..utils.similarities import cosine_sim, pearson_sim, jaccard_sim
-from ..utils.timing import time_block
-from ..utils.colorize import colorize
+from ..utils.misc import time_block, colorize
 from ..evaluate.evaluate import EvalMixin
 
 
@@ -38,8 +37,7 @@ class UserCF(Base, EvalMixin):
 
     def fit(self, train_data, block_size=None, num_threads=1, min_common=1,
             mode="invert", verbose=1, eval_data=None, metrics=None):
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"Training start time: {colorize(start_time, 'magenta')}")
+        self.show_start_time()
         self.user_interaction = train_data.sparse_interaction
         self.item_interaction = self.user_interaction.T.tocsr()
         self.user_consumed = train_data.user_consumed
@@ -58,8 +56,6 @@ class UserCF(Base, EvalMixin):
             self.sim_matrix = sim_func(
                 self.user_interaction, self.item_interaction, self.n_users,
                 self.n_items, block_size, num_threads, min_common, mode)
-            print(self.sim_matrix.data[self.sim_matrix.indptr[1]: self.sim_matrix.indptr[2]])
-            print(f"sim real data: {self.sim_matrix.data[:20]}")
 
         assert self.sim_matrix.has_sorted_indices
         if issparse(self.sim_matrix):

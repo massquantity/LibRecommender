@@ -18,18 +18,16 @@ from tensorflow.python.keras.initializers import (
 )
 from .base import Base, TfMixin
 from ..evaluate.evaluate import EvalMixin
-from ..utils.tf_ops import reg_config
 from ..utils.sampling import PairwiseSampling
-from ..utils.colorize import colorize
-from ..utils.timing import time_block
-from ..utils.initializers import truncated_normal, xavier_init, he_init
+from ..utils.misc import time_block, colorize
+from ..utils.initializers import truncated_normal
 try:
-    from ._bpr import bpr_update, bpr_update2
-except ImportError:
+    from ._bpr import bpr_update
+except (ImportError, ModuleNotFoundError):
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
     logging.basicConfig(format=LOG_FORMAT)
-    logging.warn("Cython version is not available")
-    pass
+    logging.warning("BPR cython version is not available")
+    pass  # may use tf version, then raise error will fail
 
 
 class BPR(Base, TfMixin, EvalMixin):
@@ -138,10 +136,8 @@ class BPR(Base, TfMixin, EvalMixin):
         self.sess.run(tf.global_variables_initializer())
 
     def fit(self, train_data, verbose=1, shuffle=True, num_threads=1,
-                   eval_data=None, metrics=None, optimizer="sgd"):
-
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
+            eval_data=None, metrics=None, optimizer="sgd"):
+        self.show_start_time()
         self.user_consumed = train_data.user_consumed
         self._check_has_sampled(train_data, verbose)
 
@@ -212,14 +208,14 @@ class BPR(Base, TfMixin, EvalMixin):
 
         data_generator = PairwiseSampling(train_data,
                                           self.data_info,
-                                          self.num_neg,
-                                          self.batch_size)
+                                          self.num_neg)
 
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
                 for (user,
                      item_pos,
-                     item_neg) in data_generator(shuffle=shuffle):
+                     item_neg) in data_generator(shuffle=shuffle,
+                                                 batch_size=self.batch_size):
 
                     self.sess.run(self.training_op,
                                   feed_dict={self.user_indices: user,

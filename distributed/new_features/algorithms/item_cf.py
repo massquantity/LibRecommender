@@ -7,8 +7,7 @@ import numpy as np
 from scipy.sparse import issparse
 from .base import Base
 from ..utils.similarities import cosine_sim, pearson_sim, jaccard_sim
-from ..utils.timing import time_block
-from ..utils.colorize import colorize
+from ..utils.misc import time_block, colorize
 from ..evaluate.evaluate import EvalMixin
 
 

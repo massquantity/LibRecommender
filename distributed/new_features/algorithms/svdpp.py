@@ -17,10 +17,10 @@ from tensorflow.python.keras.initializers import (
 from .base import Base, TfMixin
 from ..evaluate.evaluate import EvalMixin
 from ..utils.tf_ops import reg_config
-from ..utils.sampling import NegativeSamplingPure
+from ..utils.sampling import NegativeSampling
 from ..data.data_generator import DataGenPure
 from ..utils.tf_ops import sparse_tensor_interaction
-from ..utils.colorize import colorize
+from ..utils.misc import colorize
 
 
 class SVDpp(Base, TfMixin, EvalMixin):
@@ -119,9 +119,7 @@ class SVDpp(Base, TfMixin, EvalMixin):
 
     def fit(self, train_data, verbose=1, shuffle=True, sample_rate=None,
             recent_num=None, eval_data=None, metrics=None):
-
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
+        self.show_start_time()
         self.user_consumed = train_data.user_consumed
         sparse_implicit_interaction = sparse_tensor_interaction(
             train_data, random_sample_rate=sample_rate, recent_num=recent_num)
@@ -131,11 +129,11 @@ class SVDpp(Base, TfMixin, EvalMixin):
 
         if self.task == "ranking" and self.batch_sampling:
             self._check_has_sampled(train_data, verbose)
-            data_generator = NegativeSamplingPure(train_data,
-                                                  self.data_info,
-                                                  self.num_neg,
-                                                  self.batch_size,
-                                                  batch_sampling=True)
+            data_generator = NegativeSampling(train_data,
+                                              self.data_info,
+                                              self.num_neg,
+                                              self.batch_size,
+                                              batch_sampling=True)
         else:
             data_generator = DataGenPure(train_data, self.batch_size)
 

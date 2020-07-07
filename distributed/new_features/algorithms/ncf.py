@@ -21,9 +21,9 @@ from ..utils.tf_ops import (
     dense_nn,
     lr_decay_config
 )
-from ..utils.sampling import NegativeSamplingPure
+from ..utils.sampling import NegativeSampling
 from ..data.data_generator import DataGenPure
-from ..utils.colorize import colorize
+from ..utils.misc import colorize
 
 
 class NCF(Base, TfMixin, EvalMixin):
@@ -123,9 +123,7 @@ class NCF(Base, TfMixin, EvalMixin):
 
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None, **kwargs):
-
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
+        self.show_start_time()
         self.user_consumed = train_data.user_consumed
         if self.lr_decay:
             n_batches = int(len(train_data) / self.batch_size)
@@ -139,11 +137,11 @@ class NCF(Base, TfMixin, EvalMixin):
 
         if self.task == "ranking" and self.batch_sampling:
             self._check_has_sampled(train_data, verbose)
-            data_generator = NegativeSamplingPure(train_data,
-                                                  self.data_info,
-                                                  self.num_neg,
-                                                  self.batch_size,
-                                                  batch_sampling=True)
+            data_generator = NegativeSampling(train_data,
+                                              self.data_info,
+                                              self.num_neg,
+                                              self.batch_size,
+                                              batch_sampling=True)
 
         else:
             data_generator = DataGenPure(train_data, self.batch_size)

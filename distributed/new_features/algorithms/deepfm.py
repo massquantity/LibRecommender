@@ -11,7 +11,6 @@ from itertools import islice
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.initializers import (
-    zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
@@ -24,7 +23,6 @@ from ..utils.tf_ops import (
 )
 from ..data.data_generator import DataGenFeat
 from ..utils.sampling import NegativeSampling
-from ..utils.colorize import colorize
 from ..utils.unique_features import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
@@ -117,23 +115,13 @@ class DeepFM(Base, TfMixin, EvalMixin):
             shape=[self.n_items, 1],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
-        pairwise_user_feat = tf.get_variable(
-            name="pairwise_user_feat",
+        embed_user_feat = tf.get_variable(
+            name="embed_user_feat",
             shape=[self.n_users, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
-        pairwise_item_feat = tf.get_variable(
-            name="pairwise_item_feat",
-            shape=[self.n_items, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg)
-        deep_user_feat = tf.get_variable(
-            name="deep_user_feat",
-            shape=[self.n_users, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg)
-        deep_item_feat = tf.get_variable(
-            name="deep_item_feat",
+        embed_item_feat = tf.get_variable(
+            name="embed_item_feat",
             shape=[self.n_items, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
@@ -145,16 +133,16 @@ class DeepFM(Base, TfMixin, EvalMixin):
         self.linear_embed.extend([linear_user_embed, linear_item_embed])
 
         pairwise_user_embed = tf.expand_dims(
-            tf.nn.embedding_lookup(pairwise_user_feat, self.user_indices),
+            tf.nn.embedding_lookup(embed_user_feat, self.user_indices),
             axis=1)
         pairwise_item_embed = tf.expand_dims(
-            tf.nn.embedding_lookup(pairwise_item_feat, self.item_indices),
+            tf.nn.embedding_lookup(embed_item_feat, self.item_indices),
             axis=1)
         self.pairwise_embed.extend([pairwise_user_embed, pairwise_item_embed])
 
-        deep_user_embed = tf.nn.embedding_lookup(deep_user_feat,
+        deep_user_embed = tf.nn.embedding_lookup(embed_user_feat,
                                                  self.user_indices)
-        deep_item_embed = tf.nn.embedding_lookup(deep_item_feat,
+        deep_item_embed = tf.nn.embedding_lookup(embed_item_feat,
                                                  self.item_indices)
         self.deep_embed.extend([deep_user_embed, deep_item_embed])
 
@@ -167,13 +155,8 @@ class DeepFM(Base, TfMixin, EvalMixin):
             shape=[self.sparse_feature_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
-        pairwise_sparse_feat = tf.get_variable(
-            name="pairwise_sparse_feat",
-            shape=[self.sparse_feature_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg)
-        deep_sparse_feat = tf.get_variable(
-            name="deep_sparse_feat",
+        embed_sparse_feat = tf.get_variable(
+            name="embed_sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
@@ -181,54 +164,51 @@ class DeepFM(Base, TfMixin, EvalMixin):
         linear_sparse_embed = tf.nn.embedding_lookup(    # B * F1
             linear_sparse_feat, self.sparse_indices)
         pairwise_sparse_embed = tf.nn.embedding_lookup(  # B * F1 * K
-            pairwise_sparse_feat, self.sparse_indices)
-        deep_sparse_embed = tf.nn.embedding_lookup(
-            deep_sparse_feat, self.sparse_indices)
+            embed_sparse_feat, self.sparse_indices)
         deep_sparse_embed = tf.reshape(
-            deep_sparse_embed, [-1, self.sparse_field_size * self.embed_size])
+            pairwise_sparse_embed,
+            [-1, self.sparse_field_size * self.embed_size]
+        )
         self.linear_embed.append(linear_sparse_embed)
         self.pairwise_embed.append(pairwise_sparse_embed)
         self.deep_embed.append(deep_sparse_embed)
 
     def _build_dense(self):
-        self.dense_indices = tf.placeholder(
-            tf.int32, shape=[None, self.dense_field_size])
         self.dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size])
+        dense_values_reshape = tf.reshape(
+            self.dense_values, [-1, self.dense_field_size, 1])
+        batch_size = tf.shape(self.dense_values)[0]
 
         linear_dense_feat = tf.get_variable(
             name="linear_dense_feat",
             shape=[self.dense_field_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
-        pairwise_dense_feat = tf.get_variable(
-            name="pairwise_dense_feat",
-            shape=[self.dense_field_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg)
-        deep_dense_feat = tf.get_variable(
-            name="deep_dense_feat",
+        embed_dense_feat = tf.get_variable(
+            name="embed_dense_feat",
             shape=[self.dense_field_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
 
-        linear_dense_embed = tf.nn.embedding_lookup(    # B * F2
-            linear_dense_feat, self.dense_indices)
+        # B * F2
+        linear_dense_embed = tf.tile(linear_dense_feat, [batch_size])
+        linear_dense_embed = tf.reshape(
+            linear_dense_embed, [-1, self.dense_field_size])
         linear_dense_embed = tf.multiply(
             linear_dense_embed, self.dense_values)
 
-        pairwise_dense_embed = tf.nn.embedding_lookup(  # B * F2 * K
-            pairwise_dense_feat, self.dense_indices)
-        dense_values_reshape = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1])
+        pairwise_dense_embed = tf.expand_dims(embed_dense_feat, axis=0)
+        # B * F2 * K
+        pairwise_dense_embed = tf.tile(
+            pairwise_dense_embed, [batch_size, 1, 1])
         pairwise_dense_embed = tf.multiply(
             pairwise_dense_embed, dense_values_reshape)
 
-        deep_dense_embed = tf.nn.embedding_lookup(
-            deep_dense_feat, self.dense_indices)
-        deep_dense_embed = tf.multiply(deep_dense_embed, dense_values_reshape)
         deep_dense_embed = tf.reshape(
-            deep_dense_embed, [-1, self.dense_field_size * self.embed_size])
+            pairwise_dense_embed,
+            [-1, self.dense_field_size * self.embed_size]
+        )
 
         self.linear_embed.append(linear_dense_embed)
         self.pairwise_embed.append(pairwise_dense_embed)
@@ -258,9 +238,7 @@ class DeepFM(Base, TfMixin, EvalMixin):
 
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None, **kwargs):
-
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
+        self.show_start_time()
         self.user_consumed = train_data.user_consumed
         if self.lr_decay:
             n_batches = int(len(train_data) / self.batch_size)
@@ -300,12 +278,11 @@ class DeepFM(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-         dense_indices,
          dense_values) = get_predict_indices_and_values(
             self.data_info, user, item, self.n_items, self.sparse, self.dense)
         feed_dict = self._get_feed_dict(user_indices, item_indices,
-                                        sparse_indices, dense_indices,
-                                        dense_values, None, False)
+                                        sparse_indices, dense_values,
+                                        None, False)
 
         preds = self.sess.run(self.output, feed_dict)
         if self.task == "rating":
@@ -326,12 +303,11 @@ class DeepFM(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-         dense_indices,
          dense_values) = get_recommend_indices_and_values(
             self.data_info, user, self.n_items, self.sparse, self.dense)
         feed_dict = self._get_feed_dict(user_indices, item_indices,
-                                        sparse_indices, dense_indices,
-                                        dense_values, None, False)
+                                        sparse_indices, dense_values,
+                                        None, False)
 
         recos = self.sess.run(self.output, feed_dict)
         if self.task == "ranking":

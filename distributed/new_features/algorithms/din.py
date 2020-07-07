@@ -24,8 +24,7 @@ from ..utils.tf_ops import (
 )
 from ..data.data_generator import DataGenSequence
 from ..data.sequence import user_last_interacted
-from ..utils.colorize import colorize
-from ..utils.timing import time_block
+from ..utils.misc import time_block, colorize
 from ..utils.misc import count_params
 from ..utils.unique_features import (
     get_predict_indices_and_values,
@@ -122,8 +121,6 @@ class DIN(Base, TfMixin, EvalMixin):
             self.sparse_indices = tf.placeholder(
                 tf.int32, shape=[None, self.sparse_field_size])
         if self.dense:
-        #    self.dense_indices = tf.placeholder(
-        #        tf.int32, shape=[None, self.dense_field_size])
             self.dense_values = tf.placeholder(
                 tf.float32, shape=[None, self.dense_field_size])
 
@@ -318,9 +315,7 @@ class DIN(Base, TfMixin, EvalMixin):
 
     def fit(self, train_data, verbose=1, shuffle=True, sample_rate=None,
             recent_num=None, eval_data=None, metrics=None, **kwargs):
-
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
+        self.show_start_time()
         self.user_consumed = train_data.user_consumed
         if self.lr_decay:
             n_batches = int(len(train_data) / self.batch_size)
@@ -376,7 +371,6 @@ class DIN(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-    #     dense_indices,
          dense_values) = get_predict_indices_and_values(
             self.data_info, user, item, self.n_items, self.sparse, self.dense)
         feed_dict = self._get_seq_feed_dict(self.user_last_interacted[user],
@@ -400,7 +394,6 @@ class DIN(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-    #     dense_indices,
          dense_values) = get_recommend_indices_and_values(
             self.data_info, user, self.n_items, self.sparse, self.dense)
         u_last_interacted = np.tile(self.user_last_interacted[user],

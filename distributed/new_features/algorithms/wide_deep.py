@@ -23,8 +23,8 @@ from ..utils.tf_ops import (
     var_list_by_name
 )
 from ..data.data_generator import DataGenFeat
+from ..utils.misc import colorize
 from ..utils.sampling import NegativeSampling
-from ..utils.colorize import colorize
 from ..utils.unique_features import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
@@ -168,10 +168,11 @@ class WideDeep(Base, TfMixin, EvalMixin):
         self.deep_embed.append(deep_sparse_embed)
 
     def _build_dense(self):
-        self.dense_indices = tf.placeholder(
-            tf.int32, shape=[None, self.dense_field_size])
         self.dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size])
+        dense_values_reshape = tf.reshape(
+            self.dense_values, [-1, self.dense_field_size, 1])
+        batch_size = tf.shape(self.dense_values)[0]
 
         wide_dense_feat = tf.get_variable(
             name="wide_dense_feat",
@@ -184,15 +185,14 @@ class WideDeep(Base, TfMixin, EvalMixin):
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
 
-        wide_dense_embed = tf.nn.embedding_lookup(
-            wide_dense_feat, self.dense_indices)
+        wide_dense_embed = tf.tile(wide_dense_feat, [batch_size])
+        wide_dense_embed = tf.reshape(
+            wide_dense_embed, [-1, self.dense_field_size])
         wide_dense_embed = tf.multiply(
             wide_dense_embed, self.dense_values)
 
-        deep_dense_embed = tf.nn.embedding_lookup(
-            deep_dense_feat, self.dense_indices)
-        dense_values_reshape = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1])
+        deep_dense_embed = tf.expand_dims(deep_dense_feat, axis=0)
+        deep_dense_embed = tf.tile(deep_dense_embed, [batch_size, 1, 1])
         deep_dense_embed = tf.multiply(deep_dense_embed, dense_values_reshape)
         deep_dense_embed = tf.reshape(
             deep_dense_embed, [-1, self.dense_field_size * self.embed_size])
@@ -216,8 +216,8 @@ class WideDeep(Base, TfMixin, EvalMixin):
             total_loss = self.loss
 
         var_dict = var_list_by_name(names=["wide", "deep"])
-        print(f"wide variables: {var_dict['wide']}\n"
-              f"deep_variables: {var_dict['deep']}")
+        print(f"{colorize('Wide_variables', 'blue')}: {var_dict['wide']}\n"
+              f"{colorize('Deep_variables', 'blue')}: {var_dict['deep']}")
         wide_optimizer = tf.train.FtrlOptimizer(
             self.lr["wide"], l1_regularization_strength=1e-3)
         wide_optimizer_op = wide_optimizer.minimize(total_loss,
@@ -237,9 +237,7 @@ class WideDeep(Base, TfMixin, EvalMixin):
 
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None, **kwargs):
-
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
+        self.show_start_time()
         self.user_consumed = train_data.user_consumed
         if self.lr_decay:
             n_batches = int(len(train_data) / self.batch_size)
@@ -279,12 +277,11 @@ class WideDeep(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-         dense_indices,
          dense_values) = get_predict_indices_and_values(
             self.data_info, user, item, self.n_items, self.sparse, self.dense)
         feed_dict = self._get_feed_dict(user_indices, item_indices,
-                                        sparse_indices, dense_indices,
-                                        dense_values, None, False)
+                                        sparse_indices, dense_values,
+                                        None, False)
 
         preds = self.sess.run(self.output, feed_dict)
         if self.task == "rating":
@@ -305,12 +302,11 @@ class WideDeep(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-         dense_indices,
          dense_values) = get_recommend_indices_and_values(
             self.data_info, user, self.n_items, self.sparse, self.dense)
         feed_dict = self._get_feed_dict(user_indices, item_indices,
-                                        sparse_indices, dense_indices,
-                                        dense_values, None, False)
+                                        sparse_indices, dense_values,
+                                        None, False)
 
         recos = self.sess.run(self.output, feed_dict)
         if self.task == "ranking":

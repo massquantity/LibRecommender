@@ -24,10 +24,7 @@ from ..utils.tf_ops import (
 )
 from ..data.data_generator import DataGenSequence
 from ..data.sequence import user_last_interacted
-from ..utils.sampling import NegativeSampling
-from ..utils.tf_ops import sparse_tensor_interaction
-from ..utils.colorize import colorize
-from ..utils.timing import time_block
+from ..utils.misc import time_block, colorize
 from ..utils.unique_features import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
@@ -85,7 +82,7 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         tf.set_random_seed(self.seed)
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
-        self.user_interacted_indices = tf.placeholder(
+        self.user_interacted_seq = tf.placeholder(
             tf.int32, shape=[None, self.interaction_num])
         self.user_interacted_len = tf.placeholder(tf.float32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
@@ -105,13 +102,14 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         user_embed = tf.nn.embedding_lookup(user_features, self.user_indices)
         item_embed = tf.nn.embedding_lookup(item_features, self.item_indices)
 
+        # unknown items are padded to 0-vector
         zero_padding_op = tf.scatter_update(
             item_features, self.n_items,
             tf.zeros([self.embed_size], dtype=tf.float32)
         )
         with tf.control_dependencies([zero_padding_op]):
             multi_item_embed = tf.nn.embedding_lookup(
-                item_features, self.user_interacted_indices)  # B * seq * K
+                item_features, self.user_interacted_seq)  # B * seq * K
         pooled_embed = tf.div_no_nan(
             tf.reduce_sum(multi_item_embed, axis=1),
             tf.expand_dims(tf.sqrt(self.user_interacted_len), axis=1))
@@ -147,21 +145,22 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         self.concat_embed.append(sparse_embed)
 
     def _build_dense(self):
-        self.dense_indices = tf.placeholder(
-            tf.int32, shape=[None, self.dense_field_size])
         self.dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size])
+        dense_values_reshape = tf.reshape(
+            self.dense_values, [-1, self.dense_field_size, 1])
+        batch_size = tf.shape(self.dense_values)[0]
 
         dense_features = tf.get_variable(
             name="dense_features",
             shape=[self.dense_field_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
-        dense_embed = tf.nn.embedding_lookup(
-            dense_features, self.dense_indices)
-        dense_values = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1])
-        dense_embed = tf.multiply(dense_embed, dense_values)
+
+        dense_embed = tf.tile(dense_features, [batch_size, 1])
+        dense_embed = tf.reshape(
+            dense_embed, [-1, self.dense_field_size, self.embed_size])
+        dense_embed = tf.multiply(dense_embed, dense_values_reshape)
         dense_embed = tf.reshape(
             dense_embed, [-1, self.dense_field_size * self.embed_size])
         self.concat_embed.append(dense_embed)
@@ -186,9 +185,9 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
 
     def fit(self, train_data, verbose=1, shuffle=True, sample_rate=None,
             recent_num=None, eval_data=None, metrics=None, **kwargs):
-
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
+        assert self.task == "ranking", (
+            "YouTube models is only suitable for ranking")
+        self.show_start_time()
         self.user_consumed = train_data.user_consumed
         if self.lr_decay:
             n_batches = int(len(train_data) / self.batch_size)
@@ -203,17 +202,18 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         data_generator = DataGenSequence(train_data, self.sparse, self.dense,
                                          mode=self.interaction_mode,
                                          num=self.interaction_num,
-                                         n_items=self.n_items)
+                                         padding_idx=self.n_items)
         for epoch in range(1, self.n_epochs + 1):
             if self.lr_decay:
                 print(f"With lr_decay, epoch {epoch} learning rate: "
                       f"{self.sess.run(self.lr)}")
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
-                for ui, u_len, user, item, label, si, di, dv in data_generator(
-                        shuffle, self.batch_size):
-                    feed_dict = self._youtube_feed_dicts(
-                        ui, u_len, user, item, label, si, di, dv, True)
+                for (u_seq, u_len, user, item, label, sparse_idx, dense_val
+                     ) in data_generator(shuffle, self.batch_size):
+                    feed_dict = self._get_seq_feed_dict(
+                        u_seq, u_len, user, item, label,
+                        sparse_idx, dense_val, True)
                     train_loss, _ = self.sess.run(
                         [self.loss, self.training_op], feed_dict)
                     train_total_loss.append(train_loss)
@@ -243,13 +243,13 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-         dense_indices,
          dense_values) = get_predict_indices_and_values(
             self.data_info, user, item, self.n_items, self.sparse, self.dense)
-        feed_dict = self._youtube_feed_dicts(
-            self.user_last_interacted[user], self.last_interacted_len[user],
-            user_indices, item_indices, None, sparse_indices, dense_indices,
-            dense_values, False)
+        feed_dict = self._get_seq_feed_dict(self.user_last_interacted[user],
+                                            self.last_interacted_len[user],
+                                            user_indices, item_indices,
+                                            None, sparse_indices,
+                                            dense_values, False)
 
         preds = self.sess.run(self.output, feed_dict)
         preds = 1 / (1 + np.exp(-preds))
@@ -266,17 +266,15 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         (user_indices,
          item_indices,
          sparse_indices,
-         dense_indices,
          dense_values) = get_recommend_indices_and_values(
             self.data_info, user, self.n_items, self.sparse, self.dense)
         u_last_interacted = np.tile(self.user_last_interacted[user],
                                     (self.n_items, 1))
         u_interacted_len = np.repeat(self.last_interacted_len[user],
                                      self.n_items)
-        feed_dict = self._youtube_feed_dicts(
-            u_last_interacted, u_interacted_len,
-            user_indices, item_indices, None, sparse_indices, dense_indices,
-            dense_values, False)
+        feed_dict = self._get_seq_feed_dict(u_last_interacted, u_interacted_len,
+                                            user_indices, item_indices, None,
+                                            sparse_indices, dense_values, False)
 
         recos = self.sess.run(self.output, feed_dict)
         recos = 1 / (1 + np.exp(-recos))
@@ -290,49 +288,10 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
             )
         )
 
-    def _youtube_feed_dicts(self, user_interacted, u_len, user, item, label,
-                            sparse_indices, dense_indices, dense_values,
-                            is_training):
-        feed_dict = {self.user_interacted_indices: user_interacted,
-                     self.user_interacted_len: u_len,
-                     self.user_indices: user,
-                     self.item_indices: item,
-                     self.is_training: is_training}
-        if self.sparse:
-            feed_dict.update({self.sparse_indices: sparse_indices})
-        if self.dense:
-            feed_dict.update({self.dense_indices: dense_indices,
-                              self.dense_values: dense_values})
-        if label is not None:
-            feed_dict.update({self.labels: label})
-        return feed_dict
-
-    def user_indices_generator(self, data):
-        total_user_indices = data.user_indices
-        user_indices_length = len(total_user_indices)
-        for k in range(0, user_indices_length, self.batch_size):
-            user_indices = total_user_indices[k: k+self.batch_size]
-            user_indices = np.repeat(user_indices, self.num_neg+1)
-            yield user_indices
-
     def _set_last_interacted(self):
         user_indices = np.arange(self.n_users)
         (self.user_last_interacted,
          self.last_interacted_len) = user_last_interacted(
             user_indices, self.user_consumed, self.n_items,
             self.interaction_num)
-
-    def _check_interaction_mode(self, recent_num, random_num):
-        if recent_num is not None:
-            assert isinstance(recent_num, int), "recent_num must be integer"
-            mode = "recent"
-            num = recent_num
-        elif random_num is not None:
-            assert isinstance(random_num, int), "random_num must be integer"
-            mode = "random"
-            num = random_num
-        else:
-            mode = "recent"
-            num = 10  # by default choose 10 recent interactions
-        return mode, num
 

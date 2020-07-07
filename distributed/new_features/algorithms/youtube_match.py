@@ -23,15 +23,13 @@ from ..utils.tf_ops import (
     lr_decay_config
 )
 from ..data.data_generator import DataGenSequence
-from ..data.sequence import sparse_user_last_interacted, user_last_interacted
-from ..utils.tf_ops import sparse_tensor_interaction
-from ..utils.colorize import colorize
-from ..utils.timing import time_block
+from ..data.sequence import sparse_user_last_interacted
+from ..utils.misc import time_block, colorize
 
 
 class YouTubeMatch(Base, TfMixin, EvalMixin):
     """
-    The model implemented mainly correspond to the candidate generation
+    The model implemented mainly corresponds to the candidate generation
     phase based on the original paper.
     """
     def __init__(self, task="ranking", data_info=None, embed_size=16,
@@ -83,7 +81,6 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
 
     def _build_model(self):
         tf.set_random_seed(self.seed)
-    #    self.user_indices = tf.placeholder(tf.int32, shape=[None])
         # item_indices actually served as label in YouTubeMatch model
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.is_training = tf.placeholder_with_default(True, shape=[])
@@ -141,21 +138,22 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self.concat_embed.append(sparse_embed)
 
     def _build_dense(self):
-        self.dense_indices = tf.placeholder(
-            tf.int32, shape=[None, self.dense_field_size])
         self.dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size])
+        dense_values_reshape = tf.reshape(
+            self.dense_values, [-1, self.dense_field_size, 1])
+        batch_size = tf.shape(self.dense_values)[0]
 
         dense_features = tf.get_variable(
             name="dense_features",
             shape=[self.dense_field_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
-        dense_embed = tf.nn.embedding_lookup(
-            dense_features, self.dense_indices)
-        dense_values = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1])
-        dense_embed = tf.multiply(dense_embed, dense_values)
+
+        dense_embed = tf.expand_dims(dense_features, axis=0)
+        # B * F2 * K
+        dense_embed = tf.tile(dense_embed, [batch_size, 1, 1])
+        dense_embed = tf.multiply(dense_embed, dense_values_reshape)
         dense_embed = tf.reshape(
             dense_embed, [-1, self.dense_field_size * self.embed_size])
         self.concat_embed.append(dense_embed)
@@ -214,9 +212,10 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
 
     def fit(self, train_data, verbose=1, shuffle=True, eval_data=None,
             metrics=None, **kwargs):
+        assert self.task == "ranking", (
+            "YouTube models is only suitable for ranking")
         self._check_item_col()
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print(f"training start time: {colorize(start_time, 'magenta')}")
+        self.show_start_time()
         self.user_consumed = train_data.user_consumed
         if self.lr_decay:
             n_batches = int(len(train_data) / self.batch_size)
@@ -231,12 +230,12 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         data_generator = DataGenSequence(
             train_data, self.sparse, self.dense,
             mode=self.interaction_mode, num=self.interaction_num,
-            class_name="YoutubeMatch", n_items=self.n_items
+            class_name="YoutubeMatch", padding_idx=self.n_items
         )
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
-                for b, ii, iv, user, item, _, si, di, dv in data_generator(
+                for b, ii, iv, user, item, _, si, dv in data_generator(
                         shuffle, self.batch_size):
                     feed_dict = {self.modified_batch_size: b,
                                  self.item_interaction_indices: ii,
@@ -246,8 +245,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
                     if self.sparse:
                         feed_dict.update({self.sparse_indices: si})
                     if self.dense:
-                        feed_dict.update({self.dense_indices: di,
-                                          self.dense_values: dv})
+                        feed_dict.update({self.dense_values: dv})
                     train_loss, _ = self.sess.run(
                         [self.loss, self.training_op], feed_dict)
                     train_total_loss.append(train_loss)
@@ -318,11 +316,8 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             user_sparse_indices = self.data_info.user_sparse_unique
             feed_dict.update({self.sparse_indices: user_sparse_indices})
         if self.dense:
-            user_dense_indices = np.tile(np.arange(self.dense_field_size),
-                                         (self.n_users, 1))
             user_dense_values = self.data_info.user_dense_unique
-            feed_dict.update({self.dense_indices: user_dense_indices,
-                              self.dense_values: user_dense_values})
+            feed_dict.update({self.dense_values: user_dense_values})
 
         self.user_vector = self.sess.run(self.user_vector_repr, feed_dict)
         self.item_weights = self.sess.run(self.nce_weights)
