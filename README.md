@@ -39,13 +39,17 @@ eval_data = DatasetPure.build_testset(eval_data)
 test_data = DatasetPure.build_testset(test_data)
 print(data_info)   # n_users: 5894, n_items: 3253, data sparsity: 0.4172 %
 
-svdpp = SVDpp(task="rating", data_info=data_info, embed_size=16, n_epochs=3, lr=0.001, reg=None, batch_size=256)
+svdpp = SVDpp(task="rating", data_info=data_info, embed_size=16, n_epochs=3, lr=0.001, 
+              reg=None, batch_size=256)
 # monitor metrics on eval_data during training
 svdpp.fit(train_data, verbose=2, eval_data=eval_data, metrics=["rmse", "mae", "r2"])
 
-svdpp.evaluate(test_data, metrics=["rmse", "mae"])  # do final evaluation on test data
-print("prediction: ", svdpp.predict(user=1, item=2333))    # predict preference of user 1 to item 2333
-print("recommendation: ", svdpp.recommend_user(user=1, n_rec=7))  # recommend 7 items for user 1
+# do final evaluation on test data
+svdpp.evaluate(test_data, metrics=["rmse", "mae"])  
+# predict preference of user 1 to item 2333
+print("prediction: ", svdpp.predict(user=1, item=2333))
+# recommend 7 items for user 1
+print("recommendation: ", svdpp.recommend_user(user=1, n_rec=7))  
 ```
 
 ##### _include features example_ : 
@@ -81,8 +85,10 @@ ytb_ranking = YouTubeRanking(task="ranking", data_info=data_info, embed_size=16,
 ytb_ranking.fit(train_data, verbose=2, shuffle=True, eval_data=test_data,
                 metrics=["loss", "roc_auc", "precision", "recall", "map", "ndcg"])
 
-print("prediction: ", ytb_ranking.predict(user=1, item=2333))  # predict preference of user 1 to item 2333
-print("recommendation: ", ytb_ranking.recommend_user(user=1, n_rec=7))  # recommend 7 items for user 1
+# predict preference of user 1 to item 2333
+print("prediction: ", ytb_ranking.predict(user=1, item=2333))  
+# recommend 7 items for user 1
+print("recommendation: ", ytb_ranking.recommend_user(user=1, n_rec=7))  
 ```
 
 
