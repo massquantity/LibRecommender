@@ -1,6 +1,7 @@
-import os
-from setuptools import setup, find_packages, Extension
 from codecs import open
+import os
+
+from setuptools import setup, find_packages, Extension
 from setuptools import dist  # Install numpy right now
 dist.Distribution().fetch_build_eggs(['numpy>=1.15.4'])
 
@@ -17,7 +18,7 @@ except ImportError:
 else:
     USE_CYTHON = True
 
-__version__ = '0.0.1'
+__version__ = '0.0.4'
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -33,24 +34,32 @@ install_requires = [x.strip() for x in all_reqs]
 
 cmdclass = {}
 
-compile_args = ['-Wno-unused-function', '-Wno-maybe-uninitialized', '-O3', '-ffast-math']
-link_args = []
-compile_args.append("-fopenmp")
-link_args.append("-fopenmp")
+compile_args = ['-Wno-unused-function', '-Wno-maybe-uninitialized',
+                '-O3', '-ffast-math', '-fopenmp', '-std=c++11']
+link_args = ['-fopenmp', '-std=c++11']
 
-ext = '.pyx' if USE_CYTHON else '.c'
+ext = '.pyx' if USE_CYTHON else '.cpp'
 
 extensions = [
-    Extension('libreco.algorithms.superSVD_cy',
-              [os.path.join("libreco", "algorithms", "superSVD_cys" + ext)], 
-              include_dirs=[np.get_include()]),
-    Extension('libreco.algorithms.Als_cy',
-              [os.path.join("libreco", "algorithms", "Als_cy" + ext)], 
-              extra_compile_args=compile_args, 
+    Extension('libreco.algorithms._bpr',
+              [os.path.join("libreco", "algorithms", "_bpr" + ext)],
+              include_dirs=[np.get_include()],
+              language="c++",
+              extra_compile_args=compile_args,
               extra_link_args=link_args),
-    Extension('libreco.similarities_cy',
-              [os.path.join("libreco", "utils", "similarities_cy" + ext)], 
-              include_dirs=[np.get_include()])]
+    Extension('libreco.algorithms._als',
+              [os.path.join("libreco", "algorithms", "_als" + ext)],
+              include_dirs=[np.get_include()],
+              language="c++",
+              extra_compile_args=compile_args,
+              extra_link_args=link_args),
+    Extension('libreco._similarities',
+              [os.path.join("libreco", "utils", "_similarities" + ext)],
+              include_dirs=[np.get_include()],
+              language="c++",
+              extra_compile_args=compile_args,
+              extra_link_args=link_args),
+]
 
 if USE_CYTHON:
     ext_modules = cythonize(extensions)
@@ -62,21 +71,24 @@ setup(
     name='LibRecommender',
     author='massquantity',
     author_email='wdmjjxg@163.com',
-    description=('A collaborative-filtering and content-based recommender system for both explicit and implicit datasets.'),
+    description=(
+        'A collaborative-filtering and content-based recommender system '
+        'for both explicit and implicit datasets.'
+    ),
     long_description=long_description,
     long_description_content_type='text/markdown',
     version=__version__,
     url='https://github.com/massquantity/LibRecommender',
     license='MIT',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Education',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Cython',
     ],
     keywords=['Matrix Factorization', 'Collaborative Filtering', 
               'Content-Based', 'Recommender System', 
@@ -88,3 +100,4 @@ setup(
     cmdclass=cmdclass,
     install_requires=install_requires,
 )
+
