@@ -1,10 +1,10 @@
 import abc
 import os
 import multiprocessing
+import time
 import numpy as np
 import tensorflow as tf
-from ..utils.timing import time_block
-from ..utils.colorize import colorize
+from ..utils.misc import time_block, colorize
 from ..utils.exception import NotSamplingError
 
 
@@ -13,9 +13,11 @@ class Base(abc.ABC):
 
     Parameters
     ----------
+    task : str
+        Specific task, either rating or ranking.
     data_info : `DataInfo` object
         Object that contains useful information for training and predicting.
-    lower_upper_bound: list or tuple, optional
+    lower_upper_bound : list or tuple, optional
         Lower and upper score bound for rating task.
     """
 
@@ -33,7 +35,7 @@ class Base(abc.ABC):
                   f"upper bound: {self.upper_bound}")
 
         elif task != "ranking":
-            raise ValueError("task must be rating or ranking")
+            raise ValueError("task must either be rating or ranking")
 
     @abc.abstractmethod
     def fit(self, train_data, **kwargs):
@@ -52,14 +54,14 @@ class Base(abc.ABC):
 
         Parameters
         ----------
-        user: int or array_like
+        user : int or array_like
             User id or batch of user ids.
-        item: int or array_like
+        item : int or array_like
             Item id or batch of item ids.
 
         Returns
         -------
-        prediction: int or array_like
+        prediction : int or array_like
             Predicted scores for each user-item pair.
         """
         raise NotImplementedError
@@ -70,14 +72,14 @@ class Base(abc.ABC):
 
         Parameters
         ----------
-        user: int
+        user : int
             User id to recommend.
-        n_rec: int
+        n_rec : int
             number of recommendations to return.
 
         Returns
         -------
-        result: list of tuples
+        result : list of tuples
             A recommendation list, each recommendation
             contains an (item_id, score) tuple.
 
@@ -90,23 +92,26 @@ class Base(abc.ABC):
         unknown_item_indices = list(
             np.where(np.logical_or(item >= self.n_items, item < 0))[0])
 
-        unknown_user = list(user[unknown_user_indices]) if (
-            unknown_user_indices) else None
-        unknown_item = list(item[unknown_item_indices]) if (
-            unknown_item_indices) else None
-        unknown_index = list(set(unknown_user_indices) |
-                             set(unknown_item_indices))
+        unknown_user = (list(user[unknown_user_indices])
+                        if unknown_user_indices
+                        else None)
+        unknown_item = (list(item[unknown_item_indices])
+                        if unknown_item_indices
+                        else None)
+        unknown_index = list(
+            set(unknown_user_indices) | set(unknown_item_indices)
+        )
         unknown_num = len(unknown_index)
 
         if unknown_num > 0:
-            user[unknown_index] = 0   # temp conversion
+            # temp conversion, will convert back in the main model
+            user[unknown_index] = 0
             item[unknown_index] = 0
-            unknown_str = (f"detect {unknown_num} unknown interaction(s), "
+            unknown_str = (f"Detect {unknown_num} unknown interaction(s), "
                            f"including user: {unknown_user}, "
                            f"item: {unknown_item}, "
                            f"will be handled as default prediction")
             print(f"{colorize(unknown_str, 'red')}")
-
         return unknown_num, unknown_index, user, item
 
     def _check_unknown_user(self, user):
@@ -114,24 +119,43 @@ class Base(abc.ABC):
             return user
         else:
             unknown_str = (f"detect unknown user {user}, "
-                           f"return cold start recommendation")
+                           f"return default recommendation")
             print(f"{colorize(unknown_str, 'red')}")
             return
 
-    def _check_has_sampled(self, data, verbose):
+    @staticmethod
+    def _check_has_sampled(data, verbose):
         if not data.has_sampled and verbose > 1:
-            exception_str = (f"When using batch sampling, "
+            exception_str = (f"During training, "
                              f"one must do whole data sampling "
                              f"before evaluating on epochs.")
             raise NotSamplingError(f"{colorize(exception_str, 'red')}")
 
-    def _decide_sparse_indices(self, data_info):
+    @staticmethod
+    def _check_interaction_mode(recent_num, random_num):
+        if recent_num is not None:
+            assert isinstance(recent_num, int), "recent_num must be integer"
+            mode = "recent"
+            num = recent_num
+        elif random_num is not None:
+            assert isinstance(random_num, int), "random_num must be integer"
+            mode = "random"
+            num = random_num
+        else:
+            mode = "recent"
+            num = 10  # by default choose 10 recent interactions
+        return mode, num
+
+    @staticmethod
+    def _decide_sparse_indices(data_info):
         return False if not data_info.sparse_col.name else True
 
-    def _decide_dense_values(self, data_info):
+    @staticmethod
+    def _decide_dense_values(data_info):
         return False if not data_info.dense_col.name else True
 
-    def _sparse_feat_size(self, data_info):
+    @staticmethod
+    def _sparse_feat_size(data_info):
         if (data_info.user_sparse_unique is not None
                 and data_info.item_sparse_unique is not None):
             return max(np.max(data_info.user_sparse_unique),
@@ -141,11 +165,18 @@ class Base(abc.ABC):
         elif data_info.item_sparse_unique is not None:
             return np.max(data_info.item_sparse_unique) + 1
 
-    def _sparse_field_size(self, data_info):
+    @staticmethod
+    def _sparse_field_size(data_info):
         return len(data_info.sparse_col.name)
 
-    def _dense_field_size(self, data_info):
+    @staticmethod
+    def _dense_field_size(data_info):
         return len(data_info.dense_col.name)
+
+    @staticmethod
+    def show_start_time():
+        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+        print(f"Training start time: {colorize(start_time, 'magenta')}")
 
 
 class TfMixin(object):
@@ -172,7 +203,8 @@ class TfMixin(object):
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
-                for user, item, label in data_generator(shuffle, self.batch_size):
+                for user, item, label in data_generator(shuffle,
+                                                        self.batch_size):
                     train_loss, _ = self.sess.run(
                         [self.loss, self.training_op],
                         feed_dict={self.user_indices: user,
@@ -203,8 +235,9 @@ class TfMixin(object):
                       f"{self.sess.run(self.lr)}")
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
-                for u, i, label, si, di, dv in data_generator(shuffle, self.batch_size):
-                    feed_dict = self._get_feed_dict(u, i, si, di, dv, label, True)
+                for u, i, label, si, dv in data_generator(shuffle,
+                                                          self.batch_size):
+                    feed_dict = self._get_feed_dict(u, i, si, dv, label, True)
                     train_loss, _ = self.sess.run(
                         [self.loss, self.training_op], feed_dict)
                     train_total_loss.append(train_loss)
@@ -217,16 +250,35 @@ class TfMixin(object):
                 self.print_metrics(eval_data=eval_data, metrics=metrics)
                 print("="*30)
 
+    def train_seq(self):
+        pass  # TODO: combine train_feat and train_seq
+
     def _get_feed_dict(self, user_indices, item_indices, sparse_indices,
-                       dense_indices, dense_values, label, is_training):
+                       dense_values, label, is_training):
         feed_dict = {self.user_indices: user_indices,
                      self.item_indices: item_indices,
                      self.is_training: is_training}
         if self.sparse:
             feed_dict.update({self.sparse_indices: sparse_indices})
         if self.dense:
-            feed_dict.update({self.dense_indices: dense_indices,
-                              self.dense_values: dense_values})
+            feed_dict.update({self.dense_values: dense_values})
         if label is not None:
             feed_dict.update({self.labels: label})
         return feed_dict
+
+    def _get_seq_feed_dict(self, u_interacted_seq, u_interacted_len,
+                           user_indices, item_indices, label, sparse_indices,
+                           dense_values, is_training):
+        feed_dict = {self.user_interacted_seq: u_interacted_seq,
+                     self.user_interacted_len: u_interacted_len,
+                     self.user_indices: user_indices,
+                     self.item_indices: item_indices,
+                     self.is_training: is_training}
+        if self.sparse:
+            feed_dict.update({self.sparse_indices: sparse_indices})
+        if self.dense:
+            feed_dict.update({self.dense_values: dense_values})
+        if label is not None:
+            feed_dict.update({self.labels: label})
+        return feed_dict
+
