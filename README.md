@@ -4,9 +4,9 @@
 
 **LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation. The main features are:
 
-+ Implement a number of popular recommendation algorithms such as SVD, DeepFM, BPR etc.
++ Implemented a number of popular recommendation algorithms such as SVD++, DeepFM, BPR etc.
 
-+ A hybrid system, allow user to use either collaborative-filtering or content-based features.
++ A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features.
 
 + Ease of memory usage, automatically convert categorical features to sparse representation.
 
@@ -23,77 +23,85 @@
 ##### _pure collaborative-filtering example_ : 
 
 ```python
-from libreco.dataset import DatasetPure   # pure data, algorithm svd++
-from libreco.algorithms import SVDpp
+import numpy as np
+import pandas as pd
+from libreco.data import random_split, DatasetPure
+from libreco.algorithms import SVDpp  # pure data, algorithm SVD++
 
-conf = {
-    "data_path": "path/to/your/data",
-    "length": "all",
-}
+data = pd.read_csv("examples/sample_data/sample_movielens_rating.dat", sep="::", 
+                   names=["user", "item", "label", "time"])
 
-dataset = DatasetPure()
-dataset.build_dataset(**conf)
+# split whole data into three folds for training, evaluating and testing
+train_data, eval_data, test_data = random_split(data, multi_ratios=[0.8, 0.1, 0.1])
 
-svd = SVDpp(n_factors=32, n_epochs=200, lr=0.001, batch_size=4096, task="rating")
-svd.fit(dataset, verbose=1)
-print(svd.predict(1, 2))	     # predict preference of user 1 to item 2
-print(svd.recommend_user(1, 7))	 # recommend 7 items for user 1
+train_data, data_info = DatasetPure.build_trainset(train_data)
+eval_data = DatasetPure.build_testset(eval_data)
+test_data = DatasetPure.build_testset(test_data)
+print(data_info)   # n_users: 5894, n_items: 3253, data sparsity: 0.4172 %
+
+svdpp = SVDpp(task="rating", data_info=data_info, embed_size=16, n_epochs=3, lr=0.001, reg=None, batch_size=256)
+# monitor metrics on eval_data during training
+svdpp.fit(train_data, verbose=2, eval_data=eval_data, metrics=["rmse", "mae", "r2"])
+
+svdpp.evaluate(test_data, metrics=["rmse", "mae"])  # do final evaluation on test data
+print("prediction: ", svdpp.predict(user=1, item=2333))    # predict preference of user 1 to item 2333
+print("recommendation: ", svdpp.recommend_user(user=1, n_rec=7))  # recommend 7 items for user 1
 ```
 
 ##### _include features example_ : 
 
 ```python
-from libreco.dataset import DatasetFeat   # feat data, algorithm DeepFM
-from libreco.algorithms import DeepFmFeat
+import numpy as np
+import pandas as pd
+from libreco.data import split_by_ratio_chrono, DatasetFeat
+from libreco.algorithms import YouTubeRanking  # feat data, algorithm YouTubeRanking
 
-conf = {
-    "data_path": "path/to/your/data",
-    "length": 500000,
-    "user_col": 0,
-    "item_col": 1,
-    "label_col": 2,
-    "numerical_col": [4],
-    "categorical_col": [3, 5, 6, 7, 8],
-    "merged_categorical_col": None,
-    "user_feature_cols": [3, 4, 5],
-    "item_feature_cols": [6, 7, 8],
-    "convert_implicit": True,
-    "build_negative": True,
-    "num_neg": 2,
-    "sep": ",",
-}
+data = pd.read_csv("examples/sample_data/sample_movielens_merged.csv", sep=",", header=0)
+data["label"] = 1  # convert to implicit data and do negative sampling afterwards
 
-dataset = DatasetFeat(include_features=True)
-dataset.build_dataset(**conf)
+# split into train and test data based on time
+train_data, test_data = split_by_ratio_chrono(data, test_size=0.2)
 
-dfm = DeepFmFeat(lr=0.0002, n_epochs=10000, reg=0.1, embed_size=50,
-                 batch_size=2048, dropout_rate=0.0, task="ranking", neg_sampling=True)
-dfm.fit(dataset, pre_sampling=False, verbose=1)
-print(dfm.predict(1, 10))             # predict preference of user 1 to item 10
-print(dfm.recommend_user(1, 7))   # recommend 7 items for user 1
+# specify complete columns information
+sparse_col = ["sex", "occupation", "genre1", "genre2", "genre3"]
+dense_col = ["age"]
+user_col = ["sex", "age", "occupation"]
+item_col = ["genre1", "genre2", "genre3"]
+
+train_data, data_info = DatasetFeat.build_trainset(
+    train_data, user_col, item_col, sparse_col, dense_col)
+test_data = DatasetFeat.build_testset(test_data, sparse_col, dense_col)
+train_data.build_negative_samples(data_info)  # sample negative items for each record
+test_data.build_negative_samples(data_info)
+print(data_info)  # n_users: 5962, n_items: 3226, data sparsity: 0.4185 %
+
+ytb_ranking = YouTubeRanking(task="ranking", data_info=data_info, embed_size=16, 
+                             n_epochs=3, lr=1e-4, batch_size=512, use_bn=True, 
+                             hidden_units="128,64,32")
+ytb_ranking.fit(train_data, verbose=2, shuffle=True, eval_data=test_data,
+                metrics=["loss", "roc_auc", "precision", "recall", "map", "ndcg"])
+
+print("prediction: ", ytb_ranking.predict(user=1, item=2333))  # predict preference of user 1 to item 2333
+print("recommendation: ", ytb_ranking.recommend_user(user=1, n_rec=7))  # recommend 7 items for user 1
 ```
 
 
 ## Data Format
-JUST normal data format, each line represents a sample. By default, model assumes that `user`, `item`, and `label` column index are 0, 1, and 2, respectively. But you need to specify `user`, `item`, and `label` column index if that’s not the case. For Example, the `movielens-1m` dataset:
+JUST normal data format, each line represents a sample. One thing is important, the model assumes that `user`, `item`, and `label` column index are 0, 1, and 2, respectively. You may wish to change the column order if that's not the case. Take for Example, the `movielens-1m` dataset:
 
 > 1::1193::5::978300760<br>
 > 1::661::3::978302109<br>
 > 1::914::3::978301968<br>
 > 1::3408::4::978300275
 
-leads to the following settings in `conf` dict : `"user_col": 0,  "item_col": 1,  "label_col": 2, "sep": "::"` .
-
-Besides, if you want to use some other meta features (e.g., age, sex, category etc.), `numerical` and `categorical` column index must be assigned. For example, `"numerical_col": [4], "categorical_col": [3, 5, 6, 7, 8]`, which means all features must be in a same table.
-
-
+Besides, if you want to use some other meta features (e.g., age, sex, category etc.),  you need to tell the model which columns are [`sparse_col, dense_col, user_col, item_col`], which means all features must be in a same table. See above `YouTubeRanking` for example.
 
 ## Installation & Dependencies 
 
 From pypi : &nbsp;  `pip install LibRecommender`
 
 
-##### Required Dependencies:
+##### Basic Dependencies in `libreco`:
 - Python >= 3.6
 - tensorflow >= 1.14 (but not tf 2.0 :)
 - numpy >= 1.15.4
@@ -101,7 +109,14 @@ From pypi : &nbsp;  `pip install LibRecommender`
 - scipy >= 1.2.1
 - scikit-learn >= 0.20.0
 
+##### Optional Serving Dependencies:
 
++ flask >= 1.0.0
++ requests >= 2.22.0
++ [redis](<https://redis.io/>) == 3.0.6
++ [redis-py](https://github.com/andymccurdy/redis-py) >= 3.3.5
++ [faiss](https://github.com/facebookresearch/faiss) == 1.5.2
++ [Tensorflow Serving](<https://github.com/tensorflow/serving>)
 
 
 
@@ -119,6 +134,7 @@ From pypi : &nbsp;  `pip install LibRecommender`
 |        FM         |   feat   | [Factorization Machines](https://www.csie.ntu.edu.tw/~b97053/paper/Rendle2010FM.pdf) |
 |      DeepFM       |   feat   | [DeepFM: A Factorization-Machine based Neural Network for CTR Prediction](https://arxiv.org/pdf/1703.04247.pdf) |
 |   YouTubeMatch  YouTubeRanking |   feat   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
+| AutoInt | feat | [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921.pdf) |
 |        DIN        |   feat   | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) |
 
 

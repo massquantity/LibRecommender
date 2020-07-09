@@ -1,13 +1,6 @@
 Dataset:
-# leave_k_out_chrono_split
-# user_embedding, item_embedding, feature_embedding
-# np.unique(return_inverse=True)
-# numerical min_max_scale
-# min_occurance
-# convert implicit threshold e.g. > 4.0
+# multi-hot encoding
 
 Algorithms:
-# evaluate method
+# sequence method
 
-Sampling
-# selective negative sampling
