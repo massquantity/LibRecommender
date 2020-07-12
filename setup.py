@@ -18,7 +18,7 @@ except ImportError:
 else:
     USE_CYTHON = True
 
-__version__ = '0.0.4'
+__version__ = '0.0.6'
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -53,7 +53,7 @@ extensions = [
               language="c++",
               extra_compile_args=compile_args,
               extra_link_args=link_args),
-    Extension('libreco._similarities',
+    Extension('libreco.utils._similarities',
               [os.path.join("libreco", "utils", "_similarities" + ext)],
               include_dirs=[np.get_include()],
               language="c++",
