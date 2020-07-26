@@ -165,7 +165,8 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             shape=[self.n_items, self.user_vector_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
-        # we didn't add bias, since ANN can't be used with bias
+        # we didn't add bias(set trainable to False),
+        # since ANN(neighbor search) can't be used with bias
         self.nce_biases = tf.get_variable(
             name="nce_biases",
             shape=[self.n_items],

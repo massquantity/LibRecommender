@@ -1,5 +1,4 @@
 import random
-import time
 from operator import itemgetter
 from itertools import islice, takewhile
 from collections import defaultdict
@@ -185,8 +184,10 @@ class UserCF(Base, EvalMixin):
     def _caution_sim_type(self):
         caution_str = (f"Warning: {self.sim_type} is not suitable "
                        f"for implicit data")
+        caution_str2 = (f"Warning: {self.sim_type} is not suitable "
+                        f"for explicit data")
         if self.task == "ranking" and self.sim_type == "pearson":
             print(f"{colorize(caution_str, 'red')}")
         if self.task == "rating" and self.sim_type == "jaccard":
-            print(f"{colorize(caution_str, 'red')}")
+            print(f"{colorize(caution_str2, 'red')}")
 
