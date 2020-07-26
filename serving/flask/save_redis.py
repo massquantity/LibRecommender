@@ -5,7 +5,7 @@ import redis
 r = redis.Redis(host="localhost", port=6379, decode_responses=True)
 
 
-def similarity2redis(path, name):
+def sim2redis(path, name):
     with open(path, "r") as f:
         similarities = f.read()
     r.set(name, similarities)

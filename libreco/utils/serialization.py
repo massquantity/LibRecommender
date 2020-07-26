@@ -1,4 +1,5 @@
 from collections import defaultdict
+from functools import partial
 import json
 import os
 import shutil
@@ -8,7 +9,51 @@ import tensorflow as tf
 from .misc import colorize
 
 
-def convert_similarity_to_json(sim_csr_matrix, k=20):
+def save_knn(path, model, train_data, k=20):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    sim_path = os.path.join(path, "sim.json")
+    user_consumed_path = os.path.join(path, "user_consumed.json")
+    sim_func = partial(convert_sim_to_json, k=k)
+    save_to_json(sim_path, model.sim_matrix, sim_func)
+    save_to_json(user_consumed_path,
+                 train_data.sparse_interaction,
+                 convert_user_consumed_to_json)
+
+
+def save_vector(path, model, train_data):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    user_path = os.path.join(path, "user_vector.json")
+    item_path = os.path.join(path, "item_vector.json")
+    user_consumed_path = os.path.join(path, "user_consumed.json")
+    user_vec, item_vec = vector_from_model(model)
+    save_to_json(user_path, user_vec, convert_vector_to_json)
+    save_to_json(item_path, item_vec, convert_vector_to_json)
+    save_to_json(user_consumed_path,
+                 train_data.sparse_interaction,
+                 convert_user_consumed_to_json)
+
+
+def save_tf(path, train_data, data_info=None):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    data_info_path = os.path.join(path, "data_info.json")
+    user_consumed_path = os.path.join(path, "user_consumed.json")
+    if data_info is not None:
+        save_to_json(data_info_path, data_info, convert_data_info_to_json)
+    save_to_json(user_consumed_path,
+                 train_data.sparse_interaction,
+                 convert_user_consumed_to_json)
+
+
+def save_to_json(path, data, convert_func):
+    json_data = convert_func(data)
+    with open(path, 'w') as f:
+        json.dump(json_data, f, separators=(',', ':'))
+
+
+def convert_sim_to_json(sim_csr_matrix, k=20):
     res = dict()
     num = len(sim_csr_matrix.indptr) - 1
     indices = sim_csr_matrix.indices.tolist()
@@ -43,7 +88,6 @@ def convert_user_consumed_to_json(sparse_interacted_matrix):
 
 def convert_data_info_to_json(data_info):
     res = dict()
-
     # sparse part
     user_sparse_col = data_info.user_sparse_col.index
     item_sparse_col = data_info.item_sparse_col.index
@@ -75,12 +119,6 @@ def convert_data_info_to_json(data_info):
         res["item_dense_unique"] = data_info.item_dense_unique.tolist()
 
     return res
-
-
-def save_to_json(path, data, convert_func):
-    json_data = convert_func(data)
-    with open(path, 'w') as f:
-        json.dump(json_data, f, separators=(',', ':'))
 
 
 def save_model_tf_serving(path, model, model_name, version, simple_save=False):
@@ -152,4 +190,23 @@ def save_model_tf_serving(path, model, model_name, version, simple_save=False):
 
         builder.save()
         print(f"{colorize('Done tf exporting!', 'green')}")
+
+
+def vector_from_model(model):
+    model_name = model.__class__.__name__.lower()
+    if model_name == "svd":
+        user_vec = np.concatenate([model.bu[:, None], model.pu], axis=1)
+        item_vec = np.concatenate([model.bi[:, None], model.qi], axis=1)
+    elif model_name == "svdpp":
+        user_vec = np.concatenate([model.bu[:, None], model.puj], axis=1)
+        item_vec = np.concatenate([model.bi[:, None], model.qi], axis=1)
+    elif model_name in ("als", "bpr"):
+        user_vec = model.user_embed
+        item_vec = model.item_embed
+    elif model_name == "youtubematch":
+        user_vec = model.user_vector
+        item_vec = model.item_weights
+    else:
+        raise ValueError("Not suitable for vector model")
+    return user_vec, item_vec
 
