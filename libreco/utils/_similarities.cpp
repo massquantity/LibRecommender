@@ -8,9 +8,12 @@
             "/home/massquantity/.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/core/include/numpy/ufuncobject.h"
         ],
         "extra_compile_args": [
+            "-Wno-unused-function",
+            "-Wno-maybe-uninitialized",
+            "-O3",
+            "-ffast-math",
             "-fopenmp",
-            "-std=c++11",
-            "-O3"
+            "-std=c++11"
         ],
         "extra_link_args": [
             "-fopenmp",
@@ -20,12 +23,12 @@
             "/home/massquantity/.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/core/include"
         ],
         "language": "c++",
-        "name": "_similarities",
+        "name": "libreco.utils._similarities",
         "sources": [
-            "_similarities.pyx"
+            "libreco/utils/_similarities.pyx"
         ]
     },
-    "module_name": "_similarities"
+    "module_name": "libreco.utils._similarities"
 }
 END: Cython Metadata */
 
@@ -636,13 +639,16 @@ static CYTHON_INLINE float __PYX_NAN() {
   #endif
 #endif
 
-#define __PYX_HAVE___similarities
-#define __PYX_HAVE_API___similarities
+#define __PYX_HAVE__libreco__utils___similarities
+#define __PYX_HAVE_API__libreco__utils___similarities
 /* Early includes */
 #include <string.h>
 #include <stdio.h>
 #include "numpy/arrayobject.h"
 #include "numpy/ufuncobject.h"
+
+    /* NumPy API declarations from "numpy/__init__.pxd" */
+    
 #include <math.h>
 #include "ios"
 #include "new"
@@ -882,7 +888,7 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "_similarities.pyx",
+  "libreco/utils/_similarities.pyx",
   "__init__.pxd",
   "stringsource",
   "type.pxd",
@@ -996,7 +1002,7 @@ typedef struct {
 } __Pyx_BufFmt_Context;
 
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":776
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":697
  * # in Cython to enable them only on the right systems.
  * 
  * ctypedef npy_int8       int8_t             # <<<<<<<<<<<<<<
@@ -1005,7 +1011,7 @@ typedef struct {
  */
 typedef npy_int8 __pyx_t_5numpy_int8_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":777
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":698
  * 
  * ctypedef npy_int8       int8_t
  * ctypedef npy_int16      int16_t             # <<<<<<<<<<<<<<
@@ -1014,7 +1020,7 @@ typedef npy_int8 __pyx_t_5numpy_int8_t;
  */
 typedef npy_int16 __pyx_t_5numpy_int16_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":778
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":699
  * ctypedef npy_int8       int8_t
  * ctypedef npy_int16      int16_t
  * ctypedef npy_int32      int32_t             # <<<<<<<<<<<<<<
@@ -1023,7 +1029,7 @@ typedef npy_int16 __pyx_t_5numpy_int16_t;
  */
 typedef npy_int32 __pyx_t_5numpy_int32_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":779
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":700
  * ctypedef npy_int16      int16_t
  * ctypedef npy_int32      int32_t
  * ctypedef npy_int64      int64_t             # <<<<<<<<<<<<<<
@@ -1032,7 +1038,7 @@ typedef npy_int32 __pyx_t_5numpy_int32_t;
  */
 typedef npy_int64 __pyx_t_5numpy_int64_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":783
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":704
  * #ctypedef npy_int128     int128_t
  * 
  * ctypedef npy_uint8      uint8_t             # <<<<<<<<<<<<<<
@@ -1041,7 +1047,7 @@ typedef npy_int64 __pyx_t_5numpy_int64_t;
  */
 typedef npy_uint8 __pyx_t_5numpy_uint8_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":784
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":705
  * 
  * ctypedef npy_uint8      uint8_t
  * ctypedef npy_uint16     uint16_t             # <<<<<<<<<<<<<<
@@ -1050,7 +1056,7 @@ typedef npy_uint8 __pyx_t_5numpy_uint8_t;
  */
 typedef npy_uint16 __pyx_t_5numpy_uint16_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":785
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":706
  * ctypedef npy_uint8      uint8_t
  * ctypedef npy_uint16     uint16_t
  * ctypedef npy_uint32     uint32_t             # <<<<<<<<<<<<<<
@@ -1059,7 +1065,7 @@ typedef npy_uint16 __pyx_t_5numpy_uint16_t;
  */
 typedef npy_uint32 __pyx_t_5numpy_uint32_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":786
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":707
  * ctypedef npy_uint16     uint16_t
  * ctypedef npy_uint32     uint32_t
  * ctypedef npy_uint64     uint64_t             # <<<<<<<<<<<<<<
@@ -1068,7 +1074,7 @@ typedef npy_uint32 __pyx_t_5numpy_uint32_t;
  */
 typedef npy_uint64 __pyx_t_5numpy_uint64_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":790
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":711
  * #ctypedef npy_uint128    uint128_t
  * 
  * ctypedef npy_float32    float32_t             # <<<<<<<<<<<<<<
@@ -1077,7 +1083,7 @@ typedef npy_uint64 __pyx_t_5numpy_uint64_t;
  */
 typedef npy_float32 __pyx_t_5numpy_float32_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":791
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":712
  * 
  * ctypedef npy_float32    float32_t
  * ctypedef npy_float64    float64_t             # <<<<<<<<<<<<<<
@@ -1086,7 +1092,7 @@ typedef npy_float32 __pyx_t_5numpy_float32_t;
  */
 typedef npy_float64 __pyx_t_5numpy_float64_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":800
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":721
  * # The int types are mapped a bit surprising --
  * # numpy.int corresponds to 'l' and numpy.long to 'q'
  * ctypedef npy_long       int_t             # <<<<<<<<<<<<<<
@@ -1095,7 +1101,7 @@ typedef npy_float64 __pyx_t_5numpy_float64_t;
  */
 typedef npy_long __pyx_t_5numpy_int_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":801
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":722
  * # numpy.int corresponds to 'l' and numpy.long to 'q'
  * ctypedef npy_long       int_t
  * ctypedef npy_longlong   long_t             # <<<<<<<<<<<<<<
@@ -1104,7 +1110,7 @@ typedef npy_long __pyx_t_5numpy_int_t;
  */
 typedef npy_longlong __pyx_t_5numpy_long_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":802
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":723
  * ctypedef npy_long       int_t
  * ctypedef npy_longlong   long_t
  * ctypedef npy_longlong   longlong_t             # <<<<<<<<<<<<<<
@@ -1113,7 +1119,7 @@ typedef npy_longlong __pyx_t_5numpy_long_t;
  */
 typedef npy_longlong __pyx_t_5numpy_longlong_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":804
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":725
  * ctypedef npy_longlong   longlong_t
  * 
  * ctypedef npy_ulong      uint_t             # <<<<<<<<<<<<<<
@@ -1122,7 +1128,7 @@ typedef npy_longlong __pyx_t_5numpy_longlong_t;
  */
 typedef npy_ulong __pyx_t_5numpy_uint_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":805
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":726
  * 
  * ctypedef npy_ulong      uint_t
  * ctypedef npy_ulonglong  ulong_t             # <<<<<<<<<<<<<<
@@ -1131,7 +1137,7 @@ typedef npy_ulong __pyx_t_5numpy_uint_t;
  */
 typedef npy_ulonglong __pyx_t_5numpy_ulong_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":806
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":727
  * ctypedef npy_ulong      uint_t
  * ctypedef npy_ulonglong  ulong_t
  * ctypedef npy_ulonglong  ulonglong_t             # <<<<<<<<<<<<<<
@@ -1140,7 +1146,7 @@ typedef npy_ulonglong __pyx_t_5numpy_ulong_t;
  */
 typedef npy_ulonglong __pyx_t_5numpy_ulonglong_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":808
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":729
  * ctypedef npy_ulonglong  ulonglong_t
  * 
  * ctypedef npy_intp       intp_t             # <<<<<<<<<<<<<<
@@ -1149,7 +1155,7 @@ typedef npy_ulonglong __pyx_t_5numpy_ulonglong_t;
  */
 typedef npy_intp __pyx_t_5numpy_intp_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":809
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":730
  * 
  * ctypedef npy_intp       intp_t
  * ctypedef npy_uintp      uintp_t             # <<<<<<<<<<<<<<
@@ -1158,7 +1164,7 @@ typedef npy_intp __pyx_t_5numpy_intp_t;
  */
 typedef npy_uintp __pyx_t_5numpy_uintp_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":811
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":732
  * ctypedef npy_uintp      uintp_t
  * 
  * ctypedef npy_double     float_t             # <<<<<<<<<<<<<<
@@ -1167,7 +1173,7 @@ typedef npy_uintp __pyx_t_5numpy_uintp_t;
  */
 typedef npy_double __pyx_t_5numpy_float_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":812
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":733
  * 
  * ctypedef npy_double     float_t
  * ctypedef npy_double     double_t             # <<<<<<<<<<<<<<
@@ -1176,7 +1182,7 @@ typedef npy_double __pyx_t_5numpy_float_t;
  */
 typedef npy_double __pyx_t_5numpy_double_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":813
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":734
  * ctypedef npy_double     float_t
  * ctypedef npy_double     double_t
  * ctypedef npy_longdouble longdouble_t             # <<<<<<<<<<<<<<
@@ -1185,14 +1191,14 @@ typedef npy_double __pyx_t_5numpy_double_t;
  */
 typedef npy_longdouble __pyx_t_5numpy_longdouble_t;
 
-/* "_similarities.pyx":11
+/* "libreco/utils/_similarities.pyx":11
  * from libc.string cimport memset
  * 
  * ctypedef unsigned int uint             # <<<<<<<<<<<<<<
  * 
  * 
  */
-typedef unsigned int __pyx_t_13_similarities_uint;
+typedef unsigned int __pyx_t_7libreco_5utils_13_similarities_uint;
 /* Declarations.proto */
 #if CYTHON_CCOMPLEX
   #ifdef __cplusplus
@@ -1224,7 +1230,7 @@ struct __pyx_MemviewEnum_obj;
 struct __pyx_memoryview_obj;
 struct __pyx_memoryviewslice_obj;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":815
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":736
  * ctypedef npy_longdouble longdouble_t
  * 
  * ctypedef npy_cfloat      cfloat_t             # <<<<<<<<<<<<<<
@@ -1233,7 +1239,7 @@ struct __pyx_memoryviewslice_obj;
  */
 typedef npy_cfloat __pyx_t_5numpy_cfloat_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":816
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":737
  * 
  * ctypedef npy_cfloat      cfloat_t
  * ctypedef npy_cdouble     cdouble_t             # <<<<<<<<<<<<<<
@@ -1242,7 +1248,7 @@ typedef npy_cfloat __pyx_t_5numpy_cfloat_t;
  */
 typedef npy_cdouble __pyx_t_5numpy_cdouble_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":817
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":738
  * ctypedef npy_cfloat      cfloat_t
  * ctypedef npy_cdouble     cdouble_t
  * ctypedef npy_clongdouble clongdouble_t             # <<<<<<<<<<<<<<
@@ -1251,7 +1257,7 @@ typedef npy_cdouble __pyx_t_5numpy_cdouble_t;
  */
 typedef npy_clongdouble __pyx_t_5numpy_clongdouble_t;
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":819
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":740
  * ctypedef npy_clongdouble clongdouble_t
  * 
  * ctypedef npy_cdouble     complex_t             # <<<<<<<<<<<<<<
@@ -1259,42 +1265,42 @@ typedef npy_clongdouble __pyx_t_5numpy_clongdouble_t;
  * cdef inline object PyArray_MultiIterNew1(a):
  */
 typedef npy_cdouble __pyx_t_5numpy_complex_t;
-struct __pyx_opt_args_13_similarities_invert_cosine;
-struct __pyx_opt_args_13_similarities_invert_pearson;
-struct __pyx_opt_args_13_similarities_invert_jaccard;
+struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_cosine;
+struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_pearson;
+struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_jaccard;
 
-/* "_similarities.pyx":147
+/* "libreco/utils/_similarities.pyx":147
  * @cython.cdivision(True)
  * cpdef invert_cosine(
  *     const int[:] indices,             # <<<<<<<<<<<<<<
  *     const int[:] indptr,
  *     const float[:] data,
  */
-struct __pyx_opt_args_13_similarities_invert_cosine {
+struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_cosine {
   int __pyx_n;
   int num_threads;
 };
 
-/* "_similarities.pyx":254
+/* "libreco/utils/_similarities.pyx":254
  * @cython.cdivision(True)
  * cpdef invert_pearson(
  *     const int[:] indices,             # <<<<<<<<<<<<<<
  *     const int[:] indptr,
  *     const float[:] data,
  */
-struct __pyx_opt_args_13_similarities_invert_pearson {
+struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_pearson {
   int __pyx_n;
   int num_threads;
 };
 
-/* "_similarities.pyx":346
+/* "libreco/utils/_similarities.pyx":346
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef invert_jaccard(const int[:] indices, const int[:] indptr, const float[:] data,             # <<<<<<<<<<<<<<
  *                     const int[:] x_count, int min_common, int n_x, int n_y,
  *                     int block_size, int block_num, int num_threads=1):
  */
-struct __pyx_opt_args_13_similarities_invert_jaccard {
+struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_jaccard {
   int __pyx_n;
   int num_threads;
 };
@@ -1634,6 +1640,29 @@ static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[],\
 /* None.proto */
 static CYTHON_INLINE void __Pyx_RaiseUnboundLocalError(const char *varname);
 
+/* DictGetItem.proto */
+#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
+static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key);
+#define __Pyx_PyObject_Dict_GetItem(obj, name)\
+    (likely(PyDict_CheckExact(obj)) ?\
+     __Pyx_PyDict_GetItem(obj, name) : PyObject_GetItem(obj, name))
+#else
+#define __Pyx_PyDict_GetItem(d, key) PyObject_GetItem(d, key)
+#define __Pyx_PyObject_Dict_GetItem(obj, name)  PyObject_GetItem(obj, name)
+#endif
+
+/* RaiseTooManyValuesToUnpack.proto */
+static CYTHON_INLINE void __Pyx_RaiseTooManyValuesError(Py_ssize_t expected);
+
+/* RaiseNeedMoreValuesToUnpack.proto */
+static CYTHON_INLINE void __Pyx_RaiseNeedMoreValuesError(Py_ssize_t index);
+
+/* RaiseNoneIterError.proto */
+static CYTHON_INLINE void __Pyx_RaiseNoneNotIterableError(void);
+
+/* ExtTypeTest.proto */
+static CYTHON_INLINE int __Pyx_TypeTest(PyObject *obj, PyTypeObject *type);
+
 /* PyThreadStateGet.proto */
 #if CYTHON_FAST_THREAD_STATE
 #define __Pyx_PyThreadState_declare  PyThreadState *__pyx_tstate;
@@ -1672,29 +1701,6 @@ static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject 
 
 /* RaiseException.proto */
 static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause);
-
-/* DictGetItem.proto */
-#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
-static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key);
-#define __Pyx_PyObject_Dict_GetItem(obj, name)\
-    (likely(PyDict_CheckExact(obj)) ?\
-     __Pyx_PyDict_GetItem(obj, name) : PyObject_GetItem(obj, name))
-#else
-#define __Pyx_PyDict_GetItem(d, key) PyObject_GetItem(d, key)
-#define __Pyx_PyObject_Dict_GetItem(obj, name)  PyObject_GetItem(obj, name)
-#endif
-
-/* RaiseTooManyValuesToUnpack.proto */
-static CYTHON_INLINE void __Pyx_RaiseTooManyValuesError(Py_ssize_t expected);
-
-/* RaiseNeedMoreValuesToUnpack.proto */
-static CYTHON_INLINE void __Pyx_RaiseNeedMoreValuesError(Py_ssize_t index);
-
-/* RaiseNoneIterError.proto */
-static CYTHON_INLINE void __Pyx_RaiseNoneNotIterableError(void);
-
-/* ExtTypeTest.proto */
-static CYTHON_INLINE int __Pyx_TypeTest(PyObject *obj, PyTypeObject *type);
 
 /* GetTopmostException.proto */
 #if CYTHON_USE_EXC_INFO_STACK
@@ -2038,8 +2044,8 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_unsigned_int(unsigned int value);
 
 /* MemviewDtypeToObject.proto */
-static CYTHON_INLINE PyObject *__pyx_memview_get_nn___pyx_t_13_similarities_uint(const char *itemp);
-static CYTHON_INLINE int __pyx_memview_set_nn___pyx_t_13_similarities_uint(const char *itemp, PyObject *obj);
+static CYTHON_INLINE PyObject *__pyx_memview_get_nn___pyx_t_7libreco_5utils_13_similarities_uint(const char *itemp);
+static CYTHON_INLINE int __pyx_memview_set_nn___pyx_t_7libreco_5utils_13_similarities_uint(const char *itemp, PyObject *obj);
 
 /* MemviewDtypeToObject.proto */
 static CYTHON_INLINE PyObject *__pyx_memview_get_float(const char *itemp);
@@ -2214,7 +2220,7 @@ static CYTHON_INLINE char __Pyx_PyInt_As_char(PyObject *);
 static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_ds_float(PyObject *, int writable_flag);
 
 /* ObjectToMemviewSlice.proto */
-static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_13_similarities_uint(PyObject *, int writable_flag);
+static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_7libreco_5utils_13_similarities_uint(PyObject *, int writable_flag);
 
 /* CheckBinaryVersion.proto */
 static int __Pyx_check_binary_version(void);
@@ -2272,7 +2278,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *, cha
 
 /* Module declarations from 'libc.stdlib' */
 
-/* Module declarations from '_similarities' */
+/* Module declarations from 'libreco.utils._similarities' */
 static PyTypeObject *__pyx_array_type = 0;
 static PyTypeObject *__pyx_MemviewEnum_type = 0;
 static PyTypeObject *__pyx_memoryview_type = 0;
@@ -2284,16 +2290,16 @@ static PyObject *contiguous = 0;
 static PyObject *indirect_contiguous = 0;
 static int __pyx_memoryview_thread_locks_used;
 static PyThread_type_lock __pyx_memoryview_thread_locks[8];
-static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int); /*proto*/
-static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice); /*proto*/
-static PyObject *__pyx_f_13_similarities_invert_cosine(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int __pyx_skip_dispatch, struct __pyx_opt_args_13_similarities_invert_cosine *__pyx_optional_args); /*proto*/
-static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice); /*proto*/
-static PyObject *__pyx_f_13_similarities_invert_pearson(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int __pyx_skip_dispatch, struct __pyx_opt_args_13_similarities_invert_pearson *__pyx_optional_args); /*proto*/
-static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice); /*proto*/
-static PyObject *__pyx_f_13_similarities_invert_jaccard(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int __pyx_skip_dispatch, struct __pyx_opt_args_13_similarities_invert_jaccard *__pyx_optional_args); /*proto*/
-static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int __pyx_skip_dispatch); /*proto*/
-static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int __pyx_skip_dispatch); /*proto*/
-static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int __pyx_skip_dispatch); /*proto*/
+static Py_ssize_t __pyx_f_7libreco_5utils_13_similarities_count_freq(__Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int); /*proto*/
+static void __pyx_f_7libreco_5utils_13_similarities_compute_cosine(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_invert_cosine(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int __pyx_skip_dispatch, struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_cosine *__pyx_optional_args); /*proto*/
+static void __pyx_f_7libreco_5utils_13_similarities_compute_pearson(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_invert_pearson(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int __pyx_skip_dispatch, struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_pearson *__pyx_optional_args); /*proto*/
+static void __pyx_f_7libreco_5utils_13_similarities_compute_jaccard(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_invert_jaccard(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int, int, int, int __pyx_skip_dispatch, struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_jaccard *__pyx_optional_args); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_forward_cosine(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int __pyx_skip_dispatch); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_forward_pearson(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int __pyx_skip_dispatch); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_forward_jaccard(__Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, __Pyx_memviewslice, int, int, int __pyx_skip_dispatch); /*proto*/
 static PyObject *__pyx_convert_vector_to_py_unsigned_int(const std::vector<unsigned int>  &); /*proto*/
 static PyObject *__pyx_convert_vector_to_py_float(const std::vector<float>  &); /*proto*/
 static struct __pyx_array_obj *__pyx_array_new(PyObject *, Py_ssize_t, char *, char *, char *); /*proto*/
@@ -2332,15 +2338,15 @@ static PyObject *__pyx_unpickle_Enum__set_state(struct __pyx_MemviewEnum_obj *, 
 static __Pyx_TypeInfo __Pyx_TypeInfo_int__const__ = { "const int", NULL, sizeof(int const ), { 0 }, 0, IS_UNSIGNED(int const ) ? 'U' : 'I', IS_UNSIGNED(int const ), 0 };
 static __Pyx_TypeInfo __Pyx_TypeInfo_float__const__ = { "const float", NULL, sizeof(float const ), { 0 }, 0, 'R', 0, 0 };
 static __Pyx_TypeInfo __Pyx_TypeInfo_float = { "float", NULL, sizeof(float), { 0 }, 0, 'R', 0, 0 };
-static __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_13_similarities_uint = { "uint", NULL, sizeof(__pyx_t_13_similarities_uint), { 0 }, 0, IS_UNSIGNED(__pyx_t_13_similarities_uint) ? 'U' : 'I', IS_UNSIGNED(__pyx_t_13_similarities_uint), 0 };
-#define __Pyx_MODULE_NAME "_similarities"
-extern int __pyx_module_is_main__similarities;
-int __pyx_module_is_main__similarities = 0;
+static __Pyx_TypeInfo __Pyx_TypeInfo_nn___pyx_t_7libreco_5utils_13_similarities_uint = { "uint", NULL, sizeof(__pyx_t_7libreco_5utils_13_similarities_uint), { 0 }, 0, IS_UNSIGNED(__pyx_t_7libreco_5utils_13_similarities_uint) ? 'U' : 'I', IS_UNSIGNED(__pyx_t_7libreco_5utils_13_similarities_uint), 0 };
+#define __Pyx_MODULE_NAME "libreco.utils._similarities"
+extern int __pyx_module_is_main_libreco__utils___similarities;
+int __pyx_module_is_main_libreco__utils___similarities = 0;
 
-/* Implementation of '_similarities' */
+/* Implementation of 'libreco.utils._similarities' */
 static PyObject *__pyx_builtin_range;
-static PyObject *__pyx_builtin_ValueError;
 static PyObject *__pyx_builtin_RuntimeError;
+static PyObject *__pyx_builtin_ValueError;
 static PyObject *__pyx_builtin_ImportError;
 static PyObject *__pyx_builtin_MemoryError;
 static PyObject *__pyx_builtin_enumerate;
@@ -2439,7 +2445,6 @@ static const char __pyx_k_contiguous_and_indirect[] = "<contiguous and indirect>
 static const char __pyx_k_Cannot_index_with_type_s[] = "Cannot index with type '%s'";
 static const char __pyx_k_Invalid_shape_in_axis_d_d[] = "Invalid shape in axis %d: %d.";
 static const char __pyx_k_itemsize_0_for_cython_array[] = "itemsize <= 0 for cython.array";
-static const char __pyx_k_ndarray_is_not_C_contiguous[] = "ndarray is not C contiguous";
 static const char __pyx_k_unable_to_allocate_array_data[] = "unable to allocate array data.";
 static const char __pyx_k_strided_and_direct_or_indirect[] = "<strided and direct or indirect>";
 static const char __pyx_k_numpy_core_multiarray_failed_to[] = "numpy.core.multiarray failed to import";
@@ -2457,7 +2462,6 @@ static const char __pyx_k_Non_native_byte_order_not_suppor[] = "Non-native byte 
 static const char __pyx_k_Out_of_bounds_on_buffer_access_a[] = "Out of bounds on buffer access (axis %d)";
 static const char __pyx_k_Unable_to_convert_item_to_object[] = "Unable to convert item to object";
 static const char __pyx_k_got_differing_extents_in_dimensi[] = "got differing extents in dimension %d (got %d and %d)";
-static const char __pyx_k_ndarray_is_not_Fortran_contiguou[] = "ndarray is not Fortran contiguous";
 static const char __pyx_k_no_default___reduce___due_to_non[] = "no default __reduce__ due to non-trivial __cinit__";
 static const char __pyx_k_numpy_core_umath_failed_to_impor[] = "numpy.core.umath failed to import";
 static const char __pyx_k_unable_to_allocate_shape_and_str[] = "unable to allocate shape and strides.";
@@ -2528,8 +2532,6 @@ static PyObject *__pyx_n_s_n_x;
 static PyObject *__pyx_n_s_n_y;
 static PyObject *__pyx_n_s_name;
 static PyObject *__pyx_n_s_name_2;
-static PyObject *__pyx_kp_u_ndarray_is_not_C_contiguous;
-static PyObject *__pyx_kp_u_ndarray_is_not_Fortran_contiguou;
 static PyObject *__pyx_n_s_ndim;
 static PyObject *__pyx_n_s_new;
 static PyObject *__pyx_kp_s_no_default___reduce___due_to_non;
@@ -2578,14 +2580,12 @@ static PyObject *__pyx_n_s_x_mean;
 static PyObject *__pyx_n_s_x_mean_centered_norm;
 static PyObject *__pyx_n_s_x_norm;
 static PyObject *__pyx_n_s_zeros;
-static PyObject *__pyx_pf_13_similarities_invert_cosine(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads); /* proto */
-static PyObject *__pyx_pf_13_similarities_2invert_pearson(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads); /* proto */
-static PyObject *__pyx_pf_13_similarities_4invert_jaccard(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads); /* proto */
-static PyObject *__pyx_pf_13_similarities_6forward_cosine(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x); /* proto */
-static PyObject *__pyx_pf_13_similarities_8forward_pearson(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x); /* proto */
-static PyObject *__pyx_pf_13_similarities_10forward_jaccard(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x); /* proto */
-static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
-static void __pyx_pf_5numpy_7ndarray_2__releasebuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info); /* proto */
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_invert_cosine(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads); /* proto */
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_2invert_pearson(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads); /* proto */
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_4invert_jaccard(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads); /* proto */
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_6forward_cosine(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x); /* proto */
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_8forward_pearson(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x); /* proto */
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_10forward_jaccard(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __pyx_array_obj *__pyx_v_self, PyObject *__pyx_v_shape, Py_ssize_t __pyx_v_itemsize, PyObject *__pyx_v_format, PyObject *__pyx_v_mode, int __pyx_v_allocate_buffer); /* proto */
 static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array_2__getbuffer__(struct __pyx_array_obj *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /* proto */
 static void __pyx_array___pyx_pf_15View_dot_MemoryView_5array_4__dealloc__(struct __pyx_array_obj *__pyx_v_self); /* proto */
@@ -2645,7 +2645,7 @@ static PyObject *__pyx_tuple__6;
 static PyObject *__pyx_tuple__7;
 static PyObject *__pyx_tuple__8;
 static PyObject *__pyx_tuple__9;
-static PyObject *__pyx_slice__22;
+static PyObject *__pyx_slice__20;
 static PyObject *__pyx_tuple__10;
 static PyObject *__pyx_tuple__11;
 static PyObject *__pyx_tuple__12;
@@ -2656,8 +2656,8 @@ static PyObject *__pyx_tuple__16;
 static PyObject *__pyx_tuple__17;
 static PyObject *__pyx_tuple__18;
 static PyObject *__pyx_tuple__19;
-static PyObject *__pyx_tuple__20;
 static PyObject *__pyx_tuple__21;
+static PyObject *__pyx_tuple__22;
 static PyObject *__pyx_tuple__23;
 static PyObject *__pyx_tuple__24;
 static PyObject *__pyx_tuple__25;
@@ -2665,12 +2665,10 @@ static PyObject *__pyx_tuple__26;
 static PyObject *__pyx_tuple__27;
 static PyObject *__pyx_tuple__28;
 static PyObject *__pyx_tuple__29;
-static PyObject *__pyx_tuple__30;
-static PyObject *__pyx_tuple__31;
-static PyObject *__pyx_codeobj__32;
+static PyObject *__pyx_codeobj__30;
 /* Late includes */
 
-/* "_similarities.pyx":17
+/* "libreco/utils/_similarities.pyx":17
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cdef Py_ssize_t count_freq(             # <<<<<<<<<<<<<<
@@ -2678,7 +2676,7 @@ static PyObject *__pyx_codeobj__32;
  *     const int[:] indptr,
  */
 
-static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_v_n_threads) {
+static Py_ssize_t __pyx_f_7libreco_5utils_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_v_n_threads) {
   Py_ssize_t __pyx_v_x_start;
   Py_ssize_t __pyx_v_x_end;
   Py_ssize_t __pyx_v_p;
@@ -2692,8 +2690,8 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
   Py_ssize_t __pyx_v_block_end;
   Py_ssize_t __pyx_v_scount;
   Py_ssize_t __pyx_v_res_count;
-  __pyx_t_13_similarities_uint *__pyx_v_pre_freq;
-  __pyx_t_13_similarities_uint *__pyx_v_sum_array;
+  __pyx_t_7libreco_5utils_13_similarities_uint *__pyx_v_pre_freq;
+  __pyx_t_7libreco_5utils_13_similarities_uint *__pyx_v_sum_array;
   Py_ssize_t __pyx_r;
   int __pyx_t_1;
   Py_ssize_t __pyx_t_2;
@@ -2715,7 +2713,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
   Py_ssize_t __pyx_t_18;
   Py_ssize_t __pyx_t_19;
 
-  /* "_similarities.pyx":31
+  /* "libreco/utils/_similarities.pyx":31
  *         Py_ssize_t x_start, x_end, p, x1, x2, i, j, index
  *         Py_ssize_t block_index, block_start, block_end, scount
  *         Py_ssize_t res_count = 0             # <<<<<<<<<<<<<<
@@ -2724,16 +2722,16 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
  */
   __pyx_v_res_count = 0;
 
-  /* "_similarities.pyx":33
+  /* "libreco/utils/_similarities.pyx":33
  *         Py_ssize_t res_count = 0
  *     cdef uint *pre_freq
  *     cdef uint *sum_array = <uint *> calloc(block_num, sizeof(uint))             # <<<<<<<<<<<<<<
  * 
  *     for block_index in prange(block_num, num_threads=n_threads):
  */
-  __pyx_v_sum_array = ((__pyx_t_13_similarities_uint *)calloc(__pyx_v_block_num, (sizeof(unsigned int))));
+  __pyx_v_sum_array = ((__pyx_t_7libreco_5utils_13_similarities_uint *)calloc(__pyx_v_block_num, (sizeof(unsigned int))));
 
-  /* "_similarities.pyx":35
+  /* "libreco/utils/_similarities.pyx":35
  *     cdef uint *sum_array = <uint *> calloc(block_num, sizeof(uint))
  * 
  *     for block_index in prange(block_num, num_threads=n_threads):             # <<<<<<<<<<<<<<
@@ -2769,23 +2767,23 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                       __pyx_v_index = ((Py_ssize_t)0xbad0bad0);
                       __pyx_v_j = ((Py_ssize_t)0xbad0bad0);
                       __pyx_v_p = ((Py_ssize_t)0xbad0bad0);
-                      __pyx_v_pre_freq = ((__pyx_t_13_similarities_uint *)1);
+                      __pyx_v_pre_freq = ((__pyx_t_7libreco_5utils_13_similarities_uint *)1);
                       __pyx_v_scount = ((Py_ssize_t)0xbad0bad0);
                       __pyx_v_x1 = ((Py_ssize_t)0xbad0bad0);
                       __pyx_v_x2 = ((Py_ssize_t)0xbad0bad0);
                       __pyx_v_x_end = ((Py_ssize_t)0xbad0bad0);
                       __pyx_v_x_start = ((Py_ssize_t)0xbad0bad0);
 
-                      /* "_similarities.pyx":36
+                      /* "libreco/utils/_similarities.pyx":36
  * 
  *     for block_index in prange(block_num, num_threads=n_threads):
  *         pre_freq = <uint *> malloc(sizeof(uint) * n_x * block_size)             # <<<<<<<<<<<<<<
  *         memset(pre_freq, 0, sizeof(uint) * n_x * block_size)
  *         block_start = block_index * block_size
  */
-                      __pyx_v_pre_freq = ((__pyx_t_13_similarities_uint *)malloc((((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
+                      __pyx_v_pre_freq = ((__pyx_t_7libreco_5utils_13_similarities_uint *)malloc((((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-                      /* "_similarities.pyx":37
+                      /* "libreco/utils/_similarities.pyx":37
  *     for block_index in prange(block_num, num_threads=n_threads):
  *         pre_freq = <uint *> malloc(sizeof(uint) * n_x * block_size)
  *         memset(pre_freq, 0, sizeof(uint) * n_x * block_size)             # <<<<<<<<<<<<<<
@@ -2794,7 +2792,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
  */
                       (void)(memset(__pyx_v_pre_freq, 0, (((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-                      /* "_similarities.pyx":38
+                      /* "libreco/utils/_similarities.pyx":38
  *         pre_freq = <uint *> malloc(sizeof(uint) * n_x * block_size)
  *         memset(pre_freq, 0, sizeof(uint) * n_x * block_size)
  *         block_start = block_index * block_size             # <<<<<<<<<<<<<<
@@ -2803,7 +2801,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
  */
                       __pyx_v_block_start = (__pyx_v_block_index * __pyx_v_block_size);
 
-                      /* "_similarities.pyx":40
+                      /* "libreco/utils/_similarities.pyx":40
  *         block_start = block_index * block_size
  *         block_end = (
  *             n_x if n_x < block_start + block_size             # <<<<<<<<<<<<<<
@@ -2814,7 +2812,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                         __pyx_t_4 = __pyx_v_n_x;
                       } else {
 
-                        /* "_similarities.pyx":41
+                        /* "libreco/utils/_similarities.pyx":41
  *         block_end = (
  *             n_x if n_x < block_start + block_size
  *                 else block_start + block_size             # <<<<<<<<<<<<<<
@@ -2825,7 +2823,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                       }
                       __pyx_v_block_end = __pyx_t_4;
 
-                      /* "_similarities.pyx":44
+                      /* "libreco/utils/_similarities.pyx":44
  *         )
  * 
  *         for p in range(n_y):             # <<<<<<<<<<<<<<
@@ -2837,7 +2835,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                       for (__pyx_t_4 = 0; __pyx_t_4 < __pyx_t_6; __pyx_t_4+=1) {
                         __pyx_v_p = __pyx_t_4;
 
-                        /* "_similarities.pyx":45
+                        /* "libreco/utils/_similarities.pyx":45
  * 
  *         for p in range(n_y):
  *             x_start = indptr[p]             # <<<<<<<<<<<<<<
@@ -2847,7 +2845,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                         __pyx_t_7 = __pyx_v_p;
                         __pyx_v_x_start = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_7 * __pyx_v_indptr.strides[0]) )));
 
-                        /* "_similarities.pyx":46
+                        /* "libreco/utils/_similarities.pyx":46
  *         for p in range(n_y):
  *             x_start = indptr[p]
  *             x_end = indptr[p + 1]             # <<<<<<<<<<<<<<
@@ -2857,7 +2855,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                         __pyx_t_8 = (__pyx_v_p + 1);
                         __pyx_v_x_end = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_8 * __pyx_v_indptr.strides[0]) )));
 
-                        /* "_similarities.pyx":47
+                        /* "libreco/utils/_similarities.pyx":47
  *             x_start = indptr[p]
  *             x_end = indptr[p + 1]
  *             for i in range(x_start, x_end):             # <<<<<<<<<<<<<<
@@ -2869,7 +2867,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                         for (__pyx_t_11 = __pyx_v_x_start; __pyx_t_11 < __pyx_t_10; __pyx_t_11+=1) {
                           __pyx_v_i = __pyx_t_11;
 
-                          /* "_similarities.pyx":48
+                          /* "libreco/utils/_similarities.pyx":48
  *             x_end = indptr[p + 1]
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]             # <<<<<<<<<<<<<<
@@ -2879,7 +2877,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                           __pyx_t_12 = __pyx_v_i;
                           __pyx_v_x1 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_12 * __pyx_v_indices.strides[0]) )));
 
-                          /* "_similarities.pyx":49
+                          /* "libreco/utils/_similarities.pyx":49
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:             # <<<<<<<<<<<<<<
@@ -2897,7 +2895,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                           __pyx_L12_bool_binop_done:;
                           if (__pyx_t_13) {
 
-                            /* "_similarities.pyx":50
+                            /* "libreco/utils/_similarities.pyx":50
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:
  *                     for j in range(i + 1, x_end):             # <<<<<<<<<<<<<<
@@ -2909,7 +2907,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                             for (__pyx_t_17 = (__pyx_v_i + 1); __pyx_t_17 < __pyx_t_16; __pyx_t_17+=1) {
                               __pyx_v_j = __pyx_t_17;
 
-                              /* "_similarities.pyx":51
+                              /* "libreco/utils/_similarities.pyx":51
  *                 if x1 >= block_start and x1 < block_end:
  *                     for j in range(i + 1, x_end):
  *                         x2 = indices[j]             # <<<<<<<<<<<<<<
@@ -2919,7 +2917,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                               __pyx_t_18 = __pyx_v_j;
                               __pyx_v_x2 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_18 * __pyx_v_indices.strides[0]) )));
 
-                              /* "_similarities.pyx":52
+                              /* "libreco/utils/_similarities.pyx":52
  *                     for j in range(i + 1, x_end):
  *                         x2 = indices[j]
  *                         index = (x1 - block_start) * n_x + x2             # <<<<<<<<<<<<<<
@@ -2928,7 +2926,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
  */
                               __pyx_v_index = (((__pyx_v_x1 - __pyx_v_block_start) * __pyx_v_n_x) + __pyx_v_x2);
 
-                              /* "_similarities.pyx":53
+                              /* "libreco/utils/_similarities.pyx":53
  *                         x2 = indices[j]
  *                         index = (x1 - block_start) * n_x + x2
  *                         pre_freq[index] += 1             # <<<<<<<<<<<<<<
@@ -2939,7 +2937,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                               (__pyx_v_pre_freq[__pyx_t_19]) = ((__pyx_v_pre_freq[__pyx_t_19]) + 1);
                             }
 
-                            /* "_similarities.pyx":49
+                            /* "libreco/utils/_similarities.pyx":49
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:             # <<<<<<<<<<<<<<
@@ -2950,7 +2948,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                         }
                       }
 
-                      /* "_similarities.pyx":55
+                      /* "libreco/utils/_similarities.pyx":55
  *                         pre_freq[index] += 1
  * 
  *         for x1 in range(block_start, block_end):             # <<<<<<<<<<<<<<
@@ -2962,7 +2960,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                       for (__pyx_t_10 = __pyx_v_block_start; __pyx_t_10 < __pyx_t_9; __pyx_t_10+=1) {
                         __pyx_v_x1 = __pyx_t_10;
 
-                        /* "_similarities.pyx":56
+                        /* "libreco/utils/_similarities.pyx":56
  * 
  *         for x1 in range(block_start, block_end):
  *             for x2 in range(x1 + 1, n_x):             # <<<<<<<<<<<<<<
@@ -2974,7 +2972,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                         for (__pyx_t_11 = (__pyx_v_x1 + 1); __pyx_t_11 < __pyx_t_6; __pyx_t_11+=1) {
                           __pyx_v_x2 = __pyx_t_11;
 
-                          /* "_similarities.pyx":57
+                          /* "libreco/utils/_similarities.pyx":57
  *         for x1 in range(block_start, block_end):
  *             for x2 in range(x1 + 1, n_x):
  *                 index = (x1 - block_start) * n_x + x2             # <<<<<<<<<<<<<<
@@ -2983,7 +2981,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
  */
                           __pyx_v_index = (((__pyx_v_x1 - __pyx_v_block_start) * __pyx_v_n_x) + __pyx_v_x2);
 
-                          /* "_similarities.pyx":58
+                          /* "libreco/utils/_similarities.pyx":58
  *             for x2 in range(x1 + 1, n_x):
  *                 index = (x1 - block_start) * n_x + x2
  *                 scount = pre_freq[index]             # <<<<<<<<<<<<<<
@@ -2992,7 +2990,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
  */
                           __pyx_v_scount = (__pyx_v_pre_freq[__pyx_v_index]);
 
-                          /* "_similarities.pyx":59
+                          /* "libreco/utils/_similarities.pyx":59
  *                 index = (x1 - block_start) * n_x + x2
  *                 scount = pre_freq[index]
  *                 if scount >= min_common:             # <<<<<<<<<<<<<<
@@ -3002,7 +3000,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                           __pyx_t_13 = ((__pyx_v_scount >= __pyx_v_min_common) != 0);
                           if (__pyx_t_13) {
 
-                            /* "_similarities.pyx":60
+                            /* "libreco/utils/_similarities.pyx":60
  *                 scount = pre_freq[index]
  *                 if scount >= min_common:
  *                     sum_array[block_index] += 1             # <<<<<<<<<<<<<<
@@ -3012,7 +3010,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                             __pyx_t_15 = __pyx_v_block_index;
                             (__pyx_v_sum_array[__pyx_t_15]) = ((__pyx_v_sum_array[__pyx_t_15]) + 1);
 
-                            /* "_similarities.pyx":59
+                            /* "libreco/utils/_similarities.pyx":59
  *                 index = (x1 - block_start) * n_x + x2
  *                 scount = pre_freq[index]
  *                 if scount >= min_common:             # <<<<<<<<<<<<<<
@@ -3023,7 +3021,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
                         }
                       }
 
-                      /* "_similarities.pyx":62
+                      /* "libreco/utils/_similarities.pyx":62
  *                     sum_array[block_index] += 1
  * 
  *         free(pre_freq)             # <<<<<<<<<<<<<<
@@ -3043,7 +3041,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
       #define unlikely(x) __builtin_expect(!!(x), 0)
   #endif
 
-  /* "_similarities.pyx":64
+  /* "libreco/utils/_similarities.pyx":64
  *         free(pre_freq)
  * 
  *     for i in range(block_num):             # <<<<<<<<<<<<<<
@@ -3055,7 +3053,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_5; __pyx_t_3+=1) {
     __pyx_v_i = __pyx_t_3;
 
-    /* "_similarities.pyx":65
+    /* "libreco/utils/_similarities.pyx":65
  * 
  *     for i in range(block_num):
  *         res_count += sum_array[i]             # <<<<<<<<<<<<<<
@@ -3065,7 +3063,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
     __pyx_v_res_count = (__pyx_v_res_count + (__pyx_v_sum_array[__pyx_v_i]));
   }
 
-  /* "_similarities.pyx":66
+  /* "libreco/utils/_similarities.pyx":66
  *     for i in range(block_num):
  *         res_count += sum_array[i]
  *     free(sum_array)             # <<<<<<<<<<<<<<
@@ -3074,7 +3072,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
  */
   free(__pyx_v_sum_array);
 
-  /* "_similarities.pyx":67
+  /* "libreco/utils/_similarities.pyx":67
  *         res_count += sum_array[i]
  *     free(sum_array)
  *     return res_count             # <<<<<<<<<<<<<<
@@ -3084,7 +3082,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
   __pyx_r = __pyx_v_res_count;
   goto __pyx_L0;
 
-  /* "_similarities.pyx":17
+  /* "libreco/utils/_similarities.pyx":17
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cdef Py_ssize_t count_freq(             # <<<<<<<<<<<<<<
@@ -3097,7 +3095,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
   return __pyx_r;
 }
 
-/* "_similarities.pyx":73
+/* "libreco/utils/_similarities.pyx":73
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cdef void compute_cosine(             # <<<<<<<<<<<<<<
@@ -3105,7 +3103,7 @@ static Py_ssize_t __pyx_f_13_similarities_count_freq(__Pyx_memviewslice __pyx_v_
  *     const int[:] indptr,
  */
 
-static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_v_n_threads, __Pyx_memviewslice __pyx_v_res_data, __Pyx_memviewslice __pyx_v_res_indices, __Pyx_memviewslice __pyx_v_res_indptr) {
+static void __pyx_f_7libreco_5utils_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_v_n_threads, __Pyx_memviewslice __pyx_v_res_data, __Pyx_memviewslice __pyx_v_res_indices, __Pyx_memviewslice __pyx_v_res_indptr) {
   Py_ssize_t __pyx_v_x_start;
   Py_ssize_t __pyx_v_x_end;
   Py_ssize_t __pyx_v_p;
@@ -3124,7 +3122,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
   float __pyx_v_sqj;
   float __pyx_v_cosine;
   float *__pyx_v_prods;
-  __pyx_t_13_similarities_uint *__pyx_v_freq;
+  __pyx_t_7libreco_5utils_13_similarities_uint *__pyx_v_freq;
   int __pyx_t_1;
   int __pyx_t_2;
   Py_ssize_t __pyx_t_3;
@@ -3152,7 +3150,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
   Py_ssize_t __pyx_t_25;
   Py_ssize_t __pyx_t_26;
 
-  /* "_similarities.pyx":92
+  /* "libreco/utils/_similarities.pyx":92
  *         Py_ssize_t x_start, x_end, p, x1, x2, i, j, index
  *         Py_ssize_t block_index, block_start, block_end, scount
  *         Py_ssize_t res_index = 0             # <<<<<<<<<<<<<<
@@ -3161,7 +3159,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
   __pyx_v_res_index = 0;
 
-  /* "_similarities.pyx":98
+  /* "libreco/utils/_similarities.pyx":98
  *     cdef uint *freq
  * 
  *     for block_index in range(block_num):             # <<<<<<<<<<<<<<
@@ -3173,7 +3171,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_block_index = __pyx_t_3;
 
-    /* "_similarities.pyx":99
+    /* "libreco/utils/_similarities.pyx":99
  * 
  *     for block_index in range(block_num):
  *         prods = <float *> malloc(sizeof(float) * n_x * block_size)             # <<<<<<<<<<<<<<
@@ -3182,16 +3180,16 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
     __pyx_v_prods = ((float *)malloc((((sizeof(float)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-    /* "_similarities.pyx":100
+    /* "libreco/utils/_similarities.pyx":100
  *     for block_index in range(block_num):
  *         prods = <float *> malloc(sizeof(float) * n_x * block_size)
  *         freq = <uint *> malloc(sizeof(uint) * n_x * block_size)             # <<<<<<<<<<<<<<
  *         memset(prods, 0, sizeof(float) * n_x * block_size)
  *         memset(freq, 0, sizeof(uint) * n_x * block_size)
  */
-    __pyx_v_freq = ((__pyx_t_13_similarities_uint *)malloc((((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
+    __pyx_v_freq = ((__pyx_t_7libreco_5utils_13_similarities_uint *)malloc((((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-    /* "_similarities.pyx":101
+    /* "libreco/utils/_similarities.pyx":101
  *         prods = <float *> malloc(sizeof(float) * n_x * block_size)
  *         freq = <uint *> malloc(sizeof(uint) * n_x * block_size)
  *         memset(prods, 0, sizeof(float) * n_x * block_size)             # <<<<<<<<<<<<<<
@@ -3200,7 +3198,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
     (void)(memset(__pyx_v_prods, 0, (((sizeof(float)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-    /* "_similarities.pyx":102
+    /* "libreco/utils/_similarities.pyx":102
  *         freq = <uint *> malloc(sizeof(uint) * n_x * block_size)
  *         memset(prods, 0, sizeof(float) * n_x * block_size)
  *         memset(freq, 0, sizeof(uint) * n_x * block_size)             # <<<<<<<<<<<<<<
@@ -3209,7 +3207,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
     (void)(memset(__pyx_v_freq, 0, (((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-    /* "_similarities.pyx":104
+    /* "libreco/utils/_similarities.pyx":104
  *         memset(freq, 0, sizeof(uint) * n_x * block_size)
  * 
  *         block_start = block_index * block_size             # <<<<<<<<<<<<<<
@@ -3218,7 +3216,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
     __pyx_v_block_start = (__pyx_v_block_index * __pyx_v_block_size);
 
-    /* "_similarities.pyx":106
+    /* "libreco/utils/_similarities.pyx":106
  *         block_start = block_index * block_size
  *         block_end = (
  *             n_x if n_x < block_start + block_size             # <<<<<<<<<<<<<<
@@ -3229,7 +3227,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
       __pyx_t_4 = __pyx_v_n_x;
     } else {
 
-      /* "_similarities.pyx":107
+      /* "libreco/utils/_similarities.pyx":107
  *         block_end = (
  *             n_x if n_x < block_start + block_size
  *                 else block_start + block_size             # <<<<<<<<<<<<<<
@@ -3240,7 +3238,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
     }
     __pyx_v_block_end = __pyx_t_4;
 
-    /* "_similarities.pyx":110
+    /* "libreco/utils/_similarities.pyx":110
  *         )
  * 
  *         for p in range(n_y):             # <<<<<<<<<<<<<<
@@ -3252,7 +3250,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
     for (__pyx_t_4 = 0; __pyx_t_4 < __pyx_t_6; __pyx_t_4+=1) {
       __pyx_v_p = __pyx_t_4;
 
-      /* "_similarities.pyx":111
+      /* "libreco/utils/_similarities.pyx":111
  * 
  *         for p in range(n_y):
  *             x_start = indptr[p]             # <<<<<<<<<<<<<<
@@ -3262,7 +3260,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
       __pyx_t_7 = __pyx_v_p;
       __pyx_v_x_start = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_7 * __pyx_v_indptr.strides[0]) )));
 
-      /* "_similarities.pyx":112
+      /* "libreco/utils/_similarities.pyx":112
  *         for p in range(n_y):
  *             x_start = indptr[p]
  *             x_end = indptr[p + 1]             # <<<<<<<<<<<<<<
@@ -3272,7 +3270,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
       __pyx_t_8 = (__pyx_v_p + 1);
       __pyx_v_x_end = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_8 * __pyx_v_indptr.strides[0]) )));
 
-      /* "_similarities.pyx":113
+      /* "libreco/utils/_similarities.pyx":113
  *             x_start = indptr[p]
  *             x_end = indptr[p + 1]
  *             for i in range(x_start, x_end):             # <<<<<<<<<<<<<<
@@ -3284,7 +3282,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
       for (__pyx_t_11 = __pyx_v_x_start; __pyx_t_11 < __pyx_t_10; __pyx_t_11+=1) {
         __pyx_v_i = __pyx_t_11;
 
-        /* "_similarities.pyx":114
+        /* "libreco/utils/_similarities.pyx":114
  *             x_end = indptr[p + 1]
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]             # <<<<<<<<<<<<<<
@@ -3294,7 +3292,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
         __pyx_t_12 = __pyx_v_i;
         __pyx_v_x1 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_12 * __pyx_v_indices.strides[0]) )));
 
-        /* "_similarities.pyx":115
+        /* "libreco/utils/_similarities.pyx":115
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:             # <<<<<<<<<<<<<<
@@ -3312,7 +3310,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
         __pyx_L10_bool_binop_done:;
         if (__pyx_t_13) {
 
-          /* "_similarities.pyx":116
+          /* "libreco/utils/_similarities.pyx":116
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:
  *                     for j in range(i + 1, x_end):             # <<<<<<<<<<<<<<
@@ -3324,7 +3322,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
           for (__pyx_t_17 = (__pyx_v_i + 1); __pyx_t_17 < __pyx_t_16; __pyx_t_17+=1) {
             __pyx_v_j = __pyx_t_17;
 
-            /* "_similarities.pyx":117
+            /* "libreco/utils/_similarities.pyx":117
  *                 if x1 >= block_start and x1 < block_end:
  *                     for j in range(i + 1, x_end):
  *                         x2 = indices[j]             # <<<<<<<<<<<<<<
@@ -3334,7 +3332,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
             __pyx_t_18 = __pyx_v_j;
             __pyx_v_x2 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_18 * __pyx_v_indices.strides[0]) )));
 
-            /* "_similarities.pyx":118
+            /* "libreco/utils/_similarities.pyx":118
  *                     for j in range(i + 1, x_end):
  *                         x2 = indices[j]
  *                         index = (x1 - block_start) * n_x + x2             # <<<<<<<<<<<<<<
@@ -3343,7 +3341,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
             __pyx_v_index = (((__pyx_v_x1 - __pyx_v_block_start) * __pyx_v_n_x) + __pyx_v_x2);
 
-            /* "_similarities.pyx":119
+            /* "libreco/utils/_similarities.pyx":119
  *                         x2 = indices[j]
  *                         index = (x1 - block_start) * n_x + x2
  *                         prods[index] += data[i] * data[j]             # <<<<<<<<<<<<<<
@@ -3355,7 +3353,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
             __pyx_t_21 = __pyx_v_j;
             (__pyx_v_prods[__pyx_t_19]) = ((__pyx_v_prods[__pyx_t_19]) + ((*((float const  *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_20 * __pyx_v_data.strides[0]) ))) * (*((float const  *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_21 * __pyx_v_data.strides[0]) )))));
 
-            /* "_similarities.pyx":120
+            /* "libreco/utils/_similarities.pyx":120
  *                         index = (x1 - block_start) * n_x + x2
  *                         prods[index] += data[i] * data[j]
  *                         freq[index] += 1             # <<<<<<<<<<<<<<
@@ -3366,7 +3364,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
             (__pyx_v_freq[__pyx_t_19]) = ((__pyx_v_freq[__pyx_t_19]) + 1);
           }
 
-          /* "_similarities.pyx":115
+          /* "libreco/utils/_similarities.pyx":115
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:             # <<<<<<<<<<<<<<
@@ -3377,7 +3375,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
       }
     }
 
-    /* "_similarities.pyx":122
+    /* "libreco/utils/_similarities.pyx":122
  *                         freq[index] += 1
  * 
  *         for x1 in range(block_start, block_end):             # <<<<<<<<<<<<<<
@@ -3389,7 +3387,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
     for (__pyx_t_10 = __pyx_v_block_start; __pyx_t_10 < __pyx_t_9; __pyx_t_10+=1) {
       __pyx_v_x1 = __pyx_t_10;
 
-      /* "_similarities.pyx":123
+      /* "libreco/utils/_similarities.pyx":123
  * 
  *         for x1 in range(block_start, block_end):
  *             for x2 in range(x1 + 1, n_x):             # <<<<<<<<<<<<<<
@@ -3401,7 +3399,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
       for (__pyx_t_11 = (__pyx_v_x1 + 1); __pyx_t_11 < __pyx_t_6; __pyx_t_11+=1) {
         __pyx_v_x2 = __pyx_t_11;
 
-        /* "_similarities.pyx":124
+        /* "libreco/utils/_similarities.pyx":124
  *         for x1 in range(block_start, block_end):
  *             for x2 in range(x1 + 1, n_x):
  *                 index = (x1 - block_start) * n_x + x2             # <<<<<<<<<<<<<<
@@ -3410,7 +3408,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
         __pyx_v_index = (((__pyx_v_x1 - __pyx_v_block_start) * __pyx_v_n_x) + __pyx_v_x2);
 
-        /* "_similarities.pyx":125
+        /* "libreco/utils/_similarities.pyx":125
  *             for x2 in range(x1 + 1, n_x):
  *                 index = (x1 - block_start) * n_x + x2
  *                 scount = freq[index]             # <<<<<<<<<<<<<<
@@ -3419,7 +3417,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
         __pyx_v_scount = (__pyx_v_freq[__pyx_v_index]);
 
-        /* "_similarities.pyx":126
+        /* "libreco/utils/_similarities.pyx":126
  *                 index = (x1 - block_start) * n_x + x2
  *                 scount = freq[index]
  *                 if scount >= min_common:             # <<<<<<<<<<<<<<
@@ -3429,7 +3427,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
         __pyx_t_13 = ((__pyx_v_scount >= __pyx_v_min_common) != 0);
         if (__pyx_t_13) {
 
-          /* "_similarities.pyx":127
+          /* "libreco/utils/_similarities.pyx":127
  *                 scount = freq[index]
  *                 if scount >= min_common:
  *                     sprods = prods[index]             # <<<<<<<<<<<<<<
@@ -3438,7 +3436,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
           __pyx_v_sprods = (__pyx_v_prods[__pyx_v_index]);
 
-          /* "_similarities.pyx":128
+          /* "libreco/utils/_similarities.pyx":128
  *                 if scount >= min_common:
  *                     sprods = prods[index]
  *                     sqi = x_norm[x1]             # <<<<<<<<<<<<<<
@@ -3448,7 +3446,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
           __pyx_t_22 = __pyx_v_x1;
           __pyx_v_sqi = (*((float const  *) ( /* dim=0 */ (__pyx_v_x_norm.data + __pyx_t_22 * __pyx_v_x_norm.strides[0]) )));
 
-          /* "_similarities.pyx":129
+          /* "libreco/utils/_similarities.pyx":129
  *                     sprods = prods[index]
  *                     sqi = x_norm[x1]
  *                     sqj = x_norm[x2]             # <<<<<<<<<<<<<<
@@ -3458,7 +3456,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
           __pyx_t_23 = __pyx_v_x2;
           __pyx_v_sqj = (*((float const  *) ( /* dim=0 */ (__pyx_v_x_norm.data + __pyx_t_23 * __pyx_v_x_norm.strides[0]) )));
 
-          /* "_similarities.pyx":130
+          /* "libreco/utils/_similarities.pyx":130
  *                     sqi = x_norm[x1]
  *                     sqj = x_norm[x2]
  *                     if sprods == 0.0 or sqi == 0.0 or sqj == 0.0:             # <<<<<<<<<<<<<<
@@ -3482,7 +3480,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
           __pyx_L20_bool_binop_done:;
           if (__pyx_t_13) {
 
-            /* "_similarities.pyx":131
+            /* "libreco/utils/_similarities.pyx":131
  *                     sqj = x_norm[x2]
  *                     if sprods == 0.0 or sqi == 0.0 or sqj == 0.0:
  *                         cosine = 0.0             # <<<<<<<<<<<<<<
@@ -3491,7 +3489,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
             __pyx_v_cosine = 0.0;
 
-            /* "_similarities.pyx":130
+            /* "libreco/utils/_similarities.pyx":130
  *                     sqi = x_norm[x1]
  *                     sqj = x_norm[x2]
  *                     if sprods == 0.0 or sqi == 0.0 or sqj == 0.0:             # <<<<<<<<<<<<<<
@@ -3501,7 +3499,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
             goto __pyx_L19;
           }
 
-          /* "_similarities.pyx":133
+          /* "libreco/utils/_similarities.pyx":133
  *                         cosine = 0.0
  *                     else:
  *                         cosine = sprods / (sqi * sqj)             # <<<<<<<<<<<<<<
@@ -3513,7 +3511,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
           }
           __pyx_L19:;
 
-          /* "_similarities.pyx":134
+          /* "libreco/utils/_similarities.pyx":134
  *                     else:
  *                         cosine = sprods / (sqi * sqj)
  *                     res_data[res_index] = cosine             # <<<<<<<<<<<<<<
@@ -3523,7 +3521,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
           __pyx_t_24 = __pyx_v_res_index;
           *((float *) ( /* dim=0 */ (__pyx_v_res_data.data + __pyx_t_24 * __pyx_v_res_data.strides[0]) )) = __pyx_v_cosine;
 
-          /* "_similarities.pyx":135
+          /* "libreco/utils/_similarities.pyx":135
  *                         cosine = sprods / (sqi * sqj)
  *                     res_data[res_index] = cosine
  *                     res_indices[res_index] = x2             # <<<<<<<<<<<<<<
@@ -3531,9 +3529,9 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  *             res_indptr[x1 + 1] = res_index
  */
           __pyx_t_25 = __pyx_v_res_index;
-          *((__pyx_t_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indices.data + __pyx_t_25 * __pyx_v_res_indices.strides[0]) )) = __pyx_v_x2;
+          *((__pyx_t_7libreco_5utils_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indices.data + __pyx_t_25 * __pyx_v_res_indices.strides[0]) )) = __pyx_v_x2;
 
-          /* "_similarities.pyx":136
+          /* "libreco/utils/_similarities.pyx":136
  *                     res_data[res_index] = cosine
  *                     res_indices[res_index] = x2
  *                     res_index += 1             # <<<<<<<<<<<<<<
@@ -3542,7 +3540,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
           __pyx_v_res_index = (__pyx_v_res_index + 1);
 
-          /* "_similarities.pyx":126
+          /* "libreco/utils/_similarities.pyx":126
  *                 index = (x1 - block_start) * n_x + x2
  *                 scount = freq[index]
  *                 if scount >= min_common:             # <<<<<<<<<<<<<<
@@ -3552,7 +3550,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
         }
       }
 
-      /* "_similarities.pyx":137
+      /* "libreco/utils/_similarities.pyx":137
  *                     res_indices[res_index] = x2
  *                     res_index += 1
  *             res_indptr[x1 + 1] = res_index             # <<<<<<<<<<<<<<
@@ -3560,10 +3558,10 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  *         free(prods)
  */
       __pyx_t_26 = (__pyx_v_x1 + 1);
-      *((__pyx_t_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indptr.data + __pyx_t_26 * __pyx_v_res_indptr.strides[0]) )) = __pyx_v_res_index;
+      *((__pyx_t_7libreco_5utils_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indptr.data + __pyx_t_26 * __pyx_v_res_indptr.strides[0]) )) = __pyx_v_res_index;
     }
 
-    /* "_similarities.pyx":139
+    /* "libreco/utils/_similarities.pyx":139
  *             res_indptr[x1 + 1] = res_index
  * 
  *         free(prods)             # <<<<<<<<<<<<<<
@@ -3572,7 +3570,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  */
     free(__pyx_v_prods);
 
-    /* "_similarities.pyx":140
+    /* "libreco/utils/_similarities.pyx":140
  * 
  *         free(prods)
  *         free(freq)             # <<<<<<<<<<<<<<
@@ -3582,7 +3580,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
     free(__pyx_v_freq);
   }
 
-  /* "_similarities.pyx":73
+  /* "libreco/utils/_similarities.pyx":73
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cdef void compute_cosine(             # <<<<<<<<<<<<<<
@@ -3593,7 +3591,7 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
   /* function exit code */
 }
 
-/* "_similarities.pyx":146
+/* "libreco/utils/_similarities.pyx":146
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef invert_cosine(             # <<<<<<<<<<<<<<
@@ -3601,8 +3599,8 @@ static void __pyx_f_13_similarities_compute_cosine(__Pyx_memviewslice __pyx_v_in
  *     const int[:] indptr,
  */
 
-static PyObject *__pyx_pw_13_similarities_1invert_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_13_similarities_invert_cosine(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_13_similarities_invert_cosine *__pyx_optional_args) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_1invert_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_invert_cosine(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_cosine *__pyx_optional_args) {
   int __pyx_v_num_threads = ((int)1);
   Py_ssize_t __pyx_v_res_count;
   __Pyx_memviewslice __pyx_v_res_data = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -3625,16 +3623,16 @@ static PyObject *__pyx_f_13_similarities_invert_cosine(__Pyx_memviewslice __pyx_
     }
   }
 
-  /* "_similarities.pyx":159
+  /* "libreco/utils/_similarities.pyx":159
  * ):
  * 
  *     cdef Py_ssize_t res_count = count_freq(indices, indptr, min_common,             # <<<<<<<<<<<<<<
  *                                            n_x, n_y, block_size, block_num,
  *                                            num_threads)
  */
-  __pyx_v_res_count = __pyx_f_13_similarities_count_freq(__pyx_v_indices, __pyx_v_indptr, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
+  __pyx_v_res_count = __pyx_f_7libreco_5utils_13_similarities_count_freq(__pyx_v_indices, __pyx_v_indptr, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
 
-  /* "_similarities.pyx":163
+  /* "libreco/utils/_similarities.pyx":163
  *                                            num_threads)
  * 
  *     cdef float[:] res_data = np.zeros(res_count, dtype=np.single)             # <<<<<<<<<<<<<<
@@ -3673,7 +3671,7 @@ static PyObject *__pyx_f_13_similarities_invert_cosine(__Pyx_memviewslice __pyx_
   __pyx_t_6.memview = NULL;
   __pyx_t_6.data = NULL;
 
-  /* "_similarities.pyx":164
+  /* "libreco/utils/_similarities.pyx":164
  * 
  *     cdef float[:] res_data = np.zeros(res_count, dtype=np.single)
  *     cdef uint[:] res_indices = np.zeros(res_count, dtype=np.uintc)             # <<<<<<<<<<<<<<
@@ -3706,13 +3704,13 @@ static PyObject *__pyx_f_13_similarities_invert_cosine(__Pyx_memviewslice __pyx_
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_13_similarities_uint(__pyx_t_4, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 164, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_7libreco_5utils_13_similarities_uint(__pyx_t_4, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 164, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_res_indices = __pyx_t_7;
   __pyx_t_7.memview = NULL;
   __pyx_t_7.data = NULL;
 
-  /* "_similarities.pyx":165
+  /* "libreco/utils/_similarities.pyx":165
  *     cdef float[:] res_data = np.zeros(res_count, dtype=np.single)
  *     cdef uint[:] res_indices = np.zeros(res_count, dtype=np.uintc)
  *     cdef uint[:] res_indptr = np.zeros(n_x + 1, dtype=np.uintc)             # <<<<<<<<<<<<<<
@@ -3745,22 +3743,22 @@ static PyObject *__pyx_f_13_similarities_invert_cosine(__Pyx_memviewslice __pyx_
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_13_similarities_uint(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 165, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_7libreco_5utils_13_similarities_uint(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 165, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_res_indptr = __pyx_t_7;
   __pyx_t_7.memview = NULL;
   __pyx_t_7.data = NULL;
 
-  /* "_similarities.pyx":168
+  /* "libreco/utils/_similarities.pyx":168
  * #    res_indptr[0] = 0
  * 
  *     compute_cosine(indices, indptr, data, x_norm, min_common, n_x, n_y,             # <<<<<<<<<<<<<<
  *         block_size, block_num, num_threads, res_data, res_indices, res_indptr)
  * 
  */
-  __pyx_f_13_similarities_compute_cosine(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads, __pyx_v_res_data, __pyx_v_res_indices, __pyx_v_res_indptr);
+  __pyx_f_7libreco_5utils_13_similarities_compute_cosine(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads, __pyx_v_res_data, __pyx_v_res_indices, __pyx_v_res_indptr);
 
-  /* "_similarities.pyx":171
+  /* "libreco/utils/_similarities.pyx":171
  *         block_size, block_num, num_threads, res_data, res_indices, res_indptr)
  * 
  *     return np.asarray(res_indices), np.asarray(res_indptr), np.asarray(res_data)             # <<<<<<<<<<<<<<
@@ -3773,7 +3771,7 @@ static PyObject *__pyx_f_13_similarities_invert_cosine(__Pyx_memviewslice __pyx_
   __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_asarray); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 171, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 171, __pyx_L1_error)
+  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_7libreco_5utils_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_7libreco_5utils_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 171, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_5 = NULL;
   if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
@@ -3796,7 +3794,7 @@ static PyObject *__pyx_f_13_similarities_invert_cosine(__Pyx_memviewslice __pyx_
   __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_asarray); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 171, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indptr, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 171, __pyx_L1_error)
+  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indptr, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_7libreco_5utils_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_7libreco_5utils_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 171, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_1 = NULL;
   if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_5))) {
@@ -3852,7 +3850,7 @@ static PyObject *__pyx_f_13_similarities_invert_cosine(__Pyx_memviewslice __pyx_
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "_similarities.pyx":146
+  /* "libreco/utils/_similarities.pyx":146
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef invert_cosine(             # <<<<<<<<<<<<<<
@@ -3870,7 +3868,7 @@ static PyObject *__pyx_f_13_similarities_invert_cosine(__Pyx_memviewslice __pyx_
   __PYX_XDEC_MEMVIEW(&__pyx_t_6, 1);
   __PYX_XDEC_MEMVIEW(&__pyx_t_7, 1);
   __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_AddTraceback("_similarities.invert_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.invert_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_res_data, 1);
@@ -3882,8 +3880,8 @@ static PyObject *__pyx_f_13_similarities_invert_cosine(__Pyx_memviewslice __pyx_
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_13_similarities_1invert_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_13_similarities_1invert_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_1invert_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_1invert_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_indices = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_indptr = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_data = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -4026,22 +4024,22 @@ static PyObject *__pyx_pw_13_similarities_1invert_cosine(PyObject *__pyx_self, P
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("invert_cosine", 0, 9, 10, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 146, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_similarities.invert_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.invert_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_13_similarities_invert_cosine(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
+  __pyx_r = __pyx_pf_7libreco_5utils_13_similarities_invert_cosine(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_13_similarities_invert_cosine(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads) {
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_invert_cosine(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  struct __pyx_opt_args_13_similarities_invert_cosine __pyx_t_2;
+  struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_cosine __pyx_t_2;
   __Pyx_RefNannySetupContext("invert_cosine", 0);
   __Pyx_XDECREF(__pyx_r);
   if (unlikely(!__pyx_v_indices.memview)) { __Pyx_RaiseUnboundLocalError("indices"); __PYX_ERR(0, 146, __pyx_L1_error) }
@@ -4050,7 +4048,7 @@ static PyObject *__pyx_pf_13_similarities_invert_cosine(CYTHON_UNUSED PyObject *
   if (unlikely(!__pyx_v_x_norm.memview)) { __Pyx_RaiseUnboundLocalError("x_norm"); __PYX_ERR(0, 146, __pyx_L1_error) }
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.num_threads = __pyx_v_num_threads;
-  __pyx_t_1 = __pyx_f_13_similarities_invert_cosine(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, 0, &__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 146, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_7libreco_5utils_13_similarities_invert_cosine(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, 0, &__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 146, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4059,7 +4057,7 @@ static PyObject *__pyx_pf_13_similarities_invert_cosine(CYTHON_UNUSED PyObject *
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_similarities.invert_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.invert_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_indices, 1);
@@ -4071,7 +4069,7 @@ static PyObject *__pyx_pf_13_similarities_invert_cosine(CYTHON_UNUSED PyObject *
   return __pyx_r;
 }
 
-/* "_similarities.pyx":177
+/* "libreco/utils/_similarities.pyx":177
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cdef void compute_pearson(             # <<<<<<<<<<<<<<
@@ -4079,7 +4077,7 @@ static PyObject *__pyx_pf_13_similarities_invert_cosine(CYTHON_UNUSED PyObject *
  *     const int[:] indptr,
  */
 
-static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_v_n_threads, __Pyx_memviewslice __pyx_v_res_data, __Pyx_memviewslice __pyx_v_res_indices, __Pyx_memviewslice __pyx_v_res_indptr) {
+static void __pyx_f_7libreco_5utils_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_v_n_threads, __Pyx_memviewslice __pyx_v_res_data, __Pyx_memviewslice __pyx_v_res_indices, __Pyx_memviewslice __pyx_v_res_indptr) {
   Py_ssize_t __pyx_v_x_start;
   Py_ssize_t __pyx_v_x_end;
   Py_ssize_t __pyx_v_p;
@@ -4100,7 +4098,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
   float __pyx_v_sqj;
   float __pyx_v_pearson;
   float *__pyx_v_prods;
-  __pyx_t_13_similarities_uint *__pyx_v_freq;
+  __pyx_t_7libreco_5utils_13_similarities_uint *__pyx_v_freq;
   int __pyx_t_1;
   int __pyx_t_2;
   Py_ssize_t __pyx_t_3;
@@ -4130,7 +4128,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
   Py_ssize_t __pyx_t_27;
   Py_ssize_t __pyx_t_28;
 
-  /* "_similarities.pyx":197
+  /* "libreco/utils/_similarities.pyx":197
  *         Py_ssize_t x_start, x_end, p, x1, x2, i, j, index
  *         Py_ssize_t block_index, block_start, block_end, scount
  *         Py_ssize_t res_index = 0             # <<<<<<<<<<<<<<
@@ -4139,7 +4137,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
   __pyx_v_res_index = 0;
 
-  /* "_similarities.pyx":203
+  /* "libreco/utils/_similarities.pyx":203
  *     cdef uint *freq
  * 
  *     for block_index in range(block_num):             # <<<<<<<<<<<<<<
@@ -4151,7 +4149,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_block_index = __pyx_t_3;
 
-    /* "_similarities.pyx":204
+    /* "libreco/utils/_similarities.pyx":204
  * 
  *     for block_index in range(block_num):
  *         prods = <float *> malloc(sizeof(float) * n_x * block_size)             # <<<<<<<<<<<<<<
@@ -4160,16 +4158,16 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
     __pyx_v_prods = ((float *)malloc((((sizeof(float)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-    /* "_similarities.pyx":205
+    /* "libreco/utils/_similarities.pyx":205
  *     for block_index in range(block_num):
  *         prods = <float *> malloc(sizeof(float) * n_x * block_size)
  *         freq = <uint *> malloc(sizeof(uint) * n_x * block_size)             # <<<<<<<<<<<<<<
  *         memset(prods, 0, sizeof(float) * n_x * block_size)
  *         memset(freq, 0, sizeof(uint) * n_x * block_size)
  */
-    __pyx_v_freq = ((__pyx_t_13_similarities_uint *)malloc((((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
+    __pyx_v_freq = ((__pyx_t_7libreco_5utils_13_similarities_uint *)malloc((((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-    /* "_similarities.pyx":206
+    /* "libreco/utils/_similarities.pyx":206
  *         prods = <float *> malloc(sizeof(float) * n_x * block_size)
  *         freq = <uint *> malloc(sizeof(uint) * n_x * block_size)
  *         memset(prods, 0, sizeof(float) * n_x * block_size)             # <<<<<<<<<<<<<<
@@ -4178,7 +4176,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
     (void)(memset(__pyx_v_prods, 0, (((sizeof(float)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-    /* "_similarities.pyx":207
+    /* "libreco/utils/_similarities.pyx":207
  *         freq = <uint *> malloc(sizeof(uint) * n_x * block_size)
  *         memset(prods, 0, sizeof(float) * n_x * block_size)
  *         memset(freq, 0, sizeof(uint) * n_x * block_size)             # <<<<<<<<<<<<<<
@@ -4187,7 +4185,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
     (void)(memset(__pyx_v_freq, 0, (((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-    /* "_similarities.pyx":209
+    /* "libreco/utils/_similarities.pyx":209
  *         memset(freq, 0, sizeof(uint) * n_x * block_size)
  * 
  *         block_start = block_index * block_size             # <<<<<<<<<<<<<<
@@ -4196,7 +4194,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
     __pyx_v_block_start = (__pyx_v_block_index * __pyx_v_block_size);
 
-    /* "_similarities.pyx":211
+    /* "libreco/utils/_similarities.pyx":211
  *         block_start = block_index * block_size
  *         block_end = (
  *             n_x if n_x < block_start + block_size             # <<<<<<<<<<<<<<
@@ -4207,7 +4205,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
       __pyx_t_4 = __pyx_v_n_x;
     } else {
 
-      /* "_similarities.pyx":212
+      /* "libreco/utils/_similarities.pyx":212
  *         block_end = (
  *             n_x if n_x < block_start + block_size
  *                 else block_start + block_size             # <<<<<<<<<<<<<<
@@ -4218,7 +4216,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
     }
     __pyx_v_block_end = __pyx_t_4;
 
-    /* "_similarities.pyx":215
+    /* "libreco/utils/_similarities.pyx":215
  *         )
  * 
  *         for p in range(n_y):             # <<<<<<<<<<<<<<
@@ -4230,7 +4228,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
     for (__pyx_t_4 = 0; __pyx_t_4 < __pyx_t_6; __pyx_t_4+=1) {
       __pyx_v_p = __pyx_t_4;
 
-      /* "_similarities.pyx":216
+      /* "libreco/utils/_similarities.pyx":216
  * 
  *         for p in range(n_y):
  *             x_start = indptr[p]             # <<<<<<<<<<<<<<
@@ -4240,7 +4238,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
       __pyx_t_7 = __pyx_v_p;
       __pyx_v_x_start = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_7 * __pyx_v_indptr.strides[0]) )));
 
-      /* "_similarities.pyx":217
+      /* "libreco/utils/_similarities.pyx":217
  *         for p in range(n_y):
  *             x_start = indptr[p]
  *             x_end = indptr[p + 1]             # <<<<<<<<<<<<<<
@@ -4250,7 +4248,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
       __pyx_t_8 = (__pyx_v_p + 1);
       __pyx_v_x_end = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_8 * __pyx_v_indptr.strides[0]) )));
 
-      /* "_similarities.pyx":218
+      /* "libreco/utils/_similarities.pyx":218
  *             x_start = indptr[p]
  *             x_end = indptr[p + 1]
  *             for i in range(x_start, x_end):             # <<<<<<<<<<<<<<
@@ -4262,7 +4260,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
       for (__pyx_t_11 = __pyx_v_x_start; __pyx_t_11 < __pyx_t_10; __pyx_t_11+=1) {
         __pyx_v_i = __pyx_t_11;
 
-        /* "_similarities.pyx":219
+        /* "libreco/utils/_similarities.pyx":219
  *             x_end = indptr[p + 1]
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]             # <<<<<<<<<<<<<<
@@ -4272,7 +4270,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
         __pyx_t_12 = __pyx_v_i;
         __pyx_v_x1 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_12 * __pyx_v_indices.strides[0]) )));
 
-        /* "_similarities.pyx":220
+        /* "libreco/utils/_similarities.pyx":220
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:             # <<<<<<<<<<<<<<
@@ -4290,7 +4288,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
         __pyx_L10_bool_binop_done:;
         if (__pyx_t_13) {
 
-          /* "_similarities.pyx":221
+          /* "libreco/utils/_similarities.pyx":221
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:
  *                     for j in range(i + 1, x_end):             # <<<<<<<<<<<<<<
@@ -4302,7 +4300,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
           for (__pyx_t_17 = (__pyx_v_i + 1); __pyx_t_17 < __pyx_t_16; __pyx_t_17+=1) {
             __pyx_v_j = __pyx_t_17;
 
-            /* "_similarities.pyx":222
+            /* "libreco/utils/_similarities.pyx":222
  *                 if x1 >= block_start and x1 < block_end:
  *                     for j in range(i + 1, x_end):
  *                         x2 = indices[j]             # <<<<<<<<<<<<<<
@@ -4312,7 +4310,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
             __pyx_t_18 = __pyx_v_j;
             __pyx_v_x2 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_18 * __pyx_v_indices.strides[0]) )));
 
-            /* "_similarities.pyx":223
+            /* "libreco/utils/_similarities.pyx":223
  *                     for j in range(i + 1, x_end):
  *                         x2 = indices[j]
  *                         index = (x1 - block_start) * n_x + x2             # <<<<<<<<<<<<<<
@@ -4321,7 +4319,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
             __pyx_v_index = (((__pyx_v_x1 - __pyx_v_block_start) * __pyx_v_n_x) + __pyx_v_x2);
 
-            /* "_similarities.pyx":224
+            /* "libreco/utils/_similarities.pyx":224
  *                         x2 = indices[j]
  *                         index = (x1 - block_start) * n_x + x2
  *                         smeani = data[i] - x_mean[x1]             # <<<<<<<<<<<<<<
@@ -4332,7 +4330,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
             __pyx_t_20 = __pyx_v_x1;
             __pyx_v_smeani = ((*((float const  *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_19 * __pyx_v_data.strides[0]) ))) - (*((float const  *) ( /* dim=0 */ (__pyx_v_x_mean.data + __pyx_t_20 * __pyx_v_x_mean.strides[0]) ))));
 
-            /* "_similarities.pyx":225
+            /* "libreco/utils/_similarities.pyx":225
  *                         index = (x1 - block_start) * n_x + x2
  *                         smeani = data[i] - x_mean[x1]
  *                         smeanj = data[j] - x_mean[x2]             # <<<<<<<<<<<<<<
@@ -4343,7 +4341,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
             __pyx_t_22 = __pyx_v_x2;
             __pyx_v_smeanj = ((*((float const  *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_21 * __pyx_v_data.strides[0]) ))) - (*((float const  *) ( /* dim=0 */ (__pyx_v_x_mean.data + __pyx_t_22 * __pyx_v_x_mean.strides[0]) ))));
 
-            /* "_similarities.pyx":226
+            /* "libreco/utils/_similarities.pyx":226
  *                         smeani = data[i] - x_mean[x1]
  *                         smeanj = data[j] - x_mean[x2]
  *                         prods[index] += (smeani * smeanj)             # <<<<<<<<<<<<<<
@@ -4353,7 +4351,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
             __pyx_t_23 = __pyx_v_index;
             (__pyx_v_prods[__pyx_t_23]) = ((__pyx_v_prods[__pyx_t_23]) + (__pyx_v_smeani * __pyx_v_smeanj));
 
-            /* "_similarities.pyx":227
+            /* "libreco/utils/_similarities.pyx":227
  *                         smeanj = data[j] - x_mean[x2]
  *                         prods[index] += (smeani * smeanj)
  *                         freq[index] += 1             # <<<<<<<<<<<<<<
@@ -4364,7 +4362,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
             (__pyx_v_freq[__pyx_t_23]) = ((__pyx_v_freq[__pyx_t_23]) + 1);
           }
 
-          /* "_similarities.pyx":220
+          /* "libreco/utils/_similarities.pyx":220
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:             # <<<<<<<<<<<<<<
@@ -4375,7 +4373,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
       }
     }
 
-    /* "_similarities.pyx":229
+    /* "libreco/utils/_similarities.pyx":229
  *                         freq[index] += 1
  * 
  *         for x1 in range(block_start, block_end):             # <<<<<<<<<<<<<<
@@ -4387,7 +4385,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
     for (__pyx_t_10 = __pyx_v_block_start; __pyx_t_10 < __pyx_t_9; __pyx_t_10+=1) {
       __pyx_v_x1 = __pyx_t_10;
 
-      /* "_similarities.pyx":230
+      /* "libreco/utils/_similarities.pyx":230
  * 
  *         for x1 in range(block_start, block_end):
  *             for x2 in range(x1 + 1, n_x):             # <<<<<<<<<<<<<<
@@ -4399,7 +4397,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
       for (__pyx_t_11 = (__pyx_v_x1 + 1); __pyx_t_11 < __pyx_t_6; __pyx_t_11+=1) {
         __pyx_v_x2 = __pyx_t_11;
 
-        /* "_similarities.pyx":231
+        /* "libreco/utils/_similarities.pyx":231
  *         for x1 in range(block_start, block_end):
  *             for x2 in range(x1 + 1, n_x):
  *                 index = (x1 - block_start) * n_x + x2             # <<<<<<<<<<<<<<
@@ -4408,7 +4406,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
         __pyx_v_index = (((__pyx_v_x1 - __pyx_v_block_start) * __pyx_v_n_x) + __pyx_v_x2);
 
-        /* "_similarities.pyx":232
+        /* "libreco/utils/_similarities.pyx":232
  *             for x2 in range(x1 + 1, n_x):
  *                 index = (x1 - block_start) * n_x + x2
  *                 scount = freq[index]             # <<<<<<<<<<<<<<
@@ -4417,7 +4415,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
         __pyx_v_scount = (__pyx_v_freq[__pyx_v_index]);
 
-        /* "_similarities.pyx":233
+        /* "libreco/utils/_similarities.pyx":233
  *                 index = (x1 - block_start) * n_x + x2
  *                 scount = freq[index]
  *                 if scount >= min_common:             # <<<<<<<<<<<<<<
@@ -4427,7 +4425,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
         __pyx_t_13 = ((__pyx_v_scount >= __pyx_v_min_common) != 0);
         if (__pyx_t_13) {
 
-          /* "_similarities.pyx":234
+          /* "libreco/utils/_similarities.pyx":234
  *                 scount = freq[index]
  *                 if scount >= min_common:
  *                     sprods = prods[index]             # <<<<<<<<<<<<<<
@@ -4436,7 +4434,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
           __pyx_v_sprods = (__pyx_v_prods[__pyx_v_index]);
 
-          /* "_similarities.pyx":235
+          /* "libreco/utils/_similarities.pyx":235
  *                 if scount >= min_common:
  *                     sprods = prods[index]
  *                     sqi = x_mean_centered_norm[x1]             # <<<<<<<<<<<<<<
@@ -4446,7 +4444,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
           __pyx_t_24 = __pyx_v_x1;
           __pyx_v_sqi = (*((float const  *) ( /* dim=0 */ (__pyx_v_x_mean_centered_norm.data + __pyx_t_24 * __pyx_v_x_mean_centered_norm.strides[0]) )));
 
-          /* "_similarities.pyx":236
+          /* "libreco/utils/_similarities.pyx":236
  *                     sprods = prods[index]
  *                     sqi = x_mean_centered_norm[x1]
  *                     sqj = x_mean_centered_norm[x2]             # <<<<<<<<<<<<<<
@@ -4456,7 +4454,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
           __pyx_t_25 = __pyx_v_x2;
           __pyx_v_sqj = (*((float const  *) ( /* dim=0 */ (__pyx_v_x_mean_centered_norm.data + __pyx_t_25 * __pyx_v_x_mean_centered_norm.strides[0]) )));
 
-          /* "_similarities.pyx":237
+          /* "libreco/utils/_similarities.pyx":237
  *                     sqi = x_mean_centered_norm[x1]
  *                     sqj = x_mean_centered_norm[x2]
  *                     if sprods == 0.0 or sqi == 0.0 or sqj == 0.0:             # <<<<<<<<<<<<<<
@@ -4480,7 +4478,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
           __pyx_L20_bool_binop_done:;
           if (__pyx_t_13) {
 
-            /* "_similarities.pyx":238
+            /* "libreco/utils/_similarities.pyx":238
  *                     sqj = x_mean_centered_norm[x2]
  *                     if sprods == 0.0 or sqi == 0.0 or sqj == 0.0:
  *                         pearson = 0.0             # <<<<<<<<<<<<<<
@@ -4489,7 +4487,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
             __pyx_v_pearson = 0.0;
 
-            /* "_similarities.pyx":237
+            /* "libreco/utils/_similarities.pyx":237
  *                     sqi = x_mean_centered_norm[x1]
  *                     sqj = x_mean_centered_norm[x2]
  *                     if sprods == 0.0 or sqi == 0.0 or sqj == 0.0:             # <<<<<<<<<<<<<<
@@ -4499,7 +4497,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
             goto __pyx_L19;
           }
 
-          /* "_similarities.pyx":240
+          /* "libreco/utils/_similarities.pyx":240
  *                         pearson = 0.0
  *                     else:
  *                         pearson = sprods / (sqi * sqj)             # <<<<<<<<<<<<<<
@@ -4511,7 +4509,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
           }
           __pyx_L19:;
 
-          /* "_similarities.pyx":241
+          /* "libreco/utils/_similarities.pyx":241
  *                     else:
  *                         pearson = sprods / (sqi * sqj)
  *                     res_data[res_index] = pearson             # <<<<<<<<<<<<<<
@@ -4521,7 +4519,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
           __pyx_t_26 = __pyx_v_res_index;
           *((float *) ( /* dim=0 */ (__pyx_v_res_data.data + __pyx_t_26 * __pyx_v_res_data.strides[0]) )) = __pyx_v_pearson;
 
-          /* "_similarities.pyx":242
+          /* "libreco/utils/_similarities.pyx":242
  *                         pearson = sprods / (sqi * sqj)
  *                     res_data[res_index] = pearson
  *                     res_indices[res_index] = x2             # <<<<<<<<<<<<<<
@@ -4529,9 +4527,9 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  *             res_indptr[x1 + 1] = res_index
  */
           __pyx_t_27 = __pyx_v_res_index;
-          *((__pyx_t_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indices.data + __pyx_t_27 * __pyx_v_res_indices.strides[0]) )) = __pyx_v_x2;
+          *((__pyx_t_7libreco_5utils_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indices.data + __pyx_t_27 * __pyx_v_res_indices.strides[0]) )) = __pyx_v_x2;
 
-          /* "_similarities.pyx":243
+          /* "libreco/utils/_similarities.pyx":243
  *                     res_data[res_index] = pearson
  *                     res_indices[res_index] = x2
  *                     res_index += 1             # <<<<<<<<<<<<<<
@@ -4540,7 +4538,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
           __pyx_v_res_index = (__pyx_v_res_index + 1);
 
-          /* "_similarities.pyx":233
+          /* "libreco/utils/_similarities.pyx":233
  *                 index = (x1 - block_start) * n_x + x2
  *                 scount = freq[index]
  *                 if scount >= min_common:             # <<<<<<<<<<<<<<
@@ -4550,7 +4548,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
         }
       }
 
-      /* "_similarities.pyx":244
+      /* "libreco/utils/_similarities.pyx":244
  *                     res_indices[res_index] = x2
  *                     res_index += 1
  *             res_indptr[x1 + 1] = res_index             # <<<<<<<<<<<<<<
@@ -4558,10 +4556,10 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  *         free(prods)
  */
       __pyx_t_28 = (__pyx_v_x1 + 1);
-      *((__pyx_t_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indptr.data + __pyx_t_28 * __pyx_v_res_indptr.strides[0]) )) = __pyx_v_res_index;
+      *((__pyx_t_7libreco_5utils_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indptr.data + __pyx_t_28 * __pyx_v_res_indptr.strides[0]) )) = __pyx_v_res_index;
     }
 
-    /* "_similarities.pyx":246
+    /* "libreco/utils/_similarities.pyx":246
  *             res_indptr[x1 + 1] = res_index
  * 
  *         free(prods)             # <<<<<<<<<<<<<<
@@ -4570,7 +4568,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  */
     free(__pyx_v_prods);
 
-    /* "_similarities.pyx":247
+    /* "libreco/utils/_similarities.pyx":247
  * 
  *         free(prods)
  *         free(freq)             # <<<<<<<<<<<<<<
@@ -4580,7 +4578,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
     free(__pyx_v_freq);
   }
 
-  /* "_similarities.pyx":177
+  /* "libreco/utils/_similarities.pyx":177
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cdef void compute_pearson(             # <<<<<<<<<<<<<<
@@ -4591,7 +4589,7 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
   /* function exit code */
 }
 
-/* "_similarities.pyx":253
+/* "libreco/utils/_similarities.pyx":253
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef invert_pearson(             # <<<<<<<<<<<<<<
@@ -4599,8 +4597,8 @@ static void __pyx_f_13_similarities_compute_pearson(__Pyx_memviewslice __pyx_v_i
  *     const int[:] indptr,
  */
 
-static PyObject *__pyx_pw_13_similarities_3invert_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_13_similarities_invert_pearson(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_13_similarities_invert_pearson *__pyx_optional_args) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_3invert_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_invert_pearson(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_pearson *__pyx_optional_args) {
   int __pyx_v_num_threads = ((int)1);
   Py_ssize_t __pyx_v_res_count;
   __Pyx_memviewslice __pyx_v_res_data = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -4623,16 +4621,16 @@ static PyObject *__pyx_f_13_similarities_invert_pearson(__Pyx_memviewslice __pyx
     }
   }
 
-  /* "_similarities.pyx":267
+  /* "libreco/utils/_similarities.pyx":267
  * ):
  * 
  *     cdef Py_ssize_t res_count = count_freq(             # <<<<<<<<<<<<<<
  *         indices, indptr, min_common, n_x, n_y, block_size, block_num, num_threads)
  * 
  */
-  __pyx_v_res_count = __pyx_f_13_similarities_count_freq(__pyx_v_indices, __pyx_v_indptr, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
+  __pyx_v_res_count = __pyx_f_7libreco_5utils_13_similarities_count_freq(__pyx_v_indices, __pyx_v_indptr, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
 
-  /* "_similarities.pyx":270
+  /* "libreco/utils/_similarities.pyx":270
  *         indices, indptr, min_common, n_x, n_y, block_size, block_num, num_threads)
  * 
  *     cdef float[:] res_data = np.zeros(res_count, dtype=np.single)             # <<<<<<<<<<<<<<
@@ -4671,7 +4669,7 @@ static PyObject *__pyx_f_13_similarities_invert_pearson(__Pyx_memviewslice __pyx
   __pyx_t_6.memview = NULL;
   __pyx_t_6.data = NULL;
 
-  /* "_similarities.pyx":271
+  /* "libreco/utils/_similarities.pyx":271
  * 
  *     cdef float[:] res_data = np.zeros(res_count, dtype=np.single)
  *     cdef uint[:] res_indices = np.zeros(res_count, dtype=np.uintc)             # <<<<<<<<<<<<<<
@@ -4704,13 +4702,13 @@ static PyObject *__pyx_f_13_similarities_invert_pearson(__Pyx_memviewslice __pyx
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_13_similarities_uint(__pyx_t_4, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 271, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_7libreco_5utils_13_similarities_uint(__pyx_t_4, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 271, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_res_indices = __pyx_t_7;
   __pyx_t_7.memview = NULL;
   __pyx_t_7.data = NULL;
 
-  /* "_similarities.pyx":272
+  /* "libreco/utils/_similarities.pyx":272
  *     cdef float[:] res_data = np.zeros(res_count, dtype=np.single)
  *     cdef uint[:] res_indices = np.zeros(res_count, dtype=np.uintc)
  *     cdef uint[:] res_indptr = np.zeros(n_x + 1, dtype=np.uintc)             # <<<<<<<<<<<<<<
@@ -4743,22 +4741,22 @@ static PyObject *__pyx_f_13_similarities_invert_pearson(__Pyx_memviewslice __pyx
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_13_similarities_uint(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 272, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_7libreco_5utils_13_similarities_uint(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 272, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_res_indptr = __pyx_t_7;
   __pyx_t_7.memview = NULL;
   __pyx_t_7.data = NULL;
 
-  /* "_similarities.pyx":275
+  /* "libreco/utils/_similarities.pyx":275
  * #    res_indptr[0] = 0
  * 
  *     compute_pearson(indices, indptr, data, x_mean, x_mean_centered_norm, min_common,             # <<<<<<<<<<<<<<
  *         n_x, n_y, block_size, block_num, num_threads, res_data, res_indices, res_indptr)
  * 
  */
-  __pyx_f_13_similarities_compute_pearson(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_mean, __pyx_v_x_mean_centered_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads, __pyx_v_res_data, __pyx_v_res_indices, __pyx_v_res_indptr);
+  __pyx_f_7libreco_5utils_13_similarities_compute_pearson(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_mean, __pyx_v_x_mean_centered_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads, __pyx_v_res_data, __pyx_v_res_indices, __pyx_v_res_indptr);
 
-  /* "_similarities.pyx":278
+  /* "libreco/utils/_similarities.pyx":278
  *         n_x, n_y, block_size, block_num, num_threads, res_data, res_indices, res_indptr)
  * 
  *     return np.asarray(res_indices), np.asarray(res_indptr), np.asarray(res_data)             # <<<<<<<<<<<<<<
@@ -4771,7 +4769,7 @@ static PyObject *__pyx_f_13_similarities_invert_pearson(__Pyx_memviewslice __pyx
   __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_asarray); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 278, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 278, __pyx_L1_error)
+  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_7libreco_5utils_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_7libreco_5utils_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 278, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_5 = NULL;
   if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
@@ -4794,7 +4792,7 @@ static PyObject *__pyx_f_13_similarities_invert_pearson(__Pyx_memviewslice __pyx
   __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_asarray); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 278, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indptr, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 278, __pyx_L1_error)
+  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indptr, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_7libreco_5utils_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_7libreco_5utils_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 278, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_1 = NULL;
   if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_5))) {
@@ -4850,7 +4848,7 @@ static PyObject *__pyx_f_13_similarities_invert_pearson(__Pyx_memviewslice __pyx
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "_similarities.pyx":253
+  /* "libreco/utils/_similarities.pyx":253
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef invert_pearson(             # <<<<<<<<<<<<<<
@@ -4868,7 +4866,7 @@ static PyObject *__pyx_f_13_similarities_invert_pearson(__Pyx_memviewslice __pyx
   __PYX_XDEC_MEMVIEW(&__pyx_t_6, 1);
   __PYX_XDEC_MEMVIEW(&__pyx_t_7, 1);
   __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_AddTraceback("_similarities.invert_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.invert_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_res_data, 1);
@@ -4880,8 +4878,8 @@ static PyObject *__pyx_f_13_similarities_invert_pearson(__Pyx_memviewslice __pyx
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_13_similarities_3invert_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_13_similarities_3invert_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_3invert_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_3invert_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_indices = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_indptr = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_data = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -5035,22 +5033,22 @@ static PyObject *__pyx_pw_13_similarities_3invert_pearson(PyObject *__pyx_self, 
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("invert_pearson", 0, 10, 11, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 253, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_similarities.invert_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.invert_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_13_similarities_2invert_pearson(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_mean, __pyx_v_x_mean_centered_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
+  __pyx_r = __pyx_pf_7libreco_5utils_13_similarities_2invert_pearson(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_mean, __pyx_v_x_mean_centered_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_13_similarities_2invert_pearson(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads) {
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_2invert_pearson(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  struct __pyx_opt_args_13_similarities_invert_pearson __pyx_t_2;
+  struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_pearson __pyx_t_2;
   __Pyx_RefNannySetupContext("invert_pearson", 0);
   __Pyx_XDECREF(__pyx_r);
   if (unlikely(!__pyx_v_indices.memview)) { __Pyx_RaiseUnboundLocalError("indices"); __PYX_ERR(0, 253, __pyx_L1_error) }
@@ -5060,7 +5058,7 @@ static PyObject *__pyx_pf_13_similarities_2invert_pearson(CYTHON_UNUSED PyObject
   if (unlikely(!__pyx_v_x_mean_centered_norm.memview)) { __Pyx_RaiseUnboundLocalError("x_mean_centered_norm"); __PYX_ERR(0, 253, __pyx_L1_error) }
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.num_threads = __pyx_v_num_threads;
-  __pyx_t_1 = __pyx_f_13_similarities_invert_pearson(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_mean, __pyx_v_x_mean_centered_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, 0, &__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 253, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_7libreco_5utils_13_similarities_invert_pearson(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_mean, __pyx_v_x_mean_centered_norm, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, 0, &__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 253, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5069,7 +5067,7 @@ static PyObject *__pyx_pf_13_similarities_2invert_pearson(CYTHON_UNUSED PyObject
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_similarities.invert_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.invert_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_indices, 1);
@@ -5082,7 +5080,7 @@ static PyObject *__pyx_pf_13_similarities_2invert_pearson(CYTHON_UNUSED PyObject
   return __pyx_r;
 }
 
-/* "_similarities.pyx":284
+/* "libreco/utils/_similarities.pyx":284
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cdef void compute_jaccard(             # <<<<<<<<<<<<<<
@@ -5090,7 +5088,7 @@ static PyObject *__pyx_pf_13_similarities_2invert_pearson(CYTHON_UNUSED PyObject
  *     const int[:] indptr,
  */
 
-static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, CYTHON_UNUSED __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_v_n_threads, __Pyx_memviewslice __pyx_v_res_data, __Pyx_memviewslice __pyx_v_res_indices, __Pyx_memviewslice __pyx_v_res_indptr) {
+static void __pyx_f_7libreco_5utils_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, CYTHON_UNUSED __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_v_n_threads, __Pyx_memviewslice __pyx_v_res_data, __Pyx_memviewslice __pyx_v_res_indices, __Pyx_memviewslice __pyx_v_res_indptr) {
   Py_ssize_t __pyx_v_x_start;
   Py_ssize_t __pyx_v_x_end;
   Py_ssize_t __pyx_v_p;
@@ -5106,7 +5104,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
   float __pyx_v_jaccard;
   float __pyx_v_intersection;
   float __pyx_v_union;
-  __pyx_t_13_similarities_uint *__pyx_v_freq;
+  __pyx_t_7libreco_5utils_13_similarities_uint *__pyx_v_freq;
   int __pyx_t_1;
   int __pyx_t_2;
   Py_ssize_t __pyx_t_3;
@@ -5132,7 +5130,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
   Py_ssize_t __pyx_t_23;
   Py_ssize_t __pyx_t_24;
 
-  /* "_similarities.pyx":303
+  /* "libreco/utils/_similarities.pyx":303
  *         Py_ssize_t x_start, x_end, p, x1, x2, i, j, index
  *         Py_ssize_t block_index, block_start, block_end, scount
  *         Py_ssize_t res_index = 0             # <<<<<<<<<<<<<<
@@ -5141,7 +5139,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
  */
   __pyx_v_res_index = 0;
 
-  /* "_similarities.pyx":307
+  /* "libreco/utils/_similarities.pyx":307
  *     cdef uint *freq
  * 
  *     for block_index in range(block_num):             # <<<<<<<<<<<<<<
@@ -5153,16 +5151,16 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_block_index = __pyx_t_3;
 
-    /* "_similarities.pyx":308
+    /* "libreco/utils/_similarities.pyx":308
  * 
  *     for block_index in range(block_num):
  *         freq = <uint *> malloc(sizeof(uint) * n_x * block_size)             # <<<<<<<<<<<<<<
  *         memset(freq, 0, sizeof(uint) * n_x * block_size)
  * 
  */
-    __pyx_v_freq = ((__pyx_t_13_similarities_uint *)malloc((((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
+    __pyx_v_freq = ((__pyx_t_7libreco_5utils_13_similarities_uint *)malloc((((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-    /* "_similarities.pyx":309
+    /* "libreco/utils/_similarities.pyx":309
  *     for block_index in range(block_num):
  *         freq = <uint *> malloc(sizeof(uint) * n_x * block_size)
  *         memset(freq, 0, sizeof(uint) * n_x * block_size)             # <<<<<<<<<<<<<<
@@ -5171,7 +5169,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
  */
     (void)(memset(__pyx_v_freq, 0, (((sizeof(unsigned int)) * __pyx_v_n_x) * __pyx_v_block_size)));
 
-    /* "_similarities.pyx":311
+    /* "libreco/utils/_similarities.pyx":311
  *         memset(freq, 0, sizeof(uint) * n_x * block_size)
  * 
  *         block_start = block_index * block_size             # <<<<<<<<<<<<<<
@@ -5180,7 +5178,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
  */
     __pyx_v_block_start = (__pyx_v_block_index * __pyx_v_block_size);
 
-    /* "_similarities.pyx":313
+    /* "libreco/utils/_similarities.pyx":313
  *         block_start = block_index * block_size
  *         block_end = (
  *             n_x if n_x < block_start + block_size             # <<<<<<<<<<<<<<
@@ -5191,7 +5189,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
       __pyx_t_4 = __pyx_v_n_x;
     } else {
 
-      /* "_similarities.pyx":314
+      /* "libreco/utils/_similarities.pyx":314
  *         block_end = (
  *             n_x if n_x < block_start + block_size
  *                 else block_start + block_size             # <<<<<<<<<<<<<<
@@ -5202,7 +5200,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
     }
     __pyx_v_block_end = __pyx_t_4;
 
-    /* "_similarities.pyx":317
+    /* "libreco/utils/_similarities.pyx":317
  *         )
  * 
  *         for p in range(n_y):             # <<<<<<<<<<<<<<
@@ -5214,7 +5212,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
     for (__pyx_t_4 = 0; __pyx_t_4 < __pyx_t_6; __pyx_t_4+=1) {
       __pyx_v_p = __pyx_t_4;
 
-      /* "_similarities.pyx":318
+      /* "libreco/utils/_similarities.pyx":318
  * 
  *         for p in range(n_y):
  *             x_start = indptr[p]             # <<<<<<<<<<<<<<
@@ -5224,7 +5222,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
       __pyx_t_7 = __pyx_v_p;
       __pyx_v_x_start = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_7 * __pyx_v_indptr.strides[0]) )));
 
-      /* "_similarities.pyx":319
+      /* "libreco/utils/_similarities.pyx":319
  *         for p in range(n_y):
  *             x_start = indptr[p]
  *             x_end = indptr[p + 1]             # <<<<<<<<<<<<<<
@@ -5234,7 +5232,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
       __pyx_t_8 = (__pyx_v_p + 1);
       __pyx_v_x_end = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_8 * __pyx_v_indptr.strides[0]) )));
 
-      /* "_similarities.pyx":320
+      /* "libreco/utils/_similarities.pyx":320
  *             x_start = indptr[p]
  *             x_end = indptr[p + 1]
  *             for i in range(x_start, x_end):             # <<<<<<<<<<<<<<
@@ -5246,7 +5244,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
       for (__pyx_t_11 = __pyx_v_x_start; __pyx_t_11 < __pyx_t_10; __pyx_t_11+=1) {
         __pyx_v_i = __pyx_t_11;
 
-        /* "_similarities.pyx":321
+        /* "libreco/utils/_similarities.pyx":321
  *             x_end = indptr[p + 1]
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]             # <<<<<<<<<<<<<<
@@ -5256,7 +5254,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
         __pyx_t_12 = __pyx_v_i;
         __pyx_v_x1 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_12 * __pyx_v_indices.strides[0]) )));
 
-        /* "_similarities.pyx":322
+        /* "libreco/utils/_similarities.pyx":322
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:             # <<<<<<<<<<<<<<
@@ -5274,7 +5272,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
         __pyx_L10_bool_binop_done:;
         if (__pyx_t_13) {
 
-          /* "_similarities.pyx":323
+          /* "libreco/utils/_similarities.pyx":323
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:
  *                     for j in range(i + 1, x_end):             # <<<<<<<<<<<<<<
@@ -5286,7 +5284,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
           for (__pyx_t_17 = (__pyx_v_i + 1); __pyx_t_17 < __pyx_t_16; __pyx_t_17+=1) {
             __pyx_v_j = __pyx_t_17;
 
-            /* "_similarities.pyx":324
+            /* "libreco/utils/_similarities.pyx":324
  *                 if x1 >= block_start and x1 < block_end:
  *                     for j in range(i + 1, x_end):
  *                         x2 = indices[j]             # <<<<<<<<<<<<<<
@@ -5296,7 +5294,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
             __pyx_t_18 = __pyx_v_j;
             __pyx_v_x2 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_18 * __pyx_v_indices.strides[0]) )));
 
-            /* "_similarities.pyx":325
+            /* "libreco/utils/_similarities.pyx":325
  *                     for j in range(i + 1, x_end):
  *                         x2 = indices[j]
  *                         index = (x1 - block_start) * n_x + x2             # <<<<<<<<<<<<<<
@@ -5305,7 +5303,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
  */
             __pyx_v_index = (((__pyx_v_x1 - __pyx_v_block_start) * __pyx_v_n_x) + __pyx_v_x2);
 
-            /* "_similarities.pyx":326
+            /* "libreco/utils/_similarities.pyx":326
  *                         x2 = indices[j]
  *                         index = (x1 - block_start) * n_x + x2
  *                         freq[index] += 1             # <<<<<<<<<<<<<<
@@ -5316,7 +5314,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
             (__pyx_v_freq[__pyx_t_19]) = ((__pyx_v_freq[__pyx_t_19]) + 1);
           }
 
-          /* "_similarities.pyx":322
+          /* "libreco/utils/_similarities.pyx":322
  *             for i in range(x_start, x_end):
  *                 x1 = indices[i]
  *                 if x1 >= block_start and x1 < block_end:             # <<<<<<<<<<<<<<
@@ -5327,7 +5325,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
       }
     }
 
-    /* "_similarities.pyx":328
+    /* "libreco/utils/_similarities.pyx":328
  *                         freq[index] += 1
  * 
  *         for x1 in range(block_start, block_end):             # <<<<<<<<<<<<<<
@@ -5339,7 +5337,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
     for (__pyx_t_10 = __pyx_v_block_start; __pyx_t_10 < __pyx_t_9; __pyx_t_10+=1) {
       __pyx_v_x1 = __pyx_t_10;
 
-      /* "_similarities.pyx":329
+      /* "libreco/utils/_similarities.pyx":329
  * 
  *         for x1 in range(block_start, block_end):
  *             for x2 in range(x1 + 1, n_x):             # <<<<<<<<<<<<<<
@@ -5351,7 +5349,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
       for (__pyx_t_11 = (__pyx_v_x1 + 1); __pyx_t_11 < __pyx_t_6; __pyx_t_11+=1) {
         __pyx_v_x2 = __pyx_t_11;
 
-        /* "_similarities.pyx":330
+        /* "libreco/utils/_similarities.pyx":330
  *         for x1 in range(block_start, block_end):
  *             for x2 in range(x1 + 1, n_x):
  *                 index = (x1 - block_start) * n_x + x2             # <<<<<<<<<<<<<<
@@ -5360,7 +5358,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
  */
         __pyx_v_index = (((__pyx_v_x1 - __pyx_v_block_start) * __pyx_v_n_x) + __pyx_v_x2);
 
-        /* "_similarities.pyx":331
+        /* "libreco/utils/_similarities.pyx":331
  *             for x2 in range(x1 + 1, n_x):
  *                 index = (x1 - block_start) * n_x + x2
  *                 intersection = freq[index]             # <<<<<<<<<<<<<<
@@ -5369,7 +5367,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
  */
         __pyx_v_intersection = (__pyx_v_freq[__pyx_v_index]);
 
-        /* "_similarities.pyx":332
+        /* "libreco/utils/_similarities.pyx":332
  *                 index = (x1 - block_start) * n_x + x2
  *                 intersection = freq[index]
  *                 if intersection >= min_common:             # <<<<<<<<<<<<<<
@@ -5379,7 +5377,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
         __pyx_t_13 = ((__pyx_v_intersection >= __pyx_v_min_common) != 0);
         if (__pyx_t_13) {
 
-          /* "_similarities.pyx":333
+          /* "libreco/utils/_similarities.pyx":333
  *                 intersection = freq[index]
  *                 if intersection >= min_common:
  *                     union = x_count[x1] + x_count[x2] - intersection             # <<<<<<<<<<<<<<
@@ -5390,7 +5388,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
           __pyx_t_21 = __pyx_v_x2;
           __pyx_v_union = (((*((int const  *) ( /* dim=0 */ (__pyx_v_x_count.data + __pyx_t_20 * __pyx_v_x_count.strides[0]) ))) + (*((int const  *) ( /* dim=0 */ (__pyx_v_x_count.data + __pyx_t_21 * __pyx_v_x_count.strides[0]) )))) - __pyx_v_intersection);
 
-          /* "_similarities.pyx":334
+          /* "libreco/utils/_similarities.pyx":334
  *                 if intersection >= min_common:
  *                     union = x_count[x1] + x_count[x2] - intersection
  *                     jaccard = intersection / union             # <<<<<<<<<<<<<<
@@ -5399,7 +5397,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
  */
           __pyx_v_jaccard = (__pyx_v_intersection / __pyx_v_union);
 
-          /* "_similarities.pyx":335
+          /* "libreco/utils/_similarities.pyx":335
  *                     union = x_count[x1] + x_count[x2] - intersection
  *                     jaccard = intersection / union
  *                     res_data[res_index] = jaccard             # <<<<<<<<<<<<<<
@@ -5409,7 +5407,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
           __pyx_t_22 = __pyx_v_res_index;
           *((float *) ( /* dim=0 */ (__pyx_v_res_data.data + __pyx_t_22 * __pyx_v_res_data.strides[0]) )) = __pyx_v_jaccard;
 
-          /* "_similarities.pyx":336
+          /* "libreco/utils/_similarities.pyx":336
  *                     jaccard = intersection / union
  *                     res_data[res_index] = jaccard
  *                     res_indices[res_index] = x2             # <<<<<<<<<<<<<<
@@ -5417,9 +5415,9 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
  *             res_indptr[x1 + 1] = res_index
  */
           __pyx_t_23 = __pyx_v_res_index;
-          *((__pyx_t_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indices.data + __pyx_t_23 * __pyx_v_res_indices.strides[0]) )) = __pyx_v_x2;
+          *((__pyx_t_7libreco_5utils_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indices.data + __pyx_t_23 * __pyx_v_res_indices.strides[0]) )) = __pyx_v_x2;
 
-          /* "_similarities.pyx":337
+          /* "libreco/utils/_similarities.pyx":337
  *                     res_data[res_index] = jaccard
  *                     res_indices[res_index] = x2
  *                     res_index += 1             # <<<<<<<<<<<<<<
@@ -5428,7 +5426,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
  */
           __pyx_v_res_index = (__pyx_v_res_index + 1);
 
-          /* "_similarities.pyx":332
+          /* "libreco/utils/_similarities.pyx":332
  *                 index = (x1 - block_start) * n_x + x2
  *                 intersection = freq[index]
  *                 if intersection >= min_common:             # <<<<<<<<<<<<<<
@@ -5438,7 +5436,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
         }
       }
 
-      /* "_similarities.pyx":338
+      /* "libreco/utils/_similarities.pyx":338
  *                     res_indices[res_index] = x2
  *                     res_index += 1
  *             res_indptr[x1 + 1] = res_index             # <<<<<<<<<<<<<<
@@ -5446,10 +5444,10 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
  *         free(freq)
  */
       __pyx_t_24 = (__pyx_v_x1 + 1);
-      *((__pyx_t_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indptr.data + __pyx_t_24 * __pyx_v_res_indptr.strides[0]) )) = __pyx_v_res_index;
+      *((__pyx_t_7libreco_5utils_13_similarities_uint *) ( /* dim=0 */ (__pyx_v_res_indptr.data + __pyx_t_24 * __pyx_v_res_indptr.strides[0]) )) = __pyx_v_res_index;
     }
 
-    /* "_similarities.pyx":340
+    /* "libreco/utils/_similarities.pyx":340
  *             res_indptr[x1 + 1] = res_index
  * 
  *         free(freq)             # <<<<<<<<<<<<<<
@@ -5459,7 +5457,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
     free(__pyx_v_freq);
   }
 
-  /* "_similarities.pyx":284
+  /* "libreco/utils/_similarities.pyx":284
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cdef void compute_jaccard(             # <<<<<<<<<<<<<<
@@ -5470,7 +5468,7 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
   /* function exit code */
 }
 
-/* "_similarities.pyx":346
+/* "libreco/utils/_similarities.pyx":346
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef invert_jaccard(const int[:] indices, const int[:] indptr, const float[:] data,             # <<<<<<<<<<<<<<
@@ -5478,8 +5476,8 @@ static void __pyx_f_13_similarities_compute_jaccard(__Pyx_memviewslice __pyx_v_i
  *                     int block_size, int block_num, int num_threads=1):
  */
 
-static PyObject *__pyx_pw_13_similarities_5invert_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_13_similarities_invert_jaccard(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_13_similarities_invert_jaccard *__pyx_optional_args) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_5invert_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_invert_jaccard(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_jaccard *__pyx_optional_args) {
   int __pyx_v_num_threads = ((int)1);
   Py_ssize_t __pyx_v_res_count;
   __Pyx_memviewslice __pyx_v_res_data = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -5502,16 +5500,16 @@ static PyObject *__pyx_f_13_similarities_invert_jaccard(__Pyx_memviewslice __pyx
     }
   }
 
-  /* "_similarities.pyx":350
+  /* "libreco/utils/_similarities.pyx":350
  *                     int block_size, int block_num, int num_threads=1):
  * 
  *     cdef Py_ssize_t res_count = count_freq(             # <<<<<<<<<<<<<<
  *         indices, indptr, min_common, n_x, n_y, block_size, block_num, num_threads)
  * 
  */
-  __pyx_v_res_count = __pyx_f_13_similarities_count_freq(__pyx_v_indices, __pyx_v_indptr, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
+  __pyx_v_res_count = __pyx_f_7libreco_5utils_13_similarities_count_freq(__pyx_v_indices, __pyx_v_indptr, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
 
-  /* "_similarities.pyx":353
+  /* "libreco/utils/_similarities.pyx":353
  *         indices, indptr, min_common, n_x, n_y, block_size, block_num, num_threads)
  * 
  *     cdef float[:] res_data = np.zeros(res_count, dtype=np.single)             # <<<<<<<<<<<<<<
@@ -5550,7 +5548,7 @@ static PyObject *__pyx_f_13_similarities_invert_jaccard(__Pyx_memviewslice __pyx
   __pyx_t_6.memview = NULL;
   __pyx_t_6.data = NULL;
 
-  /* "_similarities.pyx":354
+  /* "libreco/utils/_similarities.pyx":354
  * 
  *     cdef float[:] res_data = np.zeros(res_count, dtype=np.single)
  *     cdef uint[:] res_indices = np.zeros(res_count, dtype=np.uintc)             # <<<<<<<<<<<<<<
@@ -5583,13 +5581,13 @@ static PyObject *__pyx_f_13_similarities_invert_jaccard(__Pyx_memviewslice __pyx
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_13_similarities_uint(__pyx_t_4, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 354, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_7libreco_5utils_13_similarities_uint(__pyx_t_4, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 354, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_res_indices = __pyx_t_7;
   __pyx_t_7.memview = NULL;
   __pyx_t_7.data = NULL;
 
-  /* "_similarities.pyx":355
+  /* "libreco/utils/_similarities.pyx":355
  *     cdef float[:] res_data = np.zeros(res_count, dtype=np.single)
  *     cdef uint[:] res_indices = np.zeros(res_count, dtype=np.uintc)
  *     cdef uint[:] res_indptr = np.zeros(n_x + 1, dtype=np.uintc)             # <<<<<<<<<<<<<<
@@ -5622,22 +5620,22 @@ static PyObject *__pyx_f_13_similarities_invert_jaccard(__Pyx_memviewslice __pyx
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_13_similarities_uint(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 355, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_7libreco_5utils_13_similarities_uint(__pyx_t_2, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 355, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_res_indptr = __pyx_t_7;
   __pyx_t_7.memview = NULL;
   __pyx_t_7.data = NULL;
 
-  /* "_similarities.pyx":358
+  /* "libreco/utils/_similarities.pyx":358
  * #    res_indptr[0] = 0
  * 
  *     compute_jaccard(indices, indptr, data, x_count, min_common, n_x, n_y,             # <<<<<<<<<<<<<<
  *         block_size, block_num, num_threads, res_data, res_indices, res_indptr)
  * 
  */
-  __pyx_f_13_similarities_compute_jaccard(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_count, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads, __pyx_v_res_data, __pyx_v_res_indices, __pyx_v_res_indptr);
+  __pyx_f_7libreco_5utils_13_similarities_compute_jaccard(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_count, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads, __pyx_v_res_data, __pyx_v_res_indices, __pyx_v_res_indptr);
 
-  /* "_similarities.pyx":361
+  /* "libreco/utils/_similarities.pyx":361
  *         block_size, block_num, num_threads, res_data, res_indices, res_indptr)
  * 
  *     return np.asarray(res_indices), np.asarray(res_indptr), np.asarray(res_data)             # <<<<<<<<<<<<<<
@@ -5650,7 +5648,7 @@ static PyObject *__pyx_f_13_similarities_invert_jaccard(__Pyx_memviewslice __pyx
   __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_asarray); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 361, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 361, __pyx_L1_error)
+  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indices, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_7libreco_5utils_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_7libreco_5utils_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 361, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_5 = NULL;
   if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
@@ -5673,7 +5671,7 @@ static PyObject *__pyx_f_13_similarities_invert_jaccard(__Pyx_memviewslice __pyx
   __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_asarray); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 361, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indptr, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 361, __pyx_L1_error)
+  __pyx_t_4 = __pyx_memoryview_fromslice(__pyx_v_res_indptr, 1, (PyObject *(*)(char *)) __pyx_memview_get_nn___pyx_t_7libreco_5utils_13_similarities_uint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn___pyx_t_7libreco_5utils_13_similarities_uint, 0);; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 361, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_1 = NULL;
   if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_5))) {
@@ -5729,7 +5727,7 @@ static PyObject *__pyx_f_13_similarities_invert_jaccard(__Pyx_memviewslice __pyx
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "_similarities.pyx":346
+  /* "libreco/utils/_similarities.pyx":346
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef invert_jaccard(const int[:] indices, const int[:] indptr, const float[:] data,             # <<<<<<<<<<<<<<
@@ -5747,7 +5745,7 @@ static PyObject *__pyx_f_13_similarities_invert_jaccard(__Pyx_memviewslice __pyx
   __PYX_XDEC_MEMVIEW(&__pyx_t_6, 1);
   __PYX_XDEC_MEMVIEW(&__pyx_t_7, 1);
   __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_AddTraceback("_similarities.invert_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.invert_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_res_data, 1);
@@ -5759,8 +5757,8 @@ static PyObject *__pyx_f_13_similarities_invert_jaccard(__Pyx_memviewslice __pyx
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_13_similarities_5invert_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_13_similarities_5invert_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_5invert_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_5invert_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_indices = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_indptr = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_data = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -5903,22 +5901,22 @@ static PyObject *__pyx_pw_13_similarities_5invert_jaccard(PyObject *__pyx_self, 
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("invert_jaccard", 0, 9, 10, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 346, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_similarities.invert_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.invert_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_13_similarities_4invert_jaccard(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_count, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
+  __pyx_r = __pyx_pf_7libreco_5utils_13_similarities_4invert_jaccard(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_count, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, __pyx_v_num_threads);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_13_similarities_4invert_jaccard(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads) {
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_4invert_jaccard(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x, int __pyx_v_n_y, int __pyx_v_block_size, int __pyx_v_block_num, int __pyx_v_num_threads) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  struct __pyx_opt_args_13_similarities_invert_jaccard __pyx_t_2;
+  struct __pyx_opt_args_7libreco_5utils_13_similarities_invert_jaccard __pyx_t_2;
   __Pyx_RefNannySetupContext("invert_jaccard", 0);
   __Pyx_XDECREF(__pyx_r);
   if (unlikely(!__pyx_v_indices.memview)) { __Pyx_RaiseUnboundLocalError("indices"); __PYX_ERR(0, 346, __pyx_L1_error) }
@@ -5927,7 +5925,7 @@ static PyObject *__pyx_pf_13_similarities_4invert_jaccard(CYTHON_UNUSED PyObject
   if (unlikely(!__pyx_v_x_count.memview)) { __Pyx_RaiseUnboundLocalError("x_count"); __PYX_ERR(0, 346, __pyx_L1_error) }
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.num_threads = __pyx_v_num_threads;
-  __pyx_t_1 = __pyx_f_13_similarities_invert_jaccard(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_count, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, 0, &__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 346, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_7libreco_5utils_13_similarities_invert_jaccard(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_count, __pyx_v_min_common, __pyx_v_n_x, __pyx_v_n_y, __pyx_v_block_size, __pyx_v_block_num, 0, &__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 346, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5936,7 +5934,7 @@ static PyObject *__pyx_pf_13_similarities_4invert_jaccard(CYTHON_UNUSED PyObject
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_similarities.invert_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.invert_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_indices, 1);
@@ -5948,7 +5946,7 @@ static PyObject *__pyx_pf_13_similarities_4invert_jaccard(CYTHON_UNUSED PyObject
   return __pyx_r;
 }
 
-/* "_similarities.pyx":367
+/* "libreco/utils/_similarities.pyx":367
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef forward_cosine(const int[:] indices, const int[:] indptr,             # <<<<<<<<<<<<<<
@@ -5956,8 +5954,8 @@ static PyObject *__pyx_pf_13_similarities_4invert_jaccard(CYTHON_UNUSED PyObject
  *                      int min_common, int n_x):
  */
 
-static PyObject *__pyx_pw_13_similarities_7forward_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x, CYTHON_UNUSED int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_7forward_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_forward_cosine(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x, CYTHON_UNUSED int __pyx_skip_dispatch) {
   Py_ssize_t __pyx_v_x1;
   Py_ssize_t __pyx_v_x2;
   Py_ssize_t __pyx_v_y1;
@@ -6000,7 +5998,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
   PyObject *__pyx_t_22 = NULL;
   __Pyx_RefNannySetupContext("forward_cosine", 0);
 
-  /* "_similarities.pyx":375
+  /* "libreco/utils/_similarities.pyx":375
  *     cdef vector[uint] res_indices, res_indptr
  *     cdef vector[float] res_data
  *     res_indptr.reserve(n_x + 1)             # <<<<<<<<<<<<<<
@@ -6009,7 +6007,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
  */
   __pyx_v_res_indptr.reserve((__pyx_v_n_x + 1));
 
-  /* "_similarities.pyx":376
+  /* "libreco/utils/_similarities.pyx":376
  *     cdef vector[float] res_data
  *     res_indptr.reserve(n_x + 1)
  *     res_indptr.push_back(0)             # <<<<<<<<<<<<<<
@@ -6023,7 +6021,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
     __PYX_ERR(0, 376, __pyx_L1_error)
   }
 
-  /* "_similarities.pyx":378
+  /* "libreco/utils/_similarities.pyx":378
  *     res_indptr.push_back(0)
  * 
  *     with nogil:             # <<<<<<<<<<<<<<
@@ -6038,7 +6036,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
       #endif
       /*try:*/ {
 
-        /* "_similarities.pyx":379
+        /* "libreco/utils/_similarities.pyx":379
  * 
  *     with nogil:
  *         for x1 in range(n_x):             # <<<<<<<<<<<<<<
@@ -6050,7 +6048,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
         for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
           __pyx_v_x1 = __pyx_t_3;
 
-          /* "_similarities.pyx":380
+          /* "libreco/utils/_similarities.pyx":380
  *     with nogil:
  *         for x1 in range(n_x):
  *             for x2 in range(x1 + 1, n_x):             # <<<<<<<<<<<<<<
@@ -6062,7 +6060,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
           for (__pyx_t_6 = (__pyx_v_x1 + 1); __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
             __pyx_v_x2 = __pyx_t_6;
 
-            /* "_similarities.pyx":381
+            /* "libreco/utils/_similarities.pyx":381
  *         for x1 in range(n_x):
  *             for x2 in range(x1 + 1, n_x):
  *                 i = indptr[x1]             # <<<<<<<<<<<<<<
@@ -6072,7 +6070,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
             __pyx_t_7 = __pyx_v_x1;
             __pyx_v_i = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_7 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":382
+            /* "libreco/utils/_similarities.pyx":382
  *             for x2 in range(x1 + 1, n_x):
  *                 i = indptr[x1]
  *                 j = indptr[x2]             # <<<<<<<<<<<<<<
@@ -6082,7 +6080,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
             __pyx_t_8 = __pyx_v_x2;
             __pyx_v_j = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_8 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":383
+            /* "libreco/utils/_similarities.pyx":383
  *                 i = indptr[x1]
  *                 j = indptr[x2]
  *                 end1 = indptr[x1 + 1]             # <<<<<<<<<<<<<<
@@ -6092,7 +6090,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
             __pyx_t_9 = (__pyx_v_x1 + 1);
             __pyx_v_end1 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_9 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":384
+            /* "libreco/utils/_similarities.pyx":384
  *                 j = indptr[x2]
  *                 end1 = indptr[x1 + 1]
  *                 end2 = indptr[x2 + 1]             # <<<<<<<<<<<<<<
@@ -6102,7 +6100,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
             __pyx_t_10 = (__pyx_v_x2 + 1);
             __pyx_v_end2 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_10 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":386
+            /* "libreco/utils/_similarities.pyx":386
  *                 end2 = indptr[x2 + 1]
  * 
  *                 prods = 0.0             # <<<<<<<<<<<<<<
@@ -6111,7 +6109,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
  */
             __pyx_v_prods = 0.0;
 
-            /* "_similarities.pyx":387
+            /* "libreco/utils/_similarities.pyx":387
  * 
  *                 prods = 0.0
  *                 count = 0             # <<<<<<<<<<<<<<
@@ -6120,7 +6118,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
  */
             __pyx_v_count = 0;
 
-            /* "_similarities.pyx":389
+            /* "libreco/utils/_similarities.pyx":389
  *                 count = 0
  *                 # compute common items
  *                 while (i < end1 and j < end2):             # <<<<<<<<<<<<<<
@@ -6139,7 +6137,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
               __pyx_L12_bool_binop_done:;
               if (!__pyx_t_11) break;
 
-              /* "_similarities.pyx":390
+              /* "libreco/utils/_similarities.pyx":390
  *                 # compute common items
  *                 while (i < end1 and j < end2):
  *                     y1 = indices[i]             # <<<<<<<<<<<<<<
@@ -6149,7 +6147,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
               __pyx_t_13 = __pyx_v_i;
               __pyx_v_y1 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_13 * __pyx_v_indices.strides[0]) )));
 
-              /* "_similarities.pyx":391
+              /* "libreco/utils/_similarities.pyx":391
  *                 while (i < end1 and j < end2):
  *                     y1 = indices[i]
  *                     y2 = indices[j]             # <<<<<<<<<<<<<<
@@ -6159,7 +6157,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
               __pyx_t_14 = __pyx_v_j;
               __pyx_v_y2 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_14 * __pyx_v_indices.strides[0]) )));
 
-              /* "_similarities.pyx":392
+              /* "libreco/utils/_similarities.pyx":392
  *                     y1 = indices[i]
  *                     y2 = indices[j]
  *                     if y1 < y2:             # <<<<<<<<<<<<<<
@@ -6169,7 +6167,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
               __pyx_t_11 = ((__pyx_v_y1 < __pyx_v_y2) != 0);
               if (__pyx_t_11) {
 
-                /* "_similarities.pyx":393
+                /* "libreco/utils/_similarities.pyx":393
  *                     y2 = indices[j]
  *                     if y1 < y2:
  *                         i += 1             # <<<<<<<<<<<<<<
@@ -6178,7 +6176,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
  */
                 __pyx_v_i = (__pyx_v_i + 1);
 
-                /* "_similarities.pyx":392
+                /* "libreco/utils/_similarities.pyx":392
  *                     y1 = indices[i]
  *                     y2 = indices[j]
  *                     if y1 < y2:             # <<<<<<<<<<<<<<
@@ -6188,7 +6186,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
                 goto __pyx_L14;
               }
 
-              /* "_similarities.pyx":394
+              /* "libreco/utils/_similarities.pyx":394
  *                     if y1 < y2:
  *                         i += 1
  *                     elif y1 > y2:             # <<<<<<<<<<<<<<
@@ -6198,7 +6196,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
               __pyx_t_11 = ((__pyx_v_y1 > __pyx_v_y2) != 0);
               if (__pyx_t_11) {
 
-                /* "_similarities.pyx":395
+                /* "libreco/utils/_similarities.pyx":395
  *                         i += 1
  *                     elif y1 > y2:
  *                         j += 1             # <<<<<<<<<<<<<<
@@ -6207,7 +6205,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
  */
                 __pyx_v_j = (__pyx_v_j + 1);
 
-                /* "_similarities.pyx":394
+                /* "libreco/utils/_similarities.pyx":394
  *                     if y1 < y2:
  *                         i += 1
  *                     elif y1 > y2:             # <<<<<<<<<<<<<<
@@ -6217,7 +6215,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
                 goto __pyx_L14;
               }
 
-              /* "_similarities.pyx":397
+              /* "libreco/utils/_similarities.pyx":397
  *                         j += 1
  *                     else:
  *                         count += 1             # <<<<<<<<<<<<<<
@@ -6227,7 +6225,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
               /*else*/ {
                 __pyx_v_count = (__pyx_v_count + 1);
 
-                /* "_similarities.pyx":398
+                /* "libreco/utils/_similarities.pyx":398
  *                     else:
  *                         count += 1
  *                         prods += data[i] * data[j]             # <<<<<<<<<<<<<<
@@ -6238,7 +6236,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
                 __pyx_t_16 = __pyx_v_j;
                 __pyx_v_prods = (__pyx_v_prods + ((*((float const  *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_15 * __pyx_v_data.strides[0]) ))) * (*((float const  *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_16 * __pyx_v_data.strides[0]) )))));
 
-                /* "_similarities.pyx":399
+                /* "libreco/utils/_similarities.pyx":399
  *                         count += 1
  *                         prods += data[i] * data[j]
  *                         i += 1             # <<<<<<<<<<<<<<
@@ -6247,7 +6245,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
  */
                 __pyx_v_i = (__pyx_v_i + 1);
 
-                /* "_similarities.pyx":400
+                /* "libreco/utils/_similarities.pyx":400
  *                         prods += data[i] * data[j]
  *                         i += 1
  *                         j += 1             # <<<<<<<<<<<<<<
@@ -6259,7 +6257,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
               __pyx_L14:;
             }
 
-            /* "_similarities.pyx":402
+            /* "libreco/utils/_similarities.pyx":402
  *                         j += 1
  * 
  *                 if count >= min_common:             # <<<<<<<<<<<<<<
@@ -6269,7 +6267,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
             __pyx_t_11 = ((__pyx_v_count >= __pyx_v_min_common) != 0);
             if (__pyx_t_11) {
 
-              /* "_similarities.pyx":403
+              /* "libreco/utils/_similarities.pyx":403
  * 
  *                 if count >= min_common:
  *                     res_indices.push_back(x2)             # <<<<<<<<<<<<<<
@@ -6289,7 +6287,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
                 __PYX_ERR(0, 403, __pyx_L4_error)
               }
 
-              /* "_similarities.pyx":404
+              /* "libreco/utils/_similarities.pyx":404
  *                 if count >= min_common:
  *                     res_indices.push_back(x2)
  *                     sqi = x_norm[x1]             # <<<<<<<<<<<<<<
@@ -6299,7 +6297,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
               __pyx_t_17 = __pyx_v_x1;
               __pyx_v_sqi = (*((float const  *) ( /* dim=0 */ (__pyx_v_x_norm.data + __pyx_t_17 * __pyx_v_x_norm.strides[0]) )));
 
-              /* "_similarities.pyx":405
+              /* "libreco/utils/_similarities.pyx":405
  *                     res_indices.push_back(x2)
  *                     sqi = x_norm[x1]
  *                     sqj = x_norm[x2]             # <<<<<<<<<<<<<<
@@ -6309,7 +6307,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
               __pyx_t_18 = __pyx_v_x2;
               __pyx_v_sqj = (*((float const  *) ( /* dim=0 */ (__pyx_v_x_norm.data + __pyx_t_18 * __pyx_v_x_norm.strides[0]) )));
 
-              /* "_similarities.pyx":406
+              /* "libreco/utils/_similarities.pyx":406
  *                     sqi = x_norm[x1]
  *                     sqj = x_norm[x2]
  *                     if prods == 0.0 or sqi == 0.0 or sqj == 0.0:             # <<<<<<<<<<<<<<
@@ -6333,7 +6331,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
               __pyx_L17_bool_binop_done:;
               if (__pyx_t_11) {
 
-                /* "_similarities.pyx":407
+                /* "libreco/utils/_similarities.pyx":407
  *                     sqj = x_norm[x2]
  *                     if prods == 0.0 or sqi == 0.0 or sqj == 0.0:
  *                         cos = 0.0             # <<<<<<<<<<<<<<
@@ -6342,7 +6340,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
  */
                 __pyx_v_cos = 0.0;
 
-                /* "_similarities.pyx":406
+                /* "libreco/utils/_similarities.pyx":406
  *                     sqi = x_norm[x1]
  *                     sqj = x_norm[x2]
  *                     if prods == 0.0 or sqi == 0.0 or sqj == 0.0:             # <<<<<<<<<<<<<<
@@ -6352,7 +6350,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
                 goto __pyx_L16;
               }
 
-              /* "_similarities.pyx":409
+              /* "libreco/utils/_similarities.pyx":409
  *                         cos = 0.0
  *                     else:
  *                         cos = prods / (sqi * sqj)             # <<<<<<<<<<<<<<
@@ -6364,7 +6362,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
               }
               __pyx_L16:;
 
-              /* "_similarities.pyx":410
+              /* "libreco/utils/_similarities.pyx":410
  *                     else:
  *                         cos = prods / (sqi * sqj)
  *                     res_data.push_back(cos)             # <<<<<<<<<<<<<<
@@ -6384,7 +6382,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
                 __PYX_ERR(0, 410, __pyx_L4_error)
               }
 
-              /* "_similarities.pyx":402
+              /* "libreco/utils/_similarities.pyx":402
  *                         j += 1
  * 
  *                 if count >= min_common:             # <<<<<<<<<<<<<<
@@ -6394,7 +6392,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
             }
           }
 
-          /* "_similarities.pyx":411
+          /* "libreco/utils/_similarities.pyx":411
  *                         cos = prods / (sqi * sqj)
  *                     res_data.push_back(cos)
  *             res_indptr.push_back(res_indices.size())             # <<<<<<<<<<<<<<
@@ -6416,7 +6414,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
         }
       }
 
-      /* "_similarities.pyx":378
+      /* "libreco/utils/_similarities.pyx":378
  *     res_indptr.push_back(0)
  * 
  *     with nogil:             # <<<<<<<<<<<<<<
@@ -6442,7 +6440,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
       }
   }
 
-  /* "_similarities.pyx":413
+  /* "libreco/utils/_similarities.pyx":413
  *             res_indptr.push_back(res_indices.size())
  * 
  *     return res_indices, res_indptr, res_data             # <<<<<<<<<<<<<<
@@ -6471,7 +6469,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
   __pyx_t_22 = 0;
   goto __pyx_L0;
 
-  /* "_similarities.pyx":367
+  /* "libreco/utils/_similarities.pyx":367
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef forward_cosine(const int[:] indices, const int[:] indptr,             # <<<<<<<<<<<<<<
@@ -6485,7 +6483,7 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
   __Pyx_XDECREF(__pyx_t_20);
   __Pyx_XDECREF(__pyx_t_21);
   __Pyx_XDECREF(__pyx_t_22);
-  __Pyx_AddTraceback("_similarities.forward_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.forward_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -6494,8 +6492,8 @@ static PyObject *__pyx_f_13_similarities_forward_cosine(__Pyx_memviewslice __pyx
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_13_similarities_7forward_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_13_similarities_7forward_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_7forward_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_7forward_cosine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_indices = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_indptr = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_data = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -6587,18 +6585,18 @@ static PyObject *__pyx_pw_13_similarities_7forward_cosine(PyObject *__pyx_self, 
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("forward_cosine", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 367, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_similarities.forward_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.forward_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_13_similarities_6forward_cosine(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_norm, __pyx_v_min_common, __pyx_v_n_x);
+  __pyx_r = __pyx_pf_7libreco_5utils_13_similarities_6forward_cosine(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_norm, __pyx_v_min_common, __pyx_v_n_x);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_13_similarities_6forward_cosine(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x) {
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_6forward_cosine(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_norm, int __pyx_v_min_common, int __pyx_v_n_x) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -6608,7 +6606,7 @@ static PyObject *__pyx_pf_13_similarities_6forward_cosine(CYTHON_UNUSED PyObject
   if (unlikely(!__pyx_v_indptr.memview)) { __Pyx_RaiseUnboundLocalError("indptr"); __PYX_ERR(0, 367, __pyx_L1_error) }
   if (unlikely(!__pyx_v_data.memview)) { __Pyx_RaiseUnboundLocalError("data"); __PYX_ERR(0, 367, __pyx_L1_error) }
   if (unlikely(!__pyx_v_x_norm.memview)) { __Pyx_RaiseUnboundLocalError("x_norm"); __PYX_ERR(0, 367, __pyx_L1_error) }
-  __pyx_t_1 = __pyx_f_13_similarities_forward_cosine(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_norm, __pyx_v_min_common, __pyx_v_n_x, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 367, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_7libreco_5utils_13_similarities_forward_cosine(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_norm, __pyx_v_min_common, __pyx_v_n_x, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 367, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -6617,7 +6615,7 @@ static PyObject *__pyx_pf_13_similarities_6forward_cosine(CYTHON_UNUSED PyObject
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_similarities.forward_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.forward_cosine", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_indices, 1);
@@ -6629,7 +6627,7 @@ static PyObject *__pyx_pf_13_similarities_6forward_cosine(CYTHON_UNUSED PyObject
   return __pyx_r;
 }
 
-/* "_similarities.pyx":419
+/* "libreco/utils/_similarities.pyx":419
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef forward_pearson(const int[:] indices, const int[:] indptr,             # <<<<<<<<<<<<<<
@@ -6637,8 +6635,8 @@ static PyObject *__pyx_pf_13_similarities_6forward_cosine(CYTHON_UNUSED PyObject
  *                       const float[:] x_mean_centered_norm,
  */
 
-static PyObject *__pyx_pw_13_similarities_9forward_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x, CYTHON_UNUSED int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_9forward_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_forward_pearson(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x, CYTHON_UNUSED int __pyx_skip_dispatch) {
   Py_ssize_t __pyx_v_x1;
   Py_ssize_t __pyx_v_x2;
   Py_ssize_t __pyx_v_y1;
@@ -6685,7 +6683,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
   PyObject *__pyx_t_24 = NULL;
   __Pyx_RefNannySetupContext("forward_pearson", 0);
 
-  /* "_similarities.pyx":428
+  /* "libreco/utils/_similarities.pyx":428
  *     cdef vector[uint] res_indices, res_indptr
  *     cdef vector[float] res_data
  *     res_indptr.reserve(n_x + 1)             # <<<<<<<<<<<<<<
@@ -6694,7 +6692,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
  */
   __pyx_v_res_indptr.reserve((__pyx_v_n_x + 1));
 
-  /* "_similarities.pyx":429
+  /* "libreco/utils/_similarities.pyx":429
  *     cdef vector[float] res_data
  *     res_indptr.reserve(n_x + 1)
  *     res_indptr.push_back(0)             # <<<<<<<<<<<<<<
@@ -6708,7 +6706,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
     __PYX_ERR(0, 429, __pyx_L1_error)
   }
 
-  /* "_similarities.pyx":431
+  /* "libreco/utils/_similarities.pyx":431
  *     res_indptr.push_back(0)
  * 
  *     with nogil:             # <<<<<<<<<<<<<<
@@ -6723,7 +6721,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
       #endif
       /*try:*/ {
 
-        /* "_similarities.pyx":432
+        /* "libreco/utils/_similarities.pyx":432
  * 
  *     with nogil:
  *         for x1 in range(n_x):             # <<<<<<<<<<<<<<
@@ -6735,7 +6733,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
         for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
           __pyx_v_x1 = __pyx_t_3;
 
-          /* "_similarities.pyx":433
+          /* "libreco/utils/_similarities.pyx":433
  *     with nogil:
  *         for x1 in range(n_x):
  *             for x2 in range(x1 + 1, n_x):             # <<<<<<<<<<<<<<
@@ -6747,7 +6745,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
           for (__pyx_t_6 = (__pyx_v_x1 + 1); __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
             __pyx_v_x2 = __pyx_t_6;
 
-            /* "_similarities.pyx":434
+            /* "libreco/utils/_similarities.pyx":434
  *         for x1 in range(n_x):
  *             for x2 in range(x1 + 1, n_x):
  *                 i = indptr[x1]             # <<<<<<<<<<<<<<
@@ -6757,7 +6755,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
             __pyx_t_7 = __pyx_v_x1;
             __pyx_v_i = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_7 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":435
+            /* "libreco/utils/_similarities.pyx":435
  *             for x2 in range(x1 + 1, n_x):
  *                 i = indptr[x1]
  *                 j = indptr[x2]             # <<<<<<<<<<<<<<
@@ -6767,7 +6765,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
             __pyx_t_8 = __pyx_v_x2;
             __pyx_v_j = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_8 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":436
+            /* "libreco/utils/_similarities.pyx":436
  *                 i = indptr[x1]
  *                 j = indptr[x2]
  *                 end1 = indptr[x1 + 1]             # <<<<<<<<<<<<<<
@@ -6777,7 +6775,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
             __pyx_t_9 = (__pyx_v_x1 + 1);
             __pyx_v_end1 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_9 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":437
+            /* "libreco/utils/_similarities.pyx":437
  *                 j = indptr[x2]
  *                 end1 = indptr[x1 + 1]
  *                 end2 = indptr[x2 + 1]             # <<<<<<<<<<<<<<
@@ -6787,7 +6785,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
             __pyx_t_10 = (__pyx_v_x2 + 1);
             __pyx_v_end2 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_10 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":439
+            /* "libreco/utils/_similarities.pyx":439
  *                 end2 = indptr[x2 + 1]
  * 
  *                 prods = 0.0             # <<<<<<<<<<<<<<
@@ -6796,7 +6794,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
  */
             __pyx_v_prods = 0.0;
 
-            /* "_similarities.pyx":440
+            /* "libreco/utils/_similarities.pyx":440
  * 
  *                 prods = 0.0
  *                 count = 0             # <<<<<<<<<<<<<<
@@ -6805,7 +6803,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
  */
             __pyx_v_count = 0;
 
-            /* "_similarities.pyx":442
+            /* "libreco/utils/_similarities.pyx":442
  *                 count = 0
  *                 # compute common items
  *                 while (i < end1 and j < end2):             # <<<<<<<<<<<<<<
@@ -6824,7 +6822,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
               __pyx_L12_bool_binop_done:;
               if (!__pyx_t_11) break;
 
-              /* "_similarities.pyx":443
+              /* "libreco/utils/_similarities.pyx":443
  *                 # compute common items
  *                 while (i < end1 and j < end2):
  *                     y1 = indices[i]             # <<<<<<<<<<<<<<
@@ -6834,7 +6832,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
               __pyx_t_13 = __pyx_v_i;
               __pyx_v_y1 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_13 * __pyx_v_indices.strides[0]) )));
 
-              /* "_similarities.pyx":444
+              /* "libreco/utils/_similarities.pyx":444
  *                 while (i < end1 and j < end2):
  *                     y1 = indices[i]
  *                     y2 = indices[j]             # <<<<<<<<<<<<<<
@@ -6844,7 +6842,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
               __pyx_t_14 = __pyx_v_j;
               __pyx_v_y2 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_14 * __pyx_v_indices.strides[0]) )));
 
-              /* "_similarities.pyx":445
+              /* "libreco/utils/_similarities.pyx":445
  *                     y1 = indices[i]
  *                     y2 = indices[j]
  *                     if y1 < y2:             # <<<<<<<<<<<<<<
@@ -6854,7 +6852,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
               __pyx_t_11 = ((__pyx_v_y1 < __pyx_v_y2) != 0);
               if (__pyx_t_11) {
 
-                /* "_similarities.pyx":446
+                /* "libreco/utils/_similarities.pyx":446
  *                     y2 = indices[j]
  *                     if y1 < y2:
  *                         i += 1             # <<<<<<<<<<<<<<
@@ -6863,7 +6861,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
  */
                 __pyx_v_i = (__pyx_v_i + 1);
 
-                /* "_similarities.pyx":445
+                /* "libreco/utils/_similarities.pyx":445
  *                     y1 = indices[i]
  *                     y2 = indices[j]
  *                     if y1 < y2:             # <<<<<<<<<<<<<<
@@ -6873,7 +6871,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
                 goto __pyx_L14;
               }
 
-              /* "_similarities.pyx":447
+              /* "libreco/utils/_similarities.pyx":447
  *                     if y1 < y2:
  *                         i += 1
  *                     elif y1 > y2:             # <<<<<<<<<<<<<<
@@ -6883,7 +6881,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
               __pyx_t_11 = ((__pyx_v_y1 > __pyx_v_y2) != 0);
               if (__pyx_t_11) {
 
-                /* "_similarities.pyx":448
+                /* "libreco/utils/_similarities.pyx":448
  *                         i += 1
  *                     elif y1 > y2:
  *                         j += 1             # <<<<<<<<<<<<<<
@@ -6892,7 +6890,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
  */
                 __pyx_v_j = (__pyx_v_j + 1);
 
-                /* "_similarities.pyx":447
+                /* "libreco/utils/_similarities.pyx":447
  *                     if y1 < y2:
  *                         i += 1
  *                     elif y1 > y2:             # <<<<<<<<<<<<<<
@@ -6902,7 +6900,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
                 goto __pyx_L14;
               }
 
-              /* "_similarities.pyx":450
+              /* "libreco/utils/_similarities.pyx":450
  *                         j += 1
  *                     else:
  *                         count += 1             # <<<<<<<<<<<<<<
@@ -6912,7 +6910,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
               /*else*/ {
                 __pyx_v_count = (__pyx_v_count + 1);
 
-                /* "_similarities.pyx":451
+                /* "libreco/utils/_similarities.pyx":451
  *                     else:
  *                         count += 1
  *                         smean1 = data[i] - x_mean[x1]             # <<<<<<<<<<<<<<
@@ -6923,7 +6921,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
                 __pyx_t_16 = __pyx_v_x1;
                 __pyx_v_smean1 = ((*((float const  *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_15 * __pyx_v_data.strides[0]) ))) - (*((float const  *) ( /* dim=0 */ (__pyx_v_x_mean.data + __pyx_t_16 * __pyx_v_x_mean.strides[0]) ))));
 
-                /* "_similarities.pyx":452
+                /* "libreco/utils/_similarities.pyx":452
  *                         count += 1
  *                         smean1 = data[i] - x_mean[x1]
  *                         smean2 = data[j] - x_mean[x2]             # <<<<<<<<<<<<<<
@@ -6934,7 +6932,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
                 __pyx_t_18 = __pyx_v_x2;
                 __pyx_v_smean2 = ((*((float const  *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_17 * __pyx_v_data.strides[0]) ))) - (*((float const  *) ( /* dim=0 */ (__pyx_v_x_mean.data + __pyx_t_18 * __pyx_v_x_mean.strides[0]) ))));
 
-                /* "_similarities.pyx":453
+                /* "libreco/utils/_similarities.pyx":453
  *                         smean1 = data[i] - x_mean[x1]
  *                         smean2 = data[j] - x_mean[x2]
  *                         prods += (smean1 * smean2)             # <<<<<<<<<<<<<<
@@ -6943,7 +6941,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
  */
                 __pyx_v_prods = (__pyx_v_prods + (__pyx_v_smean1 * __pyx_v_smean2));
 
-                /* "_similarities.pyx":454
+                /* "libreco/utils/_similarities.pyx":454
  *                         smean2 = data[j] - x_mean[x2]
  *                         prods += (smean1 * smean2)
  *                         i += 1             # <<<<<<<<<<<<<<
@@ -6952,7 +6950,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
  */
                 __pyx_v_i = (__pyx_v_i + 1);
 
-                /* "_similarities.pyx":455
+                /* "libreco/utils/_similarities.pyx":455
  *                         prods += (smean1 * smean2)
  *                         i += 1
  *                         j += 1             # <<<<<<<<<<<<<<
@@ -6964,7 +6962,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
               __pyx_L14:;
             }
 
-            /* "_similarities.pyx":457
+            /* "libreco/utils/_similarities.pyx":457
  *                         j += 1
  * 
  *                 if count >= min_common:             # <<<<<<<<<<<<<<
@@ -6974,7 +6972,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
             __pyx_t_11 = ((__pyx_v_count >= __pyx_v_min_common) != 0);
             if (__pyx_t_11) {
 
-              /* "_similarities.pyx":458
+              /* "libreco/utils/_similarities.pyx":458
  * 
  *                 if count >= min_common:
  *                     res_indices.push_back(x2)             # <<<<<<<<<<<<<<
@@ -6994,7 +6992,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
                 __PYX_ERR(0, 458, __pyx_L4_error)
               }
 
-              /* "_similarities.pyx":459
+              /* "libreco/utils/_similarities.pyx":459
  *                 if count >= min_common:
  *                     res_indices.push_back(x2)
  *                     sqi = x_mean_centered_norm[x1]             # <<<<<<<<<<<<<<
@@ -7004,7 +7002,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
               __pyx_t_19 = __pyx_v_x1;
               __pyx_v_sqi = (*((float const  *) ( /* dim=0 */ (__pyx_v_x_mean_centered_norm.data + __pyx_t_19 * __pyx_v_x_mean_centered_norm.strides[0]) )));
 
-              /* "_similarities.pyx":460
+              /* "libreco/utils/_similarities.pyx":460
  *                     res_indices.push_back(x2)
  *                     sqi = x_mean_centered_norm[x1]
  *                     sqj = x_mean_centered_norm[x2]             # <<<<<<<<<<<<<<
@@ -7014,7 +7012,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
               __pyx_t_20 = __pyx_v_x2;
               __pyx_v_sqj = (*((float const  *) ( /* dim=0 */ (__pyx_v_x_mean_centered_norm.data + __pyx_t_20 * __pyx_v_x_mean_centered_norm.strides[0]) )));
 
-              /* "_similarities.pyx":461
+              /* "libreco/utils/_similarities.pyx":461
  *                     sqi = x_mean_centered_norm[x1]
  *                     sqj = x_mean_centered_norm[x2]
  *                     if prods == 0.0 or sqi == 0.0 or sqj == 0.0:             # <<<<<<<<<<<<<<
@@ -7038,7 +7036,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
               __pyx_L17_bool_binop_done:;
               if (__pyx_t_11) {
 
-                /* "_similarities.pyx":462
+                /* "libreco/utils/_similarities.pyx":462
  *                     sqj = x_mean_centered_norm[x2]
  *                     if prods == 0.0 or sqi == 0.0 or sqj == 0.0:
  *                         pearson = 0.0             # <<<<<<<<<<<<<<
@@ -7047,7 +7045,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
  */
                 __pyx_v_pearson = 0.0;
 
-                /* "_similarities.pyx":461
+                /* "libreco/utils/_similarities.pyx":461
  *                     sqi = x_mean_centered_norm[x1]
  *                     sqj = x_mean_centered_norm[x2]
  *                     if prods == 0.0 or sqi == 0.0 or sqj == 0.0:             # <<<<<<<<<<<<<<
@@ -7057,7 +7055,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
                 goto __pyx_L16;
               }
 
-              /* "_similarities.pyx":464
+              /* "libreco/utils/_similarities.pyx":464
  *                         pearson = 0.0
  *                     else:
  *                         pearson = prods / (sqi * sqj)             # <<<<<<<<<<<<<<
@@ -7069,7 +7067,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
               }
               __pyx_L16:;
 
-              /* "_similarities.pyx":465
+              /* "libreco/utils/_similarities.pyx":465
  *                     else:
  *                         pearson = prods / (sqi * sqj)
  *                     res_data.push_back(pearson)             # <<<<<<<<<<<<<<
@@ -7089,7 +7087,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
                 __PYX_ERR(0, 465, __pyx_L4_error)
               }
 
-              /* "_similarities.pyx":457
+              /* "libreco/utils/_similarities.pyx":457
  *                         j += 1
  * 
  *                 if count >= min_common:             # <<<<<<<<<<<<<<
@@ -7099,7 +7097,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
             }
           }
 
-          /* "_similarities.pyx":466
+          /* "libreco/utils/_similarities.pyx":466
  *                         pearson = prods / (sqi * sqj)
  *                     res_data.push_back(pearson)
  *             res_indptr.push_back(res_indices.size())             # <<<<<<<<<<<<<<
@@ -7121,7 +7119,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
         }
       }
 
-      /* "_similarities.pyx":431
+      /* "libreco/utils/_similarities.pyx":431
  *     res_indptr.push_back(0)
  * 
  *     with nogil:             # <<<<<<<<<<<<<<
@@ -7147,7 +7145,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
       }
   }
 
-  /* "_similarities.pyx":468
+  /* "libreco/utils/_similarities.pyx":468
  *             res_indptr.push_back(res_indices.size())
  * 
  *     return res_indices, res_indptr, res_data             # <<<<<<<<<<<<<<
@@ -7176,7 +7174,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
   __pyx_t_24 = 0;
   goto __pyx_L0;
 
-  /* "_similarities.pyx":419
+  /* "libreco/utils/_similarities.pyx":419
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef forward_pearson(const int[:] indices, const int[:] indptr,             # <<<<<<<<<<<<<<
@@ -7190,7 +7188,7 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
   __Pyx_XDECREF(__pyx_t_22);
   __Pyx_XDECREF(__pyx_t_23);
   __Pyx_XDECREF(__pyx_t_24);
-  __Pyx_AddTraceback("_similarities.forward_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.forward_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -7199,8 +7197,8 @@ static PyObject *__pyx_f_13_similarities_forward_pearson(__Pyx_memviewslice __py
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_13_similarities_9forward_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_13_similarities_9forward_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_9forward_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_9forward_pearson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_indices = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_indptr = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_data = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -7303,18 +7301,18 @@ static PyObject *__pyx_pw_13_similarities_9forward_pearson(PyObject *__pyx_self,
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("forward_pearson", 1, 7, 7, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 419, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_similarities.forward_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.forward_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_13_similarities_8forward_pearson(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_mean, __pyx_v_x_mean_centered_norm, __pyx_v_min_common, __pyx_v_n_x);
+  __pyx_r = __pyx_pf_7libreco_5utils_13_similarities_8forward_pearson(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_mean, __pyx_v_x_mean_centered_norm, __pyx_v_min_common, __pyx_v_n_x);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_13_similarities_8forward_pearson(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x) {
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_8forward_pearson(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_mean, __Pyx_memviewslice __pyx_v_x_mean_centered_norm, int __pyx_v_min_common, int __pyx_v_n_x) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -7325,7 +7323,7 @@ static PyObject *__pyx_pf_13_similarities_8forward_pearson(CYTHON_UNUSED PyObjec
   if (unlikely(!__pyx_v_data.memview)) { __Pyx_RaiseUnboundLocalError("data"); __PYX_ERR(0, 419, __pyx_L1_error) }
   if (unlikely(!__pyx_v_x_mean.memview)) { __Pyx_RaiseUnboundLocalError("x_mean"); __PYX_ERR(0, 419, __pyx_L1_error) }
   if (unlikely(!__pyx_v_x_mean_centered_norm.memview)) { __Pyx_RaiseUnboundLocalError("x_mean_centered_norm"); __PYX_ERR(0, 419, __pyx_L1_error) }
-  __pyx_t_1 = __pyx_f_13_similarities_forward_pearson(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_mean, __pyx_v_x_mean_centered_norm, __pyx_v_min_common, __pyx_v_n_x, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 419, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_7libreco_5utils_13_similarities_forward_pearson(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_mean, __pyx_v_x_mean_centered_norm, __pyx_v_min_common, __pyx_v_n_x, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 419, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -7334,7 +7332,7 @@ static PyObject *__pyx_pf_13_similarities_8forward_pearson(CYTHON_UNUSED PyObjec
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_similarities.forward_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.forward_pearson", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_indices, 1);
@@ -7347,7 +7345,7 @@ static PyObject *__pyx_pf_13_similarities_8forward_pearson(CYTHON_UNUSED PyObjec
   return __pyx_r;
 }
 
-/* "_similarities.pyx":474
+/* "libreco/utils/_similarities.pyx":474
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef forward_jaccard(const int[:] indices, const int[:] indptr,             # <<<<<<<<<<<<<<
@@ -7355,8 +7353,8 @@ static PyObject *__pyx_pf_13_similarities_8forward_pearson(CYTHON_UNUSED PyObjec
  *                       int min_common, int n_x):
  */
 
-static PyObject *__pyx_pw_13_similarities_11forward_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, CYTHON_UNUSED __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x, CYTHON_UNUSED int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_11forward_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_7libreco_5utils_13_similarities_forward_jaccard(__Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, CYTHON_UNUSED __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x, CYTHON_UNUSED int __pyx_skip_dispatch) {
   Py_ssize_t __pyx_v_x1;
   Py_ssize_t __pyx_v_x2;
   Py_ssize_t __pyx_v_y1;
@@ -7395,7 +7393,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
   PyObject *__pyx_t_20 = NULL;
   __Pyx_RefNannySetupContext("forward_jaccard", 0);
 
-  /* "_similarities.pyx":482
+  /* "libreco/utils/_similarities.pyx":482
  *     cdef vector[uint] res_indices, res_indptr
  *     cdef vector[float] res_data
  *     res_indptr.reserve(n_x + 1)             # <<<<<<<<<<<<<<
@@ -7404,7 +7402,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
  */
   __pyx_v_res_indptr.reserve((__pyx_v_n_x + 1));
 
-  /* "_similarities.pyx":483
+  /* "libreco/utils/_similarities.pyx":483
  *     cdef vector[float] res_data
  *     res_indptr.reserve(n_x + 1)
  *     res_indptr.push_back(0)             # <<<<<<<<<<<<<<
@@ -7418,7 +7416,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
     __PYX_ERR(0, 483, __pyx_L1_error)
   }
 
-  /* "_similarities.pyx":485
+  /* "libreco/utils/_similarities.pyx":485
  *     res_indptr.push_back(0)
  * 
  *     with nogil:             # <<<<<<<<<<<<<<
@@ -7433,7 +7431,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
       #endif
       /*try:*/ {
 
-        /* "_similarities.pyx":486
+        /* "libreco/utils/_similarities.pyx":486
  * 
  *     with nogil:
  *         for x1 in range(n_x):             # <<<<<<<<<<<<<<
@@ -7445,7 +7443,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
         for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
           __pyx_v_x1 = __pyx_t_3;
 
-          /* "_similarities.pyx":487
+          /* "libreco/utils/_similarities.pyx":487
  *     with nogil:
  *         for x1 in range(n_x):
  *             for x2 in range(x1 + 1, n_x):             # <<<<<<<<<<<<<<
@@ -7457,7 +7455,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
           for (__pyx_t_6 = (__pyx_v_x1 + 1); __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
             __pyx_v_x2 = __pyx_t_6;
 
-            /* "_similarities.pyx":488
+            /* "libreco/utils/_similarities.pyx":488
  *         for x1 in range(n_x):
  *             for x2 in range(x1 + 1, n_x):
  *                 i = indptr[x1]             # <<<<<<<<<<<<<<
@@ -7467,7 +7465,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
             __pyx_t_7 = __pyx_v_x1;
             __pyx_v_i = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_7 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":489
+            /* "libreco/utils/_similarities.pyx":489
  *             for x2 in range(x1 + 1, n_x):
  *                 i = indptr[x1]
  *                 j = indptr[x2]             # <<<<<<<<<<<<<<
@@ -7477,7 +7475,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
             __pyx_t_8 = __pyx_v_x2;
             __pyx_v_j = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_8 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":490
+            /* "libreco/utils/_similarities.pyx":490
  *                 i = indptr[x1]
  *                 j = indptr[x2]
  *                 end1 = indptr[x1 + 1]             # <<<<<<<<<<<<<<
@@ -7487,7 +7485,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
             __pyx_t_9 = (__pyx_v_x1 + 1);
             __pyx_v_end1 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_9 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":491
+            /* "libreco/utils/_similarities.pyx":491
  *                 j = indptr[x2]
  *                 end1 = indptr[x1 + 1]
  *                 end2 = indptr[x2 + 1]             # <<<<<<<<<<<<<<
@@ -7497,7 +7495,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
             __pyx_t_10 = (__pyx_v_x2 + 1);
             __pyx_v_end2 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indptr.data + __pyx_t_10 * __pyx_v_indptr.strides[0]) )));
 
-            /* "_similarities.pyx":493
+            /* "libreco/utils/_similarities.pyx":493
  *                 end2 = indptr[x2 + 1]
  * 
  *                 intersection = 0.0             # <<<<<<<<<<<<<<
@@ -7506,7 +7504,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
  */
             __pyx_v_intersection = 0.0;
 
-            /* "_similarities.pyx":494
+            /* "libreco/utils/_similarities.pyx":494
  * 
  *                 intersection = 0.0
  *                 while (i < end1 and j < end2):             # <<<<<<<<<<<<<<
@@ -7525,7 +7523,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
               __pyx_L12_bool_binop_done:;
               if (!__pyx_t_11) break;
 
-              /* "_similarities.pyx":495
+              /* "libreco/utils/_similarities.pyx":495
  *                 intersection = 0.0
  *                 while (i < end1 and j < end2):
  *                     y1 = indices[i]             # <<<<<<<<<<<<<<
@@ -7535,7 +7533,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
               __pyx_t_13 = __pyx_v_i;
               __pyx_v_y1 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_13 * __pyx_v_indices.strides[0]) )));
 
-              /* "_similarities.pyx":496
+              /* "libreco/utils/_similarities.pyx":496
  *                 while (i < end1 and j < end2):
  *                     y1 = indices[i]
  *                     y2 = indices[j]             # <<<<<<<<<<<<<<
@@ -7545,7 +7543,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
               __pyx_t_14 = __pyx_v_j;
               __pyx_v_y2 = (*((int const  *) ( /* dim=0 */ (__pyx_v_indices.data + __pyx_t_14 * __pyx_v_indices.strides[0]) )));
 
-              /* "_similarities.pyx":497
+              /* "libreco/utils/_similarities.pyx":497
  *                     y1 = indices[i]
  *                     y2 = indices[j]
  *                     if y1 < y2:             # <<<<<<<<<<<<<<
@@ -7555,7 +7553,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
               __pyx_t_11 = ((__pyx_v_y1 < __pyx_v_y2) != 0);
               if (__pyx_t_11) {
 
-                /* "_similarities.pyx":498
+                /* "libreco/utils/_similarities.pyx":498
  *                     y2 = indices[j]
  *                     if y1 < y2:
  *                         i += 1             # <<<<<<<<<<<<<<
@@ -7564,7 +7562,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
  */
                 __pyx_v_i = (__pyx_v_i + 1);
 
-                /* "_similarities.pyx":497
+                /* "libreco/utils/_similarities.pyx":497
  *                     y1 = indices[i]
  *                     y2 = indices[j]
  *                     if y1 < y2:             # <<<<<<<<<<<<<<
@@ -7574,7 +7572,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
                 goto __pyx_L14;
               }
 
-              /* "_similarities.pyx":499
+              /* "libreco/utils/_similarities.pyx":499
  *                     if y1 < y2:
  *                         i += 1
  *                     elif y1 > y2:             # <<<<<<<<<<<<<<
@@ -7584,7 +7582,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
               __pyx_t_11 = ((__pyx_v_y1 > __pyx_v_y2) != 0);
               if (__pyx_t_11) {
 
-                /* "_similarities.pyx":500
+                /* "libreco/utils/_similarities.pyx":500
  *                         i += 1
  *                     elif y1 > y2:
  *                         j += 1             # <<<<<<<<<<<<<<
@@ -7593,7 +7591,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
  */
                 __pyx_v_j = (__pyx_v_j + 1);
 
-                /* "_similarities.pyx":499
+                /* "libreco/utils/_similarities.pyx":499
  *                     if y1 < y2:
  *                         i += 1
  *                     elif y1 > y2:             # <<<<<<<<<<<<<<
@@ -7603,7 +7601,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
                 goto __pyx_L14;
               }
 
-              /* "_similarities.pyx":502
+              /* "libreco/utils/_similarities.pyx":502
  *                         j += 1
  *                     else:
  *                         intersection += 1             # <<<<<<<<<<<<<<
@@ -7613,7 +7611,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
               /*else*/ {
                 __pyx_v_intersection = (__pyx_v_intersection + 1.0);
 
-                /* "_similarities.pyx":503
+                /* "libreco/utils/_similarities.pyx":503
  *                     else:
  *                         intersection += 1
  *                         i += 1             # <<<<<<<<<<<<<<
@@ -7622,7 +7620,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
  */
                 __pyx_v_i = (__pyx_v_i + 1);
 
-                /* "_similarities.pyx":504
+                /* "libreco/utils/_similarities.pyx":504
  *                         intersection += 1
  *                         i += 1
  *                         j += 1             # <<<<<<<<<<<<<<
@@ -7634,7 +7632,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
               __pyx_L14:;
             }
 
-            /* "_similarities.pyx":506
+            /* "libreco/utils/_similarities.pyx":506
  *                         j += 1
  * 
  *                 if intersection >= min_common:             # <<<<<<<<<<<<<<
@@ -7644,7 +7642,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
             __pyx_t_11 = ((__pyx_v_intersection >= __pyx_v_min_common) != 0);
             if (__pyx_t_11) {
 
-              /* "_similarities.pyx":507
+              /* "libreco/utils/_similarities.pyx":507
  * 
  *                 if intersection >= min_common:
  *                     res_indices.push_back(x2)             # <<<<<<<<<<<<<<
@@ -7664,7 +7662,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
                 __PYX_ERR(0, 507, __pyx_L4_error)
               }
 
-              /* "_similarities.pyx":508
+              /* "libreco/utils/_similarities.pyx":508
  *                 if intersection >= min_common:
  *                     res_indices.push_back(x2)
  *                     union = x_count[x1] + x_count[x2] - intersection             # <<<<<<<<<<<<<<
@@ -7675,7 +7673,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
               __pyx_t_16 = __pyx_v_x2;
               __pyx_v_union = (((*((int const  *) ( /* dim=0 */ (__pyx_v_x_count.data + __pyx_t_15 * __pyx_v_x_count.strides[0]) ))) + (*((int const  *) ( /* dim=0 */ (__pyx_v_x_count.data + __pyx_t_16 * __pyx_v_x_count.strides[0]) )))) - __pyx_v_intersection);
 
-              /* "_similarities.pyx":509
+              /* "libreco/utils/_similarities.pyx":509
  *                     res_indices.push_back(x2)
  *                     union = x_count[x1] + x_count[x2] - intersection
  *                     jaccard = intersection / union             # <<<<<<<<<<<<<<
@@ -7684,7 +7682,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
  */
               __pyx_v_jaccard = (__pyx_v_intersection / __pyx_v_union);
 
-              /* "_similarities.pyx":510
+              /* "libreco/utils/_similarities.pyx":510
  *                     union = x_count[x1] + x_count[x2] - intersection
  *                     jaccard = intersection / union
  *                     res_data.push_back(jaccard)             # <<<<<<<<<<<<<<
@@ -7704,7 +7702,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
                 __PYX_ERR(0, 510, __pyx_L4_error)
               }
 
-              /* "_similarities.pyx":506
+              /* "libreco/utils/_similarities.pyx":506
  *                         j += 1
  * 
  *                 if intersection >= min_common:             # <<<<<<<<<<<<<<
@@ -7714,7 +7712,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
             }
           }
 
-          /* "_similarities.pyx":511
+          /* "libreco/utils/_similarities.pyx":511
  *                     jaccard = intersection / union
  *                     res_data.push_back(jaccard)
  *             res_indptr.push_back(res_indices.size())             # <<<<<<<<<<<<<<
@@ -7736,7 +7734,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
         }
       }
 
-      /* "_similarities.pyx":485
+      /* "libreco/utils/_similarities.pyx":485
  *     res_indptr.push_back(0)
  * 
  *     with nogil:             # <<<<<<<<<<<<<<
@@ -7762,7 +7760,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
       }
   }
 
-  /* "_similarities.pyx":513
+  /* "libreco/utils/_similarities.pyx":513
  *             res_indptr.push_back(res_indices.size())
  * 
  *     return res_indices, res_indptr, res_data             # <<<<<<<<<<<<<<
@@ -7790,7 +7788,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
   __pyx_t_20 = 0;
   goto __pyx_L0;
 
-  /* "_similarities.pyx":474
+  /* "libreco/utils/_similarities.pyx":474
  * @cython.wraparound(False)
  * @cython.cdivision(True)
  * cpdef forward_jaccard(const int[:] indices, const int[:] indptr,             # <<<<<<<<<<<<<<
@@ -7804,7 +7802,7 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
   __Pyx_XDECREF(__pyx_t_18);
   __Pyx_XDECREF(__pyx_t_19);
   __Pyx_XDECREF(__pyx_t_20);
-  __Pyx_AddTraceback("_similarities.forward_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.forward_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -7813,8 +7811,8 @@ static PyObject *__pyx_f_13_similarities_forward_jaccard(__Pyx_memviewslice __py
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_13_similarities_11forward_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_13_similarities_11forward_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_11forward_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7libreco_5utils_13_similarities_11forward_jaccard(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __Pyx_memviewslice __pyx_v_indices = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_indptr = { 0, 0, { 0 }, { 0 }, { 0 } };
   __Pyx_memviewslice __pyx_v_data = { 0, 0, { 0 }, { 0 }, { 0 } };
@@ -7906,18 +7904,18 @@ static PyObject *__pyx_pw_13_similarities_11forward_jaccard(PyObject *__pyx_self
   __pyx_L5_argtuple_error:;
   __Pyx_RaiseArgtupleInvalid("forward_jaccard", 1, 6, 6, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 474, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_similarities.forward_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.forward_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_13_similarities_10forward_jaccard(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_count, __pyx_v_min_common, __pyx_v_n_x);
+  __pyx_r = __pyx_pf_7libreco_5utils_13_similarities_10forward_jaccard(__pyx_self, __pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_count, __pyx_v_min_common, __pyx_v_n_x);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_13_similarities_10forward_jaccard(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x) {
+static PyObject *__pyx_pf_7libreco_5utils_13_similarities_10forward_jaccard(CYTHON_UNUSED PyObject *__pyx_self, __Pyx_memviewslice __pyx_v_indices, __Pyx_memviewslice __pyx_v_indptr, __Pyx_memviewslice __pyx_v_data, __Pyx_memviewslice __pyx_v_x_count, int __pyx_v_min_common, int __pyx_v_n_x) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -7927,7 +7925,7 @@ static PyObject *__pyx_pf_13_similarities_10forward_jaccard(CYTHON_UNUSED PyObje
   if (unlikely(!__pyx_v_indptr.memview)) { __Pyx_RaiseUnboundLocalError("indptr"); __PYX_ERR(0, 474, __pyx_L1_error) }
   if (unlikely(!__pyx_v_data.memview)) { __Pyx_RaiseUnboundLocalError("data"); __PYX_ERR(0, 474, __pyx_L1_error) }
   if (unlikely(!__pyx_v_x_count.memview)) { __Pyx_RaiseUnboundLocalError("x_count"); __PYX_ERR(0, 474, __pyx_L1_error) }
-  __pyx_t_1 = __pyx_f_13_similarities_forward_jaccard(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_count, __pyx_v_min_common, __pyx_v_n_x, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 474, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_7libreco_5utils_13_similarities_forward_jaccard(__pyx_v_indices, __pyx_v_indptr, __pyx_v_data, __pyx_v_x_count, __pyx_v_min_common, __pyx_v_n_x, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 474, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -7936,7 +7934,7 @@ static PyObject *__pyx_pf_13_similarities_10forward_jaccard(CYTHON_UNUSED PyObje
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_similarities.forward_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("libreco.utils._similarities.forward_jaccard", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __PYX_XDEC_MEMVIEW(&__pyx_v_indices, 1);
@@ -7948,863 +7946,7 @@ static PyObject *__pyx_pf_13_similarities_10forward_jaccard(CYTHON_UNUSED PyObje
   return __pyx_r;
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":258
- *         # experimental exception made for __getbuffer__ and __releasebuffer__
- *         # -- the details of this may change.
- *         def __getbuffer__(ndarray self, Py_buffer* info, int flags):             # <<<<<<<<<<<<<<
- *             # This implementation of getbuffer is geared towards Cython
- *             # requirements, and does not yet fulfill the PEP.
- */
-
-/* Python wrapper */
-static CYTHON_UNUSED int __pyx_pw_5numpy_7ndarray_1__getbuffer__(PyObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags); /*proto*/
-static CYTHON_UNUSED int __pyx_pw_5numpy_7ndarray_1__getbuffer__(PyObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__getbuffer__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5numpy_7ndarray___getbuffer__(((PyArrayObject *)__pyx_v_self), ((Py_buffer *)__pyx_v_info), ((int)__pyx_v_flags));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static int __pyx_pf_5numpy_7ndarray___getbuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info, int __pyx_v_flags) {
-  int __pyx_v_i;
-  int __pyx_v_ndim;
-  int __pyx_v_endian_detector;
-  int __pyx_v_little_endian;
-  int __pyx_v_t;
-  char *__pyx_v_f;
-  PyArray_Descr *__pyx_v_descr = 0;
-  int __pyx_v_offset;
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  int __pyx_t_1;
-  int __pyx_t_2;
-  PyObject *__pyx_t_3 = NULL;
-  int __pyx_t_4;
-  int __pyx_t_5;
-  int __pyx_t_6;
-  PyArray_Descr *__pyx_t_7;
-  PyObject *__pyx_t_8 = NULL;
-  char *__pyx_t_9;
-  if (__pyx_v_info == NULL) {
-    PyErr_SetString(PyExc_BufferError, "PyObject_GetBuffer: view==NULL argument is obsolete");
-    return -1;
-  }
-  __Pyx_RefNannySetupContext("__getbuffer__", 0);
-  __pyx_v_info->obj = Py_None; __Pyx_INCREF(Py_None);
-  __Pyx_GIVEREF(__pyx_v_info->obj);
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":265
- * 
- *             cdef int i, ndim
- *             cdef int endian_detector = 1             # <<<<<<<<<<<<<<
- *             cdef bint little_endian = ((<char*>&endian_detector)[0] != 0)
- * 
- */
-  __pyx_v_endian_detector = 1;
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":266
- *             cdef int i, ndim
- *             cdef int endian_detector = 1
- *             cdef bint little_endian = ((<char*>&endian_detector)[0] != 0)             # <<<<<<<<<<<<<<
- * 
- *             ndim = PyArray_NDIM(self)
- */
-  __pyx_v_little_endian = ((((char *)(&__pyx_v_endian_detector))[0]) != 0);
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":268
- *             cdef bint little_endian = ((<char*>&endian_detector)[0] != 0)
- * 
- *             ndim = PyArray_NDIM(self)             # <<<<<<<<<<<<<<
- * 
- *             if ((flags & pybuf.PyBUF_C_CONTIGUOUS == pybuf.PyBUF_C_CONTIGUOUS)
- */
-  __pyx_v_ndim = PyArray_NDIM(__pyx_v_self);
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":270
- *             ndim = PyArray_NDIM(self)
- * 
- *             if ((flags & pybuf.PyBUF_C_CONTIGUOUS == pybuf.PyBUF_C_CONTIGUOUS)             # <<<<<<<<<<<<<<
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_C_CONTIGUOUS)):
- *                 raise ValueError(u"ndarray is not C contiguous")
- */
-  __pyx_t_2 = (((__pyx_v_flags & PyBUF_C_CONTIGUOUS) == PyBUF_C_CONTIGUOUS) != 0);
-  if (__pyx_t_2) {
-  } else {
-    __pyx_t_1 = __pyx_t_2;
-    goto __pyx_L4_bool_binop_done;
-  }
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":271
- * 
- *             if ((flags & pybuf.PyBUF_C_CONTIGUOUS == pybuf.PyBUF_C_CONTIGUOUS)
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_C_CONTIGUOUS)):             # <<<<<<<<<<<<<<
- *                 raise ValueError(u"ndarray is not C contiguous")
- * 
- */
-  __pyx_t_2 = ((!(PyArray_CHKFLAGS(__pyx_v_self, NPY_ARRAY_C_CONTIGUOUS) != 0)) != 0);
-  __pyx_t_1 = __pyx_t_2;
-  __pyx_L4_bool_binop_done:;
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":270
- *             ndim = PyArray_NDIM(self)
- * 
- *             if ((flags & pybuf.PyBUF_C_CONTIGUOUS == pybuf.PyBUF_C_CONTIGUOUS)             # <<<<<<<<<<<<<<
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_C_CONTIGUOUS)):
- *                 raise ValueError(u"ndarray is not C contiguous")
- */
-  if (unlikely(__pyx_t_1)) {
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":272
- *             if ((flags & pybuf.PyBUF_C_CONTIGUOUS == pybuf.PyBUF_C_CONTIGUOUS)
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_C_CONTIGUOUS)):
- *                 raise ValueError(u"ndarray is not C contiguous")             # <<<<<<<<<<<<<<
- * 
- *             if ((flags & pybuf.PyBUF_F_CONTIGUOUS == pybuf.PyBUF_F_CONTIGUOUS)
- */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 272, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
-    __Pyx_Raise(__pyx_t_3, 0, 0, 0);
-    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __PYX_ERR(1, 272, __pyx_L1_error)
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":270
- *             ndim = PyArray_NDIM(self)
- * 
- *             if ((flags & pybuf.PyBUF_C_CONTIGUOUS == pybuf.PyBUF_C_CONTIGUOUS)             # <<<<<<<<<<<<<<
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_C_CONTIGUOUS)):
- *                 raise ValueError(u"ndarray is not C contiguous")
- */
-  }
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":274
- *                 raise ValueError(u"ndarray is not C contiguous")
- * 
- *             if ((flags & pybuf.PyBUF_F_CONTIGUOUS == pybuf.PyBUF_F_CONTIGUOUS)             # <<<<<<<<<<<<<<
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_F_CONTIGUOUS)):
- *                 raise ValueError(u"ndarray is not Fortran contiguous")
- */
-  __pyx_t_2 = (((__pyx_v_flags & PyBUF_F_CONTIGUOUS) == PyBUF_F_CONTIGUOUS) != 0);
-  if (__pyx_t_2) {
-  } else {
-    __pyx_t_1 = __pyx_t_2;
-    goto __pyx_L7_bool_binop_done;
-  }
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":275
- * 
- *             if ((flags & pybuf.PyBUF_F_CONTIGUOUS == pybuf.PyBUF_F_CONTIGUOUS)
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_F_CONTIGUOUS)):             # <<<<<<<<<<<<<<
- *                 raise ValueError(u"ndarray is not Fortran contiguous")
- * 
- */
-  __pyx_t_2 = ((!(PyArray_CHKFLAGS(__pyx_v_self, NPY_ARRAY_F_CONTIGUOUS) != 0)) != 0);
-  __pyx_t_1 = __pyx_t_2;
-  __pyx_L7_bool_binop_done:;
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":274
- *                 raise ValueError(u"ndarray is not C contiguous")
- * 
- *             if ((flags & pybuf.PyBUF_F_CONTIGUOUS == pybuf.PyBUF_F_CONTIGUOUS)             # <<<<<<<<<<<<<<
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_F_CONTIGUOUS)):
- *                 raise ValueError(u"ndarray is not Fortran contiguous")
- */
-  if (unlikely(__pyx_t_1)) {
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":276
- *             if ((flags & pybuf.PyBUF_F_CONTIGUOUS == pybuf.PyBUF_F_CONTIGUOUS)
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_F_CONTIGUOUS)):
- *                 raise ValueError(u"ndarray is not Fortran contiguous")             # <<<<<<<<<<<<<<
- * 
- *             info.buf = PyArray_DATA(self)
- */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 276, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
-    __Pyx_Raise(__pyx_t_3, 0, 0, 0);
-    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __PYX_ERR(1, 276, __pyx_L1_error)
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":274
- *                 raise ValueError(u"ndarray is not C contiguous")
- * 
- *             if ((flags & pybuf.PyBUF_F_CONTIGUOUS == pybuf.PyBUF_F_CONTIGUOUS)             # <<<<<<<<<<<<<<
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_F_CONTIGUOUS)):
- *                 raise ValueError(u"ndarray is not Fortran contiguous")
- */
-  }
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":278
- *                 raise ValueError(u"ndarray is not Fortran contiguous")
- * 
- *             info.buf = PyArray_DATA(self)             # <<<<<<<<<<<<<<
- *             info.ndim = ndim
- *             if sizeof(npy_intp) != sizeof(Py_ssize_t):
- */
-  __pyx_v_info->buf = PyArray_DATA(__pyx_v_self);
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":279
- * 
- *             info.buf = PyArray_DATA(self)
- *             info.ndim = ndim             # <<<<<<<<<<<<<<
- *             if sizeof(npy_intp) != sizeof(Py_ssize_t):
- *                 # Allocate new buffer for strides and shape info.
- */
-  __pyx_v_info->ndim = __pyx_v_ndim;
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":280
- *             info.buf = PyArray_DATA(self)
- *             info.ndim = ndim
- *             if sizeof(npy_intp) != sizeof(Py_ssize_t):             # <<<<<<<<<<<<<<
- *                 # Allocate new buffer for strides and shape info.
- *                 # This is allocated as one block, strides first.
- */
-  __pyx_t_1 = (((sizeof(npy_intp)) != (sizeof(Py_ssize_t))) != 0);
-  if (__pyx_t_1) {
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":283
- *                 # Allocate new buffer for strides and shape info.
- *                 # This is allocated as one block, strides first.
- *                 info.strides = <Py_ssize_t*>PyObject_Malloc(sizeof(Py_ssize_t) * 2 * <size_t>ndim)             # <<<<<<<<<<<<<<
- *                 info.shape = info.strides + ndim
- *                 for i in range(ndim):
- */
-    __pyx_v_info->strides = ((Py_ssize_t *)PyObject_Malloc((((sizeof(Py_ssize_t)) * 2) * ((size_t)__pyx_v_ndim))));
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":284
- *                 # This is allocated as one block, strides first.
- *                 info.strides = <Py_ssize_t*>PyObject_Malloc(sizeof(Py_ssize_t) * 2 * <size_t>ndim)
- *                 info.shape = info.strides + ndim             # <<<<<<<<<<<<<<
- *                 for i in range(ndim):
- *                     info.strides[i] = PyArray_STRIDES(self)[i]
- */
-    __pyx_v_info->shape = (__pyx_v_info->strides + __pyx_v_ndim);
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":285
- *                 info.strides = <Py_ssize_t*>PyObject_Malloc(sizeof(Py_ssize_t) * 2 * <size_t>ndim)
- *                 info.shape = info.strides + ndim
- *                 for i in range(ndim):             # <<<<<<<<<<<<<<
- *                     info.strides[i] = PyArray_STRIDES(self)[i]
- *                     info.shape[i] = PyArray_DIMS(self)[i]
- */
-    __pyx_t_4 = __pyx_v_ndim;
-    __pyx_t_5 = __pyx_t_4;
-    for (__pyx_t_6 = 0; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
-      __pyx_v_i = __pyx_t_6;
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":286
- *                 info.shape = info.strides + ndim
- *                 for i in range(ndim):
- *                     info.strides[i] = PyArray_STRIDES(self)[i]             # <<<<<<<<<<<<<<
- *                     info.shape[i] = PyArray_DIMS(self)[i]
- *             else:
- */
-      (__pyx_v_info->strides[__pyx_v_i]) = (PyArray_STRIDES(__pyx_v_self)[__pyx_v_i]);
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":287
- *                 for i in range(ndim):
- *                     info.strides[i] = PyArray_STRIDES(self)[i]
- *                     info.shape[i] = PyArray_DIMS(self)[i]             # <<<<<<<<<<<<<<
- *             else:
- *                 info.strides = <Py_ssize_t*>PyArray_STRIDES(self)
- */
-      (__pyx_v_info->shape[__pyx_v_i]) = (PyArray_DIMS(__pyx_v_self)[__pyx_v_i]);
-    }
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":280
- *             info.buf = PyArray_DATA(self)
- *             info.ndim = ndim
- *             if sizeof(npy_intp) != sizeof(Py_ssize_t):             # <<<<<<<<<<<<<<
- *                 # Allocate new buffer for strides and shape info.
- *                 # This is allocated as one block, strides first.
- */
-    goto __pyx_L9;
-  }
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":289
- *                     info.shape[i] = PyArray_DIMS(self)[i]
- *             else:
- *                 info.strides = <Py_ssize_t*>PyArray_STRIDES(self)             # <<<<<<<<<<<<<<
- *                 info.shape = <Py_ssize_t*>PyArray_DIMS(self)
- *             info.suboffsets = NULL
- */
-  /*else*/ {
-    __pyx_v_info->strides = ((Py_ssize_t *)PyArray_STRIDES(__pyx_v_self));
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":290
- *             else:
- *                 info.strides = <Py_ssize_t*>PyArray_STRIDES(self)
- *                 info.shape = <Py_ssize_t*>PyArray_DIMS(self)             # <<<<<<<<<<<<<<
- *             info.suboffsets = NULL
- *             info.itemsize = PyArray_ITEMSIZE(self)
- */
-    __pyx_v_info->shape = ((Py_ssize_t *)PyArray_DIMS(__pyx_v_self));
-  }
-  __pyx_L9:;
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":291
- *                 info.strides = <Py_ssize_t*>PyArray_STRIDES(self)
- *                 info.shape = <Py_ssize_t*>PyArray_DIMS(self)
- *             info.suboffsets = NULL             # <<<<<<<<<<<<<<
- *             info.itemsize = PyArray_ITEMSIZE(self)
- *             info.readonly = not PyArray_ISWRITEABLE(self)
- */
-  __pyx_v_info->suboffsets = NULL;
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":292
- *                 info.shape = <Py_ssize_t*>PyArray_DIMS(self)
- *             info.suboffsets = NULL
- *             info.itemsize = PyArray_ITEMSIZE(self)             # <<<<<<<<<<<<<<
- *             info.readonly = not PyArray_ISWRITEABLE(self)
- * 
- */
-  __pyx_v_info->itemsize = PyArray_ITEMSIZE(__pyx_v_self);
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":293
- *             info.suboffsets = NULL
- *             info.itemsize = PyArray_ITEMSIZE(self)
- *             info.readonly = not PyArray_ISWRITEABLE(self)             # <<<<<<<<<<<<<<
- * 
- *             cdef int t
- */
-  __pyx_v_info->readonly = (!(PyArray_ISWRITEABLE(__pyx_v_self) != 0));
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":296
- * 
- *             cdef int t
- *             cdef char* f = NULL             # <<<<<<<<<<<<<<
- *             cdef dtype descr = <dtype>PyArray_DESCR(self)
- *             cdef int offset
- */
-  __pyx_v_f = NULL;
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":297
- *             cdef int t
- *             cdef char* f = NULL
- *             cdef dtype descr = <dtype>PyArray_DESCR(self)             # <<<<<<<<<<<<<<
- *             cdef int offset
- * 
- */
-  __pyx_t_7 = PyArray_DESCR(__pyx_v_self);
-  __pyx_t_3 = ((PyObject *)__pyx_t_7);
-  __Pyx_INCREF(__pyx_t_3);
-  __pyx_v_descr = ((PyArray_Descr *)__pyx_t_3);
-  __pyx_t_3 = 0;
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":300
- *             cdef int offset
- * 
- *             info.obj = self             # <<<<<<<<<<<<<<
- * 
- *             if not PyDataType_HASFIELDS(descr):
- */
-  __Pyx_INCREF(((PyObject *)__pyx_v_self));
-  __Pyx_GIVEREF(((PyObject *)__pyx_v_self));
-  __Pyx_GOTREF(__pyx_v_info->obj);
-  __Pyx_DECREF(__pyx_v_info->obj);
-  __pyx_v_info->obj = ((PyObject *)__pyx_v_self);
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":302
- *             info.obj = self
- * 
- *             if not PyDataType_HASFIELDS(descr):             # <<<<<<<<<<<<<<
- *                 t = descr.type_num
- *                 if ((descr.byteorder == c'>' and little_endian) or
- */
-  __pyx_t_1 = ((!(PyDataType_HASFIELDS(__pyx_v_descr) != 0)) != 0);
-  if (__pyx_t_1) {
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":303
- * 
- *             if not PyDataType_HASFIELDS(descr):
- *                 t = descr.type_num             # <<<<<<<<<<<<<<
- *                 if ((descr.byteorder == c'>' and little_endian) or
- *                     (descr.byteorder == c'<' and not little_endian)):
- */
-    __pyx_t_4 = __pyx_v_descr->type_num;
-    __pyx_v_t = __pyx_t_4;
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":304
- *             if not PyDataType_HASFIELDS(descr):
- *                 t = descr.type_num
- *                 if ((descr.byteorder == c'>' and little_endian) or             # <<<<<<<<<<<<<<
- *                     (descr.byteorder == c'<' and not little_endian)):
- *                     raise ValueError(u"Non-native byte order not supported")
- */
-    __pyx_t_2 = ((__pyx_v_descr->byteorder == '>') != 0);
-    if (!__pyx_t_2) {
-      goto __pyx_L15_next_or;
-    } else {
-    }
-    __pyx_t_2 = (__pyx_v_little_endian != 0);
-    if (!__pyx_t_2) {
-    } else {
-      __pyx_t_1 = __pyx_t_2;
-      goto __pyx_L14_bool_binop_done;
-    }
-    __pyx_L15_next_or:;
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":305
- *                 t = descr.type_num
- *                 if ((descr.byteorder == c'>' and little_endian) or
- *                     (descr.byteorder == c'<' and not little_endian)):             # <<<<<<<<<<<<<<
- *                     raise ValueError(u"Non-native byte order not supported")
- *                 if   t == NPY_BYTE:        f = "b"
- */
-    __pyx_t_2 = ((__pyx_v_descr->byteorder == '<') != 0);
-    if (__pyx_t_2) {
-    } else {
-      __pyx_t_1 = __pyx_t_2;
-      goto __pyx_L14_bool_binop_done;
-    }
-    __pyx_t_2 = ((!(__pyx_v_little_endian != 0)) != 0);
-    __pyx_t_1 = __pyx_t_2;
-    __pyx_L14_bool_binop_done:;
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":304
- *             if not PyDataType_HASFIELDS(descr):
- *                 t = descr.type_num
- *                 if ((descr.byteorder == c'>' and little_endian) or             # <<<<<<<<<<<<<<
- *                     (descr.byteorder == c'<' and not little_endian)):
- *                     raise ValueError(u"Non-native byte order not supported")
- */
-    if (unlikely(__pyx_t_1)) {
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":306
- *                 if ((descr.byteorder == c'>' and little_endian) or
- *                     (descr.byteorder == c'<' and not little_endian)):
- *                     raise ValueError(u"Non-native byte order not supported")             # <<<<<<<<<<<<<<
- *                 if   t == NPY_BYTE:        f = "b"
- *                 elif t == NPY_UBYTE:       f = "B"
- */
-      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 306, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_3);
-      __Pyx_Raise(__pyx_t_3, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __PYX_ERR(1, 306, __pyx_L1_error)
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":304
- *             if not PyDataType_HASFIELDS(descr):
- *                 t = descr.type_num
- *                 if ((descr.byteorder == c'>' and little_endian) or             # <<<<<<<<<<<<<<
- *                     (descr.byteorder == c'<' and not little_endian)):
- *                     raise ValueError(u"Non-native byte order not supported")
- */
-    }
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":307
- *                     (descr.byteorder == c'<' and not little_endian)):
- *                     raise ValueError(u"Non-native byte order not supported")
- *                 if   t == NPY_BYTE:        f = "b"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_UBYTE:       f = "B"
- *                 elif t == NPY_SHORT:       f = "h"
- */
-    switch (__pyx_v_t) {
-      case NPY_BYTE:
-      __pyx_v_f = ((char *)"b");
-      break;
-      case NPY_UBYTE:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":308
- *                     raise ValueError(u"Non-native byte order not supported")
- *                 if   t == NPY_BYTE:        f = "b"
- *                 elif t == NPY_UBYTE:       f = "B"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_SHORT:       f = "h"
- *                 elif t == NPY_USHORT:      f = "H"
- */
-      __pyx_v_f = ((char *)"B");
-      break;
-      case NPY_SHORT:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":309
- *                 if   t == NPY_BYTE:        f = "b"
- *                 elif t == NPY_UBYTE:       f = "B"
- *                 elif t == NPY_SHORT:       f = "h"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_USHORT:      f = "H"
- *                 elif t == NPY_INT:         f = "i"
- */
-      __pyx_v_f = ((char *)"h");
-      break;
-      case NPY_USHORT:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":310
- *                 elif t == NPY_UBYTE:       f = "B"
- *                 elif t == NPY_SHORT:       f = "h"
- *                 elif t == NPY_USHORT:      f = "H"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_INT:         f = "i"
- *                 elif t == NPY_UINT:        f = "I"
- */
-      __pyx_v_f = ((char *)"H");
-      break;
-      case NPY_INT:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":311
- *                 elif t == NPY_SHORT:       f = "h"
- *                 elif t == NPY_USHORT:      f = "H"
- *                 elif t == NPY_INT:         f = "i"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_UINT:        f = "I"
- *                 elif t == NPY_LONG:        f = "l"
- */
-      __pyx_v_f = ((char *)"i");
-      break;
-      case NPY_UINT:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":312
- *                 elif t == NPY_USHORT:      f = "H"
- *                 elif t == NPY_INT:         f = "i"
- *                 elif t == NPY_UINT:        f = "I"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_LONG:        f = "l"
- *                 elif t == NPY_ULONG:       f = "L"
- */
-      __pyx_v_f = ((char *)"I");
-      break;
-      case NPY_LONG:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":313
- *                 elif t == NPY_INT:         f = "i"
- *                 elif t == NPY_UINT:        f = "I"
- *                 elif t == NPY_LONG:        f = "l"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_ULONG:       f = "L"
- *                 elif t == NPY_LONGLONG:    f = "q"
- */
-      __pyx_v_f = ((char *)"l");
-      break;
-      case NPY_ULONG:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":314
- *                 elif t == NPY_UINT:        f = "I"
- *                 elif t == NPY_LONG:        f = "l"
- *                 elif t == NPY_ULONG:       f = "L"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_LONGLONG:    f = "q"
- *                 elif t == NPY_ULONGLONG:   f = "Q"
- */
-      __pyx_v_f = ((char *)"L");
-      break;
-      case NPY_LONGLONG:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":315
- *                 elif t == NPY_LONG:        f = "l"
- *                 elif t == NPY_ULONG:       f = "L"
- *                 elif t == NPY_LONGLONG:    f = "q"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_ULONGLONG:   f = "Q"
- *                 elif t == NPY_FLOAT:       f = "f"
- */
-      __pyx_v_f = ((char *)"q");
-      break;
-      case NPY_ULONGLONG:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":316
- *                 elif t == NPY_ULONG:       f = "L"
- *                 elif t == NPY_LONGLONG:    f = "q"
- *                 elif t == NPY_ULONGLONG:   f = "Q"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_FLOAT:       f = "f"
- *                 elif t == NPY_DOUBLE:      f = "d"
- */
-      __pyx_v_f = ((char *)"Q");
-      break;
-      case NPY_FLOAT:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":317
- *                 elif t == NPY_LONGLONG:    f = "q"
- *                 elif t == NPY_ULONGLONG:   f = "Q"
- *                 elif t == NPY_FLOAT:       f = "f"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_DOUBLE:      f = "d"
- *                 elif t == NPY_LONGDOUBLE:  f = "g"
- */
-      __pyx_v_f = ((char *)"f");
-      break;
-      case NPY_DOUBLE:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":318
- *                 elif t == NPY_ULONGLONG:   f = "Q"
- *                 elif t == NPY_FLOAT:       f = "f"
- *                 elif t == NPY_DOUBLE:      f = "d"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_LONGDOUBLE:  f = "g"
- *                 elif t == NPY_CFLOAT:      f = "Zf"
- */
-      __pyx_v_f = ((char *)"d");
-      break;
-      case NPY_LONGDOUBLE:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":319
- *                 elif t == NPY_FLOAT:       f = "f"
- *                 elif t == NPY_DOUBLE:      f = "d"
- *                 elif t == NPY_LONGDOUBLE:  f = "g"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_CFLOAT:      f = "Zf"
- *                 elif t == NPY_CDOUBLE:     f = "Zd"
- */
-      __pyx_v_f = ((char *)"g");
-      break;
-      case NPY_CFLOAT:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":320
- *                 elif t == NPY_DOUBLE:      f = "d"
- *                 elif t == NPY_LONGDOUBLE:  f = "g"
- *                 elif t == NPY_CFLOAT:      f = "Zf"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_CDOUBLE:     f = "Zd"
- *                 elif t == NPY_CLONGDOUBLE: f = "Zg"
- */
-      __pyx_v_f = ((char *)"Zf");
-      break;
-      case NPY_CDOUBLE:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":321
- *                 elif t == NPY_LONGDOUBLE:  f = "g"
- *                 elif t == NPY_CFLOAT:      f = "Zf"
- *                 elif t == NPY_CDOUBLE:     f = "Zd"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_CLONGDOUBLE: f = "Zg"
- *                 elif t == NPY_OBJECT:      f = "O"
- */
-      __pyx_v_f = ((char *)"Zd");
-      break;
-      case NPY_CLONGDOUBLE:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":322
- *                 elif t == NPY_CFLOAT:      f = "Zf"
- *                 elif t == NPY_CDOUBLE:     f = "Zd"
- *                 elif t == NPY_CLONGDOUBLE: f = "Zg"             # <<<<<<<<<<<<<<
- *                 elif t == NPY_OBJECT:      f = "O"
- *                 else:
- */
-      __pyx_v_f = ((char *)"Zg");
-      break;
-      case NPY_OBJECT:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":323
- *                 elif t == NPY_CDOUBLE:     f = "Zd"
- *                 elif t == NPY_CLONGDOUBLE: f = "Zg"
- *                 elif t == NPY_OBJECT:      f = "O"             # <<<<<<<<<<<<<<
- *                 else:
- *                     raise ValueError(u"unknown dtype code in numpy.pxd (%d)" % t)
- */
-      __pyx_v_f = ((char *)"O");
-      break;
-      default:
-
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":325
- *                 elif t == NPY_OBJECT:      f = "O"
- *                 else:
- *                     raise ValueError(u"unknown dtype code in numpy.pxd (%d)" % t)             # <<<<<<<<<<<<<<
- *                 info.format = f
- *                 return
- */
-      __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_t); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 325, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_8 = PyUnicode_Format(__pyx_kp_u_unknown_dtype_code_in_numpy_pxd, __pyx_t_3); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 325, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_8); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 325, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_3);
-      __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __Pyx_Raise(__pyx_t_3, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __PYX_ERR(1, 325, __pyx_L1_error)
-      break;
-    }
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":326
- *                 else:
- *                     raise ValueError(u"unknown dtype code in numpy.pxd (%d)" % t)
- *                 info.format = f             # <<<<<<<<<<<<<<
- *                 return
- *             else:
- */
-    __pyx_v_info->format = __pyx_v_f;
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":327
- *                     raise ValueError(u"unknown dtype code in numpy.pxd (%d)" % t)
- *                 info.format = f
- *                 return             # <<<<<<<<<<<<<<
- *             else:
- *                 info.format = <char*>PyObject_Malloc(_buffer_format_string_len)
- */
-    __pyx_r = 0;
-    goto __pyx_L0;
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":302
- *             info.obj = self
- * 
- *             if not PyDataType_HASFIELDS(descr):             # <<<<<<<<<<<<<<
- *                 t = descr.type_num
- *                 if ((descr.byteorder == c'>' and little_endian) or
- */
-  }
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":329
- *                 return
- *             else:
- *                 info.format = <char*>PyObject_Malloc(_buffer_format_string_len)             # <<<<<<<<<<<<<<
- *                 info.format[0] = c'^' # Native data types, manual alignment
- *                 offset = 0
- */
-  /*else*/ {
-    __pyx_v_info->format = ((char *)PyObject_Malloc(0xFF));
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":330
- *             else:
- *                 info.format = <char*>PyObject_Malloc(_buffer_format_string_len)
- *                 info.format[0] = c'^' # Native data types, manual alignment             # <<<<<<<<<<<<<<
- *                 offset = 0
- *                 f = _util_dtypestring(descr, info.format + 1,
- */
-    (__pyx_v_info->format[0]) = '^';
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":331
- *                 info.format = <char*>PyObject_Malloc(_buffer_format_string_len)
- *                 info.format[0] = c'^' # Native data types, manual alignment
- *                 offset = 0             # <<<<<<<<<<<<<<
- *                 f = _util_dtypestring(descr, info.format + 1,
- *                                       info.format + _buffer_format_string_len,
- */
-    __pyx_v_offset = 0;
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":332
- *                 info.format[0] = c'^' # Native data types, manual alignment
- *                 offset = 0
- *                 f = _util_dtypestring(descr, info.format + 1,             # <<<<<<<<<<<<<<
- *                                       info.format + _buffer_format_string_len,
- *                                       &offset)
- */
-    __pyx_t_9 = __pyx_f_5numpy__util_dtypestring(__pyx_v_descr, (__pyx_v_info->format + 1), (__pyx_v_info->format + 0xFF), (&__pyx_v_offset)); if (unlikely(__pyx_t_9 == ((char *)NULL))) __PYX_ERR(1, 332, __pyx_L1_error)
-    __pyx_v_f = __pyx_t_9;
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":335
- *                                       info.format + _buffer_format_string_len,
- *                                       &offset)
- *                 f[0] = c'\0' # Terminate format string             # <<<<<<<<<<<<<<
- * 
- *         def __releasebuffer__(ndarray self, Py_buffer* info):
- */
-    (__pyx_v_f[0]) = '\x00';
-  }
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":258
- *         # experimental exception made for __getbuffer__ and __releasebuffer__
- *         # -- the details of this may change.
- *         def __getbuffer__(ndarray self, Py_buffer* info, int flags):             # <<<<<<<<<<<<<<
- *             # This implementation of getbuffer is geared towards Cython
- *             # requirements, and does not yet fulfill the PEP.
- */
-
-  /* function exit code */
-  __pyx_r = 0;
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_AddTraceback("numpy.ndarray.__getbuffer__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = -1;
-  if (__pyx_v_info->obj != NULL) {
-    __Pyx_GOTREF(__pyx_v_info->obj);
-    __Pyx_DECREF(__pyx_v_info->obj); __pyx_v_info->obj = 0;
-  }
-  goto __pyx_L2;
-  __pyx_L0:;
-  if (__pyx_v_info->obj == Py_None) {
-    __Pyx_GOTREF(__pyx_v_info->obj);
-    __Pyx_DECREF(__pyx_v_info->obj); __pyx_v_info->obj = 0;
-  }
-  __pyx_L2:;
-  __Pyx_XDECREF((PyObject *)__pyx_v_descr);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":337
- *                 f[0] = c'\0' # Terminate format string
- * 
- *         def __releasebuffer__(ndarray self, Py_buffer* info):             # <<<<<<<<<<<<<<
- *             if PyArray_HASFIELDS(self):
- *                 PyObject_Free(info.format)
- */
-
-/* Python wrapper */
-static CYTHON_UNUSED void __pyx_pw_5numpy_7ndarray_3__releasebuffer__(PyObject *__pyx_v_self, Py_buffer *__pyx_v_info); /*proto*/
-static CYTHON_UNUSED void __pyx_pw_5numpy_7ndarray_3__releasebuffer__(PyObject *__pyx_v_self, Py_buffer *__pyx_v_info) {
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__releasebuffer__ (wrapper)", 0);
-  __pyx_pf_5numpy_7ndarray_2__releasebuffer__(((PyArrayObject *)__pyx_v_self), ((Py_buffer *)__pyx_v_info));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-}
-
-static void __pyx_pf_5numpy_7ndarray_2__releasebuffer__(PyArrayObject *__pyx_v_self, Py_buffer *__pyx_v_info) {
-  __Pyx_RefNannyDeclarations
-  int __pyx_t_1;
-  __Pyx_RefNannySetupContext("__releasebuffer__", 0);
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":338
- * 
- *         def __releasebuffer__(ndarray self, Py_buffer* info):
- *             if PyArray_HASFIELDS(self):             # <<<<<<<<<<<<<<
- *                 PyObject_Free(info.format)
- *             if sizeof(npy_intp) != sizeof(Py_ssize_t):
- */
-  __pyx_t_1 = (PyArray_HASFIELDS(__pyx_v_self) != 0);
-  if (__pyx_t_1) {
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":339
- *         def __releasebuffer__(ndarray self, Py_buffer* info):
- *             if PyArray_HASFIELDS(self):
- *                 PyObject_Free(info.format)             # <<<<<<<<<<<<<<
- *             if sizeof(npy_intp) != sizeof(Py_ssize_t):
- *                 PyObject_Free(info.strides)
- */
-    PyObject_Free(__pyx_v_info->format);
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":338
- * 
- *         def __releasebuffer__(ndarray self, Py_buffer* info):
- *             if PyArray_HASFIELDS(self):             # <<<<<<<<<<<<<<
- *                 PyObject_Free(info.format)
- *             if sizeof(npy_intp) != sizeof(Py_ssize_t):
- */
-  }
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":340
- *             if PyArray_HASFIELDS(self):
- *                 PyObject_Free(info.format)
- *             if sizeof(npy_intp) != sizeof(Py_ssize_t):             # <<<<<<<<<<<<<<
- *                 PyObject_Free(info.strides)
- *                 # info.shape was stored after info.strides in the same block
- */
-  __pyx_t_1 = (((sizeof(npy_intp)) != (sizeof(Py_ssize_t))) != 0);
-  if (__pyx_t_1) {
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":341
- *                 PyObject_Free(info.format)
- *             if sizeof(npy_intp) != sizeof(Py_ssize_t):
- *                 PyObject_Free(info.strides)             # <<<<<<<<<<<<<<
- *                 # info.shape was stored after info.strides in the same block
- * 
- */
-    PyObject_Free(__pyx_v_info->strides);
-
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":340
- *             if PyArray_HASFIELDS(self):
- *                 PyObject_Free(info.format)
- *             if sizeof(npy_intp) != sizeof(Py_ssize_t):             # <<<<<<<<<<<<<<
- *                 PyObject_Free(info.strides)
- *                 # info.shape was stored after info.strides in the same block
- */
-  }
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":337
- *                 f[0] = c'\0' # Terminate format string
- * 
- *         def __releasebuffer__(ndarray self, Py_buffer* info):             # <<<<<<<<<<<<<<
- *             if PyArray_HASFIELDS(self):
- *                 PyObject_Free(info.format)
- */
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-}
-
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":821
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":742
  * ctypedef npy_cdouble     complex_t
  * 
  * cdef inline object PyArray_MultiIterNew1(a):             # <<<<<<<<<<<<<<
@@ -8818,7 +7960,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew1(PyObject *__
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("PyArray_MultiIterNew1", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":822
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":743
  * 
  * cdef inline object PyArray_MultiIterNew1(a):
  *     return PyArray_MultiIterNew(1, <void*>a)             # <<<<<<<<<<<<<<
@@ -8826,13 +7968,13 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew1(PyObject *__
  * cdef inline object PyArray_MultiIterNew2(a, b):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(1, ((void *)__pyx_v_a)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 822, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(1, ((void *)__pyx_v_a)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 743, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":821
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":742
  * ctypedef npy_cdouble     complex_t
  * 
  * cdef inline object PyArray_MultiIterNew1(a):             # <<<<<<<<<<<<<<
@@ -8851,7 +7993,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew1(PyObject *__
   return __pyx_r;
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":824
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":745
  *     return PyArray_MultiIterNew(1, <void*>a)
  * 
  * cdef inline object PyArray_MultiIterNew2(a, b):             # <<<<<<<<<<<<<<
@@ -8865,7 +8007,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew2(PyObject *__
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("PyArray_MultiIterNew2", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":825
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":746
  * 
  * cdef inline object PyArray_MultiIterNew2(a, b):
  *     return PyArray_MultiIterNew(2, <void*>a, <void*>b)             # <<<<<<<<<<<<<<
@@ -8873,13 +8015,13 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew2(PyObject *__
  * cdef inline object PyArray_MultiIterNew3(a, b, c):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(2, ((void *)__pyx_v_a), ((void *)__pyx_v_b)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 825, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(2, ((void *)__pyx_v_a), ((void *)__pyx_v_b)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 746, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":824
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":745
  *     return PyArray_MultiIterNew(1, <void*>a)
  * 
  * cdef inline object PyArray_MultiIterNew2(a, b):             # <<<<<<<<<<<<<<
@@ -8898,7 +8040,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew2(PyObject *__
   return __pyx_r;
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":827
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":748
  *     return PyArray_MultiIterNew(2, <void*>a, <void*>b)
  * 
  * cdef inline object PyArray_MultiIterNew3(a, b, c):             # <<<<<<<<<<<<<<
@@ -8912,7 +8054,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew3(PyObject *__
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("PyArray_MultiIterNew3", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":828
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":749
  * 
  * cdef inline object PyArray_MultiIterNew3(a, b, c):
  *     return PyArray_MultiIterNew(3, <void*>a, <void*>b, <void*> c)             # <<<<<<<<<<<<<<
@@ -8920,13 +8062,13 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew3(PyObject *__
  * cdef inline object PyArray_MultiIterNew4(a, b, c, d):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(3, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 828, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(3, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 749, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":827
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":748
  *     return PyArray_MultiIterNew(2, <void*>a, <void*>b)
  * 
  * cdef inline object PyArray_MultiIterNew3(a, b, c):             # <<<<<<<<<<<<<<
@@ -8945,7 +8087,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew3(PyObject *__
   return __pyx_r;
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":830
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":751
  *     return PyArray_MultiIterNew(3, <void*>a, <void*>b, <void*> c)
  * 
  * cdef inline object PyArray_MultiIterNew4(a, b, c, d):             # <<<<<<<<<<<<<<
@@ -8959,7 +8101,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew4(PyObject *__
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("PyArray_MultiIterNew4", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":831
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":752
  * 
  * cdef inline object PyArray_MultiIterNew4(a, b, c, d):
  *     return PyArray_MultiIterNew(4, <void*>a, <void*>b, <void*>c, <void*> d)             # <<<<<<<<<<<<<<
@@ -8967,13 +8109,13 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew4(PyObject *__
  * cdef inline object PyArray_MultiIterNew5(a, b, c, d, e):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(4, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 831, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(4, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 752, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":830
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":751
  *     return PyArray_MultiIterNew(3, <void*>a, <void*>b, <void*> c)
  * 
  * cdef inline object PyArray_MultiIterNew4(a, b, c, d):             # <<<<<<<<<<<<<<
@@ -8992,7 +8134,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew4(PyObject *__
   return __pyx_r;
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":833
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":754
  *     return PyArray_MultiIterNew(4, <void*>a, <void*>b, <void*>c, <void*> d)
  * 
  * cdef inline object PyArray_MultiIterNew5(a, b, c, d, e):             # <<<<<<<<<<<<<<
@@ -9006,7 +8148,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew5(PyObject *__
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("PyArray_MultiIterNew5", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":834
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":755
  * 
  * cdef inline object PyArray_MultiIterNew5(a, b, c, d, e):
  *     return PyArray_MultiIterNew(5, <void*>a, <void*>b, <void*>c, <void*> d, <void*> e)             # <<<<<<<<<<<<<<
@@ -9014,13 +8156,13 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew5(PyObject *__
  * cdef inline tuple PyDataType_SHAPE(dtype d):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(5, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d), ((void *)__pyx_v_e)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 834, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(5, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d), ((void *)__pyx_v_e)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 755, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":833
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":754
  *     return PyArray_MultiIterNew(4, <void*>a, <void*>b, <void*>c, <void*> d)
  * 
  * cdef inline object PyArray_MultiIterNew5(a, b, c, d, e):             # <<<<<<<<<<<<<<
@@ -9039,7 +8181,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew5(PyObject *__
   return __pyx_r;
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":836
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":757
  *     return PyArray_MultiIterNew(5, <void*>a, <void*>b, <void*>c, <void*> d, <void*> e)
  * 
  * cdef inline tuple PyDataType_SHAPE(dtype d):             # <<<<<<<<<<<<<<
@@ -9053,7 +8195,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyDataType_SHAPE(PyArray_Descr *__
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("PyDataType_SHAPE", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":837
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":758
  * 
  * cdef inline tuple PyDataType_SHAPE(dtype d):
  *     if PyDataType_HASSUBARRAY(d):             # <<<<<<<<<<<<<<
@@ -9063,7 +8205,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyDataType_SHAPE(PyArray_Descr *__
   __pyx_t_1 = (PyDataType_HASSUBARRAY(__pyx_v_d) != 0);
   if (__pyx_t_1) {
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":838
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":759
  * cdef inline tuple PyDataType_SHAPE(dtype d):
  *     if PyDataType_HASSUBARRAY(d):
  *         return <tuple>d.subarray.shape             # <<<<<<<<<<<<<<
@@ -9075,7 +8217,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyDataType_SHAPE(PyArray_Descr *__
     __pyx_r = ((PyObject*)__pyx_v_d->subarray->shape);
     goto __pyx_L0;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":837
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":758
  * 
  * cdef inline tuple PyDataType_SHAPE(dtype d):
  *     if PyDataType_HASSUBARRAY(d):             # <<<<<<<<<<<<<<
@@ -9084,7 +8226,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyDataType_SHAPE(PyArray_Descr *__
  */
   }
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":840
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":761
  *         return <tuple>d.subarray.shape
  *     else:
  *         return ()             # <<<<<<<<<<<<<<
@@ -9098,7 +8240,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyDataType_SHAPE(PyArray_Descr *__
     goto __pyx_L0;
   }
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":836
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":757
  *     return PyArray_MultiIterNew(5, <void*>a, <void*>b, <void*>c, <void*> d, <void*> e)
  * 
  * cdef inline tuple PyDataType_SHAPE(dtype d):             # <<<<<<<<<<<<<<
@@ -9113,7 +8255,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyDataType_SHAPE(PyArray_Descr *__
   return __pyx_r;
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":842
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":763
  *         return ()
  * 
  * cdef inline char* _util_dtypestring(dtype descr, char* f, char* end, int* offset) except NULL:             # <<<<<<<<<<<<<<
@@ -9142,7 +8284,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
   char *__pyx_t_9;
   __Pyx_RefNannySetupContext("_util_dtypestring", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":847
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":768
  * 
  *     cdef dtype child
  *     cdef int endian_detector = 1             # <<<<<<<<<<<<<<
@@ -9151,7 +8293,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
   __pyx_v_endian_detector = 1;
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":848
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":769
  *     cdef dtype child
  *     cdef int endian_detector = 1
  *     cdef bint little_endian = ((<char*>&endian_detector)[0] != 0)             # <<<<<<<<<<<<<<
@@ -9160,7 +8302,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
   __pyx_v_little_endian = ((((char *)(&__pyx_v_endian_detector))[0]) != 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":851
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":772
  *     cdef tuple fields
  * 
  *     for childname in descr.names:             # <<<<<<<<<<<<<<
@@ -9169,21 +8311,21 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
   if (unlikely(__pyx_v_descr->names == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
-    __PYX_ERR(1, 851, __pyx_L1_error)
+    __PYX_ERR(1, 772, __pyx_L1_error)
   }
   __pyx_t_1 = __pyx_v_descr->names; __Pyx_INCREF(__pyx_t_1); __pyx_t_2 = 0;
   for (;;) {
     if (__pyx_t_2 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
     #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-    __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_2); __Pyx_INCREF(__pyx_t_3); __pyx_t_2++; if (unlikely(0 < 0)) __PYX_ERR(1, 851, __pyx_L1_error)
+    __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_2); __Pyx_INCREF(__pyx_t_3); __pyx_t_2++; if (unlikely(0 < 0)) __PYX_ERR(1, 772, __pyx_L1_error)
     #else
-    __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_2); __pyx_t_2++; if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 851, __pyx_L1_error)
+    __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_2); __pyx_t_2++; if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 772, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     #endif
     __Pyx_XDECREF_SET(__pyx_v_childname, __pyx_t_3);
     __pyx_t_3 = 0;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":852
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":773
  * 
  *     for childname in descr.names:
  *         fields = descr.fields[childname]             # <<<<<<<<<<<<<<
@@ -9192,15 +8334,15 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
     if (unlikely(__pyx_v_descr->fields == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-      __PYX_ERR(1, 852, __pyx_L1_error)
+      __PYX_ERR(1, 773, __pyx_L1_error)
     }
-    __pyx_t_3 = __Pyx_PyDict_GetItem(__pyx_v_descr->fields, __pyx_v_childname); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 852, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyDict_GetItem(__pyx_v_descr->fields, __pyx_v_childname); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 773, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    if (!(likely(PyTuple_CheckExact(__pyx_t_3))||((__pyx_t_3) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "tuple", Py_TYPE(__pyx_t_3)->tp_name), 0))) __PYX_ERR(1, 852, __pyx_L1_error)
+    if (!(likely(PyTuple_CheckExact(__pyx_t_3))||((__pyx_t_3) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "tuple", Py_TYPE(__pyx_t_3)->tp_name), 0))) __PYX_ERR(1, 773, __pyx_L1_error)
     __Pyx_XDECREF_SET(__pyx_v_fields, ((PyObject*)__pyx_t_3));
     __pyx_t_3 = 0;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":853
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":774
  *     for childname in descr.names:
  *         fields = descr.fields[childname]
  *         child, new_offset = fields             # <<<<<<<<<<<<<<
@@ -9213,7 +8355,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
       if (unlikely(size != 2)) {
         if (size > 2) __Pyx_RaiseTooManyValuesError(2);
         else if (size >= 0) __Pyx_RaiseNeedMoreValuesError(size);
-        __PYX_ERR(1, 853, __pyx_L1_error)
+        __PYX_ERR(1, 774, __pyx_L1_error)
       }
       #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
       __pyx_t_3 = PyTuple_GET_ITEM(sequence, 0); 
@@ -9221,51 +8363,51 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
       __Pyx_INCREF(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_4);
       #else
-      __pyx_t_3 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 853, __pyx_L1_error)
+      __pyx_t_3 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 774, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 853, __pyx_L1_error)
+      __pyx_t_4 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 774, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
       #endif
     } else {
-      __Pyx_RaiseNoneNotIterableError(); __PYX_ERR(1, 853, __pyx_L1_error)
+      __Pyx_RaiseNoneNotIterableError(); __PYX_ERR(1, 774, __pyx_L1_error)
     }
-    if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_ptype_5numpy_dtype))))) __PYX_ERR(1, 853, __pyx_L1_error)
+    if (!(likely(((__pyx_t_3) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_3, __pyx_ptype_5numpy_dtype))))) __PYX_ERR(1, 774, __pyx_L1_error)
     __Pyx_XDECREF_SET(__pyx_v_child, ((PyArray_Descr *)__pyx_t_3));
     __pyx_t_3 = 0;
     __Pyx_XDECREF_SET(__pyx_v_new_offset, __pyx_t_4);
     __pyx_t_4 = 0;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":855
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":776
  *         child, new_offset = fields
  * 
  *         if (end - f) - <int>(new_offset - offset[0]) < 15:             # <<<<<<<<<<<<<<
  *             raise RuntimeError(u"Format string allocated too short, see comment in numpy.pxd")
  * 
  */
-    __pyx_t_4 = __Pyx_PyInt_From_int((__pyx_v_offset[0])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 855, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyInt_From_int((__pyx_v_offset[0])); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 776, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_3 = PyNumber_Subtract(__pyx_v_new_offset, __pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 855, __pyx_L1_error)
+    __pyx_t_3 = PyNumber_Subtract(__pyx_v_new_offset, __pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 776, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_t_3); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 855, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_t_3); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 776, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __pyx_t_6 = ((((__pyx_v_end - __pyx_v_f) - ((int)__pyx_t_5)) < 15) != 0);
     if (unlikely(__pyx_t_6)) {
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":856
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":777
  * 
  *         if (end - f) - <int>(new_offset - offset[0]) < 15:
  *             raise RuntimeError(u"Format string allocated too short, see comment in numpy.pxd")             # <<<<<<<<<<<<<<
  * 
  *         if ((child.byteorder == c'>' and little_endian) or
  */
-      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 856, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 777, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_Raise(__pyx_t_3, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __PYX_ERR(1, 856, __pyx_L1_error)
+      __PYX_ERR(1, 777, __pyx_L1_error)
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":855
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":776
  *         child, new_offset = fields
  * 
  *         if (end - f) - <int>(new_offset - offset[0]) < 15:             # <<<<<<<<<<<<<<
@@ -9274,7 +8416,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
     }
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":858
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":779
  *             raise RuntimeError(u"Format string allocated too short, see comment in numpy.pxd")
  * 
  *         if ((child.byteorder == c'>' and little_endian) or             # <<<<<<<<<<<<<<
@@ -9294,7 +8436,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
     }
     __pyx_L8_next_or:;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":859
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":780
  * 
  *         if ((child.byteorder == c'>' and little_endian) or
  *             (child.byteorder == c'<' and not little_endian)):             # <<<<<<<<<<<<<<
@@ -9311,7 +8453,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
     __pyx_t_6 = __pyx_t_7;
     __pyx_L7_bool_binop_done:;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":858
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":779
  *             raise RuntimeError(u"Format string allocated too short, see comment in numpy.pxd")
  * 
  *         if ((child.byteorder == c'>' and little_endian) or             # <<<<<<<<<<<<<<
@@ -9320,20 +8462,20 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
     if (unlikely(__pyx_t_6)) {
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":860
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":781
  *         if ((child.byteorder == c'>' and little_endian) or
  *             (child.byteorder == c'<' and not little_endian)):
  *             raise ValueError(u"Non-native byte order not supported")             # <<<<<<<<<<<<<<
  *             # One could encode it in the format string and have Cython
  *             # complain instead, BUT: < and > in format strings also imply
  */
-      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 860, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 781, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_Raise(__pyx_t_3, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __PYX_ERR(1, 860, __pyx_L1_error)
+      __PYX_ERR(1, 781, __pyx_L1_error)
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":858
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":779
  *             raise RuntimeError(u"Format string allocated too short, see comment in numpy.pxd")
  * 
  *         if ((child.byteorder == c'>' and little_endian) or             # <<<<<<<<<<<<<<
@@ -9342,7 +8484,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
     }
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":870
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":791
  * 
  *         # Output padding bytes
  *         while offset[0] < new_offset:             # <<<<<<<<<<<<<<
@@ -9350,15 +8492,15 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *             f += 1
  */
     while (1) {
-      __pyx_t_3 = __Pyx_PyInt_From_int((__pyx_v_offset[0])); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 870, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_int((__pyx_v_offset[0])); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 791, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_t_3, __pyx_v_new_offset, Py_LT); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 870, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_t_3, __pyx_v_new_offset, Py_LT); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 791, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 870, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 791, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (!__pyx_t_6) break;
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":871
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":792
  *         # Output padding bytes
  *         while offset[0] < new_offset:
  *             f[0] = 120 # "x"; pad byte             # <<<<<<<<<<<<<<
@@ -9367,7 +8509,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
       (__pyx_v_f[0]) = 0x78;
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":872
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":793
  *         while offset[0] < new_offset:
  *             f[0] = 120 # "x"; pad byte
  *             f += 1             # <<<<<<<<<<<<<<
@@ -9376,7 +8518,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
       __pyx_v_f = (__pyx_v_f + 1);
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":873
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":794
  *             f[0] = 120 # "x"; pad byte
  *             f += 1
  *             offset[0] += 1             # <<<<<<<<<<<<<<
@@ -9387,7 +8529,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
       (__pyx_v_offset[__pyx_t_8]) = ((__pyx_v_offset[__pyx_t_8]) + 1);
     }
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":875
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":796
  *             offset[0] += 1
  * 
  *         offset[0] += child.itemsize             # <<<<<<<<<<<<<<
@@ -9397,7 +8539,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
     __pyx_t_8 = 0;
     (__pyx_v_offset[__pyx_t_8]) = ((__pyx_v_offset[__pyx_t_8]) + __pyx_v_child->elsize);
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":877
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":798
  *         offset[0] += child.itemsize
  * 
  *         if not PyDataType_HASFIELDS(child):             # <<<<<<<<<<<<<<
@@ -9407,19 +8549,19 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
     __pyx_t_6 = ((!(PyDataType_HASFIELDS(__pyx_v_child) != 0)) != 0);
     if (__pyx_t_6) {
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":878
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":799
  * 
  *         if not PyDataType_HASFIELDS(child):
  *             t = child.type_num             # <<<<<<<<<<<<<<
  *             if end - f < 5:
  *                 raise RuntimeError(u"Format string allocated too short.")
  */
-      __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_child->type_num); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 878, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_child->type_num); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 799, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_XDECREF_SET(__pyx_v_t, __pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":879
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":800
  *         if not PyDataType_HASFIELDS(child):
  *             t = child.type_num
  *             if end - f < 5:             # <<<<<<<<<<<<<<
@@ -9429,20 +8571,20 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
       __pyx_t_6 = (((__pyx_v_end - __pyx_v_f) < 5) != 0);
       if (unlikely(__pyx_t_6)) {
 
-        /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":880
+        /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":801
  *             t = child.type_num
  *             if end - f < 5:
  *                 raise RuntimeError(u"Format string allocated too short.")             # <<<<<<<<<<<<<<
  * 
  *             # Until ticket #99 is fixed, use integers to avoid warnings
  */
-        __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 880, __pyx_L1_error)
+        __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 801, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_Raise(__pyx_t_4, 0, 0, 0);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __PYX_ERR(1, 880, __pyx_L1_error)
+        __PYX_ERR(1, 801, __pyx_L1_error)
 
-        /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":879
+        /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":800
  *         if not PyDataType_HASFIELDS(child):
  *             t = child.type_num
  *             if end - f < 5:             # <<<<<<<<<<<<<<
@@ -9451,252 +8593,252 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":883
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":804
  * 
  *             # Until ticket #99 is fixed, use integers to avoid warnings
  *             if   t == NPY_BYTE:        f[0] =  98 #"b"             # <<<<<<<<<<<<<<
  *             elif t == NPY_UBYTE:       f[0] =  66 #"B"
  *             elif t == NPY_SHORT:       f[0] = 104 #"h"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_BYTE); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 883, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_BYTE); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 804, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 883, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 804, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 883, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 804, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 98;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":884
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":805
  *             # Until ticket #99 is fixed, use integers to avoid warnings
  *             if   t == NPY_BYTE:        f[0] =  98 #"b"
  *             elif t == NPY_UBYTE:       f[0] =  66 #"B"             # <<<<<<<<<<<<<<
  *             elif t == NPY_SHORT:       f[0] = 104 #"h"
  *             elif t == NPY_USHORT:      f[0] =  72 #"H"
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_UBYTE); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 884, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_UBYTE); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 805, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 884, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 805, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 884, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 805, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 66;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":885
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":806
  *             if   t == NPY_BYTE:        f[0] =  98 #"b"
  *             elif t == NPY_UBYTE:       f[0] =  66 #"B"
  *             elif t == NPY_SHORT:       f[0] = 104 #"h"             # <<<<<<<<<<<<<<
  *             elif t == NPY_USHORT:      f[0] =  72 #"H"
  *             elif t == NPY_INT:         f[0] = 105 #"i"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_SHORT); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 885, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_SHORT); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 806, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 885, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 806, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 885, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 806, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x68;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":886
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":807
  *             elif t == NPY_UBYTE:       f[0] =  66 #"B"
  *             elif t == NPY_SHORT:       f[0] = 104 #"h"
  *             elif t == NPY_USHORT:      f[0] =  72 #"H"             # <<<<<<<<<<<<<<
  *             elif t == NPY_INT:         f[0] = 105 #"i"
  *             elif t == NPY_UINT:        f[0] =  73 #"I"
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_USHORT); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 886, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_USHORT); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 807, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 886, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 807, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 886, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 807, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 72;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":887
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":808
  *             elif t == NPY_SHORT:       f[0] = 104 #"h"
  *             elif t == NPY_USHORT:      f[0] =  72 #"H"
  *             elif t == NPY_INT:         f[0] = 105 #"i"             # <<<<<<<<<<<<<<
  *             elif t == NPY_UINT:        f[0] =  73 #"I"
  *             elif t == NPY_LONG:        f[0] = 108 #"l"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_INT); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 887, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_INT); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 808, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 887, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 808, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 887, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 808, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x69;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":888
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":809
  *             elif t == NPY_USHORT:      f[0] =  72 #"H"
  *             elif t == NPY_INT:         f[0] = 105 #"i"
  *             elif t == NPY_UINT:        f[0] =  73 #"I"             # <<<<<<<<<<<<<<
  *             elif t == NPY_LONG:        f[0] = 108 #"l"
  *             elif t == NPY_ULONG:       f[0] = 76  #"L"
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_UINT); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 888, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_UINT); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 809, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 888, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 809, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 888, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 809, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 73;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":889
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":810
  *             elif t == NPY_INT:         f[0] = 105 #"i"
  *             elif t == NPY_UINT:        f[0] =  73 #"I"
  *             elif t == NPY_LONG:        f[0] = 108 #"l"             # <<<<<<<<<<<<<<
  *             elif t == NPY_ULONG:       f[0] = 76  #"L"
  *             elif t == NPY_LONGLONG:    f[0] = 113 #"q"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONG); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 889, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONG); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 810, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 889, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 810, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 889, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 810, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x6C;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":890
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":811
  *             elif t == NPY_UINT:        f[0] =  73 #"I"
  *             elif t == NPY_LONG:        f[0] = 108 #"l"
  *             elif t == NPY_ULONG:       f[0] = 76  #"L"             # <<<<<<<<<<<<<<
  *             elif t == NPY_LONGLONG:    f[0] = 113 #"q"
  *             elif t == NPY_ULONGLONG:   f[0] = 81  #"Q"
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_ULONG); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 890, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_ULONG); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 811, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 890, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 811, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 890, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 811, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 76;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":891
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":812
  *             elif t == NPY_LONG:        f[0] = 108 #"l"
  *             elif t == NPY_ULONG:       f[0] = 76  #"L"
  *             elif t == NPY_LONGLONG:    f[0] = 113 #"q"             # <<<<<<<<<<<<<<
  *             elif t == NPY_ULONGLONG:   f[0] = 81  #"Q"
  *             elif t == NPY_FLOAT:       f[0] = 102 #"f"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONGLONG); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 891, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONGLONG); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 812, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 891, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 812, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 891, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 812, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x71;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":892
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":813
  *             elif t == NPY_ULONG:       f[0] = 76  #"L"
  *             elif t == NPY_LONGLONG:    f[0] = 113 #"q"
  *             elif t == NPY_ULONGLONG:   f[0] = 81  #"Q"             # <<<<<<<<<<<<<<
  *             elif t == NPY_FLOAT:       f[0] = 102 #"f"
  *             elif t == NPY_DOUBLE:      f[0] = 100 #"d"
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_ULONGLONG); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 892, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_ULONGLONG); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 813, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 892, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 813, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 892, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 813, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 81;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":893
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":814
  *             elif t == NPY_LONGLONG:    f[0] = 113 #"q"
  *             elif t == NPY_ULONGLONG:   f[0] = 81  #"Q"
  *             elif t == NPY_FLOAT:       f[0] = 102 #"f"             # <<<<<<<<<<<<<<
  *             elif t == NPY_DOUBLE:      f[0] = 100 #"d"
  *             elif t == NPY_LONGDOUBLE:  f[0] = 103 #"g"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_FLOAT); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 893, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_FLOAT); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 814, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 893, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 814, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 893, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 814, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x66;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":894
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":815
  *             elif t == NPY_ULONGLONG:   f[0] = 81  #"Q"
  *             elif t == NPY_FLOAT:       f[0] = 102 #"f"
  *             elif t == NPY_DOUBLE:      f[0] = 100 #"d"             # <<<<<<<<<<<<<<
  *             elif t == NPY_LONGDOUBLE:  f[0] = 103 #"g"
  *             elif t == NPY_CFLOAT:      f[0] = 90; f[1] = 102; f += 1 # Zf
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_DOUBLE); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 894, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_DOUBLE); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 815, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 894, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 815, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 894, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 815, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x64;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":895
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":816
  *             elif t == NPY_FLOAT:       f[0] = 102 #"f"
  *             elif t == NPY_DOUBLE:      f[0] = 100 #"d"
  *             elif t == NPY_LONGDOUBLE:  f[0] = 103 #"g"             # <<<<<<<<<<<<<<
  *             elif t == NPY_CFLOAT:      f[0] = 90; f[1] = 102; f += 1 # Zf
  *             elif t == NPY_CDOUBLE:     f[0] = 90; f[1] = 100; f += 1 # Zd
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONGDOUBLE); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 895, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_LONGDOUBLE); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 816, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 895, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 816, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 895, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 816, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 0x67;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":896
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":817
  *             elif t == NPY_DOUBLE:      f[0] = 100 #"d"
  *             elif t == NPY_LONGDOUBLE:  f[0] = 103 #"g"
  *             elif t == NPY_CFLOAT:      f[0] = 90; f[1] = 102; f += 1 # Zf             # <<<<<<<<<<<<<<
  *             elif t == NPY_CDOUBLE:     f[0] = 90; f[1] = 100; f += 1 # Zd
  *             elif t == NPY_CLONGDOUBLE: f[0] = 90; f[1] = 103; f += 1 # Zg
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CFLOAT); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 896, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CFLOAT); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 817, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 896, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 817, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 896, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 817, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 90;
@@ -9705,18 +8847,18 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":897
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":818
  *             elif t == NPY_LONGDOUBLE:  f[0] = 103 #"g"
  *             elif t == NPY_CFLOAT:      f[0] = 90; f[1] = 102; f += 1 # Zf
  *             elif t == NPY_CDOUBLE:     f[0] = 90; f[1] = 100; f += 1 # Zd             # <<<<<<<<<<<<<<
  *             elif t == NPY_CLONGDOUBLE: f[0] = 90; f[1] = 103; f += 1 # Zg
  *             elif t == NPY_OBJECT:      f[0] = 79 #"O"
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CDOUBLE); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 897, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CDOUBLE); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 818, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 897, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 818, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 897, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 818, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 90;
@@ -9725,18 +8867,18 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":898
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":819
  *             elif t == NPY_CFLOAT:      f[0] = 90; f[1] = 102; f += 1 # Zf
  *             elif t == NPY_CDOUBLE:     f[0] = 90; f[1] = 100; f += 1 # Zd
  *             elif t == NPY_CLONGDOUBLE: f[0] = 90; f[1] = 103; f += 1 # Zg             # <<<<<<<<<<<<<<
  *             elif t == NPY_OBJECT:      f[0] = 79 #"O"
  *             else:
  */
-      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CLONGDOUBLE); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 898, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_CLONGDOUBLE); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 819, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 898, __pyx_L1_error)
+      __pyx_t_4 = PyObject_RichCompare(__pyx_v_t, __pyx_t_3, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 819, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 898, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_4); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 819, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       if (__pyx_t_6) {
         (__pyx_v_f[0]) = 90;
@@ -9745,25 +8887,25 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":899
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":820
  *             elif t == NPY_CDOUBLE:     f[0] = 90; f[1] = 100; f += 1 # Zd
  *             elif t == NPY_CLONGDOUBLE: f[0] = 90; f[1] = 103; f += 1 # Zg
  *             elif t == NPY_OBJECT:      f[0] = 79 #"O"             # <<<<<<<<<<<<<<
  *             else:
  *                 raise ValueError(u"unknown dtype code in numpy.pxd (%d)" % t)
  */
-      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_OBJECT); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 899, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyInt_From_enum__NPY_TYPES(NPY_OBJECT); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 820, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 899, __pyx_L1_error)
+      __pyx_t_3 = PyObject_RichCompare(__pyx_v_t, __pyx_t_4, Py_EQ); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 820, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 899, __pyx_L1_error)
+      __pyx_t_6 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_6 < 0)) __PYX_ERR(1, 820, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (likely(__pyx_t_6)) {
         (__pyx_v_f[0]) = 79;
         goto __pyx_L15;
       }
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":901
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":822
  *             elif t == NPY_OBJECT:      f[0] = 79 #"O"
  *             else:
  *                 raise ValueError(u"unknown dtype code in numpy.pxd (%d)" % t)             # <<<<<<<<<<<<<<
@@ -9771,18 +8913,18 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  *         else:
  */
       /*else*/ {
-        __pyx_t_3 = __Pyx_PyUnicode_FormatSafe(__pyx_kp_u_unknown_dtype_code_in_numpy_pxd, __pyx_v_t); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 901, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyUnicode_FormatSafe(__pyx_kp_u_unknown_dtype_code_in_numpy_pxd, __pyx_v_t); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 822, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
-        __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 901, __pyx_L1_error)
+        __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 822, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __Pyx_Raise(__pyx_t_4, 0, 0, 0);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __PYX_ERR(1, 901, __pyx_L1_error)
+        __PYX_ERR(1, 822, __pyx_L1_error)
       }
       __pyx_L15:;
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":902
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":823
  *             else:
  *                 raise ValueError(u"unknown dtype code in numpy.pxd (%d)" % t)
  *             f += 1             # <<<<<<<<<<<<<<
@@ -9791,7 +8933,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  */
       __pyx_v_f = (__pyx_v_f + 1);
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":877
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":798
  *         offset[0] += child.itemsize
  * 
  *         if not PyDataType_HASFIELDS(child):             # <<<<<<<<<<<<<<
@@ -9801,7 +8943,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
       goto __pyx_L13;
     }
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":906
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":827
  *             # Cython ignores struct boundary information ("T{...}"),
  *             # so don't output it
  *             f = _util_dtypestring(child, f, end, offset)             # <<<<<<<<<<<<<<
@@ -9809,12 +8951,12 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
  * 
  */
     /*else*/ {
-      __pyx_t_9 = __pyx_f_5numpy__util_dtypestring(__pyx_v_child, __pyx_v_f, __pyx_v_end, __pyx_v_offset); if (unlikely(__pyx_t_9 == ((char *)NULL))) __PYX_ERR(1, 906, __pyx_L1_error)
+      __pyx_t_9 = __pyx_f_5numpy__util_dtypestring(__pyx_v_child, __pyx_v_f, __pyx_v_end, __pyx_v_offset); if (unlikely(__pyx_t_9 == ((char *)NULL))) __PYX_ERR(1, 827, __pyx_L1_error)
       __pyx_v_f = __pyx_t_9;
     }
     __pyx_L13:;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":851
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":772
  *     cdef tuple fields
  * 
  *     for childname in descr.names:             # <<<<<<<<<<<<<<
@@ -9824,7 +8966,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":907
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":828
  *             # so don't output it
  *             f = _util_dtypestring(child, f, end, offset)
  *     return f             # <<<<<<<<<<<<<<
@@ -9834,7 +8976,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
   __pyx_r = __pyx_v_f;
   goto __pyx_L0;
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":842
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":763
  *         return ()
  * 
  * cdef inline char* _util_dtypestring(dtype descr, char* f, char* end, int* offset) except NULL:             # <<<<<<<<<<<<<<
@@ -9859,7 +9001,7 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *__pyx
   return __pyx_r;
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1022
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":943
  *     int _import_umath() except -1
  * 
  * cdef inline void set_array_base(ndarray arr, object base):             # <<<<<<<<<<<<<<
@@ -9871,7 +9013,7 @@ static CYTHON_INLINE void __pyx_f_5numpy_set_array_base(PyArrayObject *__pyx_v_a
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("set_array_base", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1023
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":944
  * 
  * cdef inline void set_array_base(ndarray arr, object base):
  *     Py_INCREF(base) # important to do this before stealing the reference below!             # <<<<<<<<<<<<<<
@@ -9880,7 +9022,7 @@ static CYTHON_INLINE void __pyx_f_5numpy_set_array_base(PyArrayObject *__pyx_v_a
  */
   Py_INCREF(__pyx_v_base);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1024
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":945
  * cdef inline void set_array_base(ndarray arr, object base):
  *     Py_INCREF(base) # important to do this before stealing the reference below!
  *     PyArray_SetBaseObject(arr, base)             # <<<<<<<<<<<<<<
@@ -9889,7 +9031,7 @@ static CYTHON_INLINE void __pyx_f_5numpy_set_array_base(PyArrayObject *__pyx_v_a
  */
   (void)(PyArray_SetBaseObject(__pyx_v_arr, __pyx_v_base));
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1022
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":943
  *     int _import_umath() except -1
  * 
  * cdef inline void set_array_base(ndarray arr, object base):             # <<<<<<<<<<<<<<
@@ -9901,7 +9043,7 @@ static CYTHON_INLINE void __pyx_f_5numpy_set_array_base(PyArrayObject *__pyx_v_a
   __Pyx_RefNannyFinishContext();
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1026
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":947
  *     PyArray_SetBaseObject(arr, base)
  * 
  * cdef inline object get_array_base(ndarray arr):             # <<<<<<<<<<<<<<
@@ -9916,7 +9058,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_get_array_base(PyArrayObject *__py
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("get_array_base", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1027
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":948
  * 
  * cdef inline object get_array_base(ndarray arr):
  *     base = PyArray_BASE(arr)             # <<<<<<<<<<<<<<
@@ -9925,7 +9067,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_get_array_base(PyArrayObject *__py
  */
   __pyx_v_base = PyArray_BASE(__pyx_v_arr);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1028
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":949
  * cdef inline object get_array_base(ndarray arr):
  *     base = PyArray_BASE(arr)
  *     if base is NULL:             # <<<<<<<<<<<<<<
@@ -9935,7 +9077,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_get_array_base(PyArrayObject *__py
   __pyx_t_1 = ((__pyx_v_base == NULL) != 0);
   if (__pyx_t_1) {
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1029
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":950
  *     base = PyArray_BASE(arr)
  *     if base is NULL:
  *         return None             # <<<<<<<<<<<<<<
@@ -9946,7 +9088,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_get_array_base(PyArrayObject *__py
     __pyx_r = Py_None; __Pyx_INCREF(Py_None);
     goto __pyx_L0;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1028
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":949
  * cdef inline object get_array_base(ndarray arr):
  *     base = PyArray_BASE(arr)
  *     if base is NULL:             # <<<<<<<<<<<<<<
@@ -9955,7 +9097,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_get_array_base(PyArrayObject *__py
  */
   }
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1030
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":951
  *     if base is NULL:
  *         return None
  *     return <object>base             # <<<<<<<<<<<<<<
@@ -9967,7 +9109,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_get_array_base(PyArrayObject *__py
   __pyx_r = ((PyObject *)__pyx_v_base);
   goto __pyx_L0;
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1026
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":947
  *     PyArray_SetBaseObject(arr, base)
  * 
  * cdef inline object get_array_base(ndarray arr):             # <<<<<<<<<<<<<<
@@ -9982,12 +9124,12 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_get_array_base(PyArrayObject *__py
   return __pyx_r;
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1034
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":955
  * # Versions of the import_* functions which are more suitable for
  * # Cython code.
  * cdef inline int import_array() except -1:             # <<<<<<<<<<<<<<
  *     try:
- *         _import_array()
+ *         __pyx_import_array()
  */
 
 static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
@@ -10003,11 +9145,11 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("import_array", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1035
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":956
  * # Cython code.
  * cdef inline int import_array() except -1:
  *     try:             # <<<<<<<<<<<<<<
- *         _import_array()
+ *         __pyx_import_array()
  *     except Exception:
  */
   {
@@ -10019,20 +9161,20 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
     __Pyx_XGOTREF(__pyx_t_3);
     /*try:*/ {
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1036
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":957
  * cdef inline int import_array() except -1:
  *     try:
- *         _import_array()             # <<<<<<<<<<<<<<
+ *         __pyx_import_array()             # <<<<<<<<<<<<<<
  *     except Exception:
  *         raise ImportError("numpy.core.multiarray failed to import")
  */
-      __pyx_t_4 = _import_array(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(1, 1036, __pyx_L3_error)
+      __pyx_t_4 = _import_array(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(1, 957, __pyx_L3_error)
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1035
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":956
  * # Cython code.
  * cdef inline int import_array() except -1:
  *     try:             # <<<<<<<<<<<<<<
- *         _import_array()
+ *         __pyx_import_array()
  *     except Exception:
  */
     }
@@ -10042,9 +9184,9 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
     goto __pyx_L8_try_end;
     __pyx_L3_error:;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1037
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":958
  *     try:
- *         _import_array()
+ *         __pyx_import_array()
  *     except Exception:             # <<<<<<<<<<<<<<
  *         raise ImportError("numpy.core.multiarray failed to import")
  * 
@@ -10052,32 +9194,32 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
     __pyx_t_4 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_4) {
       __Pyx_AddTraceback("numpy.import_array", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(1, 1037, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(1, 958, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_7);
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1038
- *         _import_array()
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":959
+ *         __pyx_import_array()
  *     except Exception:
  *         raise ImportError("numpy.core.multiarray failed to import")             # <<<<<<<<<<<<<<
  * 
  * cdef inline int import_umath() except -1:
  */
-      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 1038, __pyx_L5_except_error)
+      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 959, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_Raise(__pyx_t_8, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __PYX_ERR(1, 1038, __pyx_L5_except_error)
+      __PYX_ERR(1, 959, __pyx_L5_except_error)
     }
     goto __pyx_L5_except_error;
     __pyx_L5_except_error:;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1035
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":956
  * # Cython code.
  * cdef inline int import_array() except -1:
  *     try:             # <<<<<<<<<<<<<<
- *         _import_array()
+ *         __pyx_import_array()
  *     except Exception:
  */
     __Pyx_XGIVEREF(__pyx_t_1);
@@ -10088,12 +9230,12 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
     __pyx_L8_try_end:;
   }
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1034
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":955
  * # Versions of the import_* functions which are more suitable for
  * # Cython code.
  * cdef inline int import_array() except -1:             # <<<<<<<<<<<<<<
  *     try:
- *         _import_array()
+ *         __pyx_import_array()
  */
 
   /* function exit code */
@@ -10111,7 +9253,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
   return __pyx_r;
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1040
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":961
  *         raise ImportError("numpy.core.multiarray failed to import")
  * 
  * cdef inline int import_umath() except -1:             # <<<<<<<<<<<<<<
@@ -10132,7 +9274,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("import_umath", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1041
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":962
  * 
  * cdef inline int import_umath() except -1:
  *     try:             # <<<<<<<<<<<<<<
@@ -10148,16 +9290,16 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
     __Pyx_XGOTREF(__pyx_t_3);
     /*try:*/ {
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1042
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":963
  * cdef inline int import_umath() except -1:
  *     try:
  *         _import_umath()             # <<<<<<<<<<<<<<
  *     except Exception:
  *         raise ImportError("numpy.core.umath failed to import")
  */
-      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(1, 1042, __pyx_L3_error)
+      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(1, 963, __pyx_L3_error)
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1041
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":962
  * 
  * cdef inline int import_umath() except -1:
  *     try:             # <<<<<<<<<<<<<<
@@ -10171,7 +9313,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
     goto __pyx_L8_try_end;
     __pyx_L3_error:;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1043
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":964
  *     try:
  *         _import_umath()
  *     except Exception:             # <<<<<<<<<<<<<<
@@ -10181,28 +9323,28 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
     __pyx_t_4 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_4) {
       __Pyx_AddTraceback("numpy.import_umath", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(1, 1043, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(1, 964, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_7);
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1044
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":965
  *         _import_umath()
  *     except Exception:
  *         raise ImportError("numpy.core.umath failed to import")             # <<<<<<<<<<<<<<
  * 
  * cdef inline int import_ufunc() except -1:
  */
-      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__7, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 1044, __pyx_L5_except_error)
+      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 965, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_Raise(__pyx_t_8, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __PYX_ERR(1, 1044, __pyx_L5_except_error)
+      __PYX_ERR(1, 965, __pyx_L5_except_error)
     }
     goto __pyx_L5_except_error;
     __pyx_L5_except_error:;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1041
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":962
  * 
  * cdef inline int import_umath() except -1:
  *     try:             # <<<<<<<<<<<<<<
@@ -10217,7 +9359,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
     __pyx_L8_try_end:;
   }
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1040
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":961
  *         raise ImportError("numpy.core.multiarray failed to import")
  * 
  * cdef inline int import_umath() except -1:             # <<<<<<<<<<<<<<
@@ -10240,7 +9382,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
   return __pyx_r;
 }
 
-/* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1046
+/* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":967
  *         raise ImportError("numpy.core.umath failed to import")
  * 
  * cdef inline int import_ufunc() except -1:             # <<<<<<<<<<<<<<
@@ -10261,7 +9403,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_ufunc(void) {
   PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("import_ufunc", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1047
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":968
  * 
  * cdef inline int import_ufunc() except -1:
  *     try:             # <<<<<<<<<<<<<<
@@ -10277,16 +9419,16 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_ufunc(void) {
     __Pyx_XGOTREF(__pyx_t_3);
     /*try:*/ {
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1048
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":969
  * cdef inline int import_ufunc() except -1:
  *     try:
  *         _import_umath()             # <<<<<<<<<<<<<<
  *     except Exception:
  *         raise ImportError("numpy.core.umath failed to import")
  */
-      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(1, 1048, __pyx_L3_error)
+      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(1, 969, __pyx_L3_error)
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1047
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":968
  * 
  * cdef inline int import_ufunc() except -1:
  *     try:             # <<<<<<<<<<<<<<
@@ -10300,35 +9442,38 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_ufunc(void) {
     goto __pyx_L8_try_end;
     __pyx_L3_error:;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1049
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":970
  *     try:
  *         _import_umath()
  *     except Exception:             # <<<<<<<<<<<<<<
  *         raise ImportError("numpy.core.umath failed to import")
+ * 
  */
     __pyx_t_4 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_4) {
       __Pyx_AddTraceback("numpy.import_ufunc", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(1, 1049, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(1, 970, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_7);
 
-      /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1050
+      /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":971
  *         _import_umath()
  *     except Exception:
  *         raise ImportError("numpy.core.umath failed to import")             # <<<<<<<<<<<<<<
+ * 
+ * cdef extern from *:
  */
-      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__7, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 1050, __pyx_L5_except_error)
+      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 971, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_Raise(__pyx_t_8, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __PYX_ERR(1, 1050, __pyx_L5_except_error)
+      __PYX_ERR(1, 971, __pyx_L5_except_error)
     }
     goto __pyx_L5_except_error;
     __pyx_L5_except_error:;
 
-    /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1047
+    /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":968
  * 
  * cdef inline int import_ufunc() except -1:
  *     try:             # <<<<<<<<<<<<<<
@@ -10343,7 +9488,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_ufunc(void) {
     __pyx_L8_try_end:;
   }
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1046
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":967
  *         raise ImportError("numpy.core.umath failed to import")
  * 
  * cdef inline int import_ufunc() except -1:             # <<<<<<<<<<<<<<
@@ -10679,7 +9824,7 @@ static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __
  * 
  *         if itemsize <= 0:
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__8, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 133, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 133, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -10711,7 +9856,7 @@ static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __
  * 
  *         if not isinstance(format, bytes):
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__9, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 136, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__7, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 136, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -10838,7 +9983,7 @@ static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __
  * 
  * 
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_MemoryError, __pyx_tuple__10, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 148, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_MemoryError, __pyx_tuple__8, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 148, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -11112,7 +10257,7 @@ static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array___cinit__(struct __
  * 
  *             if self.dtype_is_object:
  */
-      __pyx_t_10 = __Pyx_PyObject_Call(__pyx_builtin_MemoryError, __pyx_tuple__11, NULL); if (unlikely(!__pyx_t_10)) __PYX_ERR(2, 176, __pyx_L1_error)
+      __pyx_t_10 = __Pyx_PyObject_Call(__pyx_builtin_MemoryError, __pyx_tuple__9, NULL); if (unlikely(!__pyx_t_10)) __PYX_ERR(2, 176, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_10);
       __Pyx_Raise(__pyx_t_10, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
@@ -11353,7 +10498,7 @@ static int __pyx_array___pyx_pf_15View_dot_MemoryView_5array_2__getbuffer__(stru
  *         info.buf = self.data
  *         info.len = self.len
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__12, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 192, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__10, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 192, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -12069,7 +11214,7 @@ static PyObject *__pyx_pf___pyx_array___reduce_cython__(CYTHON_UNUSED struct __p
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 2, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__11, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 2, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -12122,7 +11267,7 @@ static PyObject *__pyx_pf___pyx_array_2__setstate_cython__(CYTHON_UNUSED struct 
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__14, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 4, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__12, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 4, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -13766,7 +12911,7 @@ static int __pyx_memoryview___pyx_pf_15View_dot_MemoryView_10memoryview_6__setit
  * 
  *         have_slices, index = _unellipsify(index, self.view.ndim)
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__15, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(2, 414, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(2, 414, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -14793,7 +13938,7 @@ static PyObject *__pyx_memoryview_convert_item_to_object(struct __pyx_memoryview
  *         else:
  *             if len(self.view.format) == 1:
  */
-      __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__16, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(2, 491, __pyx_L5_except_error)
+      __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__14, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(2, 491, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_Raise(__pyx_t_6, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
@@ -15149,7 +14294,7 @@ static int __pyx_memoryview___pyx_pf_15View_dot_MemoryView_10memoryview_8__getbu
  * 
  *         if flags & PyBUF_ND:
  */
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__17, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 516, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__15, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 516, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_Raise(__pyx_t_3, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -15689,7 +14834,7 @@ static PyObject *__pyx_pf_15View_dot_MemoryView_10memoryview_7strides___get__(st
  * 
  *         return tuple([stride for stride in self.view.strides[:self.view.ndim]])
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__18, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(2, 566, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__16, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(2, 566, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -15803,7 +14948,7 @@ static PyObject *__pyx_pf_15View_dot_MemoryView_10memoryview_10suboffsets___get_
     __Pyx_XDECREF(__pyx_r);
     __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_self->view.ndim); if (unlikely(!__pyx_t_2)) __PYX_ERR(2, 573, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_3 = PyNumber_Multiply(__pyx_tuple__19, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 573, __pyx_L1_error)
+    __pyx_t_3 = PyNumber_Multiply(__pyx_tuple__17, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 573, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_r = __pyx_t_3;
@@ -16804,7 +15949,7 @@ static PyObject *__pyx_pf___pyx_memoryview___reduce_cython__(CYTHON_UNUSED struc
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__20, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 2, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__18, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 2, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -16857,7 +16002,7 @@ static PyObject *__pyx_pf___pyx_memoryview_2__setstate_cython__(CYTHON_UNUSED st
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__21, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 4, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__19, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 4, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -17208,9 +16353,9 @@ static PyObject *_unellipsify(PyObject *__pyx_v_index, int __pyx_v_ndim) {
         __Pyx_GOTREF(__pyx_t_7);
         { Py_ssize_t __pyx_temp;
           for (__pyx_temp=0; __pyx_temp < ((__pyx_v_ndim - __pyx_t_8) + 1); __pyx_temp++) {
-            __Pyx_INCREF(__pyx_slice__22);
-            __Pyx_GIVEREF(__pyx_slice__22);
-            PyList_SET_ITEM(__pyx_t_7, __pyx_temp, __pyx_slice__22);
+            __Pyx_INCREF(__pyx_slice__20);
+            __Pyx_GIVEREF(__pyx_slice__20);
+            PyList_SET_ITEM(__pyx_t_7, __pyx_temp, __pyx_slice__20);
           }
         }
         __pyx_t_9 = __Pyx_PyList_Extend(__pyx_v_result, __pyx_t_7); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(2, 678, __pyx_L1_error)
@@ -17243,7 +16388,7 @@ static PyObject *_unellipsify(PyObject *__pyx_v_index, int __pyx_v_ndim) {
  *         else:
  */
       /*else*/ {
-        __pyx_t_9 = __Pyx_PyList_Append(__pyx_v_result, __pyx_slice__22); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(2, 681, __pyx_L1_error)
+        __pyx_t_9 = __Pyx_PyList_Append(__pyx_v_result, __pyx_slice__20); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(2, 681, __pyx_L1_error)
       }
       __pyx_L7:;
 
@@ -17383,9 +16528,9 @@ static PyObject *_unellipsify(PyObject *__pyx_v_index, int __pyx_v_ndim) {
     __Pyx_GOTREF(__pyx_t_3);
     { Py_ssize_t __pyx_temp;
       for (__pyx_temp=0; __pyx_temp < __pyx_v_nslices; __pyx_temp++) {
-        __Pyx_INCREF(__pyx_slice__22);
-        __Pyx_GIVEREF(__pyx_slice__22);
-        PyList_SET_ITEM(__pyx_t_3, __pyx_temp, __pyx_slice__22);
+        __Pyx_INCREF(__pyx_slice__20);
+        __Pyx_GIVEREF(__pyx_slice__20);
+        PyList_SET_ITEM(__pyx_t_3, __pyx_temp, __pyx_slice__20);
       }
     }
     __pyx_t_9 = __Pyx_PyList_Extend(__pyx_v_result, __pyx_t_3); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(2, 692, __pyx_L1_error)
@@ -17509,7 +16654,7 @@ static PyObject *assert_direct_dimensions(Py_ssize_t *__pyx_v_suboffsets, int __
  * 
  * 
  */
-      __pyx_t_5 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__23, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(2, 699, __pyx_L1_error)
+      __pyx_t_5 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__21, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(2, 699, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_Raise(__pyx_t_5, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
@@ -19672,7 +18817,7 @@ static PyObject *__pyx_pf___pyx_memoryviewslice___reduce_cython__(CYTHON_UNUSED 
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__24, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 2, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__22, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 2, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -19725,7 +18870,7 @@ static PyObject *__pyx_pf___pyx_memoryviewslice_2__setstate_cython__(CYTHON_UNUS
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__25, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 4, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__23, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 4, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -23378,7 +22523,7 @@ static PyBufferProcs __pyx_tp_as_buffer_array = {
 
 static PyTypeObject __pyx_type___pyx_array = {
   PyVarObject_HEAD_INIT(0, 0)
-  "_similarities.array", /*tp_name*/
+  "libreco.utils._similarities.array", /*tp_name*/
   sizeof(struct __pyx_array_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_array, /*tp_dealloc*/
@@ -23489,7 +22634,7 @@ static PyMethodDef __pyx_methods_Enum[] = {
 
 static PyTypeObject __pyx_type___pyx_MemviewEnum = {
   PyVarObject_HEAD_INIT(0, 0)
-  "_similarities.Enum", /*tp_name*/
+  "libreco.utils._similarities.Enum", /*tp_name*/
   sizeof(struct __pyx_MemviewEnum_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_Enum, /*tp_dealloc*/
@@ -23742,7 +22887,7 @@ static PyBufferProcs __pyx_tp_as_buffer_memoryview = {
 
 static PyTypeObject __pyx_type___pyx_memoryview = {
   PyVarObject_HEAD_INIT(0, 0)
-  "_similarities.memoryview", /*tp_name*/
+  "libreco.utils._similarities.memoryview", /*tp_name*/
   sizeof(struct __pyx_memoryview_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc_memoryview, /*tp_dealloc*/
@@ -23872,7 +23017,7 @@ static struct PyGetSetDef __pyx_getsets__memoryviewslice[] = {
 
 static PyTypeObject __pyx_type___pyx_memoryviewslice = {
   PyVarObject_HEAD_INIT(0, 0)
-  "_similarities._memoryviewslice", /*tp_name*/
+  "libreco.utils._similarities._memoryviewslice", /*tp_name*/
   sizeof(struct __pyx_memoryviewslice_obj), /*tp_basicsize*/
   0, /*tp_itemsize*/
   __pyx_tp_dealloc__memoryviewslice, /*tp_dealloc*/
@@ -23940,12 +23085,12 @@ static PyTypeObject __pyx_type___pyx_memoryviewslice = {
 };
 
 static PyMethodDef __pyx_methods[] = {
-  {"invert_cosine", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_13_similarities_1invert_cosine, METH_VARARGS|METH_KEYWORDS, 0},
-  {"invert_pearson", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_13_similarities_3invert_pearson, METH_VARARGS|METH_KEYWORDS, 0},
-  {"invert_jaccard", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_13_similarities_5invert_jaccard, METH_VARARGS|METH_KEYWORDS, 0},
-  {"forward_cosine", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_13_similarities_7forward_cosine, METH_VARARGS|METH_KEYWORDS, 0},
-  {"forward_pearson", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_13_similarities_9forward_pearson, METH_VARARGS|METH_KEYWORDS, 0},
-  {"forward_jaccard", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_13_similarities_11forward_jaccard, METH_VARARGS|METH_KEYWORDS, 0},
+  {"invert_cosine", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7libreco_5utils_13_similarities_1invert_cosine, METH_VARARGS|METH_KEYWORDS, 0},
+  {"invert_pearson", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7libreco_5utils_13_similarities_3invert_pearson, METH_VARARGS|METH_KEYWORDS, 0},
+  {"invert_jaccard", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7libreco_5utils_13_similarities_5invert_jaccard, METH_VARARGS|METH_KEYWORDS, 0},
+  {"forward_cosine", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7libreco_5utils_13_similarities_7forward_cosine, METH_VARARGS|METH_KEYWORDS, 0},
+  {"forward_pearson", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7libreco_5utils_13_similarities_9forward_pearson, METH_VARARGS|METH_KEYWORDS, 0},
+  {"forward_jaccard", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_7libreco_5utils_13_similarities_11forward_jaccard, METH_VARARGS|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 
@@ -24057,8 +23202,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_n_y, __pyx_k_n_y, sizeof(__pyx_k_n_y), 0, 0, 1, 1},
   {&__pyx_n_s_name, __pyx_k_name, sizeof(__pyx_k_name), 0, 0, 1, 1},
   {&__pyx_n_s_name_2, __pyx_k_name_2, sizeof(__pyx_k_name_2), 0, 0, 1, 1},
-  {&__pyx_kp_u_ndarray_is_not_C_contiguous, __pyx_k_ndarray_is_not_C_contiguous, sizeof(__pyx_k_ndarray_is_not_C_contiguous), 0, 1, 0, 0},
-  {&__pyx_kp_u_ndarray_is_not_Fortran_contiguou, __pyx_k_ndarray_is_not_Fortran_contiguou, sizeof(__pyx_k_ndarray_is_not_Fortran_contiguou), 0, 1, 0, 0},
   {&__pyx_n_s_ndim, __pyx_k_ndim, sizeof(__pyx_k_ndim), 0, 0, 1, 1},
   {&__pyx_n_s_new, __pyx_k_new, sizeof(__pyx_k_new), 0, 0, 1, 1},
   {&__pyx_kp_s_no_default___reduce___due_to_non, __pyx_k_no_default___reduce___due_to_non, sizeof(__pyx_k_no_default___reduce___due_to_non), 0, 0, 1, 0},
@@ -24111,9 +23254,9 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
   __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 44, __pyx_L1_error)
-  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(1, 272, __pyx_L1_error)
-  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(1, 856, __pyx_L1_error)
-  __pyx_builtin_ImportError = __Pyx_GetBuiltinName(__pyx_n_s_ImportError); if (!__pyx_builtin_ImportError) __PYX_ERR(1, 1038, __pyx_L1_error)
+  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(1, 777, __pyx_L1_error)
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(1, 781, __pyx_L1_error)
+  __pyx_builtin_ImportError = __Pyx_GetBuiltinName(__pyx_n_s_ImportError); if (!__pyx_builtin_ImportError) __PYX_ERR(1, 959, __pyx_L1_error)
   __pyx_builtin_MemoryError = __Pyx_GetBuiltinName(__pyx_n_s_MemoryError); if (!__pyx_builtin_MemoryError) __PYX_ERR(2, 148, __pyx_L1_error)
   __pyx_builtin_enumerate = __Pyx_GetBuiltinName(__pyx_n_s_enumerate); if (!__pyx_builtin_enumerate) __PYX_ERR(2, 151, __pyx_L1_error)
   __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(2, 2, __pyx_L1_error)
@@ -24129,82 +23272,60 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":272
- *             if ((flags & pybuf.PyBUF_C_CONTIGUOUS == pybuf.PyBUF_C_CONTIGUOUS)
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_C_CONTIGUOUS)):
- *                 raise ValueError(u"ndarray is not C contiguous")             # <<<<<<<<<<<<<<
- * 
- *             if ((flags & pybuf.PyBUF_F_CONTIGUOUS == pybuf.PyBUF_F_CONTIGUOUS)
- */
-  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_u_ndarray_is_not_C_contiguous); if (unlikely(!__pyx_tuple_)) __PYX_ERR(1, 272, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple_);
-  __Pyx_GIVEREF(__pyx_tuple_);
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":276
- *             if ((flags & pybuf.PyBUF_F_CONTIGUOUS == pybuf.PyBUF_F_CONTIGUOUS)
- *                 and not PyArray_CHKFLAGS(self, NPY_ARRAY_F_CONTIGUOUS)):
- *                 raise ValueError(u"ndarray is not Fortran contiguous")             # <<<<<<<<<<<<<<
- * 
- *             info.buf = PyArray_DATA(self)
- */
-  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_u_ndarray_is_not_Fortran_contiguou); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(1, 276, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__2);
-  __Pyx_GIVEREF(__pyx_tuple__2);
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":306
- *                 if ((descr.byteorder == c'>' and little_endian) or
- *                     (descr.byteorder == c'<' and not little_endian)):
- *                     raise ValueError(u"Non-native byte order not supported")             # <<<<<<<<<<<<<<
- *                 if   t == NPY_BYTE:        f = "b"
- *                 elif t == NPY_UBYTE:       f = "B"
- */
-  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_u_Non_native_byte_order_not_suppor); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(1, 306, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__3);
-  __Pyx_GIVEREF(__pyx_tuple__3);
-
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":856
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":777
  * 
  *         if (end - f) - <int>(new_offset - offset[0]) < 15:
  *             raise RuntimeError(u"Format string allocated too short, see comment in numpy.pxd")             # <<<<<<<<<<<<<<
  * 
  *         if ((child.byteorder == c'>' and little_endian) or
  */
-  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_u_Format_string_allocated_too_shor); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(1, 856, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__4);
-  __Pyx_GIVEREF(__pyx_tuple__4);
+  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_u_Format_string_allocated_too_shor); if (unlikely(!__pyx_tuple_)) __PYX_ERR(1, 777, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple_);
+  __Pyx_GIVEREF(__pyx_tuple_);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":880
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":781
+ *         if ((child.byteorder == c'>' and little_endian) or
+ *             (child.byteorder == c'<' and not little_endian)):
+ *             raise ValueError(u"Non-native byte order not supported")             # <<<<<<<<<<<<<<
+ *             # One could encode it in the format string and have Cython
+ *             # complain instead, BUT: < and > in format strings also imply
+ */
+  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_u_Non_native_byte_order_not_suppor); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(1, 781, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__2);
+  __Pyx_GIVEREF(__pyx_tuple__2);
+
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":801
  *             t = child.type_num
  *             if end - f < 5:
  *                 raise RuntimeError(u"Format string allocated too short.")             # <<<<<<<<<<<<<<
  * 
  *             # Until ticket #99 is fixed, use integers to avoid warnings
  */
-  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_kp_u_Format_string_allocated_too_shor_2); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(1, 880, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__5);
-  __Pyx_GIVEREF(__pyx_tuple__5);
+  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_u_Format_string_allocated_too_shor_2); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(1, 801, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__3);
+  __Pyx_GIVEREF(__pyx_tuple__3);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1038
- *         _import_array()
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":959
+ *         __pyx_import_array()
  *     except Exception:
  *         raise ImportError("numpy.core.multiarray failed to import")             # <<<<<<<<<<<<<<
  * 
  * cdef inline int import_umath() except -1:
  */
-  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_u_numpy_core_multiarray_failed_to); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(1, 1038, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__6);
-  __Pyx_GIVEREF(__pyx_tuple__6);
+  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_u_numpy_core_multiarray_failed_to); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(1, 959, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__4);
+  __Pyx_GIVEREF(__pyx_tuple__4);
 
-  /* "../../../../../.conda/envs/conda_py36/lib/python3.6/site-packages/Cython/Includes/numpy/__init__.pxd":1044
+  /* "../../.conda/envs/conda_py36/lib/python3.6/site-packages/numpy/__init__.pxd":965
  *         _import_umath()
  *     except Exception:
  *         raise ImportError("numpy.core.umath failed to import")             # <<<<<<<<<<<<<<
  * 
  * cdef inline int import_ufunc() except -1:
  */
-  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_u_numpy_core_umath_failed_to_impor); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(1, 1044, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__7);
-  __Pyx_GIVEREF(__pyx_tuple__7);
+  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_kp_u_numpy_core_umath_failed_to_impor); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(1, 965, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__5);
+  __Pyx_GIVEREF(__pyx_tuple__5);
 
   /* "View.MemoryView":133
  * 
@@ -24213,9 +23334,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         if itemsize <= 0:
  */
-  __pyx_tuple__8 = PyTuple_Pack(1, __pyx_kp_s_Empty_shape_tuple_for_cython_arr); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(2, 133, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__8);
-  __Pyx_GIVEREF(__pyx_tuple__8);
+  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_s_Empty_shape_tuple_for_cython_arr); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(2, 133, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__6);
+  __Pyx_GIVEREF(__pyx_tuple__6);
 
   /* "View.MemoryView":136
  * 
@@ -24224,9 +23345,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         if not isinstance(format, bytes):
  */
-  __pyx_tuple__9 = PyTuple_Pack(1, __pyx_kp_s_itemsize_0_for_cython_array); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(2, 136, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__9);
-  __Pyx_GIVEREF(__pyx_tuple__9);
+  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_s_itemsize_0_for_cython_array); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(2, 136, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__7);
+  __Pyx_GIVEREF(__pyx_tuple__7);
 
   /* "View.MemoryView":148
  * 
@@ -24235,9 +23356,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__10 = PyTuple_Pack(1, __pyx_kp_s_unable_to_allocate_shape_and_str); if (unlikely(!__pyx_tuple__10)) __PYX_ERR(2, 148, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__10);
-  __Pyx_GIVEREF(__pyx_tuple__10);
+  __pyx_tuple__8 = PyTuple_Pack(1, __pyx_kp_s_unable_to_allocate_shape_and_str); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(2, 148, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__8);
+  __Pyx_GIVEREF(__pyx_tuple__8);
 
   /* "View.MemoryView":176
  *             self.data = <char *>malloc(self.len)
@@ -24246,9 +23367,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *             if self.dtype_is_object:
  */
-  __pyx_tuple__11 = PyTuple_Pack(1, __pyx_kp_s_unable_to_allocate_array_data); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(2, 176, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__11);
-  __Pyx_GIVEREF(__pyx_tuple__11);
+  __pyx_tuple__9 = PyTuple_Pack(1, __pyx_kp_s_unable_to_allocate_array_data); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(2, 176, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__9);
+  __Pyx_GIVEREF(__pyx_tuple__9);
 
   /* "View.MemoryView":192
  *             bufmode = PyBUF_F_CONTIGUOUS | PyBUF_ANY_CONTIGUOUS
@@ -24257,9 +23378,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *         info.buf = self.data
  *         info.len = self.len
  */
-  __pyx_tuple__12 = PyTuple_Pack(1, __pyx_kp_s_Can_only_create_a_buffer_that_is); if (unlikely(!__pyx_tuple__12)) __PYX_ERR(2, 192, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__12);
-  __Pyx_GIVEREF(__pyx_tuple__12);
+  __pyx_tuple__10 = PyTuple_Pack(1, __pyx_kp_s_Can_only_create_a_buffer_that_is); if (unlikely(!__pyx_tuple__10)) __PYX_ERR(2, 192, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__10);
+  __Pyx_GIVEREF(__pyx_tuple__10);
 
   /* "(tree fragment)":2
  * def __reduce_cython__(self):
@@ -24267,18 +23388,18 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_tuple__13 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(2, 2, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__13);
-  __Pyx_GIVEREF(__pyx_tuple__13);
+  __pyx_tuple__11 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(2, 2, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__11);
+  __Pyx_GIVEREF(__pyx_tuple__11);
 
   /* "(tree fragment)":4
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_tuple__14 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__14)) __PYX_ERR(2, 4, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__14);
-  __Pyx_GIVEREF(__pyx_tuple__14);
+  __pyx_tuple__12 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__12)) __PYX_ERR(2, 4, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__12);
+  __Pyx_GIVEREF(__pyx_tuple__12);
 
   /* "View.MemoryView":414
  *     def __setitem__(memoryview self, object index, object value):
@@ -24287,9 +23408,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         have_slices, index = _unellipsify(index, self.view.ndim)
  */
-  __pyx_tuple__15 = PyTuple_Pack(1, __pyx_kp_s_Cannot_assign_to_read_only_memor); if (unlikely(!__pyx_tuple__15)) __PYX_ERR(2, 414, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__15);
-  __Pyx_GIVEREF(__pyx_tuple__15);
+  __pyx_tuple__13 = PyTuple_Pack(1, __pyx_kp_s_Cannot_assign_to_read_only_memor); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(2, 414, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__13);
+  __Pyx_GIVEREF(__pyx_tuple__13);
 
   /* "View.MemoryView":491
  *             result = struct.unpack(self.view.format, bytesitem)
@@ -24298,9 +23419,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *         else:
  *             if len(self.view.format) == 1:
  */
-  __pyx_tuple__16 = PyTuple_Pack(1, __pyx_kp_s_Unable_to_convert_item_to_object); if (unlikely(!__pyx_tuple__16)) __PYX_ERR(2, 491, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__16);
-  __Pyx_GIVEREF(__pyx_tuple__16);
+  __pyx_tuple__14 = PyTuple_Pack(1, __pyx_kp_s_Unable_to_convert_item_to_object); if (unlikely(!__pyx_tuple__14)) __PYX_ERR(2, 491, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__14);
+  __Pyx_GIVEREF(__pyx_tuple__14);
 
   /* "View.MemoryView":516
  *     def __getbuffer__(self, Py_buffer *info, int flags):
@@ -24309,9 +23430,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         if flags & PyBUF_ND:
  */
-  __pyx_tuple__17 = PyTuple_Pack(1, __pyx_kp_s_Cannot_create_writable_memory_vi); if (unlikely(!__pyx_tuple__17)) __PYX_ERR(2, 516, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__17);
-  __Pyx_GIVEREF(__pyx_tuple__17);
+  __pyx_tuple__15 = PyTuple_Pack(1, __pyx_kp_s_Cannot_create_writable_memory_vi); if (unlikely(!__pyx_tuple__15)) __PYX_ERR(2, 516, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__15);
+  __Pyx_GIVEREF(__pyx_tuple__15);
 
   /* "View.MemoryView":566
  *         if self.view.strides == NULL:
@@ -24320,9 +23441,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         return tuple([stride for stride in self.view.strides[:self.view.ndim]])
  */
-  __pyx_tuple__18 = PyTuple_Pack(1, __pyx_kp_s_Buffer_view_does_not_expose_stri); if (unlikely(!__pyx_tuple__18)) __PYX_ERR(2, 566, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__18);
-  __Pyx_GIVEREF(__pyx_tuple__18);
+  __pyx_tuple__16 = PyTuple_Pack(1, __pyx_kp_s_Buffer_view_does_not_expose_stri); if (unlikely(!__pyx_tuple__16)) __PYX_ERR(2, 566, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__16);
+  __Pyx_GIVEREF(__pyx_tuple__16);
 
   /* "View.MemoryView":573
  *     def suboffsets(self):
@@ -24331,12 +23452,12 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  *         return tuple([suboffset for suboffset in self.view.suboffsets[:self.view.ndim]])
  */
-  __pyx_tuple__19 = PyTuple_New(1); if (unlikely(!__pyx_tuple__19)) __PYX_ERR(2, 573, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__19);
+  __pyx_tuple__17 = PyTuple_New(1); if (unlikely(!__pyx_tuple__17)) __PYX_ERR(2, 573, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__17);
   __Pyx_INCREF(__pyx_int_neg_1);
   __Pyx_GIVEREF(__pyx_int_neg_1);
-  PyTuple_SET_ITEM(__pyx_tuple__19, 0, __pyx_int_neg_1);
-  __Pyx_GIVEREF(__pyx_tuple__19);
+  PyTuple_SET_ITEM(__pyx_tuple__17, 0, __pyx_int_neg_1);
+  __Pyx_GIVEREF(__pyx_tuple__17);
 
   /* "(tree fragment)":2
  * def __reduce_cython__(self):
@@ -24344,18 +23465,18 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_tuple__20 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__20)) __PYX_ERR(2, 2, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__20);
-  __Pyx_GIVEREF(__pyx_tuple__20);
+  __pyx_tuple__18 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__18)) __PYX_ERR(2, 2, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__18);
+  __Pyx_GIVEREF(__pyx_tuple__18);
 
   /* "(tree fragment)":4
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_tuple__21 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(2, 4, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__21);
-  __Pyx_GIVEREF(__pyx_tuple__21);
+  __pyx_tuple__19 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__19)) __PYX_ERR(2, 4, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__19);
+  __Pyx_GIVEREF(__pyx_tuple__19);
 
   /* "View.MemoryView":678
  *         if item is Ellipsis:
@@ -24364,9 +23485,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *                 seen_ellipsis = True
  *             else:
  */
-  __pyx_slice__22 = PySlice_New(Py_None, Py_None, Py_None); if (unlikely(!__pyx_slice__22)) __PYX_ERR(2, 678, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_slice__22);
-  __Pyx_GIVEREF(__pyx_slice__22);
+  __pyx_slice__20 = PySlice_New(Py_None, Py_None, Py_None); if (unlikely(!__pyx_slice__20)) __PYX_ERR(2, 678, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_slice__20);
+  __Pyx_GIVEREF(__pyx_slice__20);
 
   /* "View.MemoryView":699
  *     for suboffset in suboffsets[:ndim]:
@@ -24375,9 +23496,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__23 = PyTuple_Pack(1, __pyx_kp_s_Indirect_dimensions_not_supporte); if (unlikely(!__pyx_tuple__23)) __PYX_ERR(2, 699, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__23);
-  __Pyx_GIVEREF(__pyx_tuple__23);
+  __pyx_tuple__21 = PyTuple_Pack(1, __pyx_kp_s_Indirect_dimensions_not_supporte); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(2, 699, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__21);
+  __Pyx_GIVEREF(__pyx_tuple__21);
 
   /* "(tree fragment)":2
  * def __reduce_cython__(self):
@@ -24385,18 +23506,18 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_tuple__24 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__24)) __PYX_ERR(2, 2, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__24);
-  __Pyx_GIVEREF(__pyx_tuple__24);
+  __pyx_tuple__22 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__22)) __PYX_ERR(2, 2, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__22);
+  __Pyx_GIVEREF(__pyx_tuple__22);
 
   /* "(tree fragment)":4
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_tuple__25 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(2, 4, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__25);
-  __Pyx_GIVEREF(__pyx_tuple__25);
+  __pyx_tuple__23 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__23)) __PYX_ERR(2, 4, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__23);
+  __Pyx_GIVEREF(__pyx_tuple__23);
 
   /* "View.MemoryView":286
  *         return self.name
@@ -24405,9 +23526,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef strided = Enum("<strided and direct>") # default
  * cdef indirect = Enum("<strided and indirect>")
  */
-  __pyx_tuple__26 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct_or_indirect); if (unlikely(!__pyx_tuple__26)) __PYX_ERR(2, 286, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__26);
-  __Pyx_GIVEREF(__pyx_tuple__26);
+  __pyx_tuple__24 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct_or_indirect); if (unlikely(!__pyx_tuple__24)) __PYX_ERR(2, 286, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__24);
+  __Pyx_GIVEREF(__pyx_tuple__24);
 
   /* "View.MemoryView":287
  * 
@@ -24416,9 +23537,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef indirect = Enum("<strided and indirect>")
  * 
  */
-  __pyx_tuple__27 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct); if (unlikely(!__pyx_tuple__27)) __PYX_ERR(2, 287, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__27);
-  __Pyx_GIVEREF(__pyx_tuple__27);
+  __pyx_tuple__25 = PyTuple_Pack(1, __pyx_kp_s_strided_and_direct); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(2, 287, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__25);
+  __Pyx_GIVEREF(__pyx_tuple__25);
 
   /* "View.MemoryView":288
  * cdef generic = Enum("<strided and direct or indirect>")
@@ -24427,9 +23548,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__28 = PyTuple_Pack(1, __pyx_kp_s_strided_and_indirect); if (unlikely(!__pyx_tuple__28)) __PYX_ERR(2, 288, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__28);
-  __Pyx_GIVEREF(__pyx_tuple__28);
+  __pyx_tuple__26 = PyTuple_Pack(1, __pyx_kp_s_strided_and_indirect); if (unlikely(!__pyx_tuple__26)) __PYX_ERR(2, 288, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__26);
+  __Pyx_GIVEREF(__pyx_tuple__26);
 
   /* "View.MemoryView":291
  * 
@@ -24438,9 +23559,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * cdef indirect_contiguous = Enum("<contiguous and indirect>")
  * 
  */
-  __pyx_tuple__29 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_direct); if (unlikely(!__pyx_tuple__29)) __PYX_ERR(2, 291, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__29);
-  __Pyx_GIVEREF(__pyx_tuple__29);
+  __pyx_tuple__27 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_direct); if (unlikely(!__pyx_tuple__27)) __PYX_ERR(2, 291, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__27);
+  __Pyx_GIVEREF(__pyx_tuple__27);
 
   /* "View.MemoryView":292
  * 
@@ -24449,19 +23570,19 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * 
  */
-  __pyx_tuple__30 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_indirect); if (unlikely(!__pyx_tuple__30)) __PYX_ERR(2, 292, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__30);
-  __Pyx_GIVEREF(__pyx_tuple__30);
+  __pyx_tuple__28 = PyTuple_Pack(1, __pyx_kp_s_contiguous_and_indirect); if (unlikely(!__pyx_tuple__28)) __PYX_ERR(2, 292, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__28);
+  __Pyx_GIVEREF(__pyx_tuple__28);
 
   /* "(tree fragment)":1
  * def __pyx_unpickle_Enum(__pyx_type, long __pyx_checksum, __pyx_state):             # <<<<<<<<<<<<<<
  *     cdef object __pyx_PickleError
  *     cdef object __pyx_result
  */
-  __pyx_tuple__31 = PyTuple_Pack(5, __pyx_n_s_pyx_type, __pyx_n_s_pyx_checksum, __pyx_n_s_pyx_state, __pyx_n_s_pyx_PickleError, __pyx_n_s_pyx_result); if (unlikely(!__pyx_tuple__31)) __PYX_ERR(2, 1, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__31);
-  __Pyx_GIVEREF(__pyx_tuple__31);
-  __pyx_codeobj__32 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__31, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_pyx_unpickle_Enum, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__32)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __pyx_tuple__29 = PyTuple_Pack(5, __pyx_n_s_pyx_type, __pyx_n_s_pyx_checksum, __pyx_n_s_pyx_state, __pyx_n_s_pyx_PickleError, __pyx_n_s_pyx_result); if (unlikely(!__pyx_tuple__29)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__29);
+  __Pyx_GIVEREF(__pyx_tuple__29);
+  __pyx_codeobj__30 = (PyObject*)__Pyx_PyCode_New(3, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__29, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_pyx_unpickle_Enum, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__30)) __PYX_ERR(2, 1, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -24602,18 +23723,18 @@ static int __Pyx_modinit_type_import_code(void) {
   __Pyx_ImportType_CheckSize_Warn);
    if (!__pyx_ptype_7cpython_4type_type) __PYX_ERR(3, 9, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyImport_ImportModule("numpy"); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 206, __pyx_L1_error)
+  __pyx_t_1 = PyImport_ImportModule("numpy"); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 207, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_ptype_5numpy_dtype = __Pyx_ImportType(__pyx_t_1, "numpy", "dtype", sizeof(PyArray_Descr), __Pyx_ImportType_CheckSize_Ignore);
-   if (!__pyx_ptype_5numpy_dtype) __PYX_ERR(1, 206, __pyx_L1_error)
-  __pyx_ptype_5numpy_flatiter = __Pyx_ImportType(__pyx_t_1, "numpy", "flatiter", sizeof(PyArrayIterObject), __Pyx_ImportType_CheckSize_Warn);
-   if (!__pyx_ptype_5numpy_flatiter) __PYX_ERR(1, 229, __pyx_L1_error)
-  __pyx_ptype_5numpy_broadcast = __Pyx_ImportType(__pyx_t_1, "numpy", "broadcast", sizeof(PyArrayMultiIterObject), __Pyx_ImportType_CheckSize_Warn);
-   if (!__pyx_ptype_5numpy_broadcast) __PYX_ERR(1, 233, __pyx_L1_error)
+   if (!__pyx_ptype_5numpy_dtype) __PYX_ERR(1, 207, __pyx_L1_error)
+  __pyx_ptype_5numpy_flatiter = __Pyx_ImportType(__pyx_t_1, "numpy", "flatiter", sizeof(PyArrayIterObject), __Pyx_ImportType_CheckSize_Ignore);
+   if (!__pyx_ptype_5numpy_flatiter) __PYX_ERR(1, 230, __pyx_L1_error)
+  __pyx_ptype_5numpy_broadcast = __Pyx_ImportType(__pyx_t_1, "numpy", "broadcast", sizeof(PyArrayMultiIterObject), __Pyx_ImportType_CheckSize_Ignore);
+   if (!__pyx_ptype_5numpy_broadcast) __PYX_ERR(1, 234, __pyx_L1_error)
   __pyx_ptype_5numpy_ndarray = __Pyx_ImportType(__pyx_t_1, "numpy", "ndarray", sizeof(PyArrayObject), __Pyx_ImportType_CheckSize_Ignore);
-   if (!__pyx_ptype_5numpy_ndarray) __PYX_ERR(1, 242, __pyx_L1_error)
-  __pyx_ptype_5numpy_ufunc = __Pyx_ImportType(__pyx_t_1, "numpy", "ufunc", sizeof(PyUFuncObject), __Pyx_ImportType_CheckSize_Warn);
-   if (!__pyx_ptype_5numpy_ufunc) __PYX_ERR(1, 918, __pyx_L1_error)
+   if (!__pyx_ptype_5numpy_ndarray) __PYX_ERR(1, 246, __pyx_L1_error)
+  __pyx_ptype_5numpy_ufunc = __Pyx_ImportType(__pyx_t_1, "numpy", "ufunc", sizeof(PyUFuncObject), __Pyx_ImportType_CheckSize_Ignore);
+   if (!__pyx_ptype_5numpy_ufunc) __PYX_ERR(1, 839, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_RefNannyFinishContext();
   return 0;
@@ -24809,14 +23930,14 @@ if (!__Pyx_RefNanny) {
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
-  if (__pyx_module_is_main__similarities) {
+  if (__pyx_module_is_main_libreco__utils___similarities) {
     if (PyObject_SetAttr(__pyx_m, __pyx_n_s_name_2, __pyx_n_s_main) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   }
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) __PYX_ERR(0, 1, __pyx_L1_error)
-    if (!PyDict_GetItemString(modules, "_similarities")) {
-      if (unlikely(PyDict_SetItemString(modules, "_similarities", __pyx_m) < 0)) __PYX_ERR(0, 1, __pyx_L1_error)
+    if (!PyDict_GetItemString(modules, "libreco.utils._similarities")) {
+      if (unlikely(PyDict_SetItemString(modules, "libreco.utils._similarities", __pyx_m) < 0)) __PYX_ERR(0, 1, __pyx_L1_error)
     }
   }
   #endif
@@ -24837,7 +23958,7 @@ if (!__Pyx_RefNanny) {
   if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
 
-  /* "_similarities.pyx":3
+  /* "libreco/utils/_similarities.pyx":3
  * #cython: language_level=3
  * from cython.parallel import prange, parallel
  * import numpy as np             # <<<<<<<<<<<<<<
@@ -24849,7 +23970,7 @@ if (!__Pyx_RefNanny) {
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_1) < 0) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "_similarities.pyx":1
+  /* "libreco/utils/_similarities.pyx":1
  * #cython: language_level=3             # <<<<<<<<<<<<<<
  * from cython.parallel import prange, parallel
  * import numpy as np
@@ -24879,7 +24000,7 @@ if (!__Pyx_RefNanny) {
  * cdef strided = Enum("<strided and direct>") # default
  * cdef indirect = Enum("<strided and indirect>")
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__26, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 286, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__24, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 286, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(generic);
   __Pyx_DECREF_SET(generic, __pyx_t_1);
@@ -24893,7 +24014,7 @@ if (!__Pyx_RefNanny) {
  * cdef indirect = Enum("<strided and indirect>")
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__27, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 287, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__25, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 287, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(strided);
   __Pyx_DECREF_SET(strided, __pyx_t_1);
@@ -24907,7 +24028,7 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__28, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 288, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__26, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 288, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(indirect);
   __Pyx_DECREF_SET(indirect, __pyx_t_1);
@@ -24921,7 +24042,7 @@ if (!__Pyx_RefNanny) {
  * cdef indirect_contiguous = Enum("<contiguous and indirect>")
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__29, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 291, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__27, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 291, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(contiguous);
   __Pyx_DECREF_SET(contiguous, __pyx_t_1);
@@ -24935,7 +24056,7 @@ if (!__Pyx_RefNanny) {
  * 
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__30, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 292, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_MemviewEnum_type), __pyx_tuple__28, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 292, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_XGOTREF(indirect_contiguous);
   __Pyx_DECREF_SET(indirect_contiguous, __pyx_t_1);
@@ -25019,11 +24140,11 @@ if (!__Pyx_RefNanny) {
   __Pyx_XDECREF(__pyx_t_1);
   if (__pyx_m) {
     if (__pyx_d) {
-      __Pyx_AddTraceback("init _similarities", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("init libreco.utils._similarities", __pyx_clineno, __pyx_lineno, __pyx_filename);
     }
     Py_CLEAR(__pyx_m);
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init _similarities");
+    PyErr_SetString(PyExc_ImportError, "init libreco.utils._similarities");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -25675,6 +24796,61 @@ static CYTHON_INLINE void __Pyx_RaiseUnboundLocalError(const char *varname) {
     PyErr_Format(PyExc_UnboundLocalError, "local variable '%s' referenced before assignment", varname);
 }
 
+/* DictGetItem */
+#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
+static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key) {
+    PyObject *value;
+    value = PyDict_GetItemWithError(d, key);
+    if (unlikely(!value)) {
+        if (!PyErr_Occurred()) {
+            if (unlikely(PyTuple_Check(key))) {
+                PyObject* args = PyTuple_Pack(1, key);
+                if (likely(args)) {
+                    PyErr_SetObject(PyExc_KeyError, args);
+                    Py_DECREF(args);
+                }
+            } else {
+                PyErr_SetObject(PyExc_KeyError, key);
+            }
+        }
+        return NULL;
+    }
+    Py_INCREF(value);
+    return value;
+}
+#endif
+
+/* RaiseTooManyValuesToUnpack */
+static CYTHON_INLINE void __Pyx_RaiseTooManyValuesError(Py_ssize_t expected) {
+    PyErr_Format(PyExc_ValueError,
+                 "too many values to unpack (expected %" CYTHON_FORMAT_SSIZE_T "d)", expected);
+}
+
+/* RaiseNeedMoreValuesToUnpack */
+static CYTHON_INLINE void __Pyx_RaiseNeedMoreValuesError(Py_ssize_t index) {
+    PyErr_Format(PyExc_ValueError,
+                 "need more than %" CYTHON_FORMAT_SSIZE_T "d value%.1s to unpack",
+                 index, (index == 1) ? "" : "s");
+}
+
+/* RaiseNoneIterError */
+static CYTHON_INLINE void __Pyx_RaiseNoneNotIterableError(void) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
+}
+
+/* ExtTypeTest */
+static CYTHON_INLINE int __Pyx_TypeTest(PyObject *obj, PyTypeObject *type) {
+    if (unlikely(!type)) {
+        PyErr_SetString(PyExc_SystemError, "Missing type object");
+        return 0;
+    }
+    if (likely(__Pyx_TypeCheck(obj, type)))
+        return 1;
+    PyErr_Format(PyExc_TypeError, "Cannot convert %.200s to %.200s",
+                 Py_TYPE(obj)->tp_name, type->tp_name);
+    return 0;
+}
+
 /* PyErrFetchRestore */
 #if CYTHON_FAST_THREAD_STATE
 static CYTHON_INLINE void __Pyx_ErrRestoreInState(PyThreadState *tstate, PyObject *type, PyObject *value, PyObject *tb) {
@@ -25857,61 +25033,6 @@ bad:
     return;
 }
 #endif
-
-/* DictGetItem */
-#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
-static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key) {
-    PyObject *value;
-    value = PyDict_GetItemWithError(d, key);
-    if (unlikely(!value)) {
-        if (!PyErr_Occurred()) {
-            if (unlikely(PyTuple_Check(key))) {
-                PyObject* args = PyTuple_Pack(1, key);
-                if (likely(args)) {
-                    PyErr_SetObject(PyExc_KeyError, args);
-                    Py_DECREF(args);
-                }
-            } else {
-                PyErr_SetObject(PyExc_KeyError, key);
-            }
-        }
-        return NULL;
-    }
-    Py_INCREF(value);
-    return value;
-}
-#endif
-
-/* RaiseTooManyValuesToUnpack */
-static CYTHON_INLINE void __Pyx_RaiseTooManyValuesError(Py_ssize_t expected) {
-    PyErr_Format(PyExc_ValueError,
-                 "too many values to unpack (expected %" CYTHON_FORMAT_SSIZE_T "d)", expected);
-}
-
-/* RaiseNeedMoreValuesToUnpack */
-static CYTHON_INLINE void __Pyx_RaiseNeedMoreValuesError(Py_ssize_t index) {
-    PyErr_Format(PyExc_ValueError,
-                 "need more than %" CYTHON_FORMAT_SSIZE_T "d value%.1s to unpack",
-                 index, (index == 1) ? "" : "s");
-}
-
-/* RaiseNoneIterError */
-static CYTHON_INLINE void __Pyx_RaiseNoneNotIterableError(void) {
-    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
-}
-
-/* ExtTypeTest */
-static CYTHON_INLINE int __Pyx_TypeTest(PyObject *obj, PyTypeObject *type) {
-    if (unlikely(!type)) {
-        PyErr_SetString(PyExc_SystemError, "Missing type object");
-        return 0;
-    }
-    if (likely(__Pyx_TypeCheck(obj, type)))
-        return 1;
-    PyErr_Format(PyExc_TypeError, "Cannot convert %.200s to %.200s",
-                 Py_TYPE(obj)->tp_name, type->tp_name);
-    return 0;
-}
 
 /* GetTopmostException */
 #if CYTHON_USE_EXC_INFO_STACK
@@ -27244,7 +26365,6 @@ bad:
 #if PY_MAJOR_VERSION < 3
 static int __Pyx_GetBuffer(PyObject *obj, Py_buffer *view, int flags) {
     if (PyObject_CheckBuffer(obj)) return PyObject_GetBuffer(obj, view, flags);
-        if (__Pyx_TypeCheck(obj, __pyx_ptype_5numpy_ndarray)) return __pyx_pw_5numpy_7ndarray_1__getbuffer__(obj, view, flags);
         if (__Pyx_TypeCheck(obj, __pyx_array_type)) return __pyx_array_getbuffer(obj, view, flags);
         if (__Pyx_TypeCheck(obj, __pyx_memoryview_type)) return __pyx_memoryview_getbuffer(obj, view, flags);
     PyErr_Format(PyExc_TypeError, "'%.200s' does not have the buffer interface", Py_TYPE(obj)->tp_name);
@@ -27258,7 +26378,6 @@ static void __Pyx_ReleaseBuffer(Py_buffer *view) {
         return;
     }
     if ((0)) {}
-        else if (__Pyx_TypeCheck(obj, __pyx_ptype_5numpy_ndarray)) __pyx_pw_5numpy_7ndarray_3__releasebuffer__(obj, view);
     view->obj = NULL;
     Py_DECREF(obj);
 }
@@ -28234,14 +27353,14 @@ __pyx_fail:
 }
 
 /* MemviewDtypeToObject */
-  static CYTHON_INLINE PyObject *__pyx_memview_get_nn___pyx_t_13_similarities_uint(const char *itemp) {
-    return (PyObject *) __Pyx_PyInt_From_unsigned_int(*(__pyx_t_13_similarities_uint *) itemp);
+  static CYTHON_INLINE PyObject *__pyx_memview_get_nn___pyx_t_7libreco_5utils_13_similarities_uint(const char *itemp) {
+    return (PyObject *) __Pyx_PyInt_From_unsigned_int(*(__pyx_t_7libreco_5utils_13_similarities_uint *) itemp);
 }
-static CYTHON_INLINE int __pyx_memview_set_nn___pyx_t_13_similarities_uint(const char *itemp, PyObject *obj) {
-    __pyx_t_13_similarities_uint value = __Pyx_PyInt_As_unsigned_int(obj);
+static CYTHON_INLINE int __pyx_memview_set_nn___pyx_t_7libreco_5utils_13_similarities_uint(const char *itemp, PyObject *obj) {
+    __pyx_t_7libreco_5utils_13_similarities_uint value = __Pyx_PyInt_As_unsigned_int(obj);
     if ((value == (unsigned int)-1) && PyErr_Occurred())
         return 0;
-    *(__pyx_t_13_similarities_uint *) itemp = value;
+    *(__pyx_t_7libreco_5utils_13_similarities_uint *) itemp = value;
     return 1;
 }
 
@@ -29634,7 +28753,7 @@ __pyx_fail:
 }
 
 /* ObjectToMemviewSlice */
-  static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_13_similarities_uint(PyObject *obj, int writable_flag) {
+  static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_ds_nn___pyx_t_7libreco_5utils_13_similarities_uint(PyObject *obj, int writable_flag) {
     __Pyx_memviewslice result = { 0, 0, { 0 }, { 0 }, { 0 } };
     __Pyx_BufFmt_StackElem stack[1];
     int axes_specs[] = { (__Pyx_MEMVIEW_DIRECT | __Pyx_MEMVIEW_STRIDED) };
@@ -29645,7 +28764,7 @@ __pyx_fail:
     }
     retcode = __Pyx_ValidateAndInit_memviewslice(axes_specs, 0,
                                                  PyBUF_RECORDS_RO | writable_flag, 1,
-                                                 &__Pyx_TypeInfo_nn___pyx_t_13_similarities_uint, stack,
+                                                 &__Pyx_TypeInfo_nn___pyx_t_7libreco_5utils_13_similarities_uint, stack,
                                                  &result, obj);
     if (unlikely(retcode == -1))
         goto __pyx_fail;

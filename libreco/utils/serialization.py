@@ -35,7 +35,7 @@ def save_vector(path, model, train_data):
                  convert_user_consumed_to_json)
 
 
-def save_tf(path, train_data, data_info=None):
+def save_info(path, train_data, data_info=None):
     if not os.path.exists(path):
         os.makedirs(path)
     data_info_path = os.path.join(path, "data_info.json")
