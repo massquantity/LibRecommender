@@ -41,3 +41,11 @@ def data_info2redis(path, name="data_info"):
     for k, v in data_info.items():
         r.set(k, str(v))
 
+
+def seq2redis(path, name="user_last_interacted"):
+    u_interacted_path = os.path.join(path, "user_last_interacted.json")
+    with open(u_interacted_path, "r") as f:
+        user_interacted = json.load(f)
+    user_interacted_str = {k: str(v) for k, v in user_interacted.items()}
+    r.hmset(name, user_interacted_str)
+
