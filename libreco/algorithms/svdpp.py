@@ -20,7 +20,6 @@ from ..utils.tf_ops import reg_config
 from ..utils.sampling import NegativeSampling
 from ..data.data_generator import DataGenPure
 from ..utils.tf_ops import sparse_tensor_interaction
-from ..utils.misc import colorize
 
 
 class SVDpp(Base, TfMixin, EvalMixin):

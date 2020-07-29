@@ -102,9 +102,30 @@ JUST normal data format, each line represents a sample. One thing is important, 
 
 Besides, if you want to use some other meta features (e.g., age, sex, category etc.),  you need to tell the model which columns are [`sparse_col, dense_col, user_col, item_col`], which means all features must be in a same table. See above `YouTubeRanking` for example.
 
+
+
+## Serving
+
+For how to serve a trained model in LibRecommender, see [serving README](<https://github.com/massquantity/LibRecommender/tree/master/serving>) .
+
+
+
 ## Installation & Dependencies 
 
-From pypi : &nbsp;  `pip install LibRecommender`
+From pypi : &nbsp;  
+
+```
+$ pip install LibRecommender
+```
+
+To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
+
+```
+$ pip install numpy cython
+$ git clone https://github.com/massquantity/LibRecommender.git
+$ cd LibRecommender
+$ python setup.py install
+```
 
 
 ##### Basic Dependencies in `libreco`:

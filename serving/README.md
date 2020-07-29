@@ -1,6 +1,6 @@
-## LibRecommender Serving Guide
+# LibRecommender Serving Guide
 
-### Introduction
+## Introduction
 
 This guide mainly describes how to use [`flask`](<https://flask.palletsprojects.com/en/1.1.x/>) to serve a trained model in LibRecommender. From serving's perspective, currently there are three kinds of models in LibRecommender: 
 
@@ -25,7 +25,7 @@ $ redis-server
 
 
 
-### Saving Format
+## Saving Format
 
 In LibRecommender, the primary data serialization format is [`JSON`](<https://www.json.org/json-en.html>) rather than pickle, because pickle is relatively slow and it is declared in the official [pickle](<https://docs.python.org/3.6/library/pickle.html>) documentation that:
 
@@ -35,7 +35,7 @@ Aside from JSON, models built upon tensorflow are saved using its own [`tf.saved
 
 
 
-### KNN-based model
+## KNN-based model
 
 KNN-based model refers to the classic `userCF` and `itemCF` algorithms, which leverages a similarity matrix to find similar users/items to recommend. Due to the large number of users/items, it is often impractical to store the whole similarity matrix, so here we may only save the most similar `K` neighbors for each user/item. 
 
@@ -70,7 +70,7 @@ $ curl -d '{"user": "1", "n_rec": 10, "k_neighbors": 10}' -X POST http://127.0.0
 
 
 
-### Vector-based model
+Vector-based model
 
 Vector-based model relies on the dot product of two vectors to make recommendation, so we only need to save a bunch of vectors. This kind of model includes `SVD`, `SVD++`, `ALS`, `BPR` and `YouTubeMatch`.
 
@@ -107,7 +107,7 @@ $ curl -d '{"user": "1", "n_rec": 10, "use_faiss": true}' -X POST http://127.0.0
 
 
 
-### Tensorflow-based model 
+## Tensorflow-based model 
 
 As stated above, tf-based model will typically be saved in `protocol buffer` format. These model mainly contains neural networks, including `Wide & Deep`,  `FM`,  `DeepFM`, `YouTubeRanking` , `AutoInt` , `DIN` . 
 
