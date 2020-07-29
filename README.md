@@ -115,7 +115,7 @@ For how to serve a trained model in LibRecommender, see [serving README](<https:
 From pypi : &nbsp;  
 
 ```
-$ pip install LibRecommender
+$ pip install LibRecommender==0.0.8
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
