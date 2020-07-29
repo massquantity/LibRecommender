@@ -27,13 +27,28 @@ from ..utils.unique_features import (
 
 
 class AutoInt(Base, TfMixin, EvalMixin):
-    def __init__(self, task, data_info=None, embed_size=16, att_embed_size=None,
-                 num_heads=2, use_residual=True, n_epochs=20, lr=0.001,
-                 lr_decay=False, reg=None, batch_size=256, num_neg=1,
-                 use_bn=True, dropout_rate=None, hidden_units="128,64,32",
-                 batch_sampling=False, seed=42, lower_upper_bound=None,
-                 tf_sess_config=None):
-
+    def __init__(
+            self,
+            task,
+            data_info=None,
+            embed_size=16,
+            att_embed_size=None,
+            num_heads=2,
+            use_residual=True,
+            n_epochs=20,
+            lr=0.001,
+            lr_decay=False,
+            reg=None,
+            batch_size=256,
+            num_neg=1,
+            use_bn=True,
+            dropout_rate=None,
+            hidden_units="128,64,32",
+            batch_sampling=False,
+            seed=42,
+            lower_upper_bound=None,
+            tf_sess_config=None
+    ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self, tf_sess_config)
         EvalMixin.__init__(self, task)

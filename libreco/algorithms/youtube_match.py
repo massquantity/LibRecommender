@@ -32,13 +32,27 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
     The model implemented mainly corresponds to the candidate generation
     phase based on the original paper.
     """
-    def __init__(self, task="ranking", data_info=None, embed_size=16,
-                 n_epochs=20, lr=0.01, lr_decay=False, reg=None,
-                 batch_size=256, num_neg=1, use_bn=True, dropout_rate=None,
-                 hidden_units="128,64,32", loss_type="nce", recent_num=10,
-                 random_num=None, seed=42, lower_upper_bound=None,
-                 tf_sess_config=None):
-
+    def __init__(
+            self,
+            task="ranking",
+            data_info=None,
+            embed_size=16,
+            n_epochs=20,
+            lr=0.01,
+            lr_decay=False,
+            reg=None,
+            batch_size=256,
+            num_neg=1,
+            use_bn=True,
+            dropout_rate=None,
+            hidden_units="128,64,32",
+            loss_type="nce",
+            recent_num=10,
+            random_num=None,
+            seed=42,
+            lower_upper_bound=None,
+            tf_sess_config=None
+    ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self, tf_sess_config)
         EvalMixin.__init__(self, task)

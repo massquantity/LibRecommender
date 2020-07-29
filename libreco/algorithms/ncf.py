@@ -26,12 +26,25 @@ from ..data.data_generator import DataGenPure
 
 
 class NCF(Base, TfMixin, EvalMixin):
-    def __init__(self, task, data_info, embed_size=16, n_epochs=20, lr=0.01,
-                 lr_decay=False, reg=None, batch_size=256, num_neg=1,
-                 use_bn=True, dropout_rate=None, hidden_units="128,64,32",
-                 seed=42, batch_sampling=False, lower_upper_bound=None,
-                 tf_sess_config=None):
-
+    def __init__(
+            self,
+            task,
+            data_info,
+            embed_size=16,
+            n_epochs=20,
+            lr=0.01,
+            lr_decay=False,
+            reg=None,
+            batch_size=256,
+            num_neg=1,
+            use_bn=True,
+            dropout_rate=None,
+            hidden_units="128,64,32",
+            seed=42,
+            batch_sampling=False,
+            lower_upper_bound=None,
+            tf_sess_config=None
+    ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self, tf_sess_config)
         EvalMixin.__init__(self, task)

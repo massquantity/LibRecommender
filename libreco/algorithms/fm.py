@@ -38,12 +38,24 @@ class FM(Base, TfMixin, EvalMixin):
     Note this implementation is actually a mixture of FM and NFM,
     since it uses one dense layer in the final output
     """
-    def __init__(self, task, data_info=None, embed_size=16,
-                 n_epochs=20, lr=0.01, lr_decay=False, reg=None,
-                 batch_size=256, num_neg=1, use_bn=True, dropout_rate=None,
-                 batch_sampling=False, seed=42, lower_upper_bound=None,
-                 tf_sess_config=None):
-
+    def __init__(
+            self,
+            task,
+            data_info=None,
+            embed_size=16,
+            n_epochs=20,
+            lr=0.01,
+            lr_decay=False,
+            reg=None,
+            batch_size=256,
+            num_neg=1,
+            use_bn=True,
+            dropout_rate=None,
+            batch_sampling=False,
+            seed=42,
+            lower_upper_bound=None,
+            tf_sess_config=None
+    ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self, tf_sess_config)
         EvalMixin.__init__(self, task)

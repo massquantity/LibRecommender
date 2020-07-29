@@ -33,13 +33,27 @@ from ..utils.unique_features import (
 
 
 class DIN(Base, TfMixin, EvalMixin):
-
-    def __init__(self, task, data_info=None, embed_size=16, n_epochs=20,
-                 lr=0.001, lr_decay=False, reg=None, batch_size=256, num_neg=1,
-                 use_bn=True, dropout_rate=None, hidden_units="128,64,32",
-                 recent_num=10, random_num=None, use_tf_attention=False,
-                 seed=42, lower_upper_bound=None, tf_sess_config=None):
-
+    def __init__(
+            self,
+            task,
+            data_info=None,
+            embed_size=16,
+            n_epochs=20,
+            lr=0.001,
+            lr_decay=False,
+            reg=None,
+            batch_size=256,
+            num_neg=1,
+            use_bn=True,
+            dropout_rate=None,
+            hidden_units="128,64,32",
+            recent_num=10,
+            random_num=None,
+            use_tf_attention=False,
+            seed=42,
+            lower_upper_bound=None,
+            tf_sess_config=None
+    ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self, tf_sess_config)
         EvalMixin.__init__(self, task)
@@ -220,7 +234,6 @@ class DIN(Base, TfMixin, EvalMixin):
             seq_dense_values = tf.gather(
                 item_dense_values, self.user_interacted_seq)
             # B * seq * F_dense * 1
-        #    seq_dense_values = tf.reshape(seq_dense_values, [-1, self.max_seq_len, item_dense_values, 1])
             seq_dense_values = tf.expand_dims(seq_dense_values, axis=-1)
 
             batch_size = tf.shape(seq_dense_values)[0]
