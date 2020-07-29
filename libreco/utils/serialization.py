@@ -35,16 +35,21 @@ def save_vector(path, model, train_data):
                  convert_user_consumed_to_json)
 
 
-def save_info(path, train_data, data_info=None):
+def save_info(path, model, train_data, data_info=None):
     if not os.path.exists(path):
         os.makedirs(path)
-    data_info_path = os.path.join(path, "data_info.json")
     user_consumed_path = os.path.join(path, "user_consumed.json")
-    if data_info is not None:
-        save_to_json(data_info_path, data_info, convert_data_info_to_json)
     save_to_json(user_consumed_path,
                  train_data.sparse_interaction,
                  convert_user_consumed_to_json)
+
+    if data_info is not None:
+        data_info_path = os.path.join(path, "data_info.json")
+        save_to_json(data_info_path, data_info, convert_data_info_to_json)
+    if model.__class__.__name__.lower() in ("youtuberanking", "din"):
+        last_interacted_path = os.path.join(path, "user_last_interacted.json")
+        save_to_json(last_interacted_path, model,
+                     convert_last_interacted_to_json)
 
 
 def save_to_json(path, data, convert_func):
@@ -86,8 +91,17 @@ def convert_user_consumed_to_json(sparse_interacted_matrix):
     return consumed
 
 
+def convert_last_interacted_to_json(model):
+    seq_len = model.max_seq_len
+    u_last_interacted = dict()
+    for u, consumed in model.user_consumed.items():
+        u_last_interacted[int(u)] = list(consumed)[-seq_len:]
+    return u_last_interacted
+
+
 def convert_data_info_to_json(data_info):
     res = dict()
+    res["n_items"] = data_info.n_items
     # sparse part
     user_sparse_col = data_info.user_sparse_col.index
     item_sparse_col = data_info.item_sparse_col.index
@@ -121,7 +135,8 @@ def convert_data_info_to_json(data_info):
     return res
 
 
-def save_model_tf_serving(path, model, model_name, version, simple_save=False):
+def save_model_tf_serving(path, model, model_name,
+                          version=1, simple_save=False):
     if not path:
         model_base_path = os.path.realpath("..")
         export_path = os.path.join(model_base_path,
@@ -144,6 +159,11 @@ def save_model_tf_serving(path, model, model_name, version, simple_save=False):
                 print(f"{colorize('refused to remove, then exit...', 'red')}")
                 sys.exit(0)
 
+    if model.__class__.__name__.lower() in ("youtuberanking", "din"):
+        need_seq = True
+    else:
+        need_seq = False
+
     if simple_save:
         input_dict = {"user_indices": model.user_indices,
                       "item_indices": model.item_indices}
@@ -151,6 +171,11 @@ def save_model_tf_serving(path, model, model_name, version, simple_save=False):
             input_dict.update({"sparse_indices": model.sparse_indices})
         if model.dense:
             input_dict.update({"dense_values": model.dense_values})
+        if need_seq:
+            input_dict.update(
+                {"user_interacted_seq": model.user_interacted_seq,
+                 "user_interacted_len": model.user_interacted_len}
+            )
         output_dict = {"logits": model.output}
         tf.saved_model.simple_save(model.sess,
                                    export_path,
@@ -175,6 +200,15 @@ def save_model_tf_serving(path, model, model_name, version, simple_save=False):
                 {"dense_values": tf.saved_model.build_tensor_info(
                     model.dense_values)}
             )
+        if need_seq:
+            input_dict.update(
+                {
+                    "user_interacted_seq": tf.saved_model.build_tensor_info(
+                        model.user_interacted_seq),
+                    "user_interacted_len": tf.saved_model.build_tensor_info(
+                        model.user_interacted_len)
+                }
+            )
         output_dict = {
             "logits": tf.saved_model.build_tensor_info(model.output)
         }
@@ -198,7 +232,7 @@ def vector_from_model(model):
         user_vec = np.concatenate([model.bu[:, None], model.pu], axis=1)
         item_vec = np.concatenate([model.bi[:, None], model.qi], axis=1)
     elif model_name == "svdpp":
-        user_vec = np.concatenate([model.bu[:, None], model.puj], axis=1)
+        user_vec = np.concatenate([model.bu[:, None], model.puj], axis=1)  # puj
         item_vec = np.concatenate([model.bi[:, None], model.qi], axis=1)
     elif model_name in ("als", "bpr"):
         user_vec = model.user_embed
