@@ -20,7 +20,7 @@
 
 ## Usage
 
-##### _pure collaborative-filtering example_ : 
+#### _pure collaborative-filtering example_ : 
 
 ```python
 import numpy as np
@@ -52,7 +52,7 @@ print("prediction: ", svdpp.predict(user=1, item=2333))
 print("recommendation: ", svdpp.recommend_user(user=1, n_rec=7))  
 ```
 
-##### _include features example_ : 
+#### _include features example_ : 
 
 ```python
 import numpy as np
@@ -128,7 +128,7 @@ $ python setup.py install
 ```
 
 
-##### Basic Dependencies in `libreco`:
+#### Basic Dependencies in `libreco`:
 - Python >= 3.6
 - tensorflow >= 1.14 (but not tf 2.0 :)
 - numpy >= 1.15.4
@@ -136,7 +136,7 @@ $ python setup.py install
 - scipy >= 1.2.1
 - scikit-learn >= 0.20.0
 
-##### Optional Serving Dependencies:
+#### Optional Serving Dependencies:
 
 + flask >= 1.0.0
 + requests >= 2.22.0
