@@ -22,10 +22,20 @@ from ..data.data_generator import DataGenPure
 
 
 class SVD(Base, TfMixin, EvalMixin):
-    def __init__(self, task, data_info, embed_size=16, n_epochs=20, lr=0.01,
-                 reg=None, batch_size=256, batch_sampling=False, num_neg=1,
-                 seed=42, lower_upper_bound=None):
-
+    def __init__(
+            self,
+            task,
+            data_info,
+            embed_size=16,
+            n_epochs=20,
+            lr=0.01,
+            reg=None,
+            batch_size=256,
+            batch_sampling=False,
+            num_neg=1,
+            seed=42,
+            lower_upper_bound=None
+    ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self)
         EvalMixin.__init__(self, task)
@@ -46,7 +56,7 @@ class SVD(Base, TfMixin, EvalMixin):
                 task == "rating") else 0.0
         self.seed = seed
         self.sess = tf.Session()
-        self.user_consumed = None
+        self.user_consumed = data_info.user_consumed
         self.bu = None
         self.bi = None
         self.pu = None
@@ -110,8 +120,6 @@ class SVD(Base, TfMixin, EvalMixin):
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None):
         self.show_start_time()
-        self.user_consumed = train_data.user_consumed
-
         if self.task == "ranking" and self.batch_sampling:
             self._check_has_sampled(train_data, verbose)
             data_generator = NegativeSampling(train_data,

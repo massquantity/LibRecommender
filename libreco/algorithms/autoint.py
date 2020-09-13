@@ -77,7 +77,7 @@ class AutoInt(Base, TfMixin, EvalMixin):
         self.default_prediction = (data_info.global_mean if (
                 task == "rating") else 0.0)
         self.seed = seed
-        self.user_consumed = None
+        self.user_consumed = data_info.user_consumed
         self.sparse = self._decide_sparse_indices(data_info)
         self.dense = self._decide_dense_values(data_info)
         if self.sparse:
@@ -113,17 +113,21 @@ class AutoInt(Base, TfMixin, EvalMixin):
             name="user_feat",
             shape=[self.n_users, self.embed_size],
             initializer=truncated_normal(0.0, 0.01),
-            regularizer=self.reg)
+            regularizer=self.reg
+        )
         item_feat = tf.get_variable(
             name="item_feat",
             shape=[self.n_items, self.embed_size],
             initializer=truncated_normal(0.0, 0.01),
-            regularizer=self.reg)
+            regularizer=self.reg
+        )
 
         user_embed = tf.expand_dims(
-            tf.nn.embedding_lookup(user_feat, self.user_indices), axis=1)
+            tf.nn.embedding_lookup(user_feat, self.user_indices), axis=1
+        )
         item_embed = tf.expand_dims(
-            tf.nn.embedding_lookup(item_feat, self.item_indices), axis=1)
+            tf.nn.embedding_lookup(item_feat, self.item_indices), axis=1
+        )
         self.concat_embed.extend([user_embed, item_embed])
 
     def _build_sparse(self):
@@ -141,15 +145,18 @@ class AutoInt(Base, TfMixin, EvalMixin):
 
     def _build_dense(self):
         self.dense_values = tf.placeholder(
-            tf.float32, shape=[None, self.dense_field_size])
+            tf.float32, shape=[None, self.dense_field_size]
+        )
         dense_values_reshape = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1])
+            self.dense_values, [-1, self.dense_field_size, 1]
+        )
 
         dense_feat = tf.get_variable(
             name="dense_feat",
             shape=[self.dense_field_size, self.embed_size],
             initializer=truncated_normal(0.0, 0.01),
-            regularizer=self.reg)
+            regularizer=self.reg
+        )
 
         batch_size = tf.shape(self.dense_values)[0]
         # 1 * F_dense * K
@@ -234,7 +241,6 @@ class AutoInt(Base, TfMixin, EvalMixin):
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None, **kwargs):
         self.show_start_time()
-        self.user_consumed = train_data.user_consumed
         if self.lr_decay:
             n_batches = int(len(train_data) / self.batch_size)
             self.lr, global_steps = lr_decay_config(self.lr, n_batches,

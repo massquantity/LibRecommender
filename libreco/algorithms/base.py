@@ -203,9 +203,9 @@ class TfMixin(object):
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
-                for user, item, label in data_generator(shuffle,
-                                                        self.batch_size):
-
+                for user, item, label in data_generator(
+                        shuffle, self.batch_size
+                ):
                     feed_dict = {self.user_indices: user,
                                  self.item_indices: item,
                                  self.labels: label}
@@ -238,8 +238,9 @@ class TfMixin(object):
                       f"{self.sess.run(self.lr)}")
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
-                for u, i, label, si, dv in data_generator(shuffle,
-                                                          self.batch_size):
+                for u, i, label, si, dv in data_generator(
+                        shuffle, self.batch_size
+                ):
                     feed_dict = self._get_feed_dict(u, i, si, dv, label, True)
                     train_loss, _ = self.sess.run(
                         [self.loss, self.training_op], feed_dict)
@@ -258,9 +259,11 @@ class TfMixin(object):
 
     def _get_feed_dict(self, user_indices, item_indices, sparse_indices,
                        dense_values, label, is_training):
-        feed_dict = {self.user_indices: user_indices,
-                     self.item_indices: item_indices,
-                     self.is_training: is_training}
+        feed_dict = {
+            self.user_indices: user_indices,
+            self.item_indices: item_indices,
+            self.is_training: is_training
+        }
         if self.sparse:
             feed_dict.update({self.sparse_indices: sparse_indices})
         if self.dense:
@@ -272,11 +275,13 @@ class TfMixin(object):
     def _get_seq_feed_dict(self, u_interacted_seq, u_interacted_len,
                            user_indices, item_indices, label, sparse_indices,
                            dense_values, is_training):
-        feed_dict = {self.user_interacted_seq: u_interacted_seq,
-                     self.user_interacted_len: u_interacted_len,
-                     self.user_indices: user_indices,
-                     self.item_indices: item_indices,
-                     self.is_training: is_training}
+        feed_dict = {
+            self.user_interacted_seq: u_interacted_seq,
+            self.user_interacted_len: u_interacted_len,
+            self.user_indices: user_indices,
+            self.item_indices: item_indices,
+            self.is_training: is_training
+        }
         if self.sparse:
             feed_dict.update({self.sparse_indices: sparse_indices})
         if self.dense:

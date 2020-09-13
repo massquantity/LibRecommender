@@ -69,7 +69,7 @@ class NCF(Base, TfMixin, EvalMixin):
                 task == "rating") else 0.0
         self.seed = seed
     #    self.sess = tf.Session()
-        self.user_consumed = None
+        self.user_consumed = data_info.user_consumed
 
     def _build_model(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
@@ -136,7 +136,6 @@ class NCF(Base, TfMixin, EvalMixin):
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None, **kwargs):
         self.show_start_time()
-        self.user_consumed = train_data.user_consumed
         if self.lr_decay:
             n_batches = int(len(train_data) / self.batch_size)
             self.lr, global_steps = lr_decay_config(self.lr, n_batches,

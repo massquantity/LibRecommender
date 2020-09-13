@@ -81,7 +81,7 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
          self.interaction_num) = self._check_interaction_mode(
             recent_num, random_num)
         self.seed = seed
-        self.user_consumed = None
+        self.user_consumed = data_info.user_consumed
         self.sparse = self._decide_sparse_indices(data_info)
         self.dense = self._decide_dense_values(data_info)
         if self.sparse:
@@ -202,7 +202,6 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         assert self.task == "ranking", (
             "YouTube models is only suitable for ranking")
         self.show_start_time()
-        self.user_consumed = train_data.user_consumed
         if self.lr_decay:
             n_batches = int(len(train_data) / self.batch_size)
             self.lr, global_steps = lr_decay_config(self.lr, n_batches,

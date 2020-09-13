@@ -32,9 +32,17 @@ except ImportError:
 
 
 class ALS(Base, EvalMixin):
-    def __init__(self, task, data_info=None, embed_size=16, n_epochs=20,
-                 reg=None, alpha=10, seed=42, lower_upper_bound=None):
-
+    def __init__(
+            self,
+            task,
+            data_info=None,
+            embed_size=16,
+            n_epochs=20,
+            reg=None,
+            alpha=10,
+            seed=42,
+            lower_upper_bound=None
+    ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         EvalMixin.__init__(self, task)
 
@@ -47,9 +55,12 @@ class ALS(Base, EvalMixin):
         self.seed = seed
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
-        self.default_prediction = data_info.global_mean if (
-                task == "rating") else 0.0
-        self.user_consumed = None
+        self.default_prediction = (
+            data_info.global_mean
+            if task == "rating"
+            else 0.0
+        )
+        self.user_consumed = data_info.user_consumed
         self.user_embed = None
         self.item_embed = None
 
@@ -66,8 +77,6 @@ class ALS(Base, EvalMixin):
     def fit(self, train_data, verbose=1, shuffle=True, use_cg=True,
             n_threads=1, eval_data=None, metrics=None):
         self.show_start_time()
-        self.user_consumed = train_data.user_consumed
-
         user_interaction = train_data.sparse_interaction  # sparse.csr_matrix
         item_interaction = user_interaction.T.tocsr()
         if self.task == "ranking":
@@ -113,12 +122,15 @@ class ALS(Base, EvalMixin):
             [item]) if isinstance(item, int) else np.asarray(item)
 
         unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item)
+            user, item
+        )
 
         preds = np.sum(
-            np.multiply(self.user_embed[user],
-                        self.item_embed[item]),
-            axis=1)
+            np.multiply(
+                self.user_embed[user], self.item_embed[item]
+            ),
+            axis=1
+        )
 
         if self.task == "rating":
             preds = np.clip(
