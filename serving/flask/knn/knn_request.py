@@ -1,7 +1,7 @@
 import argparse
 import json
 import requests
-from serving.flask.colorize import colorize
+from serving.flask import colorize
 
 
 def parse_args():
