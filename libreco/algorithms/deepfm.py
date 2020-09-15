@@ -9,8 +9,8 @@ author: massquantity
 import time
 from itertools import islice
 import numpy as np
-import tensorflow as tf
-from tensorflow.python.keras.initializers import (
+import tensorflow as tf2
+from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
@@ -27,6 +27,8 @@ from ..utils.unique_features import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
 )
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 class DeepFM(Base, TfMixin, EvalMixin):

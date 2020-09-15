@@ -1,6 +1,7 @@
 from math import floor
 from random import random, seed as set_random_seed
 import numpy as np
+from tqdm import tqdm
 from ..utils.misc import time_block
 
 
@@ -11,34 +12,28 @@ class SamplingBase(object):
         self.num_neg = num_neg
 
     def sample_items_random(self, seed=42):
-        set_random_seed(seed)
-        np.random.seed(seed)
         n_items = self.data_info.n_items
         item_indices_sampled = list()
-        # set `list.append` as local variable to speed up
-        item_append = item_indices_sampled.append
         # set is much faster for search contains
         user_consumed = {
-            u: set(items) for u, items in self.dataset.user_consumed.items()
+            u: set(items) for u, items in self.data_info.user_consumed.items()
         }
         # sample negative items for every user
         with time_block("random neg item sampling"):
             for u, i in zip(self.dataset.user_indices,
                             self.dataset.item_indices):
-                item_append(i)
+                item_indices_sampled.append(i)
                 for _ in range(self.num_neg):
                     item_neg = floor(n_items * random())
                     while item_neg in user_consumed[u]:
                         item_neg = floor(n_items * random())
-                    item_append(item_neg)
+                    item_indices_sampled.append(item_neg)
         return np.asarray(item_indices_sampled)
 
     def sample_items_popular(self, seed=42):
-        set_random_seed(seed)
-        np.random.seed(seed)
         data = self.data_info.get_indexed_interaction()
         item_counts = data.item.value_counts().sort_index().to_numpy()
-        user_consumed = self.dataset.user_consumed
+        user_consumed = self.data_info.user_consumed
         items = np.arange(self.data_info.n_items)
 
         item_order = list()
@@ -97,24 +92,33 @@ class NegativeSampling(SamplingBase):
 
     def generate_all(self, seed=42, item_gen_mode="random"):
         user_indices_sampled = np.repeat(
-            self.user_indices, self.num_neg + 1, axis=0)
+            self.user_indices, self.num_neg + 1, axis=0
+        )
 
         if item_gen_mode not in ["random", "popular"]:
             raise ValueError(
-                "sampling item_gen_mode must either be 'random' or 'popular'")
+                "sampling item_gen_mode must either be 'random' or 'popular'"
+            )
         elif item_gen_mode == "random":
             item_indices_sampled = self.sample_items_random(seed=seed)
         elif item_gen_mode == "popular":
             item_indices_sampled = self.sample_items_popular(seed=seed)
 
         sparse_indices_sampled = self._sparse_indices_sampling(
-            self.sparse_indices, item_indices_sampled) if self.sparse else None
+            self.sparse_indices, item_indices_sampled
+        ) if self.sparse else None
         dense_values_sampled = self._dense_values_sampling(
-            self.dense_values, item_indices_sampled) if self.dense else None
+            self.dense_values, item_indices_sampled
+        ) if self.dense else None
         label_sampled = self._label_negative_sampling(self.data_size)
 
-        return (user_indices_sampled, item_indices_sampled, label_sampled,
-                sparse_indices_sampled, dense_values_sampled)
+        return (
+            user_indices_sampled,
+            item_indices_sampled,
+            label_sampled,
+            sparse_indices_sampled,
+            dense_values_sampled
+        )
 
     def __call__(self, shuffle=True, batch_size=None):
         if shuffle:
@@ -125,13 +129,14 @@ class NegativeSampling(SamplingBase):
                 self.dense_values[mask] if self.dense else None)
 
         user_consumed = {
-            u: set(items) for u, items in self.dataset.user_consumed.items()
+            u: set(items) for u, items in self.data_info.user_consumed.items()
         }
         n_items = self.data_info.n_items
         return self.sample_batch(user_consumed, n_items, batch_size)
 
     def sample_batch(self, user_consumed, n_items, batch_size):
-        for k in range(0, self.data_size, batch_size):
+        for k in tqdm(range(0, self.data_size, batch_size),
+                      desc="batch_sampling train"):
             batch_slice = slice(k, k + batch_size)
             batch_user_indices = self.user_indices[batch_slice]
             batch_item_indices = self.item_indices[batch_slice]
@@ -139,6 +144,10 @@ class NegativeSampling(SamplingBase):
                 self.sparse_indices[batch_slice] if self.sparse else None)
             batch_dense_values = (
                 self.dense_values[batch_slice] if self.dense else None)
+
+            user_indices_sampled = np.repeat(
+                batch_user_indices, self.num_neg + 1, axis=0
+            )
 
             item_indices_sampled = list()
             for u, i in zip(batch_user_indices, batch_item_indices):
@@ -148,6 +157,7 @@ class NegativeSampling(SamplingBase):
                     while item_neg in user_consumed[u]:
                         item_neg = floor(random() * n_items)
                     item_indices_sampled.append(item_neg)
+            item_indices_sampled = np.array(item_indices_sampled)
 
             sparse_indices_sampled = self._sparse_indices_sampling(
                 batch_sparse_indices, item_indices_sampled
@@ -155,10 +165,17 @@ class NegativeSampling(SamplingBase):
             dense_values_sampled = self._dense_values_sampling(
                 batch_dense_values, item_indices_sampled
             ) if self.dense else None
-            label_sampled = self._label_negative_sampling(batch_size)
+            label_sampled = self._label_negative_sampling(
+                len(batch_user_indices)
+            )
 
-            yield (batch_user_indices, batch_item_indices, label_sampled,
-                   sparse_indices_sampled, dense_values_sampled)
+            yield (
+                user_indices_sampled,
+                item_indices_sampled,
+                label_sampled,
+                sparse_indices_sampled,
+                dense_values_sampled
+            )
 
     def _sparse_indices_sampling(self, sparse_indices, item_indices_sampled):
         user_sparse_col = self.data_info.user_sparse_col.index
@@ -251,13 +268,14 @@ class PairwiseSampling(SamplingBase):
             self.item_indices = self.item_indices[mask]
 
         user_consumed = {
-            u: set(items) for u, items in self.dataset.user_consumed.items()
+            u: set(items) for u, items in self.data_info.user_consumed.items()
         }
         n_items = self.data_info.n_items
         return self.sample_batch(user_consumed, n_items, batch_size)
 
     def sample_batch(self, user_consumed, n_items, batch_size):
-        for k in range(0, self.data_size, batch_size):
+        for k in tqdm(range(0, self.data_size, batch_size),
+                      desc="pair_sampling train"):
             batch_slice = slice(k, k + batch_size)
             batch_user_indices = self.user_indices[batch_slice]
             batch_item_indices_pos = self.item_indices[batch_slice]
@@ -271,7 +289,9 @@ class PairwiseSampling(SamplingBase):
 
             batch_item_indices_neg = np.asarray(batch_item_indices_neg)
         #    batch_item_diff
-            yield (batch_user_indices,
-                   batch_item_indices_pos,
-                   batch_item_indices_neg)
+            yield (
+                batch_user_indices,
+                batch_item_indices_pos,
+                batch_item_indices_neg
+            )
 

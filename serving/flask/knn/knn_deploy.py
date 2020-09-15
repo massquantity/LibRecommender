@@ -2,7 +2,7 @@ from collections import defaultdict
 import json
 from flask import Flask, jsonify, request
 import redis
-from serving.flask.colorize import colorize
+from serving.flask import colorize
 
 
 app = Flask(__name__)

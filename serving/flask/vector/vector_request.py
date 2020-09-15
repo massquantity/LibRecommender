@@ -2,7 +2,7 @@ import argparse
 import json
 import time
 import requests
-from serving.flask.colorize import colorize
+from serving.flask import colorize
 
 
 def str2bool(v):

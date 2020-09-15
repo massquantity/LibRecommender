@@ -9,8 +9,8 @@ author: massquantity
 import time
 from itertools import islice
 import numpy as np
-import tensorflow as tf
-from tensorflow.python.keras.initializers import (
+import tensorflow as tf2
+from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
@@ -20,6 +20,8 @@ from ..utils.tf_ops import reg_config
 from ..utils.sampling import NegativeSampling
 from ..data.data_generator import DataGenPure
 from ..utils.tf_ops import sparse_tensor_interaction
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 class SVDpp(Base, TfMixin, EvalMixin):
@@ -35,11 +37,12 @@ class SVDpp(Base, TfMixin, EvalMixin):
             batch_sampling=False,
             num_neg=1,
             seed=42,
-            lower_upper_bound=None
+            lower_upper_bound=None,
+            tf_sess_config=None
     ):
 
         Base.__init__(self, task, data_info, lower_upper_bound)
-        TfMixin.__init__(self)
+        TfMixin.__init__(self, tf_sess_config)
         EvalMixin.__init__(self, task)
 
         self.task = task
@@ -57,7 +60,6 @@ class SVDpp(Base, TfMixin, EvalMixin):
         self.default_prediction = data_info.global_mean if (
                 task == "rating") else 0.0
         self.seed = seed
-        self.sess = tf.Session()
         self.user_consumed = data_info.user_consumed
         self.bu = None
         self.bi = None
@@ -141,7 +143,6 @@ class SVDpp(Base, TfMixin, EvalMixin):
             data_generator = NegativeSampling(train_data,
                                               self.data_info,
                                               self.num_neg,
-                                              self.batch_size,
                                               batch_sampling=True)
         else:
             data_generator = DataGenPure(train_data)

@@ -6,15 +6,17 @@
 
 + Implemented a number of popular recommendation algorithms such as SVD++, DeepFM, BPR etc.
 
-+ A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features.
++ A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features or both.
 
 + Ease of memory usage, automatically convert categorical features to sparse representation.
 
-+ Suitable for both explicit and implicit datasets, and negative sampling can be used for implicit dataset.
++ Support training for both explicit and implicit datasets, and negative sampling can be used for implicit dataset.
 
-+ Making use of Cython or Tensorflow to accelerate model training.
++ Making use of Cython or Tensorflow for high-speed model training.
 
 + Provide end-to-end workflow, i.e. data handling / preprocessing -> model training -> evaluate -> serving.
+
++ Provide unified and friendly API for all algorithms.
 
 
 
@@ -49,7 +51,7 @@ svdpp.evaluate(test_data, metrics=["rmse", "mae"])
 # predict preference of user 1 to item 2333
 print("prediction: ", svdpp.predict(user=1, item=2333))
 # recommend 7 items for user 1
-print("recommendation: ", svdpp.recommend_user(user=1, n_rec=7))  
+print("recommendation(id, probability): ", svdpp.recommend_user(user=1, n_rec=7))  
 ```
 
 #### _include features example_ : 
@@ -88,7 +90,7 @@ ytb_ranking.fit(train_data, verbose=2, shuffle=True, eval_data=test_data,
 # predict preference of user 1 to item 2333
 print("prediction: ", ytb_ranking.predict(user=1, item=2333))  
 # recommend 7 items for user 1
-print("recommendation: ", ytb_ranking.recommend_user(user=1, n_rec=7))  
+print("recommendation(id, probability): ", ytb_ranking.recommend_user(user=1, n_rec=7))  
 ```
 
 
@@ -115,13 +117,13 @@ For how to serve a trained model in LibRecommender, see [serving README](<https:
 From pypi : &nbsp;  
 
 ```
-$ pip install LibRecommender==0.0.8
+$ pip install LibRecommender==0.1.0
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
 
 ```
-$ pip install numpy cython
+$ # pip install numpy cython
 $ git clone https://github.com/massquantity/LibRecommender.git
 $ cd LibRecommender
 $ python setup.py install
@@ -130,11 +132,14 @@ $ python setup.py install
 
 #### Basic Dependencies in `libreco`:
 - Python >= 3.6
-- tensorflow >= 1.14 (but not tf 2.0 :)
+- tensorflow >= 1.14
 - numpy >= 1.15.4
 - pandas >= 0.23.4
 - scipy >= 1.2.1
 - scikit-learn >= 0.20.0
+- tqdm >= 4.46.0
+
+`LibRecommender` is tested under tensorflow 1.14 and 2.3. If you encounter any problem during running, feel free to open an issue.
 
 #### Optional Serving Dependencies:
 
@@ -164,9 +169,11 @@ $ python setup.py install
 | AutoInt | feat | [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921.pdf) |
 |        DIN        |   feat   | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) |
 
+> `pure` means collaborative-filtering algorithms which only use behavior data, whereas `feat` means other features can be included.
 
 ## License
 
 #### MIT
 
 <br>
+

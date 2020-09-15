@@ -5,7 +5,7 @@ from flask import Flask, jsonify, request
 import faiss
 import numpy as np
 import redis
-from serving.flask.colorize import colorize
+from serving.flask import colorize
 
 
 app = Flask(__name__)

@@ -45,7 +45,7 @@ Below is an example usage which saves 20 neighbors per item using itermCF. One s
 >>> from libreco.algorithms import UserCF, ItemCF
 >>> from libreco.data import DatasetPure
 >>> from libreco.utils import save_knn
->>> from serving import sim2redis, user_consumed2redis
+>>> from serving.flask import sim2redis, user_consumed2redis
 
 >>> train_data, data_info = DatasetPure.build_trainset(...)
 >>> model = ItemCF(...)
@@ -82,7 +82,7 @@ Below is an example usage which uses `ALS`. One should also specify model-saving
 >>> from libreco.algorithms import ALS
 >>> from libreco.data import DatasetPure
 >>> from libreco.utils import save_vector
->>> from serving import vector2redis, user_consumed2redis, save_faiss_index
+>>> from serving.flask import vector2redis, user_consumed2redis, save_faiss_index
 
 >>> train_data, data_info = DatasetPure.build_trainset(...)
 >>> model = ALS(...)
@@ -119,7 +119,7 @@ Below is an example usage which uses `DIN`. Since `DIN` makes use of user past i
 >>> from libreco.algorithms import DIN
 >>> from libreco.data import DatasetFeat
 >>> from libreco.utils import save_info, save_model_tf_serving
->>> from serving import data_info2redis, user_consumed2redis, seq2redis
+>>> from serving.flask import data_info2redis, user_consumed2redis, seq2redis
 
 >>> train_data, data_info = DatasetFeat.build_trainset(...)
 >>> model = DIN(...)

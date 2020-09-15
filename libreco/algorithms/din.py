@@ -6,11 +6,10 @@ Reference: Guorui Zhou et al.  "Deep Interest Network for Click-Through Rate Pre
 author: massquantity
 
 """
-import time
 from itertools import islice
 import numpy as np
-import tensorflow as tf
-from tensorflow.python.keras.initializers import (
+import tensorflow as tf2
+from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
@@ -30,6 +29,8 @@ from ..utils.unique_features import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
 )
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 class DIN(Base, TfMixin, EvalMixin):
@@ -72,12 +73,13 @@ class DIN(Base, TfMixin, EvalMixin):
         self.hidden_units = list(map(int, hidden_units.split(",")))
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
-        self.use_tf_attention = use_tf_attention
         self.default_prediction = data_info.global_mean if (
                 task == "rating") else 0.0
-        (self.interaction_mode,
-         self.max_seq_len) = self._check_interaction_mode(
-            recent_num, random_num)
+        self.use_tf_attention = use_tf_attention
+        (
+            self.interaction_mode,
+            self.max_seq_len
+        ) = self._check_interaction_mode(recent_num, random_num)
         self.seed = seed
         self.user_consumed = data_info.user_consumed
         self.sparse = self._decide_sparse_indices(data_info)
@@ -88,9 +90,15 @@ class DIN(Base, TfMixin, EvalMixin):
         if self.dense:
             self.dense_field_size = self._dense_field_size(data_info)
         self.item_sparse = (
-            True if data_info.item_sparse_unique is not None else False)
+            True
+            if data_info.item_sparse_unique is not None
+            else False
+        )
         self.item_dense = (
-            True if data_info.item_dense_unique is not None else False)
+            True
+            if data_info.item_dense_unique is not None
+            else False
+        )
         if self.item_sparse:
             # item sparse col indices in all sparse cols
             self.item_sparse_col_indices = data_info.item_sparse_col.index
@@ -339,7 +347,8 @@ class DIN(Base, TfMixin, EvalMixin):
         self._build_model()
         self._build_train_ops(global_steps)
 
-        data_generator = DataGenSequence(train_data, self.sparse, self.dense,
+        data_generator = DataGenSequence(train_data, self.data_info,
+                                         self.sparse, self.dense,
                                          mode=self.interaction_mode,
                                          num=self.max_seq_len,
                                          padding_idx=0)
@@ -360,7 +369,7 @@ class DIN(Base, TfMixin, EvalMixin):
 
             if verbose > 1:
                 train_loss_str = "train_loss: " + str(
-                    round(np.mean(train_total_loss), 4)
+                    round(float(np.mean(train_total_loss)), 4)
                 )
                 print(f"\t {colorize(train_loss_str, 'green')}")
                 # for evaluation
