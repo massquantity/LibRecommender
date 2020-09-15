@@ -34,9 +34,19 @@ class BPR(Base, TfMixin, EvalMixin):
     """
     BPR is only suitable for ranking task
     """
-    def __init__(self, task="ranking", data_info=None, embed_size=16,
-                 n_epochs=20, lr=0.01, reg=None, batch_size=256,
-                 num_neg=1, use_tf=True, seed=42):
+    def __init__(
+            self,
+            task="ranking",
+            data_info=None,
+            embed_size=16,
+            n_epochs=20,
+            lr=0.01,
+            reg=None,
+            batch_size=256,
+            num_neg=1,
+            use_tf=True,
+            seed=42
+    ):
 
         Base.__init__(self, task, data_info)
         EvalMixin.__init__(self, task)
@@ -54,8 +64,7 @@ class BPR(Base, TfMixin, EvalMixin):
         self.default_prediction = 0.0
         self.use_tf = use_tf
         self.seed = seed
-
-        self.user_consumed = None
+        self.user_consumed = data_info.user_consumed
         self.user_embed = None
         self.item_embed = None
 
@@ -138,7 +147,6 @@ class BPR(Base, TfMixin, EvalMixin):
     def fit(self, train_data, verbose=1, shuffle=True, num_threads=1,
             eval_data=None, metrics=None, optimizer="sgd"):
         self.show_start_time()
-        self.user_consumed = train_data.user_consumed
         self._check_has_sampled(train_data, verbose)
 
         if self.use_tf:
@@ -237,12 +245,13 @@ class BPR(Base, TfMixin, EvalMixin):
             [item]) if isinstance(item, int) else np.asarray(item)
 
         unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item)
+            user, item
+        )
 
         preds = np.sum(
-            np.multiply(self.user_embed[user],
-                        self.item_embed[item]),
-            axis=1)
+            np.multiply(self.user_embed[user], self.item_embed[item]),
+            axis=1
+        )
         preds = 1 / (1 + np.exp(-preds))
 
         if unknown_num > 0:

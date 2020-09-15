@@ -12,9 +12,14 @@ from ..evaluate.evaluate import EvalMixin
 
 
 class ItemCF(Base, EvalMixin):
-    def __init__(self, task, data_info, sim_type="cosine", k=20,
-                 lower_upper_bound=None):
-
+    def __init__(
+            self,
+            task,
+            data_info,
+            sim_type="cosine",
+            k=20,
+            lower_upper_bound=None
+    ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         EvalMixin.__init__(self, task)
 
@@ -25,7 +30,7 @@ class ItemCF(Base, EvalMixin):
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
         self.sim_type = sim_type
-        self.user_consumed = None
+        self.user_consumed = data_info.user_consumed
         # sparse matrix, user as row and item as column
         self.user_interaction = None
         # sparse matrix, item as row and user as column
@@ -40,7 +45,6 @@ class ItemCF(Base, EvalMixin):
         self.show_start_time()
         self.user_interaction = train_data.sparse_interaction
         self.item_interaction = self.user_interaction.T.tocsr()
-        self.user_consumed = train_data.user_consumed
 
         with time_block("sim_matrix", verbose=1):
             if self.sim_type == "cosine":
@@ -50,12 +54,14 @@ class ItemCF(Base, EvalMixin):
             elif self.sim_type == "jaccard":
                 sim_func = jaccard_sim
             else:
-                raise ValueError("sim_type must be one of "
-                                 "('cosine', 'pearson', 'jaccard')")
+                raise ValueError(
+                    "sim_type must be one of ('cosine', 'pearson', 'jaccard')"
+                )
 
             self.sim_matrix = sim_func(
                 self.item_interaction, self.user_interaction, self.n_items,
-                self.n_users, block_size, num_threads, min_common, mode)
+                self.n_users, block_size, num_threads, min_common, mode
+            )
 
         assert self.sim_matrix.has_sorted_indices
         if issparse(self.sim_matrix):
@@ -105,13 +111,16 @@ class ItemCF(Base, EvalMixin):
                     print(f"{colorize(no_str, 'red')}")
                 preds.append(self.default_prediction)
             else:
-                k_neighbor_labels, k_neighbor_sims = zip(*islice(
-                    takewhile(lambda x: x[1] > 0,
-                              sorted(zip(common_labels, common_sims),
-                                     key=itemgetter(1),
-                                     reverse=True)
-                              ),
-                    self.k))
+                k_neighbor_labels, k_neighbor_sims = zip(
+                    *islice(
+                        takewhile(
+                            lambda x: x[1] > 0,
+                            sorted(zip(common_labels, common_sims),
+                                   key=itemgetter(1), reverse=True),
+                        ),
+                        self.k,
+                    )
+                )
 
                 if self.task == "rating":
                     sims_distribution = (
