@@ -1,10 +1,7 @@
 import numpy as np
-import tensorflow as tf
-from tensorflow.python.keras.initializers import (
-    he_normal,
-    glorot_normal,
-    truncated_normal as tf_truncated_normal
-)
+import tensorflow as tf2
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 # It turns out that the position of batch normalization layer matters in
@@ -28,7 +25,8 @@ def dense_nn(net, hidden_units, activation=tf.nn.elu, use_bn=True,
             net = tf.layers.dense(inputs=net,
                                   units=units,
                                   activation=None,
-                                  name=name+"_layer"+str(i))
+                                  name=name+"_layer"+str(i),
+                                  reuse=tf.AUTO_REUSE)
 
             if use_bn and bn_after_activation:
                 net = activation(net)

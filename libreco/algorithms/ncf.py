@@ -8,8 +8,8 @@ author: massquantity
 import time
 from itertools import islice
 import numpy as np
-import tensorflow as tf
-from tensorflow.python.keras.initializers import (
+import tensorflow as tf2
+from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
@@ -23,6 +23,8 @@ from ..utils.tf_ops import (
 )
 from ..utils.sampling import NegativeSampling
 from ..data.data_generator import DataGenPure
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 class NCF(Base, TfMixin, EvalMixin):
@@ -68,7 +70,6 @@ class NCF(Base, TfMixin, EvalMixin):
         self.default_prediction = data_info.global_mean if (
                 task == "rating") else 0.0
         self.seed = seed
-    #    self.sess = tf.Session()
         self.user_consumed = data_info.user_consumed
 
     def _build_model(self):

@@ -6,11 +6,10 @@ Reference: Paul Covington et al.  "Deep Neural Networks for YouTube Recommendati
 author: massquantity
 
 """
-import time
 from itertools import islice
 import numpy as np
-import tensorflow as tf
-from tensorflow.python.keras.initializers import (
+import tensorflow as tf2
+from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
@@ -25,6 +24,8 @@ from ..utils.tf_ops import (
 from ..data.data_generator import DataGenSequence
 from ..data.sequence import sparse_user_last_interacted
 from ..utils.misc import time_block, colorize
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 class YouTubeMatch(Base, TfMixin, EvalMixin):
@@ -77,9 +78,10 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self.global_mean = data_info.global_mean
         self.default_prediction = data_info.global_mean if (
                 task == "rating") else 0.0
-        (self.interaction_mode,
-         self.interaction_num) = self._check_interaction_mode(
-            recent_num, random_num)
+        (
+            self.interaction_mode,
+            self.interaction_num
+        ) = self._check_interaction_mode(recent_num, random_num)
         self.seed = seed
         self.user_vector = None
         self.item_weights = None
@@ -95,7 +97,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
 
     def _build_model(self):
         tf.set_random_seed(self.seed)
-        # item_indices actually served as label in YouTubeMatch model
+        # item_indices actually served as labels in YouTubeMatch model
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
         self.concat_embed = []
@@ -178,7 +180,8 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             # n_classes, embed_size
             shape=[self.n_items, self.user_vector_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg)
+            regularizer=self.reg
+        )
         # we didn't add bias(set trainable to False),
         # since ANN(neighbor search) can't be used with bias
         self.nce_biases = tf.get_variable(
@@ -186,7 +189,8 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             shape=[self.n_items],
             initializer=tf_zeros,
             regularizer=self.reg,
-            trainable=False)
+            trainable=False
+        )
 
         if self.loss_type == "nce":
             self.loss = tf.reduce_mean(tf.nn.nce_loss(
@@ -198,7 +202,8 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
                 num_classes=self.n_items,
                 num_true=1,
                 remove_accidental_hits=True,
-                partition_strategy="div"))
+                partition_strategy="div")
+            )
         elif self.loss_type == "sampled_softmax":
             self.loss = tf.reduce_mean(tf.nn.sampled_softmax_loss(
                 weights=self.nce_weights,
@@ -210,7 +215,8 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
                 num_true=1,
                 remove_accidental_hits=True,
                 seed=self.seed,
-                partition_strategy="div"))
+                partition_strategy="div")
+            )
         else:
             raise ValueError("Loss type must either be 'nce' "
                              "or 'sampled_softmax")
@@ -230,7 +236,8 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
     def fit(self, train_data, verbose=1, shuffle=True, eval_data=None,
             metrics=None, **kwargs):
         assert self.task == "ranking", (
-            "YouTube models is only suitable for ranking")
+            "YouTube models is only suitable for ranking"
+        )
         self._check_item_col()
         self.show_start_time()
         if self.lr_decay:
@@ -244,7 +251,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self._build_train_ops(global_steps)
 
         data_generator = DataGenSequence(
-            train_data, self.sparse, self.dense,
+            train_data, self.data_info, self.sparse, self.dense,
             mode=self.interaction_mode, num=self.interaction_num,
             class_name="YoutubeMatch", padding_idx=self.n_items
         )
@@ -268,7 +275,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
 
             if verbose > 1:
                 train_loss_str = "train_loss: " + str(
-                    round(np.mean(train_total_loss), 4)
+                    round(float(np.mean(train_total_loss)), 4)
                 )
                 print(f"\t {colorize(train_loss_str, 'green')}")
                 # for evaluation

@@ -6,11 +6,10 @@ Reference: Paul Covington et al.  "Deep Neural Networks for YouTube Recommendati
 author: massquantity
 
 """
-import time
 from itertools import islice
 import numpy as np
-import tensorflow as tf
-from tensorflow.python.keras.initializers import (
+import tensorflow as tf2
+from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
@@ -29,6 +28,8 @@ from ..utils.unique_features import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
 )
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 class YouTubeRanking(Base, TfMixin, EvalMixin):
@@ -77,9 +78,10 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         self.global_mean = data_info.global_mean
         self.default_prediction = data_info.global_mean if (
                 task == "rating") else 0.0
-        (self.interaction_mode,
-         self.interaction_num) = self._check_interaction_mode(
-            recent_num, random_num)
+        (
+            self.interaction_mode,
+            self.interaction_num
+        ) = self._check_interaction_mode(recent_num, random_num)
         self.seed = seed
         self.user_consumed = data_info.user_consumed
         self.sparse = self._decide_sparse_indices(data_info)
@@ -212,7 +214,8 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         self._build_model()
         self._build_train_ops(global_steps)
 
-        data_generator = DataGenSequence(train_data, self.sparse, self.dense,
+        data_generator = DataGenSequence(train_data, self.data_info,
+                                         self.sparse, self.dense,
                                          mode=self.interaction_mode,
                                          num=self.interaction_num,
                                          padding_idx=self.n_items)
@@ -233,7 +236,7 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
 
             if verbose > 1:
                 train_loss_str = "train_loss: " + str(
-                    round(np.mean(train_total_loss), 4)
+                    round(float(np.mean(train_total_loss)), 4)
                 )
                 print(f"\t {colorize(train_loss_str, 'green')}")
                 # for evaluation

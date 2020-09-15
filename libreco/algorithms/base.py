@@ -3,9 +3,11 @@ import os
 import multiprocessing
 import time
 import numpy as np
-import tensorflow as tf
+import tensorflow as tf2
 from ..utils.misc import time_block, colorize
 from ..utils.exception import NotSamplingError
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 class Base(abc.ABC):
@@ -31,8 +33,8 @@ class Base(abc.ABC):
                 self.upper_bound = lower_upper_bound[1]
             else:
                 self.lower_bound, self.upper_bound = data_info.min_max_rating
-            print(f"lower bound: {self.lower_bound}, "
-                  f"upper bound: {self.upper_bound}")
+        #    print(f"lower bound: {self.lower_bound}, "
+        #          f"upper bound: {self.upper_bound}")
 
         elif task != "ranking":
             raise ValueError("task must either be rating or ranking")
@@ -203,7 +205,7 @@ class TfMixin(object):
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
-                for user, item, label in data_generator(
+                for user, item, label, _, _ in data_generator(
                         shuffle, self.batch_size
                 ):
                     feed_dict = {self.user_indices: user,
@@ -219,7 +221,7 @@ class TfMixin(object):
 
             if verbose > 1:
                 train_loss_str = "train_loss: " + str(
-                    round(np.mean(train_total_loss), 4)
+                    round(float(np.mean(train_total_loss)), 4)
                 )
                 print(f"\t {colorize(train_loss_str, 'green')}")
 
@@ -248,7 +250,7 @@ class TfMixin(object):
 
             if verbose > 1:
                 train_loss_str = "train_loss: " + str(
-                    round(np.mean(train_total_loss), 4)
+                    round(float(np.mean(train_total_loss)), 4)
                 )
                 print(f"\t {colorize(train_loss_str, 'green')}")
                 self.print_metrics(eval_data=eval_data, metrics=metrics)

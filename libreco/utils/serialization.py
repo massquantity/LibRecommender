@@ -5,8 +5,10 @@ import os
 import shutil
 import sys
 import numpy as np
-import tensorflow as tf
+import tensorflow as tf2
 from .misc import colorize
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 def save_knn(path, model, train_data, k=20):
@@ -102,35 +104,40 @@ def convert_last_interacted_to_json(model):
 def convert_data_info_to_json(data_info):
     res = dict()
     res["n_items"] = data_info.n_items
-    # sparse part
-    user_sparse_col = data_info.user_sparse_col.index
-    item_sparse_col = data_info.item_sparse_col.index
-    if user_sparse_col and item_sparse_col:
-        orig_cols = user_sparse_col + item_sparse_col
-        # keep column names in original order
-        sparse_col_reindex = np.arange(len(orig_cols))[np.argsort(orig_cols)]
-        res["sparse_col_reindex"] = sparse_col_reindex.tolist()
-        res["user_sparse_unique"] = data_info.user_sparse_unique.tolist()
-        res["item_sparse_unique"] = data_info.item_sparse_unique.tolist()
-    elif user_sparse_col:
-        res["user_sparse_unique"] = data_info.user_sparse_unique.tolist()
-    elif item_sparse_col:
-        res["item_sparse_unique"] = data_info.item_sparse_unique.tolist()
+    if data_info.col_name_mapping is not None:
+        # sparse part
+        user_sparse_col = data_info.user_sparse_col.index
+        item_sparse_col = data_info.item_sparse_col.index
+        if user_sparse_col and item_sparse_col:
+            orig_cols = user_sparse_col + item_sparse_col
+            # keep column names in original order
+            sparse_col_reindex = np.arange(
+                len(orig_cols)
+            )[np.argsort(orig_cols)]
+            res["sparse_col_reindex"] = sparse_col_reindex.tolist()
+            res["user_sparse_unique"] = data_info.user_sparse_unique.tolist()
+            res["item_sparse_unique"] = data_info.item_sparse_unique.tolist()
+        elif user_sparse_col:
+            res["user_sparse_unique"] = data_info.user_sparse_unique.tolist()
+        elif item_sparse_col:
+            res["item_sparse_unique"] = data_info.item_sparse_unique.tolist()
 
-    # dense part
-    user_dense_col = data_info.user_dense_col.index
-    item_dense_col = data_info.item_dense_col.index
-    if user_dense_col and item_dense_col:
-        orig_cols = user_dense_col + item_dense_col
-        # keep column names in original order
-        dense_col_reindex = np.arange(len(orig_cols))[np.argsort(orig_cols)]
-        res["dense_col_reindex"] = dense_col_reindex.tolist()
-        res["user_dense_unique"] = data_info.user_dense_unique.tolist()
-        res["item_dense_unique"] = data_info.item_dense_unique.tolist()
-    elif user_dense_col:
-        res["user_dense_unique"] = data_info.user_dense_unique.tolist()
-    elif item_dense_col:
-        res["item_dense_unique"] = data_info.item_dense_unique.tolist()
+        # dense part
+        user_dense_col = data_info.user_dense_col.index
+        item_dense_col = data_info.item_dense_col.index
+        if user_dense_col and item_dense_col:
+            orig_cols = user_dense_col + item_dense_col
+            # keep column names in original order
+            dense_col_reindex = np.arange(
+                len(orig_cols)
+            )[np.argsort(orig_cols)]
+            res["dense_col_reindex"] = dense_col_reindex.tolist()
+            res["user_dense_unique"] = data_info.user_dense_unique.tolist()
+            res["item_dense_unique"] = data_info.item_dense_unique.tolist()
+        elif user_dense_col:
+            res["user_dense_unique"] = data_info.user_dense_unique.tolist()
+        elif item_dense_col:
+            res["item_dense_unique"] = data_info.item_dense_unique.tolist()
 
     return res
 
@@ -163,6 +170,10 @@ def save_model_tf_serving(path, model, model_name,
         need_seq = True
     else:
         need_seq = False
+    if not hasattr(model, "sparse"):
+        setattr(model, "sparse", None)
+    if not hasattr(model, "dense"):
+        setattr(model, "dense", None)
 
     if simple_save:
         input_dict = {"user_indices": model.user_indices,

@@ -9,11 +9,10 @@ References:
 author: massquantity
 
 """
-import time
 from itertools import islice
 import numpy as np
-import tensorflow as tf
-from tensorflow.python.keras.initializers import (
+import tensorflow as tf2
+from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
@@ -26,11 +25,12 @@ from ..utils.tf_ops import (
 )
 from ..data.data_generator import DataGenFeat
 from ..utils.sampling import NegativeSampling
-from ..utils.misc import colorize
 from ..utils.unique_features import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
 )
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 class FM(Base, TfMixin, EvalMixin):

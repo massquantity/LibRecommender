@@ -2,7 +2,9 @@ import functools
 import time
 from contextlib import contextmanager
 import numpy as np
-import tensorflow as tf
+import tensorflow as tf2
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 def shuffle_data(length, *args):

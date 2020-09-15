@@ -11,8 +11,8 @@ import logging
 from itertools import islice
 from functools import partial
 import numpy as np
-import tensorflow as tf
-from tensorflow.python.keras.initializers import (
+import tensorflow as tf2
+from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
@@ -28,6 +28,8 @@ except (ImportError, ModuleNotFoundError):
     logging.basicConfig(format=LOG_FORMAT)
     logging.warning("BPR cython version is not available")
     pass  # may use tf version, then raise error will fail
+tf = tf2.compat.v1
+tf.disable_v2_behavior()
 
 
 class BPR(Base, TfMixin, EvalMixin):
@@ -159,7 +161,6 @@ class BPR(Base, TfMixin, EvalMixin):
 
     def _fit_cython(self, train_data, verbose=1, shuffle=True, num_threads=1,
                     eval_data=None, metrics=None, optimizer="sgd"):
-
         if optimizer == "sgd":
             trainer = partial(bpr_update)
 
@@ -213,7 +214,6 @@ class BPR(Base, TfMixin, EvalMixin):
 
     def _fit_tf(self, train_data, verbose=1, shuffle=True,
                 eval_data=None, metrics=None):
-
         data_generator = PairwiseSampling(train_data,
                                           self.data_info,
                                           self.num_neg)

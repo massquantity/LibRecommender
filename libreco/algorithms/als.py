@@ -65,7 +65,7 @@ class ALS(Base, EvalMixin):
         self.item_embed = None
 
         self._build_model()
-        print("Als init end..")
+    #    print("Als init end..")
 
     def _build_model(self):
         np.random.seed(self.seed)

@@ -4,6 +4,7 @@ from itertools import islice, takewhile
 from collections import defaultdict
 import numpy as np
 from scipy.sparse import issparse
+from tqdm import tqdm
 from .base import Base
 from ..utils.similarities import cosine_sim, pearson_sim, jaccard_sim
 from ..utils.misc import time_block, colorize
@@ -19,7 +20,6 @@ class UserCF(Base, EvalMixin):
             k=20,
             lower_upper_bound=None
     ):
-
         Base.__init__(self, task, data_info, lower_upper_bound)
         EvalMixin.__init__(self, task)
 
@@ -37,11 +37,13 @@ class UserCF(Base, EvalMixin):
         self.item_interaction = None
         # sparse similarity matrix
         self.sim_matrix = None
+        self.topk_sim = None
         self.print_count = 0
         self._caution_sim_type()
 
     def fit(self, train_data, block_size=None, num_threads=1, min_common=1,
-            mode="invert", verbose=1, eval_data=None, metrics=None):
+            mode="invert", verbose=1, eval_data=None, metrics=None,
+            store_top_k=True):
         self.show_start_time()
         self.user_interaction = train_data.sparse_interaction
         self.item_interaction = self.user_interaction.T.tocsr()
@@ -68,20 +70,27 @@ class UserCF(Base, EvalMixin):
             print(f"sim_matrix, shape: {self.sim_matrix.shape}, "
                   f"num_elements: {n_elements}, "
                   f"sparsity: {sparsity_ratio:5.4f} %")
+        if store_top_k:
+            self.compute_top_k()
 
         if verbose > 1:
             self.print_metrics(eval_data=eval_data, metrics=metrics)
             print("=" * 30)
 
     def predict(self, user, item):
-        user = (np.asarray([user])
-                if isinstance(user, int)
-                else np.asarray(user))
-        item = (np.asarray([item])
-                if isinstance(item, int)
-                else np.asarray(item))
+        user = (
+            np.asarray([user])
+            if isinstance(user, int)
+            else np.asarray(user)
+        )
+        item = (
+            np.asarray([item])
+            if isinstance(item, int)
+            else np.asarray(item)
+        )
         unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item)
+            user, item
+        )
 
         preds = []
         sim_matrix = self.sim_matrix
@@ -105,7 +114,7 @@ class UserCF(Base, EvalMixin):
                 no_str = (f"No common interaction or similar neighbor "
                           f"for user {u} and item {i}, "
                           f"proceed with default prediction")
-                if self.print_count < 13:
+                if self.print_count < 7:
                     print(f"{colorize(no_str, 'red')}")
                 preds.append(self.default_prediction)
             else:
@@ -153,14 +162,21 @@ class UserCF(Base, EvalMixin):
             self.print_count += 1
             no_str = (f"no similar neighbor for user {user}, "
                       f"return default recommendation")
-            if self.print_count < 24:
+            if self.print_count < 11:
                 print(f"{colorize(no_str, 'red')}")
             return -1
 
-        k_nbs_and_sims = islice(
-            sorted(zip(sim_users, sim_values),
-                   key=itemgetter(1), reverse=True),
-            self.k)
+        if self.topk_sim is not None:
+            k_nbs_and_sims = self.topk_sim[user]
+        else:
+            k_nbs_and_sims = islice(
+                sorted(
+                    zip(sim_users, sim_values),
+                    key=itemgetter(1),
+                    reverse=True
+                ),
+                self.k
+            )
         u_consumed = set(self.user_consumed[user])
 
         all_item_indices = self.user_interaction.indices
@@ -198,4 +214,19 @@ class UserCF(Base, EvalMixin):
             print(f"{colorize(caution_str, 'red')}")
         if self.task == "rating" and self.sim_type == "jaccard":
             print(f"{colorize(caution_str2, 'red')}")
+
+    def compute_top_k(self):
+        top_k = dict()
+        for u in tqdm(range(self.n_users), desc="top_k"):
+            user_slice = slice(self.sim_matrix.indptr[u],
+                               self.sim_matrix.indptr[u+1])
+            sim_users = self.sim_matrix.indices[user_slice].tolist()
+            sim_values = self.sim_matrix.data[user_slice].tolist()
+
+            top_k[u] = sorted(
+                zip(sim_users, sim_values),
+                key=itemgetter(1),
+                reverse=True
+            )[:self.k]
+        self.topk_sim = top_k
 
