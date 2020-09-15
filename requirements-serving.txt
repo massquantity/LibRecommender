@@ -1,0 +1,6 @@
+flask>=1.0.0
+requests>=2.22.0
+redis==3.0.6
+redis-py>=3.3.5
+faiss==1.5.2
+Tensorflow Serving
