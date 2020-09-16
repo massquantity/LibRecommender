@@ -1,4 +1,5 @@
 import numpy as np
+import tqdm
 from .sequence import sparse_user_interacted, user_interacted_seq
 
 
@@ -10,12 +11,14 @@ class DataGenPure(object):
         self.labels = data.labels
 
     def __iter__(self, batch_size):
-        for i in range(0, self.data_size, batch_size):
+        for i in tqdm.trange(0, self.data_size, batch_size, desc="train"):
             batch_slice = slice(i, i + batch_size)
             yield (
                 self.user_indices[batch_slice],
                 self.item_indices[batch_slice],
-                self.labels[batch_slice]
+                self.labels[batch_slice],
+                None,
+                None
             )
 
     def __call__(self, shuffle=True, batch_size=None):
@@ -40,7 +43,7 @@ class DataGenFeat(object):
         self.class_name = class_name
 
     def __iter__(self, batch_size):
-        for i in range(0, self.data_size, batch_size):
+        for i in tqdm.trange(0, self.data_size, batch_size, desc="train"):
             batch_slice = slice(i, i + batch_size)
             res = (
                 self.user_indices[batch_slice],
@@ -85,9 +88,9 @@ class DataGenFeat(object):
 
 
 class DataGenSequence(object):
-    def __init__(self, data, sparse, dense, mode=None, num=None,
+    def __init__(self, data, data_info, sparse, dense, mode=None, num=None,
                  class_name=None, padding_idx=None):
-        self.user_consumed = data.user_consumed
+        self.user_consumed = data_info.user_consumed
         self.padding_idx = padding_idx
         self.class_name = class_name
         if class_name == "YoutubeMatch" and data.has_sampled:
@@ -112,12 +115,14 @@ class DataGenSequence(object):
         self.num = num
 
     def __iter__(self, batch_size):
-        for i in range(0, self.data_size, batch_size):
+        for i in tqdm.trange(0, self.data_size, batch_size, desc="train"):
             batch_slice = slice(i, i + batch_size)
             if self.class_name == "YoutubeMatch":
-                (interacted_indices,
-                 interacted_values,
-                 modified_batch_size) = sparse_user_interacted(
+                (
+                    interacted_indices,
+                    interacted_values,
+                    modified_batch_size
+                ) = sparse_user_interacted(
                     self.user_indices[batch_slice],
                     self.item_indices[batch_slice],
                     self.user_consumed,
@@ -133,8 +138,10 @@ class DataGenSequence(object):
                     self.labels[batch_slice]
                 )
             else:
-                (batch_interacted,
-                 batch_interacted_len) = user_interacted_seq(
+                (
+                    batch_interacted,
+                    batch_interacted_len
+                ) = user_interacted_seq(
                     self.user_indices[batch_slice],
                     self.item_indices[batch_slice],
                     self.user_consumed,

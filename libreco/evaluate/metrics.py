@@ -69,13 +69,8 @@ def ndcg_at_k(y_true_list, y_reco_list, users, k):
         if common_items.size > 0:
             rank_list[indices_in_reco] = 1
             ideal_list = np.sort(rank_list)[::-1]
-            #  np.sum(rank_list / np.log2(2, k+2))
-            dcg = rank_list[0] + np.sum(
-                rank_list[1:] / np.log2(np.arange(2, k+1))
-            )
-            idcg = ideal_list[0] + np.sum(
-                ideal_list[1:] / np.log2(np.arange(2, k+1))
-            )
+            dcg = np.sum(rank_list / np.log2(np.arange(2, k + 2)))
+            idcg = np.sum(ideal_list / np.log2(np.arange(2, k + 2)))
             ndcg = dcg / idcg
         else:
             ndcg = 0

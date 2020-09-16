@@ -4,7 +4,7 @@
 
 **LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation. The main features are:
 
-+ Implemented a number of popular recommendation algorithms such as SVD++, DeepFM, BPR etc.
++ Implemented a number of popular recommendation algorithms such as SVD++, DeepFM, BPR etc, [see full algorithm list](#references).
 
 + A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features or both.
 

@@ -164,7 +164,10 @@ class DatasetPure(Dataset):
                                            item_indices,
                                            labels,
                                            train=True)
-        data_info = DataInfo(interaction_data=interaction_data)
+
+        data_info = DataInfo(interaction_data=interaction_data,
+                             user_indices=user_indices,
+                             item_indices=item_indices)
         return train_transformed, data_info
 
     @classmethod
@@ -299,10 +302,16 @@ class DatasetFeat(Dataset):
 
         user_indices, item_indices = cls._get_user_item_sparse_indices(
             train_data, mode="train")
-        train_sparse_indices = cls._get_sparse_indices_matrix(
-            train_data, sparse_col, mode="train") if sparse_col else None
+        train_sparse_indices = (
+            cls._get_sparse_indices_matrix(train_data, sparse_col, mode="train")
+            if sparse_col
+            else None
+        )
         train_dense_values = (
-            train_data[dense_col].to_numpy() if dense_col else None)
+            train_data[dense_col].to_numpy()
+            if dense_col
+            else None
+        )
         labels = train_data["label"].to_numpy(dtype=np.float32)
 
         train_transformed = TransformedSet(user_indices,
@@ -339,7 +348,9 @@ class DatasetFeat(Dataset):
                              user_sparse_unique,
                              user_dense_unique,
                              item_sparse_unique,
-                             item_dense_unique)
+                             item_dense_unique,
+                             user_indices,
+                             item_indices)
 
         return train_transformed, data_info
 
