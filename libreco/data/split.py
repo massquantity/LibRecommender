@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 
 
 def random_split(data, test_size=None, multi_ratios=None, shuffle=True,
-                 filter_unknown=True, seed=42):
+                 filter_unknown=True, pad_unknown=False, seed=42):
     ratios, n_splits = _check_and_convert_ratio(test_size, multi_ratios)
     if not isinstance(ratios, list):
         ratios = list(ratios)
@@ -25,6 +25,8 @@ def random_split(data, test_size=None, multi_ratios=None, shuffle=True,
 
     if filter_unknown:
         split_data_all = _filter_unknown_user_item(split_data_all)
+    elif pad_unknown:
+        split_data_all = _pad_unknown_user_item(split_data_all)
     return split_data_all
 
 
@@ -46,12 +48,29 @@ def _filter_unknown_user_item(data_list):
         test_data_clean = test_data[~np.isin(
             mask, list(out_of_bounds_row_indices))]
         split_data_all.append(test_data_clean)
-        print(f"Non_train_data {i} size after filtering: {len(test_data)}")
+        print(f"Non_train_data {i} size after filtering: "
+              f"{len(test_data_clean)}")
+    return split_data_all
+
+
+def _pad_unknown_user_item(data_list):
+    train_data, test_data = data_list
+    n_users = train_data.user.nunique()
+    n_items = train_data.item.nunique()
+    unique_users = set(train_data.user.tolist())
+    unique_items = set(train_data.item.tolist())
+
+    split_data_all = [train_data]
+    for i, test_data in enumerate(data_list[1:], start=1):
+        test_data.loc[~test_data.user.isin(unique_users), "user"] = n_users
+        test_data.loc[~test_data.item.isin(unique_items), "item"] = n_items
+        split_data_all.append(test_data)
     return split_data_all
 
 
 def split_by_ratio(data, order=True, shuffle=False, test_size=None,
-                   multi_ratios=None, filter_unknown=True, seed=42):
+                   multi_ratios=None, filter_unknown=True, pad_unknown=False,
+                   seed=42):
     np.random.seed(seed)
     assert ("user" in data.columns), "data must contains user column"
     ratios, n_splits = _check_and_convert_ratio(test_size, multi_ratios)
@@ -82,11 +101,13 @@ def split_by_ratio(data, order=True, shuffle=False, test_size=None,
 
     if filter_unknown:
         split_data_all = _filter_unknown_user_item(split_data_all)
+    elif pad_unknown:
+        split_data_all = _pad_unknown_user_item(split_data_all)
     return split_data_all
 
 
 def split_by_num(data, order=True, shuffle=False, test_size=1,
-                 filter_unknown=True, seed=42):
+                 filter_unknown=True, pad_unknown=False, seed=42):
     np.random.seed(seed)
     assert ("user" in data.columns), "data must contains user column"
     assert isinstance(test_size, int), "test_size must be int value"
@@ -118,6 +139,8 @@ def split_by_num(data, order=True, shuffle=False, test_size=1,
     split_data_all = (data.iloc[train_indices], data.iloc[test_indices])
     if filter_unknown:
         split_data_all = _filter_unknown_user_item(split_data_all)
+    elif pad_unknown:
+        split_data_all = _pad_unknown_user_item(split_data_all)
     return split_data_all
 
 

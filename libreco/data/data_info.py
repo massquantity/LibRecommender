@@ -1,4 +1,5 @@
-from collections import namedtuple
+from array import array
+from collections import defaultdict, namedtuple
 import numpy as np
 
 
@@ -6,19 +7,36 @@ Feature = namedtuple("Feature", ["name", "index"])
 Empty_Feature = Feature(name=[], index=[])
 
 
-class DataInfo(namedtuple("DataInfo",
-                          ["col_name_mapping", "interaction_data",
-                           "user_sparse_unique", "user_dense_unique",
-                           "item_sparse_unique", "item_dense_unique"])):
-    __slots__ = ()
-
-    def __new__(cls, col_name_mapping=None, interaction_data=None,
-                user_sparse_unique=None, user_dense_unique=None,
-                item_sparse_unique=None, item_dense_unique=None):
-        return super(DataInfo, cls).__new__(
-            cls, col_name_mapping, interaction_data, user_sparse_unique,
-            user_dense_unique, item_sparse_unique, item_dense_unique
+class DataInfo(object):
+    def __init__(
+            self,
+            col_name_mapping=None,
+            interaction_data=None,
+            user_sparse_unique=None,
+            user_dense_unique=None,
+            item_sparse_unique=None,
+            item_dense_unique=None,
+            user_indices=None,
+            item_indices=None
+    ):
+        self.col_name_mapping = col_name_mapping
+        self.interaction_data = interaction_data
+        self.user_sparse_unique = user_sparse_unique
+        self.user_dense_unique = user_dense_unique
+        self.item_sparse_unique = item_sparse_unique
+        self.item_dense_unique = item_dense_unique
+        self.user_consumed, self.item_consumed = DataInfo.interaction_consumed(
+            user_indices, item_indices
         )
+
+    @staticmethod
+    def interaction_consumed(user_indices, item_indices):
+        user_consumed = defaultdict(lambda: array("I"))
+        item_consumed = defaultdict(lambda: array("I"))
+        for u, i in zip(user_indices, item_indices):
+            user_consumed[u].append(i)
+            item_consumed[i].append(u)
+        return user_consumed, item_consumed
 
     @property
     def global_mean(self):
@@ -26,8 +44,10 @@ class DataInfo(namedtuple("DataInfo",
 
     @property
     def min_max_rating(self):
-        return (self.interaction_data.label.min(),
-                self.interaction_data.label.max())
+        return (
+            self.interaction_data.label.min(),
+            self.interaction_data.label.max()
+        )
 
     @property
     def sparse_col(self):
@@ -86,14 +106,18 @@ class DataInfo(namedtuple("DataInfo",
     @property
     def user_col(self):
         # will be sorted by key
-        return self.col_name_mapping["user_sparse_col"].keys().__or__(
-            self.col_name_mapping["user_dense_col"].keys())
+        return (
+            self.col_name_mapping["user_sparse_col"].keys().__or__(
+                self.col_name_mapping["user_dense_col"].keys())
+        )
 
     @property
     def item_col(self):
         # will be sorted by key
-        return self.col_name_mapping["item_sparse_col"].keys().__or__(
-            self.col_name_mapping["item_dense_col"].keys())
+        return (
+            self.col_name_mapping["item_sparse_col"].keys().__or__(
+                self.col_name_mapping["item_dense_col"].keys())
+        )
 
     @property
     def n_users(self):
@@ -130,11 +154,18 @@ class DataInfo(namedtuple("DataInfo",
         n_items = self.n_items
         n_labels = len(self.interaction_data)
         return "n_users: %d, n_items: %d, data sparsity: %.4f %%" % (
-            n_users, n_items, 100 * n_labels / (n_users*n_items))
+            n_users, n_items, 100 * n_labels / (n_users*n_items)
+        )
 
     def get_indexed_interaction(self):
         data = self.interaction_data.copy()
         data.user = data.user.map(self.user2id)
         data.item = data.item.map(self.item2id)
+        if data.user.isnull().any():
+            data["user"].fillna(self.n_users, inplace=True)
+            data["user"] = data["user"].astype("int")
+        if data.item.isnull().any():
+            data["item"].fillna(self.n_items, inplace=True)
+            data["item"] = data["item"].astype("int")
         return data
 

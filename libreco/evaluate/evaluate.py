@@ -10,6 +10,7 @@ from sklearn.metrics import (
     precision_recall_curve,
     auc
 )
+from tqdm import tqdm
 from .metrics import precision_at_k, recall_at_k, map_at_k, ndcg_at_k
 from .metrics import POINTWISE_METRICS, LISTWISE_METRICS, ALLOWED_METRICS
 
@@ -161,7 +162,7 @@ def sample_user(data, seed, num):
 
 def compute_preds(model, data, batch_size):
     y_pred = list()
-    for batch_data in range(0, len(data), batch_size):
+    for batch_data in tqdm(range(0, len(data), batch_size), desc="eval_pred"):
         batch_slice = slice(batch_data, batch_data + batch_size)
         users = data.user_indices[batch_slice]
         items = data.item_indices[batch_slice]
@@ -178,7 +179,7 @@ def compute_recommends(model, users, k):
     y_recommends = dict()
     no_rec_num = 0
     no_rec_users = []
-    for u in users:
+    for u in tqdm(users, desc="eval_rec"):
         reco = model.recommend_user(u, k)
         if not reco or reco == -1:   # user_cf
             # print("no recommend user: ", u)

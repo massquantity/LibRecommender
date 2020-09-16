@@ -1,13 +1,19 @@
 import numpy as np
-from array import array
-from collections import defaultdict
 from scipy.sparse import csr_matrix
+from .data_info import DataInfo
 from ..utils.sampling import NegativeSampling
 
 
 class TransformedSet(object):
-    def __init__(self, user_indices=None, item_indices=None, labels=None,
-                 sparse_indices=None, dense_values=None, train=True):
+    def __init__(
+            self,
+            user_indices=None,
+            item_indices=None,
+            labels=None,
+            sparse_indices=None,
+            dense_values=None,
+            train=True
+    ):
         self._user_indices = user_indices
         self._item_indices = item_indices
         self._labels = labels
@@ -19,23 +25,16 @@ class TransformedSet(object):
                 (labels, (user_indices, item_indices)),
                 dtype=np.float32
             )
-
-        (self._user_consumed,
-         self._item_consumed) = self.__interaction_consumed()
+        if not train:
+            self.user_consumed, _ = DataInfo.interaction_consumed(
+                user_indices, item_indices
+            )
 
         self.user_indices_orig = None
         self.item_indices_orig = None
         self.labels_orig = None
         self.sparse_indices_orig = None
         self.dense_values_orig = None
-
-    def __interaction_consumed(self):
-        user_consumed = defaultdict(lambda: array("I"))
-        item_consumed = defaultdict(lambda: array("I"))
-        for u, i in zip(self.user_indices, self.item_indices):
-            user_consumed[u].append(i)
-            item_consumed[i].append(u)
-        return user_consumed, item_consumed
 
     def build_negative_samples(self, data_info, num_neg=1,
                                item_gen_mode="random", seed=42):
@@ -64,9 +63,13 @@ class TransformedSet(object):
             neg = NegativeSampling(self, data_info, num_neg,
                                    sparse=True, dense=True)
 
-        (self._user_indices, self._item_indices, self._labels,
-         self._sparse_indices, self._dense_values
-         ) = neg.generate_all(seed=seed, item_gen_mode=item_gen_mode)
+        (
+            self._user_indices,
+            self._item_indices,
+            self._labels,
+            self._sparse_indices,
+            self._dense_values
+        ) = neg.generate_all(seed=seed, item_gen_mode=item_gen_mode)
 
     def __len__(self):
         return len(self.labels)
@@ -98,12 +101,3 @@ class TransformedSet(object):
     @property
     def sparse_interaction(self):
         return self._sparse_interaction
-
-    @property
-    def user_consumed(self):
-        return self._user_consumed
-
-    @property
-    def item_consumed(self):
-        return self._item_consumed
-
