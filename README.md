@@ -8,7 +8,7 @@
 
 + A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features or both.
 
-+ Ease of memory usage, automatically convert categorical features to sparse representation.
++ Low memory usage, automatically convert categorical features to sparse representation.
 
 + Support training for both explicit and implicit datasets, and negative sampling can be used for implicit dataset.
 
