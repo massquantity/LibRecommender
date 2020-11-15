@@ -10,7 +10,6 @@ from itertools import islice
 import numpy as np
 import tensorflow as tf2
 from tensorflow.keras.initializers import (
-    zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
@@ -25,7 +24,7 @@ from ..data.data_generator import DataGenSequence
 from ..data.sequence import user_last_interacted
 from ..utils.misc import time_block, colorize
 from ..utils.misc import count_params
-from ..utils.unique_features import (
+from ..feature import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
 )
@@ -105,6 +104,8 @@ class DIN(Base, TfMixin, EvalMixin):
         if self.item_dense:
             # item dense col indices in all dense cols
             self.item_dense_col_indices = data_info.item_dense_col.index
+        self.user_last_interacted = None
+        self.last_interacted_len = None
 
     def _build_model(self):
         tf.set_random_seed(self.seed)
@@ -276,7 +277,8 @@ class DIN(Base, TfMixin, EvalMixin):
                 dtype=tf.bool
             )
             key_masks = tf.sequence_mask(
-                self.user_interacted_len, self.max_seq_len)
+                self.user_interacted_len, self.max_seq_len
+            )
             queries = tf.expand_dims(queries, axis=1)
             attention = tf.keras.layers.Attention(use_scale=False)
             pooled_outputs = attention(inputs=[queries, keys],
@@ -293,7 +295,7 @@ class DIN(Base, TfMixin, EvalMixin):
                                  activation=tf.nn.sigmoid, name="attention")
             # B * seq * 1
             mlp_layer = tf.layers.dense(mlp_layer, units=1, activation=None)
-        #    attention_weights = tf.transpose(mlp_layer, [0, 2, 1])
+            # attention_weights = tf.transpose(mlp_layer, [0, 2, 1])
             attention_weights = tf.layers.flatten(mlp_layer)
 
             key_masks = tf.sequence_mask(keys_len, self.max_seq_len)
@@ -362,7 +364,8 @@ class DIN(Base, TfMixin, EvalMixin):
                      ) in data_generator(shuffle, self.batch_size):
                     feed_dict = self._get_seq_feed_dict(
                         u_seq, u_len, user, item, label,
-                        sparse_idx, dense_val, True)
+                        sparse_idx, dense_val, True
+                    )
                     train_loss, _ = self.sess.run(
                         [self.loss, self.training_op], feed_dict)
                     train_total_loss.append(train_loss)
@@ -381,19 +384,24 @@ class DIN(Base, TfMixin, EvalMixin):
         self._set_last_interacted()
 
     def predict(self, user, item):
-        user = np.asarray(
-            [user]) if isinstance(user, int) else np.asarray(user)
-        item = np.asarray(
-            [item]) if isinstance(item, int) else np.asarray(item)
-
-        unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item)
+        user = (
+            np.asarray([user])
+            if isinstance(user, int)
+            else np.asarray(user)
+        )
+        item = (
+            np.asarray([item])
+            if isinstance(item, int)
+            else np.asarray(item)
+        )
+        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
         (user_indices,
          item_indices,
          sparse_indices,
          dense_values) = get_predict_indices_and_values(
-            self.data_info, user, item, self.n_items, self.sparse, self.dense)
+            self.data_info, user, item, self.n_items, self.sparse, self.dense
+        )
         feed_dict = self._get_seq_feed_dict(self.user_last_interacted[user],
                                             self.last_interacted_len[user],
                                             user_indices, item_indices,
@@ -438,8 +446,10 @@ class DIN(Base, TfMixin, EvalMixin):
         )
 
     def _set_last_interacted(self):
-        user_indices = np.arange(self.n_users)
-        (self.user_last_interacted,
-         self.last_interacted_len) = user_last_interacted(
-            user_indices, self.user_consumed, 0, self.max_seq_len)
+        if (self.user_last_interacted is None
+                and self.last_interacted_len is None):
+            user_indices = np.arange(self.n_users)
+            (self.user_last_interacted,
+             self.last_interacted_len) = user_last_interacted(
+                user_indices, self.user_consumed, 0, self.max_seq_len)
 

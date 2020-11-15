@@ -90,9 +90,11 @@ class Base(abc.ABC):
 
     def _check_unknown(self, user, item):
         unknown_user_indices = list(
-            np.where(np.logical_or(user >= self.n_users, user < 0))[0])
+            np.where(np.logical_or(user >= self.n_users, user < 0))[0]
+        )
         unknown_item_indices = list(
-            np.where(np.logical_or(item >= self.n_items, item < 0))[0])
+            np.where(np.logical_or(item >= self.n_items, item < 0))[0]
+        )
 
         unknown_user = (list(user[unknown_user_indices])
                         if unknown_user_indices

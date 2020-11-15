@@ -85,7 +85,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self.seed = seed
         self.user_vector = None
         self.item_weights = None
-    #    self.item_biases = None
+        # self.item_biases = None
         self.user_consumed = data_info.user_consumed
         self.sparse = self._decide_sparse_indices(data_info)
         self.dense = self._decide_dense_values(data_info)
@@ -182,14 +182,12 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg
         )
-        # we didn't add bias(set trainable to False),
-        # since ANN(neighbor search) can't be used with bias
         self.nce_biases = tf.get_variable(
             name="nce_biases",
             shape=[self.n_items],
             initializer=tf_zeros,
             regularizer=self.reg,
-            trainable=False
+            trainable=True
         )
 
         if self.loss_type == "nce":
@@ -287,13 +285,17 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self._set_latent_vectors()
 
     def predict(self, user, item):
-        user = np.asarray(
-            [user]) if isinstance(user, int) else np.asarray(user)
-        item = np.asarray(
-            [item]) if isinstance(item, int) else np.asarray(item)
-
-        unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item)
+        user = (
+            np.asarray([user])
+            if isinstance(user, int)
+            else np.asarray(user)
+        )
+        item = (
+            np.asarray([item])
+            if isinstance(item, int)
+            else np.asarray(item)
+        )
+        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
         preds = np.sum(
             np.multiply(self.user_vector[user],
@@ -326,10 +328,13 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
 
     def _set_latent_vectors(self):
         user_indices = np.arange(self.n_users)
+        (
+            interacted_indices,
+            interacted_values
+        ) = sparse_user_last_interacted(
+            user_indices, self.user_consumed, self.interaction_num
+        )
 
-        (interacted_indices,
-         interacted_values) = sparse_user_last_interacted(
-            user_indices, self.user_consumed, self.interaction_num)
         feed_dict = {self.item_interaction_indices: interacted_indices,
                      self.item_interaction_values: interacted_values,
                      self.modified_batch_size: self.n_users,
@@ -342,9 +347,14 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             user_dense_values = self.data_info.user_dense_unique
             feed_dict.update({self.dense_values: user_dense_values})
 
-        self.user_vector = self.sess.run(self.user_vector_repr, feed_dict)
-        self.item_weights = self.sess.run(self.nce_weights)
-    #    self.item_biases = self.sess.run(self.nce_biases)
+        user_vector = self.sess.run(self.user_vector_repr, feed_dict)
+        item_weights = self.sess.run(self.nce_weights)
+        item_biases = self.sess.run(self.nce_biases)
+
+        user_bias = np.ones([len(user_vector), 1], dtype=user_vector.dtype)
+        item_bias = item_biases[:, None]
+        self.user_vector = np.hstack([user_vector, user_bias])
+        self.item_weights = np.hstack([item_weights, item_bias])
 
     def _check_item_col(self):
         if len(self.data_info.item_col) > 0:

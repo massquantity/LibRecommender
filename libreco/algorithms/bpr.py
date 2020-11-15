@@ -6,6 +6,8 @@ References: Steffen Rendle et al. "BPR: Bayesian Personalized Ranking from Impli
 author: massquantity
 
 """
+from tensorflow.python.keras import backend as K
+from tensorflow.keras import backend as K
 import time
 import logging
 from itertools import islice
@@ -98,22 +100,24 @@ class BPR(Base, TfMixin, EvalMixin):
         self.item_indices_pos = tf.placeholder(tf.int32, shape=[None])
         self.item_indices_neg = tf.placeholder(tf.int32, shape=[None])
 
-        self.item_bias_var = tf.get_variable(name="item_bias_var",
-                                             shape=[self.n_items],
-                                             initializer=tf_zeros,
-                                             regularizer=tf_reg)
-        self.user_embed_var = tf.get_variable(name="user_embed_var",
-                                              shape=[self.n_users,
-                                                     self.embed_size],
-                                              initializer=tf_truncated_normal(
-                                                  0.0, 0.03),
-                                              regularizer=tf_reg)
-        self.item_embed_var = tf.get_variable(name="item_embed_var",
-                                              shape=[self.n_items,
-                                                     self.embed_size],
-                                              initializer=tf_truncated_normal(
-                                                  0.0, 0.03),
-                                              regularizer=tf_reg)
+        self.item_bias_var = tf.get_variable(
+            name="item_bias_var",
+            shape=[self.n_items],
+            initializer=tf_zeros,
+            regularizer=tf_reg
+        )
+        self.user_embed_var = tf.get_variable(
+            name="user_embed_var",
+            shape=[self.n_users, self.embed_size],
+            initializer=tf_truncated_normal(0.0, 0.03),
+            regularizer=tf_reg
+        )
+        self.item_embed_var = tf.get_variable(
+            name="item_embed_var",
+            shape=[self.n_items, self.embed_size],
+            initializer=tf_truncated_normal(0.0, 0.03),
+            regularizer=tf_reg
+        )
 
         bias_item_pos = tf.nn.embedding_lookup(
             self.item_bias_var, self.item_indices_pos)
@@ -135,7 +139,7 @@ class BPR(Base, TfMixin, EvalMixin):
         self.log_sigmoid = tf.log_sigmoid(item_diff)
 
     def _build_train_ops(self):
-        self.loss = -self.log_sigmoid
+        self.loss = -tf.reduce_mean(self.log_sigmoid)
         if self.reg is not None:
             reg_keys = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
             total_loss = self.loss + tf.add_n(reg_keys)
@@ -220,11 +224,9 @@ class BPR(Base, TfMixin, EvalMixin):
 
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
-                for (user,
-                     item_pos,
-                     item_neg) in data_generator(shuffle=shuffle,
-                                                 batch_size=self.batch_size):
-
+                for user, item_pos, item_neg in data_generator(
+                        shuffle=shuffle, batch_size=self.batch_size
+                ):
                     self.sess.run(self.training_op,
                                   feed_dict={self.user_indices: user,
                                              self.item_indices_pos: item_pos,
@@ -236,17 +238,21 @@ class BPR(Base, TfMixin, EvalMixin):
                 self.print_metrics(eval_data=eval_data, metrics=metrics)
                 print("="*30)
 
-        self._set_latent_factors()  # for prediction and recommendation
+        # for prediction and recommendation
+        self._set_latent_factors()
 
     def predict(self, user, item):
-        user = np.asarray(
-            [user]) if isinstance(user, int) else np.asarray(user)
-        item = np.asarray(
-            [item]) if isinstance(item, int) else np.asarray(item)
-
-        unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item
+        user = (
+            np.asarray([user])
+            if isinstance(user, int)
+            else np.asarray(user)
         )
+        item = (
+            np.asarray([item])
+            if isinstance(item, int)
+            else np.asarray(item)
+        )
+        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
         preds = np.sum(
             np.multiply(self.user_embed[user], self.item_embed[item]),
@@ -288,8 +294,3 @@ class BPR(Base, TfMixin, EvalMixin):
         item_bias = item_bias[:, None]
         self.user_embed = np.hstack([user_embed, user_bias])
         self.item_embed = np.hstack([item_embed, item_bias])
-
-
-
-
-

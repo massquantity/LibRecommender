@@ -6,7 +6,6 @@ Reference: Huifeng Guo et al. "DeepFM: A Factorization-Machine based Neural Netw
 author: massquantity
 
 """
-import time
 from itertools import islice
 import numpy as np
 import tensorflow as tf2
@@ -23,7 +22,8 @@ from ..utils.tf_ops import (
 )
 from ..data.data_generator import DataGenFeat
 from ..utils.sampling import NegativeSampling
-from ..utils.unique_features import (
+from ..utils.misc import count_params
+from ..feature import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
 )
@@ -115,6 +115,7 @@ class DeepFM(Base, TfMixin, EvalMixin):
             [linear_term, pairwise_term, deep_term], axis=1)
         self.output = tf.squeeze(
             tf.layers.dense(concat_layer, units=1, activation=None))
+        count_params()
 
     def _build_user_item(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])

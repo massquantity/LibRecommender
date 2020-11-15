@@ -103,16 +103,7 @@ class ALS(Base, EvalMixin):
                 print("="*30)
 
     def _choose_algo(self, use_cg):
-        if self.task == "rating":
-            if use_cg:
-                trainer = partial(als_update, task="rating", use_cg=True)
-            else:
-                trainer = partial(als_update, task="rating", use_cg=False)
-        elif self.task == "ranking":
-            if use_cg:
-                trainer = partial(als_update, task="ranking", use_cg=True)
-            else:
-                trainer = partial(als_update, task="ranking", use_cg=False)
+        trainer = partial(als_update, task=self.task, use_cg=use_cg)
         return trainer
 
     def predict(self, user, item):
