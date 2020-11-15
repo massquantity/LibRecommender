@@ -28,6 +28,10 @@ class DataInfo(object):
         self.user_consumed, self.item_consumed = DataInfo.interaction_consumed(
             user_indices, item_indices
         )
+        self._user2id = None
+        self._item2id = None
+        self._id2user = None
+        self._id2item = None
 
     @staticmethod
     def interaction_consumed(user_indices, item_indices):
@@ -129,25 +133,31 @@ class DataInfo(object):
 
     @property
     def user2id(self):
-        unique = np.unique(self.interaction_data["user"])
-        u2id = dict(zip(unique, range(self.n_users)))
-        u2id[-1] = len(unique)   # -1 represent new user
-        return u2id
+        if self._user2id is None:
+            unique = np.unique(self.interaction_data["user"])
+            self._user2id = dict(zip(unique, range(self.n_users)))
+            self._user2id[-1] = len(unique)   # -1 represent new user
+        return self._user2id
 
     @property
     def item2id(self):
-        unique = np.unique(self.interaction_data["item"])
-        i2id = dict(zip(unique, range(self.n_items)))
-        i2id[-1] = len(unique)  # -1 represent new item
-        return i2id
+        if self._item2id is None:
+            unique = np.unique(self.interaction_data["item"])
+            self._item2id = dict(zip(unique, range(self.n_items)))
+            self._item2id[-1] = len(unique)  # -1 represent new item
+        return self._item2id
 
     @property
     def id2user(self):
-        return {j: user for user, j in self.user2id.items()}
+        if self._id2user is None:
+            self._id2user = {j: user for user, j in self.user2id.items()}
+        return self._id2user
 
     @property
     def id2item(self):
-        return {j: item for item, j in self.item2id.items()}
+        if self._id2item is None:
+            self._id2item =  {j: item for item, j in self.item2id.items()}
+        return self._id2item
 
     def __repr__(self):
         n_users = self.n_users

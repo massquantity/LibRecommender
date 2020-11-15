@@ -2,6 +2,7 @@ from math import floor
 from random import random, seed as set_random_seed
 import numpy as np
 from tqdm import tqdm
+from ..data.sequence import user_interacted_seq
 from ..utils.misc import time_block
 
 
@@ -12,6 +13,7 @@ class SamplingBase(object):
         self.num_neg = num_neg
 
     def sample_items_random(self, seed=42):
+        set_random_seed(seed)
         n_items = self.data_info.n_items
         item_indices_sampled = list()
         # set is much faster for search contains
@@ -267,13 +269,13 @@ class PairwiseSampling(SamplingBase):
             self.user_indices = self.user_indices[mask]
             self.item_indices = self.item_indices[mask]
 
-        user_consumed = {
+        user_consumed_set = {
             u: set(items) for u, items in self.data_info.user_consumed.items()
         }
         n_items = self.data_info.n_items
-        return self.sample_batch(user_consumed, n_items, batch_size)
+        return self.sample_batch(user_consumed_set, n_items, batch_size)
 
-    def sample_batch(self, user_consumed, n_items, batch_size):
+    def sample_batch(self, user_consumed_set, n_items, batch_size):
         for k in tqdm(range(0, self.data_size, batch_size),
                       desc="pair_sampling train"):
             batch_slice = slice(k, k + batch_size)
@@ -283,15 +285,59 @@ class PairwiseSampling(SamplingBase):
             batch_item_indices_neg = list()
             for u in batch_user_indices:
                 item_neg = floor(n_items * random())
-                while item_neg in user_consumed[u]:
+                while item_neg in user_consumed_set[u]:
                     item_neg = floor(n_items * random())
                 batch_item_indices_neg.append(item_neg)
 
             batch_item_indices_neg = np.asarray(batch_item_indices_neg)
-        #    batch_item_diff
             yield (
                 batch_user_indices,
                 batch_item_indices_pos,
                 batch_item_indices_neg
             )
 
+
+class PairwiseSamplingSeq(PairwiseSampling):
+    def __init__(self, dataset, data_info, num_neg=1, mode=None, num=None):
+        super(PairwiseSamplingSeq, self).__init__(dataset, data_info, num_neg)
+
+        self.seq_mode = mode
+        self.seq_num = num
+        self.n_items = data_info.n_items
+        self.user_consumed = data_info.user_consumed
+
+    def sample_batch(self, user_consumed_set, n_items, batch_size):
+        for k in tqdm(range(0, self.data_size, batch_size),
+                      desc="pair_sampling sequence train"):
+            batch_slice = slice(k, k + batch_size)
+            batch_user_indices = self.user_indices[batch_slice]
+            batch_item_indices_pos = self.item_indices[batch_slice]
+
+            (
+                batch_interacted,
+                batch_interacted_len
+            ) = user_interacted_seq(
+                batch_user_indices,
+                batch_item_indices_pos,
+                self.user_consumed,
+                self.n_items,
+                self.seq_mode,
+                self.seq_num,
+                user_consumed_set
+            )
+
+            batch_item_indices_neg = list()
+            for u in batch_user_indices:
+                item_neg = floor(n_items * random())
+                while item_neg in user_consumed_set[u]:
+                    item_neg = floor(n_items * random())
+                batch_item_indices_neg.append(item_neg)
+
+            batch_item_indices_neg = np.asarray(batch_item_indices_neg)
+            yield (
+                batch_user_indices,
+                batch_item_indices_pos,
+                batch_item_indices_neg,
+                batch_interacted,
+                batch_interacted_len
+            )

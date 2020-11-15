@@ -66,7 +66,7 @@ def reg_config(reg):
     elif isinstance(reg, float) and reg > 0.0:
         return tf.keras.regularizers.l2(reg)
     else:
-        raise ValueError("reg must be float...")
+        raise ValueError("reg must be float and positive...")
 
 
 def dropout_config(dropout_rate):

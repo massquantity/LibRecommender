@@ -1,5 +1,5 @@
 from .dataset import DatasetPure, DatasetFeat
-from .preprocessing import preprocess_data
+from .processing import process_data, split_multi_value
 from .split import (
     split_by_num,
     split_by_ratio,
