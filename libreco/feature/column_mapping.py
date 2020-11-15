@@ -45,7 +45,7 @@ def col_name2index(user_col=None, item_col=None,
 
 def _extract_common_col(col1, col2):
     # np.intersect1d will return the sorted common column names,
-    # but we want to preserve the original order of common column in
+    # but we also want to preserve the original order of common column in
     # col1 and col2
     common_col, indices_in_col1, _ = np.intersect1d(col1, col2,
                                                     assume_unique=True,

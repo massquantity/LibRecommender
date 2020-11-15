@@ -12,4 +12,5 @@ from .wide_deep import WideDeep
 from .deepfm import DeepFM
 from .autoint import AutoInt
 from .din import DIN
-
+from .knn_embed import KnnEmbedding, KnnEmbeddingApproximate
+from .rnn4rec import RNN4Rec

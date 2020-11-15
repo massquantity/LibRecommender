@@ -23,7 +23,12 @@ def count_params():
         [
             np.prod(v.get_shape().as_list())
             for v in tf.trainable_variables()
-            if 'feat' in v.name
+            if (
+                'feat' in v.name
+                or 'weight' in v.name
+                or 'bias' in v.name
+                or 'embed' in v.name
+            )
         ]
     )
     network_params = total_params - embedding_params

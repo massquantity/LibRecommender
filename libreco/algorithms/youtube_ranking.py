@@ -10,7 +10,6 @@ from itertools import islice
 import numpy as np
 import tensorflow as tf2
 from tensorflow.keras.initializers import (
-    zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
@@ -24,7 +23,7 @@ from ..utils.tf_ops import (
 from ..data.data_generator import DataGenSequence
 from ..data.sequence import user_last_interacted
 from ..utils.misc import time_block, colorize
-from ..utils.unique_features import (
+from ..feature import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
 )
@@ -248,13 +247,17 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         self._set_last_interacted()
 
     def predict(self, user, item):
-        user = np.asarray(
-            [user]) if isinstance(user, int) else np.asarray(user)
-        item = np.asarray(
-            [item]) if isinstance(item, int) else np.asarray(item)
-
-        unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item)
+        user = (
+            np.asarray([user])
+            if isinstance(user, int)
+            else np.asarray(user)
+        )
+        item = (
+            np.asarray([item])
+            if isinstance(item, int)
+            else np.asarray(item)
+        )
+        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
         (user_indices,
          item_indices,
@@ -305,9 +308,11 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
         )
 
     def _set_last_interacted(self):
-        user_indices = np.arange(self.n_users)
-        (self.user_last_interacted,
-         self.last_interacted_len) = user_last_interacted(
-            user_indices, self.user_consumed, self.n_items,
-            self.interaction_num)
+        if (self.user_last_interacted is None
+                and self.last_interacted_len is None):
+            user_indices = np.arange(self.n_users)
+            (self.user_last_interacted,
+             self.last_interacted_len) = user_last_interacted(
+                user_indices, self.user_consumed, self.n_items,
+                self.interaction_num)
 

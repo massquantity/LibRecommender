@@ -13,7 +13,6 @@ from itertools import islice
 import numpy as np
 import tensorflow as tf2
 from tensorflow.keras.initializers import (
-    zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
@@ -25,7 +24,7 @@ from ..utils.tf_ops import (
 )
 from ..data.data_generator import DataGenFeat
 from ..utils.sampling import NegativeSampling
-from ..utils.unique_features import (
+from ..feature import (
     get_predict_indices_and_values,
     get_recommend_indices_and_values
 )

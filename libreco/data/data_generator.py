@@ -45,33 +45,22 @@ class DataGenFeat(object):
     def __iter__(self, batch_size):
         for i in tqdm.trange(0, self.data_size, batch_size, desc="train"):
             batch_slice = slice(i, i + batch_size)
-            res = (
+            pure_part = (
                 self.user_indices[batch_slice],
                 self.item_indices[batch_slice],
                 self.labels[batch_slice]
             )
-            if self.sparse and self.dense:
-                res_other = (
-                    self.sparse_indices[batch_slice],
-                    self.dense_values[batch_slice]
-                )
-            elif self.sparse:
-                res_other =  (
-                    self.sparse_indices[batch_slice],
-                    None,
-                    None
-                )
-            elif self.dense:
-                res_other = (
-                    None,
-                    self.dense_values[batch_slice]
-                )
-            else:
-                res_other = (
-                    None,
-                    None
-                )
-            yield res + res_other
+            sparse_part = (
+                (self.sparse_indices[batch_slice],)
+                if self.sparse
+                else (None,)
+            )
+            dense_part = (
+                (self.dense_values[batch_slice],)
+                if self.dense
+                else (None,)
+            )
+            yield pure_part + sparse_part + dense_part
 
     def __call__(self, shuffle=True, batch_size=None):
         if shuffle:
@@ -129,7 +118,7 @@ class DataGenSequence(object):
                     self.mode,
                     self.num
                 )
-                res = (
+                pure_part = (
                     modified_batch_size,
                     interacted_indices,
                     interacted_values,
@@ -150,7 +139,7 @@ class DataGenSequence(object):
                     self.num,
                     self.user_consumed_set
                 )
-                res = (
+                pure_part = (
                     batch_interacted,
                     batch_interacted_len,
                     self.user_indices[batch_slice],
@@ -158,27 +147,17 @@ class DataGenSequence(object):
                     self.labels[batch_slice]
                 )
 
-            if self.sparse and self.dense:
-                res_other = (
-                    self.sparse_indices[batch_slice],
-                    self.dense_values[batch_slice]
-                )
-            elif self.sparse:
-                res_other = (
-                    self.sparse_indices[batch_slice],
-                    None
-                )
-            elif self.dense:
-                res_other = (
-                    None,
-                    self.dense_values[batch_slice]
-                )
-            else:
-                res_other = (
-                    None,
-                    None
-                )
-            yield res + res_other
+            sparse_part = (
+                (self.sparse_indices[batch_slice],)
+                if self.sparse
+                else (None,)
+            )
+            dense_part = (
+                (self.dense_values[batch_slice],)
+                if self.dense
+                else (None,)
+            )
+            yield pure_part + sparse_part + dense_part
 
     def __call__(self, shuffle=True, batch_size=None):
         if shuffle:

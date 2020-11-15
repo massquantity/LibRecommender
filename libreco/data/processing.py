@@ -7,8 +7,8 @@ from sklearn.preprocessing import (
 )
 
 
-def preprocess_data(data, dense_col=None, normalizer="min_max",
-                    transformer=("log", "sqrt", "square")):
+def process_data(data, dense_col=None, normalizer="min_max",
+                 transformer=("log", "sqrt", "square")):
 
     if not dense_col:
         print("nothing to preprocessing...")
@@ -81,3 +81,42 @@ def preprocess_data(data, dense_col=None, normalizer="min_max",
 
     return data, dense_col_transformed
 
+
+def split_multi_value(data, multi_value_col, sep, max_len=None,
+                      pad_val="missing", user_col=None, item_col=None):
+    if max_len is not None:
+        assert (
+                isinstance(max_len, (list, tuple))
+                and len(max_len) == len(multi_value_col)
+        ), "max_len must be list and have same length as multi_value_col"
+
+    user_sparse_col, item_sparse_col, multi_sparse_col = [], [], []
+    for j, col in enumerate(multi_value_col):
+        sparse_col = []
+        data[col] = (
+            data[col]
+            .str.strip(sep + " ")
+            .str.replace("\s+", "", regex=True)
+            .str.lower()
+        )
+        data.loc[data[col] == "", col] = pad_val
+        split_col = data[col].str.split(sep)
+        col_len = (
+            int(split_col.str.len().max())
+            if max_len is None
+            else max_len[j]
+        )
+        for i in range(col_len):
+            new_col_name = col + f"_{i+1}"
+            sparse_col.append(new_col_name)
+            data[new_col_name] = split_col.str.get(i)
+
+        multi_sparse_col.append(sparse_col)
+        if user_col is not None and col in user_col:
+            user_sparse_col.extend(sparse_col)
+        elif item_col is not None and col in item_col:
+            item_sparse_col.extend(sparse_col)
+
+    data.fillna(pad_val, inplace=True)
+    data.drop(multi_value_col, axis=1, inplace=True)
+    return multi_sparse_col, user_sparse_col, item_sparse_col

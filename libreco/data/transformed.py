@@ -49,19 +49,10 @@ class TransformedSet(object):
 
     def _build_negative_samples(self, data_info, num_neg=1,
                                 item_gen_mode="random", seed=42):
-
-        if self.sparse_indices is None and self.dense_values is None:
-            neg = NegativeSampling(self, data_info, num_neg,
-                                   sparse=False, dense=False)
-        elif self.sparse_indices is None:
-            neg = NegativeSampling(self, data_info, num_neg,
-                                   sparse=False, dense=True)
-        elif self.dense_values is None:
-            neg = NegativeSampling(self, data_info, num_neg,
-                                   sparse=True, dense=False)
-        else:
-            neg = NegativeSampling(self, data_info, num_neg,
-                                   sparse=True, dense=True)
+        sparse_part = False if self.sparse_indices is None else True
+        dense_part = False if self.dense_values is None else True
+        neg = NegativeSampling(self, data_info, num_neg,
+                               sparse=sparse_part, dense=dense_part)
 
         (
             self._user_indices,
