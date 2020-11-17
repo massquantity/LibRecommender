@@ -37,7 +37,7 @@ def _filter_unknown_user_item(data_list):
 
     split_data_all = [train_data]
     for i, test_data in enumerate(data_list[1:], start=1):
-        print(f"Non_train_data {i} size before filtering: {len(test_data)}")
+        # print(f"Non_train_data {i} size before filtering: {len(test_data)}")
         out_of_bounds_row_indices = set()
         for col in ["user", "item"]:
             for j, val in enumerate(test_data[col]):
@@ -48,8 +48,8 @@ def _filter_unknown_user_item(data_list):
         test_data_clean = test_data[~np.isin(
             mask, list(out_of_bounds_row_indices))]
         split_data_all.append(test_data_clean)
-        print(f"Non_train_data {i} size after filtering: "
-              f"{len(test_data_clean)}")
+        # print(f"Non_train_data {i} size after filtering: "
+        #      f"{len(test_data_clean)}")
     return split_data_all
 
 

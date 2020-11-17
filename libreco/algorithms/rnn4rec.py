@@ -168,46 +168,36 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         )
 
         if tf.__version__ >= "2.0.0":
-            if self.rnn_type == "lstm":
-                cells = [
-                    tf.keras.layers.LSTMCell(size)
-                    for size in self.hidden_units
-                ]
-            else:
-                cells = [
-                    tf.keras.layers.GRUCell(size)
-                    for size in self.hidden_units
-                ]
-
+            cell_type = (
+                tf.keras.layers.LSTMCell
+                if self.rnn_type.endswith("lstm")
+                else tf.keras.layers.GRUCell
+            )
+            cells = [cell_type(size) for size in self.hidden_units]
             masks = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
             tf2_rnn = tf.keras.layers.RNN(cells, return_state=True)
             output, *state = tf2_rnn(seq_item_embed, mask=masks)
 
         else:
-            if self.rnn_type == "lstm":
-                cells = [
-                    tf.nn.rnn_cell.LSTMCell(size)
-                    for size in self.hidden_units
-                ]
-            else:
-                cells = [
-                    tf.nn.rnn_cell.GRUCell(size)
-                    for size in self.hidden_units
-                ]
-
+            cell_type = (
+                tf.nn.rnn_cell.LSTMCell
+                if self.rnn_type.endswith("lstm")
+                else tf.nn.rnn_cell.GRUCell
+            )
+            cells = [cell_type(size) for size in self.hidden_units]
             stacked_cells = tf.nn.rnn_cell.MultiRNNCell(cells)
             zero_state = stacked_cells.zero_state(
                 tf.shape(seq_item_embed)[0], dtype=tf.float32
             )
 
-            _, state = tf.nn.dynamic_rnn(
+            output, state = tf.nn.dynamic_rnn(
                 cell=stacked_cells,
                 inputs=seq_item_embed,
                 sequence_length=self.user_interacted_len,
                 initial_state=zero_state
             )
 
-        self.user_embed = state[0][1] if self.rnn_type == "lstm" else state[0]
+        self.user_embed = state[-1][1] if self.rnn_type == "lstm" else state[-1]
 
     def _build_train_ops(self, global_steps=None):
         if self.task == "rating":

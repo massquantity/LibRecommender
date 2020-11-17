@@ -44,13 +44,13 @@ You can find some typical usages in these files:
 + `feat_rating_example.py `
 + `feat_ranking_example.py`
 
-Actually, there exists a third model category in `LibRecommender`, which we call them `seq` models. These models typically leverage some sequence or graph information of users. This category includes `KnnEmbedding, RNN4Rec, YouTuBeMatch, YouTubeRanking, DIN`. As you can see, `seq` models overlaps with `pure` and `feat` models. So no need to worry, the APIs still remains the same, and you can just use the examples above.
+Actually, there exists a third model category in `LibRecommender`, which we call them `seq` models. These models typically leverage some sequence or graph information of users. This category includes `KnnEmbedding, RNN4Rec, YouTuBeMatch, YouTubeRanking, DIN`. As you can see, `seq` models overlap with `pure` and `feat` models. But no need to worry, the APIs still remains the same, and you can just use the examples above.
 
 
 
 ## Feature Engineering
 
-#### `sparse` and `dense` features
+### `sparse` and `dense` features
 
 Sparse features are typically categorical features such as sex, location, year, etc. These features are projected into low dimension vectors by using an embedding layer, and this is by far the most common way of handling these kinds of features.
 
@@ -64,7 +64,7 @@ So to be clear, for one dense feature, all samples of this feature will be proje
 
 Apart from `sparse` and `dense` features, `user` and `item` features should also be provided. Since in order to make predictions and recommendations, the model needs to know a feature belongs to user or item. So, in short, these parameters are `[sparse_col, dense_col, user_col, item_col]`  in `LibRecommender`.
 
-#### `multi_sparse` features
+### `multi_sparse` features
 
 Often times categorical features can be multi-valued. For example, a movie may have multiple genres, as shown in the `genre` feature in the `MovieLens-1m` dataset:
 

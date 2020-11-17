@@ -8,7 +8,7 @@
 
 + A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features or both.
 
-+ Low memory usage, automatically convert categorical features to sparse representation.
++ Low memory usage, automatically convert categorical and multi-value categorical features to sparse representation.
 
 + Support training for both explicit and implicit datasets, and negative sampling can be used for implicit dataset.
 
@@ -75,8 +75,9 @@ user_col = ["sex", "age", "occupation"]
 item_col = ["genre1", "genre2", "genre3"]
 
 train_data, data_info = DatasetFeat.build_trainset(
-    train_data, user_col, item_col, sparse_col, dense_col)
-test_data = DatasetFeat.build_testset(test_data, sparse_col, dense_col)
+    train_data, user_col, item_col, sparse_col, dense_col
+)
+test_data = DatasetFeat.build_testset(test_data)
 train_data.build_negative_samples(data_info)  # sample negative items for each record
 test_data.build_negative_samples(data_info)
 print(data_info)  # n_users: 5962, n_items: 3226, data sparsity: 0.4185 %
@@ -93,8 +94,12 @@ print("prediction: ", ytb_ranking.predict(user=1, item=2333))
 print("recommendation(id, probability): ", ytb_ranking.recommend_user(user=1, n_rec=7))  
 ```
 
+#### For more examples and usages, see [User Guide]()
+
+
 
 ## Data Format
+
 JUST normal data format, each line represents a sample. One thing is important, the model assumes that `user`, `item`, and `label` column index are 0, 1, and 2, respectively. You may wish to change the column order if that's not the case. Take for Example, the `movielens-1m` dataset:
 
 > 1::1193::5::978300760<br>
@@ -108,7 +113,7 @@ Besides, if you want to use some other meta features (e.g., age, sex, category e
 
 ## Serving
 
-For how to serve a trained model in LibRecommender, see [serving README](<https://github.com/massquantity/LibRecommender/tree/master/serving>) .
+For how to serve a trained model in LibRecommender, see [Serving Guide](<https://github.com/massquantity/LibRecommender/tree/master/serving>) .
 
 
 
@@ -117,7 +122,7 @@ For how to serve a trained model in LibRecommender, see [serving README](<https:
 From pypi : &nbsp;  
 
 ```
-$ pip install LibRecommender==0.1.0
+$ pip install LibRecommender==0.2.0
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
@@ -137,6 +142,7 @@ $ python setup.py install
 - pandas >= 0.23.4
 - scipy >= 1.2.1
 - scikit-learn >= 0.20.0
+- gensim>=3.6.0
 - tqdm >= 4.46.0
 
 `LibRecommender` is tested under tensorflow 1.14 and 2.3. If you encounter any problem during running, feel free to open an issue.
@@ -165,11 +171,13 @@ $ python setup.py install
 |    Wide & Deep    |   feat   | [Wide & Deep Learning for Recommender Systems](https://arxiv.org/pdf/1606.07792.pdf) |
 |        FM         |   feat   | [Factorization Machines](https://www.csie.ntu.edu.tw/~b97053/paper/Rendle2010FM.pdf) |
 |      DeepFM       |   feat   | [DeepFM: A Factorization-Machine based Neural Network for CTR Prediction](https://arxiv.org/pdf/1703.04247.pdf) |
-|   YouTubeMatch  YouTubeRanking |   feat   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
+|   YouTubeMatch  YouTubeRanking |   feat, seq   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
 | AutoInt | feat | [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921.pdf) |
-|        DIN        |   feat   | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) |
+|        DIN        |   feat, seq   | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) |
+| Item2Vec | pure, seq | [Item2Vec: Neural Item Embedding for Collaborative Filtering](https://arxiv.org/pdf/1603.04259.pdf) |
+| RNN4Rec / GRU4Rec | pure, seq | [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939.pdf) |
 
-> `pure` means collaborative-filtering algorithms which only use behavior data, whereas `feat` means other features can be included.
+> `pure` means collaborative-filtering algorithms which only use behavior data,  `feat` means other features can be included, `seq` means sequence or graph algorithms.
 
 ## License
 

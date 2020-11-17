@@ -72,8 +72,13 @@ class KnnEmbedding(Base, EvalMixin):
         preds = []
         for u, i in zip(user, item):
             user_interacted = self.user_consumed[u]
+            num = (
+                len(user_interacted)
+                if len(user_interacted) < self.k
+                else self.k
+            )
             interacted_sims = self._compute_sim(i, user_interacted)
-            k_sims = np.partition(interacted_sims, -self.k)[-self.k:]
+            k_sims = np.partition(interacted_sims, -num)[-num:]
             preds.append(np.mean(k_sims))   # max ?
 
         if unknown_num > 0:
