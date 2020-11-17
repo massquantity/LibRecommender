@@ -54,11 +54,15 @@ Actually, there exists a third model category in `LibRecommender`, which we call
 
 Sparse features are typically categorical features such as sex, location, year, etc. These features are projected into low dimension vectors by using an embedding layer, and this is by far the most common way of handling these kinds of features.
 
-Dense features are typically numerical features such as age, price, length, etc. Unfortunately, there is no common way of handling these features, so in `LibRecommender` we mainly use the method described in the [AutoInt](https://arxiv.org/pdf/1810.11921.pdf) paper. Specifically, every dense feature are also projected into low dimension vectors through an embedding layer, then the vectors are multiplied by the dense feature value itself. In this way, the authors of the paper argued that sparse and dense features can have interactions in models such as FM, DeepFM and of course, AutoInt.
-$$
-\bold{e}_m = \bold{v}_m x_m
-$$
-![](https://s3.ax1x.com/2020/11/16/DAq0PO.jpg)
+Dense features are typically numerical features such as age, price, length, etc. Unfortunately, there is no common way of handling these features, so in `LibRecommender` we mainly use the method described in the [AutoInt](https://arxiv.org/pdf/1810.11921.pdf) paper. Specifically, every dense feature are also projected into low dimension vectors through an embedding layer, then the vectors are multiplied by the dense feature value itself. In this way, the authors of the paper argued that sparse and dense features can have interactions in models such as FM, DeepFM and of course, AutoInt.  
+
+<br>
+
+<div align="center">
+ <img src="https://s3.ax1x.com/2020/11/16/DAq0PO.jpg">
+</div>
+
+<br>
 
 So to be clear, for one dense feature, all samples of this feature will be projected into a same embedding vector. This is different from a sparse feature, where all samples of it will have different embedding vectors based on its concrete category.
 

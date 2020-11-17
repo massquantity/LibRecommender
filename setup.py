@@ -18,7 +18,7 @@ except ImportError:
 else:
     USE_CYTHON = True
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -70,7 +70,7 @@ else:
 setup(
     name='LibRecommender',
     author='massquantity',
-    author_email='wdmjjxg@163.com',
+    author_email='jinxin_madie@163.com',
     description=(
         'A collaborative-filtering and content-based recommender system '
         'for both explicit and implicit datasets.'
