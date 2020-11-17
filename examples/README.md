@@ -39,10 +39,10 @@ Then for models that can include other features (e.g., age, sex, name etc.), we 
 
 You can find some typical usages in these files: 
 
-+ `pure_rating_example.py`
-+ ` pure_ranking_example.py ` 
-+ `feat_rating_example.py `
-+ `feat_ranking_example.py`
++ [`pure_rating_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/pure_rating_example.py)
++ [` pure_ranking_example.py ` ](https://github.com/massquantity/LibRecommender/blob/master/examples/pure_ranking_example.py)
++ [`feat_rating_example.py `](https://github.com/massquantity/LibRecommender/blob/master/examples/feat_rating_example.py)
++ [`feat_ranking_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/feat_ranking_example.py)
 
 Actually, there exists a third model category in `LibRecommender`, which we call them `seq` models. These models typically leverage some sequence or graph information of users. This category includes `KnnEmbedding, RNN4Rec, YouTuBeMatch, YouTubeRanking, DIN`. As you can see, `seq` models overlap with `pure` and `feat` models. But no need to worry, the APIs still remains the same, and you can just use the examples above.
 
@@ -86,7 +86,7 @@ Usually we can handle this kind of feature by using multi-hot encoding, so in `L
 | 4       | Waiting to Exhale (1995)           | Comedy    | Drama      | missing |
 | 5       | Father of the Bride Part II (1995) | Comedy    | missing    | missing |
 
-In this case, a `multi_sparse_col` should be provided, see `multi_sparse_example.py`. 
+In this case, a `multi_sparse_col` should be provided, see [`multi_sparse_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/multi_sparse_example.py). 
 
 ```python
 multi_sparse_col = [["genre1", "genre2", "genre3"]]
@@ -94,7 +94,7 @@ multi_sparse_col = [["genre1", "genre2", "genre3"]]
 
 Note it's a list of list, because there are possibly many multi_sparse features,  for instance, `[[a1, a2, a3], [b1, b2]]` .
 
-`LibRecommender` also provides a convenient function (`split_multi_value`) to transform the original `multi_sparse` features to the divided features illustrated above. See `multi_sparse_processing_example.py`
+`LibRecommender` also provides a convenient function (`split_multi_value`) to transform the original `multi_sparse` features to the divided features illustrated above. See [`multi_sparse_processing_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/multi_sparse_processing_example.py)
 
 ```python
 multi_value_col = ["genre"]
@@ -118,7 +118,7 @@ If you have only one data, you can split the data in following ways:
 + `split_by_ratio_chrono`. For each user, assign certain ratio of items to test_data, where items are sorted by time first. In this case, data should contain a `time` column.
 + `split_by_num_chrono`. For each user, assign certain number of items to test_data, where items are sorted by time first. In this case, data should contain a `time` column.
 
-See `split_data_example.py` .
+See [`split_data_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/split_data_example.py) .
 
 
 

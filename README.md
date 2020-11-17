@@ -94,7 +94,7 @@ print("prediction: ", ytb_ranking.predict(user=1, item=2333))
 print("recommendation(id, probability): ", ytb_ranking.recommend_user(user=1, n_rec=7))  
 ```
 
-#### For more examples and usages, see [User Guide]()
+### For more examples and usages, see [User Guide](https://github.com/massquantity/LibRecommender/tree/master/examples)
 
 
 
