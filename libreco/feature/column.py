@@ -32,7 +32,7 @@ def merge_sparse_indices(data_class, data, sparse_col, multi_sparse_col, mode):
             data_class, multi_sparse_col
         )
         multi_sparse_indices = (
-                multi_sparse_indices + sparse_offset[-1] + multi_sparse_offset
+            multi_sparse_indices + sparse_offset[-1] + multi_sparse_offset
         )
         return np.concatenate([sparse_indices, multi_sparse_indices], axis=1)
 
