@@ -27,8 +27,9 @@ if __name__ == "__main__":
     item_col = ["genre1", "genre2", "genre3"]
 
     train_data, data_info = DatasetFeat.build_trainset(
-        train_data, user_col, item_col, sparse_col, dense_col)
-    test_data = DatasetFeat.build_testset(test_data, sparse_col, dense_col)
+        train_data, user_col, item_col, sparse_col, dense_col
+    )
+    test_data = DatasetFeat.build_testset(test_data)
 
     # sample negative items for each record
     train_data.build_negative_samples(data_info)
