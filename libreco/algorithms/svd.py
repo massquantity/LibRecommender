@@ -54,9 +54,6 @@ class SVD(Base, TfMixin, EvalMixin):
         self.num_neg = num_neg
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
-        self.global_mean = data_info.global_mean
-        self.default_prediction = data_info.global_mean if (
-                task == "rating") else 0.0
         self.seed = seed
         self.user_consumed = data_info.user_consumed
         self.bu = None

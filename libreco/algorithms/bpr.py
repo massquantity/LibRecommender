@@ -65,7 +65,6 @@ class BPR(Base, TfMixin, EvalMixin):
         self.num_neg = num_neg
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
-        self.default_prediction = 0.0
         self.use_tf = use_tf
         self.seed = seed
         self.user_consumed = data_info.user_consumed

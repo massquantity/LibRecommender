@@ -71,7 +71,7 @@ def reg_config(reg):
 
 def dropout_config(dropout_rate):
     if not dropout_rate:
-        return
+        return 0.0
     elif dropout_rate <= 0.0 or dropout_rate >= 1.0:
         raise ValueError("dropout_rate must be in (0.0, 1.0)")
     else:

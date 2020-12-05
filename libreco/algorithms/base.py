@@ -26,6 +26,7 @@ class Base(abc.ABC):
     def __init__(self, task, data_info, lower_upper_bound=None):
         self.task = task
         if task == "rating":
+            self.global_mean = data_info.global_mean
             if lower_upper_bound is not None:
                 assert isinstance(lower_upper_bound, (list, tuple)), (
                     "must contain both lower and upper bound if provided")
@@ -38,6 +39,12 @@ class Base(abc.ABC):
 
         elif task != "ranking":
             raise ValueError("task must either be rating or ranking")
+
+        self.default_prediction = (
+            data_info.global_mean
+            if task == "rating"
+            else 0.0
+        )
 
     @abc.abstractmethod
     def fit(self, train_data, **kwargs):

@@ -75,9 +75,6 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self.loss_type = loss_type
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
-        self.global_mean = data_info.global_mean
-        self.default_prediction = data_info.global_mean if (
-                task == "rating") else 0.0
         (
             self.interaction_mode,
             self.interaction_num
