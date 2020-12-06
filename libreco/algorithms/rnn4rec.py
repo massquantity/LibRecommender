@@ -46,6 +46,7 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
             batch_size=256,
             num_neg=1,
             dropout_rate=None,
+            use_layer_norm=False,
             recent_num=10,
             random_num=None,
             seed=42,
@@ -69,9 +70,7 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         self.batch_size = batch_size
         self.num_neg = num_neg
         self.dropout_rate = dropout_config(dropout_rate)
-        self.default_prediction = (
-            data_info.global_mean if task == "rating" else 0.0
-        )
+        self.use_ln = use_layer_norm
         self.seed = seed
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
@@ -90,13 +89,13 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
 
     def _build_model(self):
         tf.set_random_seed(self.seed)
+        self.labels = tf.placeholder(tf.float32, shape=[None])
+        self.is_training = tf.placeholder_with_default(False, shape=[])
         self._build_variables()
         self._build_user_embeddings()
-        self.labels = tf.placeholder(tf.float32, shape=[None])
         if self.task == "rating" or self.loss_type == "cross_entropy":
             self.user_indices = tf.placeholder(tf.int32, shape=[None])
             self.item_indices = tf.placeholder(tf.int32, shape=[None])
-            self.is_training = tf.placeholder_with_default(False, shape=[])
 
             item_embed = tf.nn.embedding_lookup(
                 self.item_weights, self.item_indices
@@ -145,7 +144,7 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         )
         self.item_weights = tf.get_variable(
             name="item_weights",
-            shape=[self.n_items, self.hidden_units[-1]],
+            shape=[self.n_items, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.02),
             regularizer=self.reg
         )
@@ -168,15 +167,39 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         )
 
         if tf.__version__ >= "2.0.0":
-            cell_type = (
-                tf.keras.layers.LSTMCell
+            # cell_type = (
+            #    tf.keras.layers.LSTMCell
+            #    if self.rnn_type.endswith("lstm")
+            #    else tf.keras.layers.GRUCell
+            # )
+            # cells = [cell_type(size) for size in self.hidden_units]
+            # masks = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
+            # tf2_rnn = tf.keras.layers.RNN(cells, return_state=True)
+            # output, *state = tf2_rnn(seq_item_embed, mask=masks)
+
+            rnn = (
+                tf.keras.layers.LSTM
                 if self.rnn_type.endswith("lstm")
-                else tf.keras.layers.GRUCell
+                else tf.keras.layers.GRU
             )
-            cells = [cell_type(size) for size in self.hidden_units]
+            out = seq_item_embed
             masks = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
-            tf2_rnn = tf.keras.layers.RNN(cells, return_state=True)
-            output, *state = tf2_rnn(seq_item_embed, mask=masks)
+            for units in self.hidden_units:
+                out = rnn(
+                    units, return_sequences=True,
+                    dropout=self.dropout_rate,
+                    recurrent_dropout=self.dropout_rate,
+                    activation=None if self.use_ln else "tanh"
+                )(out, mask=masks, training=self.is_training)
+
+                if self.use_ln:
+                    out = tf.keras.layers.LayerNormalization()(out)
+                    out = tf.keras.activations.get("tanh")(out)
+
+            out = out[:, -1, :]
+            self.user_embed = tf.keras.layers.Dense(
+                units=self.embed_size, activation=None
+            )(out)
 
         else:
             cell_type = (
@@ -194,10 +217,13 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
                 cell=stacked_cells,
                 inputs=seq_item_embed,
                 sequence_length=self.user_interacted_len,
-                initial_state=zero_state
+                initial_state=zero_state,
+                time_major=False
             )
-
-        self.user_embed = state[-1][1] if self.rnn_type == "lstm" else state[-1]
+            out = state[-1][1] if self.rnn_type == "lstm" else state[-1]
+            self.user_embed = tf.layers.dense(
+                inputs=out, units=self.embed_size, activation=None
+            )
 
     def _build_train_ops(self, global_steps=None):
         if self.task == "rating":
@@ -406,9 +432,9 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         self.item_vector = np.hstack([item_weights, item_bias])
 
     def _check_params(self):
-        assert self.hidden_units[-1] == self.embed_size, (
-            "dimension of last rnn hidden unit should equal to embed_size"
-        )
+        # assert self.hidden_units[-1] == self.embed_size, (
+        #    "dimension of last rnn hidden unit should equal to embed_size"
+        # )
         assert self.loss_type in ("cross_entropy", "bpr"), (
             "loss_type must be either cross_entropy or bpr"
         )
