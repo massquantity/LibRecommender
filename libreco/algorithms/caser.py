@@ -1,7 +1,7 @@
 """
 
-Reference: Balazs Hidasi et al.  "Session-based Recommendations with Recurrent Neural Networks"
-           (https://arxiv.org/pdf/1511.06939.pdf)
+Reference: Jiaxi Tang & Ke Wang. "Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding"
+           (https://arxiv.org/pdf/1809.07426.pdf)
 
 author: massquantity
 
@@ -11,7 +11,6 @@ import numpy as np
 import tensorflow as tf2
 from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal,
-    orthogonal as tf_orthogonal,
     glorot_normal as tf_glorot_normal
 )
 from .base import Base, TfMixin
@@ -30,23 +29,22 @@ tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 
-class RNN4Rec(Base, TfMixin, EvalMixin):
+class Caser(Base, TfMixin, EvalMixin):
     def __init__(
             self,
             task,
             data_info=None,
-            rnn_type="lstm",
-            loss_type="cross_entropy",
             embed_size=16,
             n_epochs=20,
             lr=0.001,
             lr_decay=False,
-            hidden_units="16",
             reg=None,
             batch_size=256,
             num_neg=1,
             dropout_rate=None,
-            use_layer_norm=False,
+            use_bn=False,
+            nh_filters=2,
+            nv_filters=4,
             recent_num=10,
             random_num=None,
             seed=42,
@@ -59,18 +57,17 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
 
         self.task = task
         self.data_info = data_info
-        self.rnn_type = rnn_type.lower()
-        self.loss_type = loss_type.lower()
         self.embed_size = embed_size
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
-        self.hidden_units = list(map(int, hidden_units.split(",")))
         self.reg = reg_config(reg)
         self.batch_size = batch_size
         self.num_neg = num_neg
         self.dropout_rate = dropout_config(dropout_rate)
-        self.use_ln = use_layer_norm
+        self.use_bn = use_bn
+        self.nh_filters = nh_filters
+        self.nv_filters = nv_filters
         self.seed = seed
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
@@ -85,157 +82,116 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         self.item_vector = None
         self.sparse = False
         self.dense = False
-        self._check_params()
 
     def _build_model(self):
         tf.set_random_seed(self.seed)
-        self.labels = tf.placeholder(tf.float32, shape=[None])
-        self.is_training = tf.placeholder_with_default(False, shape=[])
+        self._build_placeholders()
         self._build_variables()
         self._build_user_embeddings()
-        if self.task == "rating" or self.loss_type == "cross_entropy":
-            self.user_indices = tf.placeholder(tf.int32, shape=[None])
-            self.item_indices = tf.placeholder(tf.int32, shape=[None])
 
-            item_embed = tf.nn.embedding_lookup(
-                self.item_weights, self.item_indices
-            )
-            item_bias = tf.nn.embedding_lookup(
-                self.item_biases, self.item_indices
-            )
-            self.output = tf.reduce_sum(
-                tf.multiply(self.user_embed, item_embed), axis=1
-            ) + item_bias
-
-        elif self.loss_type == "bpr":
-            self.item_indices_pos = tf.placeholder(tf.int32, shape=[None])
-            self.item_indices_neg = tf.placeholder(tf.int32, shape=[None])
-            item_embed_pos = tf.nn.embedding_lookup(
-                self.item_weights, self.item_indices_pos
-            )
-            item_embed_neg = tf.nn.embedding_lookup(
-                self.item_weights, self.item_indices_neg
-            )
-            item_bias_pos = tf.nn.embedding_lookup(
-                self.item_biases, self.item_indices_pos
-            )
-            item_bias_neg = tf.nn.embedding_lookup(
-                self.item_biases, self.item_indices_neg
-            )
-
-            item_diff = tf.subtract(item_bias_pos,
-                                    item_bias_neg) + tf.reduce_sum(
-                tf.multiply(
-                    self.user_embed,
-                    tf.subtract(item_embed_pos, item_embed_neg)
-                ), axis=1
-            )
-            self.log_sigmoid = tf.log_sigmoid(item_diff)
-
+        item_embed = tf.nn.embedding_lookup(
+            self.item_weights, self.item_indices
+        )
+        item_bias = tf.nn.embedding_lookup(
+            self.item_biases, self.item_indices
+        )
+        self.output = tf.reduce_sum(
+            tf.multiply(self.user_embed, item_embed),
+            axis=1
+        ) + item_bias
         count_params()
 
+    def _build_placeholders(self):
+        self.user_indices = tf.placeholder(tf.int32, shape=[None])
+        self.item_indices = tf.placeholder(tf.int32, shape=[None])
+        self.user_interacted_seq = tf.placeholder(
+            tf.int32, shape=[None, self.max_seq_len])  # B * seq
+        self.user_interacted_len = tf.placeholder(tf.int64, shape=[None])
+        self.labels = tf.placeholder(tf.float32, shape=[None])
+        self.is_training = tf.placeholder_with_default(False, shape=[])
+        
     def _build_variables(self):
+        self.user_feat = tf.get_variable(
+            name="user_feat",
+            shape=[self.n_users, self.embed_size],
+            initializer=tf_truncated_normal(0.0, 0.01),
+            regularizer=self.reg)
+
         # weight and bias parameters for last fc_layer
         self.item_biases = tf.get_variable(
             name="item_biases",
             shape=[self.n_items],
             initializer=tf.zeros,
-            regularizer=self.reg
         )
         self.item_weights = tf.get_variable(
             name="item_weights",
-            shape=[self.n_items, self.embed_size],
+            shape=[self.n_items, self.embed_size * 2],
             initializer=tf_truncated_normal(0.0, 0.02),
             regularizer=self.reg
         )
 
-        # input_embed for rnn_layer, include padding value
+        # input_embed for cnn_layer, include padding value
         self.input_embed = tf.get_variable(
             name="input_embed",
-            shape=[self.n_items + 1, self.hidden_units[0]],
+            shape=[self.n_items + 1, self.embed_size],
             initializer=tf_glorot_normal,
             regularizer=self.reg
         )
 
     def _build_user_embeddings(self):
-        self.user_interacted_seq = tf.placeholder(
-            tf.int32, shape=[None, self.max_seq_len]
-        )
-        self.user_interacted_len = tf.placeholder(tf.int64, shape=[None])
+        user_repr = tf.nn.embedding_lookup(self.user_feat, self.user_indices)
+        # B * seq * K
         seq_item_embed = tf.nn.embedding_lookup(
-            self.input_embed, self.user_interacted_seq
-        )
+            self.input_embed, self.user_interacted_seq)
 
-        if tf.__version__ >= "2.0.0":
-            # cell_type = (
-            #    tf.keras.layers.LSTMCell
-            #    if self.rnn_type.endswith("lstm")
-            #    else tf.keras.layers.GRUCell
-            # )
-            # cells = [cell_type(size) for size in self.hidden_units]
-            # masks = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
-            # tf2_rnn = tf.keras.layers.RNN(cells, return_state=True)
-            # output, *state = tf2_rnn(seq_item_embed, mask=masks)
-
-            rnn = (
-                tf.keras.layers.LSTM
-                if self.rnn_type.endswith("lstm")
-                else tf.keras.layers.GRU
-            )
-            out = seq_item_embed
-            masks = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
-            for units in self.hidden_units:
-                out = rnn(
-                    units, return_sequences=True,
-                    dropout=self.dropout_rate,
-                    recurrent_dropout=self.dropout_rate,
-                    activation=None if self.use_ln else "tanh"
-                )(out, mask=masks, training=self.is_training)
-
-                if self.use_ln:
-                    out = tf.keras.layers.LayerNormalization()(out)
-                    out = tf.keras.activations.get("tanh")(out)
-
-            out = out[:, -1, :]
-            self.user_embed = tf.keras.layers.Dense(
-                units=self.embed_size, activation=None
-            )(out)
-
-        else:
-            cell_type = (
-                tf.nn.rnn_cell.LSTMCell
-                if self.rnn_type.endswith("lstm")
-                else tf.nn.rnn_cell.GRUCell
-            )
-            cells = [cell_type(size) for size in self.hidden_units]
-            stacked_cells = tf.nn.rnn_cell.MultiRNNCell(cells)
-            zero_state = stacked_cells.zero_state(
-                tf.shape(seq_item_embed)[0], dtype=tf.float32
-            )
-
-            output, state = tf.nn.dynamic_rnn(
-                cell=stacked_cells,
+        convs_out = []
+        for i in range(1, self.max_seq_len + 1):
+            h_conv = tf.layers.conv1d(
                 inputs=seq_item_embed,
-                sequence_length=self.user_interacted_len,
-                initial_state=zero_state,
-                time_major=False
+                filters=self.nh_filters,
+                kernel_size=i,
+                strides=1,
+                padding="valid",
+                activation=tf.nn.relu
             )
-            out = state[-1][1] if self.rnn_type == "lstm" else state[-1]
-            self.user_embed = tf.layers.dense(
-                inputs=out, units=self.embed_size, activation=None
+            # h_conv = tf.reduce_max(h_conv, axis=1)
+            h_size = h_conv.get_shape().as_list()[1]
+            h_conv = tf.layers.max_pooling1d(
+                inputs=h_conv,
+                pool_size=h_size,
+                strides=1,
+                padding="valid"
             )
+            h_conv = tf.squeeze(h_conv, axis=1)
+            convs_out.append(h_conv)
+
+        v_conv = tf.layers.conv1d(
+            inputs=tf.transpose(seq_item_embed, [0, 2, 1]),
+            filters=self.nv_filters,
+            kernel_size=1,
+            strides=1,
+            padding="valid",
+            activation=tf.nn.relu
+        )
+        convs_out.append(tf.layers.flatten(v_conv))
+
+        convs_out = tf.concat(convs_out, axis=1)
+        convs_out = tf.layers.dense(
+            inputs=convs_out,
+            units=self.embed_size,
+            activation=tf.nn.relu
+        )
+        self.user_embed = tf.concat([user_repr, convs_out], axis=1)
 
     def _build_train_ops(self, global_steps=None):
         if self.task == "rating":
             self.loss = tf.losses.mean_squared_error(labels=self.labels,
                                                      predictions=self.output)
-        elif self.task == "ranking" and self.loss_type == "cross_entropy":
+        elif self.task == "ranking":
             self.loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(labels=self.labels,
                                                         logits=self.output)
             )
-        elif self.task == "ranking" and self.loss_type == "bpr":
-            self.loss = -tf.reduce_mean(self.log_sigmoid)
 
         if self.reg is not None:
             reg_keys = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -245,8 +201,7 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
 
         optimizer = tf.train.AdamOptimizer(self.lr)
         optimizer_op = optimizer.minimize(total_loss, global_step=global_steps)
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        self.training_op = tf.group([optimizer_op, update_ops])
+        self.training_op = optimizer_op
         self.sess.run(tf.global_variables_initializer())
 
     def fit(self, train_data, verbose=1, shuffle=True,
@@ -263,12 +218,6 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         self._build_model()
         self._build_train_ops(global_steps)
 
-        if self.task == "rating" or self.loss_type == "cross_entropy":
-            self._fit(train_data, verbose, shuffle, eval_data, metrics)
-        elif self.loss_type == "bpr":
-            self._fit_bpr(train_data, verbose, shuffle, eval_data, metrics)
-
-    def _fit(self, train_data, verbose, shuffle, eval_data, metrics):
         data_generator = DataGenSequence(
             data=train_data,
             data_info=self.data_info,
@@ -293,48 +242,6 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
                         u_seq, u_len, user, item, label,
                         sparse_idx, dense_val, True
                     )
-                    train_loss, _ = self.sess.run(
-                        [self.loss, self.training_op], feed_dict
-                    )
-                    train_total_loss.append(train_loss)
-
-            if verbose > 1:
-                train_loss_str = "train_loss: " + str(
-                    round(float(np.mean(train_total_loss)), 4)
-                )
-                print(f"\t {colorize(train_loss_str, 'green')}")
-                # for evaluation
-                self._set_latent_factors()
-                self.print_metrics(eval_data=eval_data, metrics=metrics)
-                print("=" * 30)
-
-        # for prediction and recommendation
-        self._set_latent_factors()
-
-    def _fit_bpr(self, train_data, verbose, shuffle, eval_data, metrics):
-        data_generator = PairwiseSamplingSeq(
-            dataset=train_data,
-            data_info=self.data_info,
-            num_neg=self.num_neg,
-            mode=self.interaction_mode,
-            num=self.max_seq_len
-        )
-
-        for epoch in range(1, self.n_epochs + 1):
-            if self.lr_decay:
-                print(f"With lr_decay, epoch {epoch} learning rate: "
-                      f"{self.sess.run(self.lr)}")
-
-            with time_block(f"Epoch {epoch}", verbose):
-                train_total_loss = []
-                for user, item_pos, item_neg, u_seq, u_len in data_generator(
-                        shuffle, self.batch_size
-                ):
-                    u_len = np.asarray(u_len).astype(np.int64)
-                    feed_dict = {self.user_interacted_seq: u_seq,
-                                 self.user_interacted_len: u_len,
-                                 self.item_indices_pos: item_pos,
-                                 self.item_indices_neg: item_neg}
                     train_loss, _ = self.sess.run(
                         [self.loss, self.training_op], feed_dict
                     )
@@ -420,7 +327,8 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
 
     def _set_latent_factors(self):
         self._set_last_interacted()
-        feed_dict = {self.user_interacted_seq: self.user_last_interacted,
+        feed_dict = {self.user_indices: np.arange(self.n_users),
+                     self.user_interacted_seq: self.user_last_interacted,
                      self.user_interacted_len: self.last_interacted_len}
         user_embed = self.sess.run(self.user_embed, feed_dict)
         item_weights = self.sess.run(self.item_weights)
@@ -430,14 +338,3 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         item_bias = item_biases[:, None]
         self.user_vector = np.hstack([user_embed, user_bias])
         self.item_vector = np.hstack([item_weights, item_bias])
-
-    def _check_params(self):
-        # assert self.hidden_units[-1] == self.embed_size, (
-        #    "dimension of last rnn hidden unit should equal to embed_size"
-        # )
-        assert self.loss_type in ("cross_entropy", "bpr"), (
-            "loss_type must be either cross_entropy or bpr"
-        )
-        assert self.rnn_type in ("lstm", "gru"), (
-            "rnn_type must be either lstm or gru"
-        )

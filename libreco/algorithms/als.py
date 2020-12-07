@@ -55,11 +55,6 @@ class ALS(Base, EvalMixin):
         self.seed = seed
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
-        self.default_prediction = (
-            data_info.global_mean
-            if task == "rating"
-            else 0.0
-        )
         self.user_consumed = data_info.user_consumed
         self.user_embed = None
         self.item_embed = None

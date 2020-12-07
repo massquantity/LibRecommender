@@ -122,7 +122,7 @@ For how to serve a trained model in LibRecommender, see [Serving Guide](<https:/
 From pypi : &nbsp;  
 
 ```
-$ pip install LibRecommender==0.2.0
+$ pip install LibRecommender==0.2.2
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
@@ -144,6 +144,7 @@ $ python setup.py install
 - scikit-learn >= 0.20.0
 - gensim>=3.6.0
 - tqdm >= 4.46.0
+- [hnswlib](https://github.com/nmslib/hnswlib)
 
 `LibRecommender` is tested under tensorflow 1.14 and 2.3. If you encounter any problem during running, feel free to open an issue.
 

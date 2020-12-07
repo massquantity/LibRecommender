@@ -25,8 +25,6 @@ class UserCF(Base, EvalMixin):
 
         self.task = task
         self.k = k
-        self.default_prediction = data_info.global_mean if (
-                task == "rating") else 0.0
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
         self.sim_type = sim_type

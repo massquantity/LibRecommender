@@ -31,7 +31,6 @@ class KnnEmbedding(Base, EvalMixin):
         self.k = k
         self.seed = seed
         self.embed_algo = self._choose_embedding_algo(embedding_method)
-        self.default_prediction = 0.
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
         self.user_consumed = data_info.user_consumed

@@ -72,8 +72,6 @@ class DIN(Base, TfMixin, EvalMixin):
         self.hidden_units = list(map(int, hidden_units.split(",")))
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
-        self.default_prediction = data_info.global_mean if (
-                task == "rating") else 0.0
         self.use_tf_attention = use_tf_attention
         (
             self.interaction_mode,
