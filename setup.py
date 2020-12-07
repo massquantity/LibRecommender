@@ -1,5 +1,6 @@
 from codecs import open
 import os
+import sys
 
 from setuptools import setup, find_packages, Extension
 from setuptools import dist  # Install numpy right now
@@ -18,7 +19,7 @@ except ImportError:
 else:
     USE_CYTHON = True
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -32,11 +33,13 @@ with open(os.path.join(here, 'requirements.txt'), encoding='utf-8') as f:
 
 install_requires = [x.strip() for x in all_reqs]
 
-cmdclass = {}
-
-compile_args = ['-Wno-unused-function', '-Wno-maybe-uninitialized',
-                '-O3', '-ffast-math', '-fopenmp', '-std=c++11']
-link_args = ['-fopenmp', '-std=c++11']
+if sys.platform.startswith("win"):
+    compile_args = ["/O2", "/openmp"]
+    link_args = []
+else:
+    compile_args = ['-Wno-unused-function', '-Wno-maybe-uninitialized',
+                    '-O3', '-ffast-math', '-fopenmp', '-std=c++11']
+    link_args = ['-fopenmp', '-std=c++11']
 
 ext = '.pyx' if USE_CYTHON else '.cpp'
 
@@ -63,9 +66,10 @@ extensions = [
 
 if USE_CYTHON:
     ext_modules = cythonize(extensions)
-    cmdclass.update({'build_ext': build_ext})
+    cmdclass = {'build_ext': build_ext}
 else:
     ext_modules = extensions
+    cmdclass = {}
 
 setup(
     name='LibRecommender',
