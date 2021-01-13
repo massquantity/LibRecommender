@@ -1,3 +1,4 @@
+from functools import partial
 import numpy as np
 import tensorflow as tf2
 tf = tf2.compat.v1
@@ -139,3 +140,43 @@ def user_recent_interact(num, indices, values):
     indices = indices[recent_indices]
     values = values[recent_indices]
     return indices, values
+
+
+def conv_nn(tf_version, filters, kernel_size, strides, padding, activation,
+            dilation_rate=1):
+    if tf_version >= "2.0.0":
+        net = tf.keras.layers.Conv1D(
+            filters=filters,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            activation=activation,
+            dilation_rate=dilation_rate
+        )
+    else:
+        net = partial(
+            tf.layers.conv1d,
+            filters=filters,
+            kernel_size=kernel_size,
+            strides=strides,
+            padding=padding,
+            activation=activation
+        )
+    return net
+
+
+def max_pool(tf_version, pool_size, strides, padding):
+    if tf_version >= "2.0.0":
+        net = tf.keras.layers.MaxPool1D(
+            pool_size=pool_size,
+            strides=strides,
+            padding=padding
+        )
+    else:
+        net = partial(
+            tf.layers.max_pooling1d,
+            pool_size=pool_size,
+            strides=strides,
+            padding=padding
+        )
+    return net
