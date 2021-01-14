@@ -24,7 +24,7 @@ from ..data.data_generator import DataGenSequence
 from ..data.sequence import user_last_interacted
 from ..utils.misc import time_block, colorize
 from ..utils.misc import count_params
-
+from ..utils.tf_ops import conv_nn, max_pool
 tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
@@ -149,30 +149,34 @@ class WaverNet(Base, TfMixin, EvalMixin):
         convs_out = seq_item_embed
         for _ in range(self.n_blocks):
             for i in range(self.n_layers_per_block):
-                convs_out = tf.layers.conv1d(
-                    inputs=convs_out,
+                convs_out = conv_nn(
+                    tf_version=tf.__version__,
                     filters=self.n_filters,
                     kernel_size=2,
+                    strides=1,
                     padding="causal",
                     activation=tf.nn.relu,
                     dilation_rate=2**i
-                )
+                )(inputs=convs_out)
 
-        convs_out = tf.layers.conv1d(
-            inputs=convs_out,
+        convs_out = conv_nn(
+            tf_version=tf.__version__,
             filters=self.n_filters,
             kernel_size=1,
+            strides=1,
             padding="valid",
             activation=tf.nn.relu
-        )
+        )(inputs=convs_out)
 
         # convs_out = tf.layers.flatten(convs_out)
-        convs_out = tf.layers.max_pooling1d(
-            inputs=convs_out,
-            pool_size=convs_out.get_shape().as_list()[1],
+        p_size = convs_out.get_shape().as_list()[1]
+        convs_out = max_pool(
+            tf_version=tf.__version__,
+            pool_size=p_size,
             strides=1,
             padding="valid"
-        )
+        )(inputs=convs_out)
+
         convs_out = tf.squeeze(convs_out, axis=1)
         convs_out = tf.layers.dense(
             inputs=convs_out,
