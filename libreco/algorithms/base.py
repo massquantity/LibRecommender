@@ -1,4 +1,6 @@
 import abc
+import inspect
+import json
 import os
 import multiprocessing
 import time
@@ -189,6 +191,38 @@ class Base(abc.ABC):
         start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         print(f"Training start time: {colorize(start_time, 'magenta')}")
 
+    def save(self, path, model_name):
+        if not os.path.isdir(path):
+            print(f"file folder {path} doesn't exists, creating a new one...")
+            os.makedirs(path)
+        self.save_params(path)
+        if hasattr(self, "sess"):
+            self.save_tf_model(path, model_name)
+        else:
+            self.save_model(path, model_name)
+
+    def save_params(self, path):
+        hparams = dict()
+        arg_names = list(inspect.signature(self.__init__).parameters.keys())
+        arg_names.remove("data_info")
+        for p in arg_names:
+            hparams[p] = self.all_args[p]
+
+        param_path = os.path.join(path, "hyper_parameters.json")
+        with open(param_path, 'w') as f:
+            json.dump(hparams, f, separators=(',', ':'))
+
+    @classmethod
+    def load_params(cls, path, data_info):
+        if not os.path.exists(path):
+            raise OSError(f"file folder {path} doesn't exists...")
+
+        param_path = os.path.join(path, "hyper_parameters.json")
+        with open(param_path, 'r') as f:
+            hparams = json.load(f)
+        hparams.update({"data_info": data_info})
+        return hparams
+
 
 class TfMixin(object):
     def __init__(self, tf_sess_config=None):
@@ -301,3 +335,18 @@ class TfMixin(object):
             feed_dict.update({self.labels: label})
         return feed_dict
 
+    def save_tf_model(self, path, model_name):
+        model_path = os.path.join(path,  model_name)
+        saver = tf.train.Saver()
+        saver.save(self.sess, model_path, write_meta_graph=True)
+
+    @classmethod
+    def load_tf_model(cls, path, model_name, data_info):
+        model_path = os.path.join(path, model_name)
+        hparams = cls.load_params(path, data_info)
+        model = cls(**hparams)
+        model._build_model()
+        # saver = tf.train.import_meta_graph(os.path.join(path, model_name + ".meta"))
+        saver = tf.train.Saver()
+        saver.restore(model.sess, model_path)
+        return model
