@@ -332,21 +332,17 @@ class DatasetFeat(Dataset):
             col_name_mapping["item_dense_col"].values()
         )
 
-        (
-            user_sparse_unique,
-            user_dense_unique,
-            item_sparse_unique,
-            item_dense_unique
-        ) = construct_unique_feat(
-            user_indices,
-            item_indices,
-            train_sparse_indices,
-            train_dense_values,
-            user_sparse_col_indices,
-            user_dense_col_indices,
-            item_sparse_col_indices,
-            item_dense_col_indices
-        )
+        (user_sparse_unique,
+         user_dense_unique,
+         item_sparse_unique,
+         item_dense_unique) = construct_unique_feat(user_indices,
+                                                    item_indices,
+                                                    train_sparse_indices,
+                                                    train_dense_values,
+                                                    user_sparse_col_indices,
+                                                    user_dense_col_indices,
+                                                    item_sparse_col_indices,
+                                                    item_dense_col_indices)
 
         interaction_data = train_data[["user", "item", "label"]]
         data_info = DataInfo(col_name_mapping,
@@ -363,7 +359,6 @@ class DatasetFeat(Dataset):
 
     @classmethod
     def build_evalset(cls, eval_data, shuffle=False, seed=42):
-
         return cls.build_testset(eval_data, shuffle, seed)
 
     @classmethod

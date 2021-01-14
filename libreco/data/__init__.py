@@ -1,4 +1,5 @@
 from .dataset import DatasetPure, DatasetFeat
+from .data_info import DataInfo
 from .processing import process_data, split_multi_value
 from .split import (
     split_by_num,
