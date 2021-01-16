@@ -13,7 +13,7 @@ References:
 author: massquantity
 
 """
-import time
+import os
 import logging
 from itertools import islice
 from functools import partial
@@ -44,7 +44,7 @@ class ALS(Base, EvalMixin):
             lower_upper_bound=None
     ):
         Base.__init__(self, task, data_info, lower_upper_bound)
-        EvalMixin.__init__(self, task)
+        EvalMixin.__init__(self, task, data_info)
 
         self.task = task
         self.data_info = data_info
@@ -58,19 +58,19 @@ class ALS(Base, EvalMixin):
         self.user_consumed = data_info.user_consumed
         self.user_embed = None
         self.item_embed = None
+        self.all_args = locals()
 
         self._build_model()
-    #    print("Als init end..")
 
     def _build_model(self):
         np.random.seed(self.seed)
         self.user_embed = truncated_normal(
-            shape=[self.n_users, self.embed_size], mean=0.0, scale=0.03)
+            shape=[self.n_users + 1, self.embed_size], mean=0.0, scale=0.03)
         self.item_embed = truncated_normal(
-            shape=[self.n_items, self.embed_size], mean=0.0, scale=0.03)
+            shape=[self.n_items + 1, self.embed_size], mean=0.0, scale=0.03)
 
     def fit(self, train_data, verbose=1, shuffle=True, use_cg=True,
-            n_threads=1, eval_data=None, metrics=None):
+            n_threads=1, eval_data=None, metrics=None, **kwargs):
         self.show_start_time()
         user_interaction = train_data.sparse_interaction  # sparse.csr_matrix
         item_interaction = user_interaction.T.tocsr()
@@ -94,33 +94,30 @@ class ALS(Base, EvalMixin):
                         num_threads=n_threads)
 
             if verbose > 1:
-                self.print_metrics(eval_data=eval_data, metrics=metrics)
+                self.print_metrics(eval_data=eval_data, metrics=metrics,
+                                   **kwargs)
                 print("="*30)
+        self.assign_oov()
 
     def _choose_algo(self, use_cg):
         trainer = partial(als_update, task=self.task, use_cg=use_cg)
         return trainer
 
-    def predict(self, user, item):
-        user = np.asarray(
-            [user]) if isinstance(user, int) else np.asarray(user)
-        item = np.asarray(
-            [item]) if isinstance(item, int) else np.asarray(item)
+    def assign_oov(self):
+        self.user_embed[-1, :] = 0.
+        self.item_embed[-1, :] = 0.
 
-        unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item
-        )
+    def predict(self, user, item, inner_id=False):
+        user, item = self.convert_id(user, item, inner_id)
+        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
         preds = np.sum(
-            np.multiply(
-                self.user_embed[user], self.item_embed[item]
-            ),
+            np.multiply(self.user_embed[user], self.item_embed[item]),
             axis=1
         )
 
         if self.task == "rating":
-            preds = np.clip(
-                preds, self.lower_bound, self.upper_bound)
+            preds = np.clip(preds, self.lower_bound, self.upper_bound)
         elif self.task == "ranking":
             preds = 1 / (1 + np.exp(-preds))
 
@@ -129,24 +126,46 @@ class ALS(Base, EvalMixin):
 
         return preds[0] if len(user) == 1 else preds
 
-    def recommend_user(self, user, n_rec, **kwargs):
+    def recommend_user(self, user, n_rec, inner_id=False, **kwargs):
+        if not inner_id:
+            user = self.data_info.user2id[user]
         user = self._check_unknown_user(user)
-        if not user:
+        if user is None:
             return   # popular ?
 
-        consumed = self.user_consumed[user]
+        consumed = set(self.user_consumed[user])
         count = n_rec + len(consumed)
         recos = self.user_embed[user] @ self.item_embed.T
         if self.task == "ranking":
             recos = 1 / (1 + np.exp(-recos))
-
         ids = np.argpartition(recos, -count)[-count:]
         rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
-        return list(
-            islice(
-                (rec for rec in rank if rec[0] not in consumed), n_rec
-            )
+        recs_and_scores = islice(
+            (rec if inner_id else (self.data_info.id2item[rec[0]], rec[1])
+             for rec in rank if rec[0] not in consumed),
+            n_rec
         )
+        return list(recs_and_scores)
+
+    def save(self, path, model_name):
+        if not os.path.isdir(path):
+            print(f"file folder {path} doesn't exists, creating a new one...")
+            os.makedirs(path)
+        self.save_params(path)
+        variable_path = os.path.join(path, model_name)
+        np.savez_compressed(variable_path,
+                            user_embed=self.user_embed,
+                            item_embed=self.item_embed)
+
+    @classmethod
+    def load(cls, path, model_name, data_info):
+        variable_path = os.path.join(path, f"{model_name}.npz")
+        variables = np.load(variable_path)
+        hparams = cls.load_params(path, data_info)
+        model = cls(**hparams)
+        model.user_embed = variables["user_embed"]
+        model.item_embed = variables["item_embed"]
+        return model
 
 
 def _least_squares(sparse_interaction, X, Y, reg, embed_size, num, mode):

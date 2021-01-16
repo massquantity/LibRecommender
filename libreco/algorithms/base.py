@@ -60,7 +60,7 @@ class Base(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def predict(self, user, item):
+    def predict(self, user, item, **kwargs):
         """Predict score for given user and item.
 
         Parameters
@@ -251,7 +251,8 @@ class TfMixin(object):
         config = tf.ConfigProto(**tf_sess_config)
         return tf.Session(config=config)
 
-    def train_pure(self, data_generator, verbose, shuffle, eval_data, metrics):
+    def train_pure(self, data_generator, verbose, shuffle, eval_data, metrics,
+                   **kwargs):
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
                 train_total_loss = []
@@ -280,7 +281,8 @@ class TfMixin(object):
                     # set up parameters for prediction evaluate
                     self._set_latent_factors()
 
-                self.print_metrics(eval_data=eval_data, metrics=metrics)
+                self.print_metrics(eval_data=eval_data, metrics=metrics,
+                                   **kwargs)
                 print("="*30)
 
     def train_feat(self, data_generator, verbose, shuffle, eval_data, metrics,
@@ -378,6 +380,8 @@ class TfMixin(object):
         hparams = cls.load_params(path, data_info)
         model = cls(**hparams)
         model._build_model()
+        if hasattr(model, "user_last_interacted"):
+            model._set_last_interacted()
         # saver = tf.train.import_meta_graph(os.path.join(path, model_name + ".meta"))
         saver = tf.train.Saver()
         saver.restore(model.sess, model_path)
@@ -386,7 +390,7 @@ class TfMixin(object):
     def save_variables(self, path, model_name):
         variable_path = os.path.join(path, f"{model_name}_variables")
         variables = dict()
-        for v in tf.trainable_variables():
+        for v in tf.global_variables():
             variables[v.name] = self.sess.run(v)
         np.savez_compressed(variable_path, **variables)
 
@@ -397,10 +401,12 @@ class TfMixin(object):
         hparams = cls.load_params(path, data_info)
         model = cls(**hparams)
         model._build_model()
+        if hasattr(model, "user_last_interacted"):
+            model._set_last_interacted()
         # model.sess.run(tf.trainable_variables()[0].initializer)
         # print(model.sess.run(tf.trainable_variables()[0]))
         assign_ops = []
-        for v in tf.trainable_variables():
+        for v in tf.global_variables():
             assign_ops.append(v.assign(variables[v.name]))
             # v.load(variables[v.name], session=model.sess)
         model.sess.run(assign_ops)

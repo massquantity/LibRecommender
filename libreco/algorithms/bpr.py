@@ -6,9 +6,7 @@ References: Steffen Rendle et al. "BPR: Bayesian Personalized Ranking from Impli
 author: massquantity
 
 """
-from tensorflow.python.keras import backend as K
-from tensorflow.keras import backend as K
-import time
+import os
 import logging
 from itertools import islice
 from functools import partial
@@ -53,7 +51,7 @@ class BPR(Base, TfMixin, EvalMixin):
     ):
 
         Base.__init__(self, task, data_info)
-        EvalMixin.__init__(self, task)
+        EvalMixin.__init__(self, task, data_info)
 
         self.task = task
         self.data_info = data_info
@@ -70,10 +68,10 @@ class BPR(Base, TfMixin, EvalMixin):
         self.user_consumed = data_info.user_consumed
         self.user_embed = None
         self.item_embed = None
+        self.all_args = locals()
 
         if use_tf:
             TfMixin.__init__(self)
-        #    self.sess = tf.Session()
             self._build_model_tf()
             self._build_train_ops()
         else:
@@ -150,20 +148,20 @@ class BPR(Base, TfMixin, EvalMixin):
         self.sess.run(tf.global_variables_initializer())
 
     def fit(self, train_data, verbose=1, shuffle=True, num_threads=1,
-            eval_data=None, metrics=None, optimizer="sgd"):
+            eval_data=None, metrics=None, optimizer="sgd", **kwargs):
         self.show_start_time()
         self._check_has_sampled(train_data, verbose)
 
         if self.use_tf:
             self._fit_tf(train_data, verbose=verbose, shuffle=shuffle,
-                         eval_data=eval_data, metrics=metrics)
+                         eval_data=eval_data, metrics=metrics, **kwargs)
         else:
             self._fit_cython(train_data, verbose=verbose, shuffle=shuffle,
                              num_threads=num_threads, eval_data=eval_data,
-                             metrics=metrics, optimizer=optimizer)
+                             metrics=metrics, optimizer=optimizer, **kwargs)
 
     def _fit_cython(self, train_data, verbose=1, shuffle=True, num_threads=1,
-                    eval_data=None, metrics=None, optimizer="sgd"):
+                    eval_data=None, metrics=None, optimizer="sgd", **kwargs):
         if optimizer == "sgd":
             trainer = partial(bpr_update)
 
@@ -212,11 +210,12 @@ class BPR(Base, TfMixin, EvalMixin):
                         epoch=epoch)
 
             if verbose > 1:
-                self.print_metrics(eval_data=eval_data, metrics=metrics)
+                self.print_metrics(eval_data=eval_data, metrics=metrics,
+                                   **kwargs)
                 print("="*30)
 
     def _fit_tf(self, train_data, verbose=1, shuffle=True,
-                eval_data=None, metrics=None):
+                eval_data=None, metrics=None, **kwargs):
         data_generator = PairwiseSampling(train_data,
                                           self.data_info,
                                           self.num_neg)
@@ -234,23 +233,16 @@ class BPR(Base, TfMixin, EvalMixin):
             if verbose > 1:
                 # set up parameters for evaluate
                 self._set_latent_factors()
-                self.print_metrics(eval_data=eval_data, metrics=metrics)
+                self.print_metrics(eval_data=eval_data, metrics=metrics,
+                                   **kwargs)
                 print("="*30)
 
         # for prediction and recommendation
         self._set_latent_factors()
+        self.assign_oov()
 
-    def predict(self, user, item):
-        user = (
-            np.asarray([user])
-            if isinstance(user, int)
-            else np.asarray(user)
-        )
-        item = (
-            np.asarray([item])
-            if isinstance(item, int)
-            else np.asarray(item)
-        )
+    def predict(self, user, item, inner_id=False):
+        user, item = self.convert_id(user, item, inner_id)
         unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
         preds = np.sum(
@@ -264,23 +256,26 @@ class BPR(Base, TfMixin, EvalMixin):
 
         return preds[0] if len(user) == 1 else preds
 
-    def recommend_user(self, user, n_rec, **kwargs):
+    def recommend_user(self, user, n_rec, inner_id=False, **kwargs):
+        if not inner_id:
+            user = self.data_info.user2id[user]
         user = self._check_unknown_user(user)
-        if not user:
-            return   # popular ?
+        if user is None:
+            return  # popular ?
 
-        consumed = self.user_consumed[user]
+        consumed = set(self.user_consumed[user])
         count = n_rec + len(consumed)
         recos = self.user_embed[user] @ self.item_embed.T
         recos = 1 / (1 + np.exp(-recos))
 
         ids = np.argpartition(recos, -count)[-count:]
         rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
-        return list(
-            islice(
-                (rec for rec in rank if rec[0] not in consumed), n_rec
-            )
+        recs_and_scores = islice(
+            (rec if inner_id else (self.data_info.id2item[rec[0]], rec[1])
+             for rec in rank if rec[0] not in consumed),
+            n_rec
         )
+        return list(recs_and_scores)
 
     def _set_latent_factors(self):
         item_bias, user_embed, item_embed = self.sess.run(
@@ -293,3 +288,25 @@ class BPR(Base, TfMixin, EvalMixin):
         item_bias = item_bias[:, None]
         self.user_embed = np.hstack([user_embed, user_bias])
         self.item_embed = np.hstack([item_embed, item_bias])
+
+    def save(self, path, model_name):
+        if not os.path.isdir(path):
+            print(f"file folder {path} doesn't exists, creating a new one...")
+            os.makedirs(path)
+        self.save_params(path)
+        variable_path = os.path.join(path, model_name)
+        np.savez_compressed(variable_path,
+                            user_embed=self.user_embed,
+                            item_embed=self.item_embed)
+
+    @classmethod
+    def load(cls, path, model_name, data_info):
+        variable_path = os.path.join(path, f"{model_name}.npz")
+        variables = np.load(variable_path)
+        hparams = cls.load_params(path, data_info)
+        if hparams["use_tf"]:
+            tf.reset_default_graph()
+        model = cls(**hparams)
+        model.user_embed = variables["user_embed"]
+        model.item_embed = variables["item_embed"]
+        return model
