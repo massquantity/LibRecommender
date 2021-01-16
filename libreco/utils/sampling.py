@@ -2,7 +2,6 @@ from math import floor
 from random import random, seed as set_random_seed
 import numpy as np
 from tqdm import tqdm
-from ..data.sequence import user_interacted_seq
 from ..utils.misc import time_block
 
 
@@ -27,8 +26,9 @@ class SamplingBase(object):
                 item_indices_sampled.append(i)
                 for _ in range(self.num_neg):
                     item_neg = floor(n_items * random())
-                    while item_neg in user_consumed[u]:
-                        item_neg = floor(n_items * random())
+                    if u in user_consumed:
+                        while item_neg in user_consumed[u]:
+                            item_neg = floor(n_items * random())
                     item_indices_sampled.append(item_neg)
         return np.asarray(item_indices_sampled)
 
@@ -307,6 +307,9 @@ class PairwiseSamplingSeq(PairwiseSampling):
         self.user_consumed = data_info.user_consumed
 
     def sample_batch(self, user_consumed_set, n_items, batch_size):
+        # avoid circular import
+        from ..data.sequence import user_interacted_seq
+
         for k in tqdm(range(0, self.data_size, batch_size),
                       desc="pair_sampling sequence train"):
             batch_slice = slice(k, k + batch_size)

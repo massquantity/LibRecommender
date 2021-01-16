@@ -7,6 +7,7 @@ author: massquantity
 
 """
 from itertools import islice
+import os
 import numpy as np
 import tensorflow as tf2
 from tensorflow.keras.initializers import (
@@ -32,6 +33,12 @@ tf.disable_v2_behavior()
 
 
 class DeepFM(Base, TfMixin, EvalMixin):
+    maybe_changed = [
+        "linear_user_feat",
+        "linear_item_feat",
+        "embed_user_feat",
+        "embed_item_feat"
+    ]
 
     def __init__(
             self,
@@ -54,7 +61,7 @@ class DeepFM(Base, TfMixin, EvalMixin):
     ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self, tf_sess_config)
-        EvalMixin.__init__(self, task)
+        EvalMixin.__init__(self, task, data_info)
 
         self.task = task
         self.data_info = data_info
@@ -80,6 +87,9 @@ class DeepFM(Base, TfMixin, EvalMixin):
             self.sparse_field_size = self._sparse_field_size(data_info)
         if self.dense:
             self.dense_field_size = self._dense_field_size(data_info)
+        self.all_args = locals()
+        self.user_variables = ["linear_user_feat", "embed_user_feat"]
+        self.item_variables = ["linear_item_feat", "embed_item_feat"]
 
     def _build_model(self):
         tf.set_random_seed(self.seed)
@@ -120,22 +130,22 @@ class DeepFM(Base, TfMixin, EvalMixin):
 
         linear_user_feat = tf.get_variable(
             name="linear_user_feat",
-            shape=[self.n_users, 1],
+            shape=[self.n_users + 1, 1],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
         linear_item_feat = tf.get_variable(
             name="linear_item_feat",
-            shape=[self.n_items, 1],
+            shape=[self.n_items + 1, 1],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
         embed_user_feat = tf.get_variable(
             name="embed_user_feat",
-            shape=[self.n_users, self.embed_size],
+            shape=[self.n_users + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
         embed_item_feat = tf.get_variable(
             name="embed_item_feat",
-            shape=[self.n_items, self.embed_size],
+            shape=[self.n_items + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
 
@@ -276,16 +286,13 @@ class DeepFM(Base, TfMixin, EvalMixin):
                                          self.sparse,
                                          self.dense)
 
-        self.train_feat(data_generator, verbose, shuffle, eval_data, metrics)
+        self.train_feat(data_generator, verbose, shuffle, eval_data,
+                        metrics, **kwargs)
+        self.assign_oov()
 
-    def predict(self, user, item):
-        user = np.asarray(
-            [user]) if isinstance(user, int) else np.asarray(user)
-        item = np.asarray(
-            [item]) if isinstance(item, int) else np.asarray(item)
-
-        unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item)
+    def predict(self, user, item, inner_id=False):
+        user, item = self.convert_id(user, item, inner_id)
+        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
         (user_indices,
          item_indices,
@@ -307,9 +314,11 @@ class DeepFM(Base, TfMixin, EvalMixin):
 
         return preds
 
-    def recommend_user(self, user, n_rec, **kwargs):
+    def recommend_user(self, user, n_rec, inner_id=False):
+        if not inner_id:
+            user = self.data_info.user2id[user]
         user = self._check_unknown_user(user)
-        if not user:
+        if user is None:  ####################
             return   # popular ?
 
         (user_indices,
@@ -324,15 +333,31 @@ class DeepFM(Base, TfMixin, EvalMixin):
         recos = self.sess.run(self.output, feed_dict)
         if self.task == "ranking":
             recos = 1 / (1 + np.exp(-recos))
-
-        consumed = self.user_consumed[user]
+        consumed = set(self.user_consumed[user])  #########
         count = n_rec + len(consumed)
         ids = np.argpartition(recos, -count)[-count:]
         rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
-        return list(
-            islice(
-                (rec for rec in rank if rec[0] not in consumed), n_rec
-            )
+        recs_and_scores = islice(
+            (rec if inner_id else (self.data_info.id2item[rec[0]], rec[1])
+             for rec in rank if rec[0] not in consumed),
+            n_rec
         )
+        return list(recs_and_scores)
 
+    def save(self, path, model_name, manual=False):
+        if not os.path.isdir(path):
+            print(f"file folder {path} doesn't exists, creating a new one...")
+            os.makedirs(path)
+        self.save_params(path)
+        if manual:
+            self.save_variables(path, model_name)
+        else:
+            self.save_tf_model(path, model_name)
 
+    @classmethod
+    def load(cls, path, model_name, data_info, manual=False):
+        tf.reset_default_graph()
+        if manual:
+            return cls.load_variables(path, model_name, data_info)
+        else:
+            return cls.load_tf_model(path, model_name, data_info)

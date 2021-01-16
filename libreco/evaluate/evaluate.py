@@ -16,8 +16,10 @@ from .metrics import POINTWISE_METRICS, LISTWISE_METRICS, ALLOWED_METRICS
 
 
 class EvalMixin(object):
-    def __init__(self, task):
+    def __init__(self, task, data_info):
         self.task = task
+        self.n_users = data_info.n_users
+        self.n_items = data_info.n_items
 
     def _check_metrics(self, metrics, k):
         if not isinstance(metrics, (list, tuple)):
@@ -47,8 +49,9 @@ class EvalMixin(object):
         eval_result = dict()
 
         if self.task == "rating":
-            y_pred = compute_preds(self, data, eval_batch_size)
-            y_true = data.labels
+            y_pred, y_true = compute_preds(
+                self, data, eval_batch_size, "eval", self.n_users, self.n_items
+            )
             for m in metrics:
                 if m in ["rmse", "loss"]:
                     eval_result[m] = np.sqrt(
@@ -60,8 +63,10 @@ class EvalMixin(object):
 
         elif self.task == "ranking":
             if POINTWISE_METRICS.intersection(metrics):
-                y_prob = compute_probs(self, data, eval_batch_size)
-                y_true = data.labels
+                y_prob, y_true = compute_probs(
+                    self, data, eval_batch_size, "eval",
+                    self.n_users, self.n_items
+                )
             if LISTWISE_METRICS.intersection(metrics):
                 chosen_users = sample_user(data, seed, sample_user_num)
                 y_reco_list, users = compute_recommends(self, chosen_users, k)
@@ -105,16 +110,27 @@ class EvalMixin(object):
             metrics = ["loss"]
         metrics = self._check_metrics(metrics, k)
         seed = kwargs.get("seed", 42)
+        if "eval_batch_size" in kwargs:
+            eval_batch_size = kwargs["eval_batch_size"]
+        if "k" in kwargs:
+            k = kwargs["k"]
+        if "sample_user_num" in kwargs:
+            sample_user_num = kwargs["sample_user_num"]
 
         if self.task == "rating":
             if train_data:
-                y_pred = compute_preds(self, train_data, eval_batch_size)
-                y_true = train_data.labels
+                y_pred, y_true = compute_preds(
+                    self, train_data, eval_batch_size, "train"
+                )
+                # y_true = train_data.labels
                 print_metrics_rating(
                     metrics, y_true, y_pred, train=True, **kwargs)
             if eval_data:
-                y_pred = compute_preds(self, eval_data, eval_batch_size)
-                y_true = eval_data.labels
+                y_pred, y_true = compute_preds(
+                    self, eval_data, eval_batch_size, "eval",
+                    self.n_users, self.n_items
+                )
+                # y_true = eval_data.labels
                 print_metrics_rating(
                     metrics, y_true, y_pred, train=False, **kwargs)
 
@@ -122,20 +138,23 @@ class EvalMixin(object):
             if train_data:
                 train_params = dict()
                 if POINTWISE_METRICS.intersection(metrics):
-                    train_params["y_prob"] = compute_probs(self,
-                                                           train_data,
-                                                           eval_batch_size)
-                    train_params["y_true"] = train_data.labels
+                    (train_params["y_prob"],
+                     train_params["y_true"]) = compute_probs(
+                        self, train_data, eval_batch_size, "train"
+                    )
+                    # train_params["y_true"] = train_data.labels
 
                 print_metrics_ranking(metrics, **train_params, train=True)
 
             if eval_data:
                 test_params = dict()
                 if POINTWISE_METRICS.intersection(metrics):
-                    test_params["y_prob"] = compute_probs(self,
-                                                          eval_data,
-                                                          eval_batch_size)
-                    test_params["y_true"] = eval_data.labels
+                    (test_params["y_prob"],
+                     test_params["y_true"]) = compute_probs(
+                        self, eval_data, eval_batch_size, "eval",
+                        self.n_users, self.n_items
+                    )
+                    # test_params["y_true"] = eval_data.labels
 
                 if LISTWISE_METRICS.intersection(metrics):
                     chosen_users = sample_user(
@@ -160,19 +179,31 @@ def sample_user(data, seed, num):
     return users
 
 
-def compute_preds(model, data, batch_size):
+def compute_preds(model, data, batch_size, mode, n_users=None, n_items=None):
     y_pred = list()
+    y_label = list()
     for batch_data in tqdm(range(0, len(data), batch_size), desc="eval_pred"):
         batch_slice = slice(batch_data, batch_data + batch_size)
         users = data.user_indices[batch_slice]
         items = data.item_indices[batch_slice]
-        preds = list(model.predict(users, items))
+        labels = data.labels[batch_slice]
+        if mode == "eval":
+            user_allowed = np.where(
+                np.logical_and(users >= 0, users < n_users))[0]
+            item_allowed = np.where(
+                np.logical_and(items >= 0, items < n_items))[0]
+            indices = np.intersect1d(user_allowed, item_allowed)
+            users = users[indices]
+            items = items[indices]
+            labels = labels[indices]
+        preds = list(model.predict(users, items, inner_id=True))
         y_pred.extend(preds)
-    return y_pred
+        y_label.extend(labels)
+    return y_pred, y_label
 
 
-def compute_probs(model, data, batch_size):
-    return compute_preds(model, data, batch_size)
+def compute_probs(model, data, batch_size, mode, n_users=None, n_items=None):
+    return compute_preds(model, data, batch_size, mode, n_users, n_items)
 
 
 def compute_recommends(model, users, k):
@@ -180,7 +211,7 @@ def compute_recommends(model, users, k):
     no_rec_num = 0
     no_rec_users = []
     for u in tqdm(users, desc="eval_rec"):
-        reco = model.recommend_user(u, k)
+        reco = model.recommend_user(u, k, inner_id=True)
         if not reco or reco == -1:   # user_cf
             # print("no recommend user: ", u)
             no_rec_num += 1

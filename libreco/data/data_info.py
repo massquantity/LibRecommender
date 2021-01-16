@@ -1,6 +1,10 @@
 from array import array
 from collections import defaultdict, namedtuple
+import inspect
+import json
+import os
 import numpy as np
+import pandas as pd
 
 
 Feature = namedtuple("Feature", ["name", "index"])
@@ -32,6 +36,7 @@ class DataInfo(object):
         self._item2id = None
         self._id2user = None
         self._id2item = None
+        self.all_args = locals()
 
     @staticmethod
     def interaction_consumed(user_indices, item_indices):
@@ -156,7 +161,7 @@ class DataInfo(object):
     @property
     def id2item(self):
         if self._id2item is None:
-            self._id2item =  {j: item for item, j in self.item2id.items()}
+            self._id2item = {j: item for item, j in self.item2id.items()}
         return self._id2item
 
     def __repr__(self):
@@ -179,3 +184,46 @@ class DataInfo(object):
             data["item"] = data["item"].astype("int")
         return data
 
+    def save(self, path):
+        if not os.path.isdir(path):
+            print(f"file folder {path} doesn't exists, creating a new one...")
+            os.makedirs(path)
+        name_mapping_path = os.path.join(path, "data_info_name_mapping.json")
+        with open(name_mapping_path, 'w') as f:
+            json.dump(self.all_args["col_name_mapping"],
+                      f, separators=(',', ':'))
+
+        other_path = os.path.join(path, "data_info")
+        hparams = dict()
+        arg_names = inspect.signature(self.__init__).parameters.keys()
+        for arg in arg_names:
+            if arg == "col_name_mapping" or self.all_args[arg] is None:
+                continue
+            if arg == "interaction_data":
+                hparams[arg] = self.all_args[arg].to_numpy()
+            else:
+                hparams[arg] = self.all_args[arg]
+
+        np.savez_compressed(other_path, **hparams)
+
+    # noinspection PyTypeChecker
+    @classmethod
+    def load(cls, path):
+        if not os.path.exists(path):
+            raise OSError(f"file folder {path} doesn't exists...")
+
+        hparams = dict()
+        name_mapping_path = os.path.join(path, "data_info_name_mapping.json")
+        with open(name_mapping_path, 'r') as f:
+            hparams["col_name_mapping"] = json.load(f)
+
+        other_path = os.path.join(path, "data_info.npz")
+        info = np.load(other_path)
+        for arg in info:
+            if arg == "interaction_data":
+                hparams[arg] = pd.DataFrame(
+                    info[arg], columns=["user", "item", "label"])
+            else:
+                hparams[arg] = info[arg]
+
+        return cls(**hparams)

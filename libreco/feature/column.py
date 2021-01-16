@@ -39,8 +39,7 @@ def merge_sparse_indices(data_class, data, sparse_col, multi_sparse_col, mode):
     elif sparse_col:
         sparse_indices = get_sparse_indices_matrix(
             data_class, data, sparse_col, mode)
-        sparse_offset = get_sparse_offset(data_class, sparse_col
-                                          )
+        sparse_offset = get_sparse_offset(data_class, sparse_col)
         return sparse_indices + sparse_offset[:-1]
 
     elif multi_sparse_col:
@@ -93,7 +92,8 @@ def get_dense_indices_matrix(data, dense_col):
 def get_sparse_offset(data_class, sparse_col):
     # plus one for value only in test data
     unique_values = [
-        len(data_class.sparse_unique_vals[col]) + 1 for col in sparse_col
+        len(data_class.sparse_unique_vals[col]) + 1
+        for col in sparse_col
     ]
     return np.cumsum(np.array([0] + unique_values))
 

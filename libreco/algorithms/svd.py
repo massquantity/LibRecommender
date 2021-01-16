@@ -6,7 +6,7 @@ References: Yehuda Koren "Matrix Factorization Techniques for Recommender System
 author: massquantity
 
 """
-import time
+import os
 from itertools import islice
 import numpy as np
 import tensorflow as tf2
@@ -41,7 +41,7 @@ class SVD(Base, TfMixin, EvalMixin):
     ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self, tf_sess_config)
-        EvalMixin.__init__(self, task)
+        EvalMixin.__init__(self, task, data_info)
 
         self.task = task
         self.data_info = data_info
@@ -60,6 +60,7 @@ class SVD(Base, TfMixin, EvalMixin):
         self.bi = None
         self.pu = None
         self.qi = None
+        self.all_args = locals()
 
         self._build_model()
         self._build_train_ops()
@@ -117,7 +118,7 @@ class SVD(Base, TfMixin, EvalMixin):
         self.sess.run(tf.global_variables_initializer())
 
     def fit(self, train_data, verbose=1, shuffle=True,
-            eval_data=None, metrics=None):
+            eval_data=None, metrics=None, **kwargs):
         self.show_start_time()
         if self.task == "ranking" and self.batch_sampling:
             self._check_has_sampled(train_data, verbose)
@@ -129,17 +130,13 @@ class SVD(Base, TfMixin, EvalMixin):
         else:
             data_generator = DataGenPure(train_data)
 
-        self.train_pure(data_generator, verbose, shuffle, eval_data, metrics)
+        self.train_pure(data_generator, verbose, shuffle, eval_data, metrics,
+                        **kwargs)
         self._set_latent_factors()
 
-    def predict(self, user, item):
-        user = np.asarray(
-            [user]) if isinstance(user, int) else np.asarray(user)
-        item = np.asarray(
-            [item]) if isinstance(item, int) else np.asarray(item)
-
-        unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item)
+    def predict(self, user, item, inner_id=False):
+        user, item = self.convert_id(user, item, inner_id)
+        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
         preds = self.bu[user] + self.bi[item] + np.sum(
             np.multiply(self.pu[user], self.qi[item]), axis=1)
@@ -155,12 +152,14 @@ class SVD(Base, TfMixin, EvalMixin):
 
         return preds[0] if len(user) == 1 else preds
 
-    def recommend_user(self, user, n_rec, **kwargs):
+    def recommend_user(self, user, n_rec, inner_id=False, **kwargs):
+        if not inner_id:
+            user = self.data_info.user2id[user]
         user = self._check_unknown_user(user)
-        if not user:
-            return   # popular ?
+        if user is None:
+            return  # popular ?
 
-        consumed = self.user_consumed[user]
+        consumed = set(self.user_consumed[user])
         count = n_rec + len(consumed)
         recos = self.bu[user] + self.bi + self.pu[user] @ self.qi.T
 
@@ -170,15 +169,39 @@ class SVD(Base, TfMixin, EvalMixin):
             recos = 1 / (1 + np.exp(-recos))
         ids = np.argpartition(recos, -count)[-count:]
         rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
-        return list(
-            islice(
-                (rec for rec in rank if rec[0] not in consumed), n_rec
-            )
+        recs_and_scores = islice(
+            (rec if inner_id else (self.data_info.id2item[rec[0]], rec[1])
+             for rec in rank if rec[0] not in consumed),
+            n_rec
         )
+        return list(recs_and_scores)
 
     def _set_latent_factors(self):
         self.bu, self.bi, self.pu, self.qi = self.sess.run(
             [self.bu_var, self.bi_var, self.pu_var, self.qi_var]
         )
 
+    def save(self, path, model_name):
+        if not os.path.isdir(path):
+            print(f"file folder {path} doesn't exists, creating a new one...")
+            os.makedirs(path)
+        self.save_params(path)
+        variable_path = os.path.join(path, model_name)
+        np.savez_compressed(variable_path,
+                            bu=self.bu,
+                            bi=self.bi,
+                            pu=self.pu,
+                            qi=self.qi)
 
+    @classmethod
+    def load(cls, path, model_name, data_info):
+        tf.reset_default_graph()
+        variable_path = os.path.join(path, f"{model_name}.npz")
+        variables = np.load(variable_path)
+        hparams = cls.load_params(path, data_info)
+        model = cls(**hparams)
+        model.bu = variables["bu"]
+        model.bi = variables["bi"]
+        model.pu = variables["pu"]
+        model.qi = variables["qi"]
+        return model

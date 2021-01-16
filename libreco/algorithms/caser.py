@@ -22,9 +22,9 @@ from ..utils.tf_ops import (
 )
 from ..data.data_generator import DataGenSequence
 from ..data.sequence import user_last_interacted
-from ..utils.sampling import PairwiseSamplingSeq
 from ..utils.misc import time_block, colorize
 from ..utils.misc import count_params
+from ..utils.tf_ops import conv_nn, max_pool
 tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
@@ -146,33 +146,43 @@ class Caser(Base, TfMixin, EvalMixin):
 
         convs_out = []
         for i in range(1, self.max_seq_len + 1):
-            h_conv = tf.layers.conv1d(
-                inputs=seq_item_embed,
+            # h_conv = tf.layers.conv1d(
+            #    inputs=seq_item_embed,
+            #    filters=self.nh_filters,
+            #    kernel_size=i,
+            #    strides=1,
+            #    padding="valid",
+            #    activation=tf.nn.relu
+            # )
+
+            h_conv = conv_nn(
+                tf_version=tf.__version__,
                 filters=self.nh_filters,
                 kernel_size=i,
                 strides=1,
                 padding="valid",
-                activation=tf.nn.relu
-            )
+                activation="relu"
+            )(inputs=seq_item_embed)
+
             # h_conv = tf.reduce_max(h_conv, axis=1)
             h_size = h_conv.get_shape().as_list()[1]
-            h_conv = tf.layers.max_pooling1d(
-                inputs=h_conv,
+            h_conv = max_pool(
+                tf_version=tf.__version__,
                 pool_size=h_size,
                 strides=1,
                 padding="valid"
-            )
+            )(inputs=h_conv)
             h_conv = tf.squeeze(h_conv, axis=1)
             convs_out.append(h_conv)
 
-        v_conv = tf.layers.conv1d(
-            inputs=tf.transpose(seq_item_embed, [0, 2, 1]),
+        v_conv = conv_nn(
+            tf_version=tf.__version__,
             filters=self.nv_filters,
             kernel_size=1,
             strides=1,
             padding="valid",
-            activation=tf.nn.relu
-        )
+            activation="relu"
+        )(inputs=tf.transpose(seq_item_embed, [0, 2, 1]))
         convs_out.append(tf.layers.flatten(v_conv))
 
         convs_out = tf.concat(convs_out, axis=1)

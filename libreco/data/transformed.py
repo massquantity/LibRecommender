@@ -92,3 +92,7 @@ class TransformedSet(object):
     @property
     def sparse_interaction(self):
         return self._sparse_interaction
+
+    # TODO
+    def remove_oov(self, data_info):
+        pass

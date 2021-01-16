@@ -6,6 +6,7 @@ Reference: Paul Covington et al.  "Deep Neural Networks for YouTube Recommendati
 author: massquantity
 
 """
+import os
 from itertools import islice
 import numpy as np
 import tensorflow as tf2
@@ -56,7 +57,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
     ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self, tf_sess_config)
-        EvalMixin.__init__(self, task)
+        EvalMixin.__init__(self, task, data_info)
 
         self.task = task
         self.data_info = data_info
@@ -91,6 +92,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             self.sparse_field_size = self._sparse_field_size(data_info)
         if self.dense:
             self.dense_field_size = self._dense_field_size(data_info)
+        self.all_args = locals()
 
     def _build_model(self):
         tf.set_random_seed(self.seed)
@@ -275,23 +277,15 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
                 print(f"\t {colorize(train_loss_str, 'green')}")
                 # for evaluation
                 self._set_latent_vectors()
-                self.print_metrics(eval_data=eval_data, metrics=metrics)
+                self.print_metrics(eval_data=eval_data, metrics=metrics,
+                                   **kwargs)
                 print("="*30)
 
         # for prediction and recommendation
         self._set_latent_vectors()
 
-    def predict(self, user, item):
-        user = (
-            np.asarray([user])
-            if isinstance(user, int)
-            else np.asarray(user)
-        )
-        item = (
-            np.asarray([item])
-            if isinstance(item, int)
-            else np.asarray(item)
-        )
+    def predict(self, user, item, inner_id=False):
+        user, item = self.convert_id(user, item, inner_id)
         unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
         preds = np.sum(
@@ -305,23 +299,26 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
 
         return preds[0] if len(user) == 1 else preds
 
-    def recommend_user(self, user, n_rec, **kwargs):
+    def recommend_user(self, user, n_rec, inner_id=False, **kwargs):
+        if not inner_id:
+            user = self.data_info.user2id[user]
         user = self._check_unknown_user(user)
-        if not user:
+        if user is None:  ####################
             return   # popular ?
 
-        consumed = self.user_consumed[user]
+        consumed = set(self.user_consumed[user])
         count = n_rec + len(consumed)
         recos = self.user_vector[user] @ self.item_weights.T
         recos = 1 / (1 + np.exp(-recos))
 
         ids = np.argpartition(recos, -count)[-count:]
         rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
-        return list(
-            islice(
-                (rec for rec in rank if rec[0] not in consumed), n_rec
-            )
+        recs_and_scores = islice(
+            (rec if inner_id else (self.data_info.id2item[rec[0]], rec[1])
+             for rec in rank if rec[0] not in consumed),
+            n_rec
         )
+        return list(recs_and_scores)
 
     def _set_latent_vectors(self):
         user_indices = np.arange(self.n_users)
@@ -350,8 +347,11 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
 
         user_bias = np.ones([len(user_vector), 1], dtype=user_vector.dtype)
         item_bias = item_biases[:, None]
-        self.user_vector = np.hstack([user_vector, user_bias])
-        self.item_weights = np.hstack([item_weights, item_bias])
+        u_vector = np.hstack([user_vector, user_bias])
+        i_weights = np.hstack([item_weights, item_bias])
+        oov_zeros = np.zeros(self.user_vector_size + 1, dtype=np.float32)
+        self.user_vector = np.vstack([u_vector, oov_zeros])
+        self.item_weights = np.vstack([i_weights, oov_zeros])
 
     def _check_item_col(self):
         if len(self.data_info.item_col) > 0:
@@ -359,4 +359,22 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
                 "The YouTubeMatch model assumes no item features."
             )
 
+    def save(self, path, model_name):
+        if not os.path.isdir(path):
+            print(f"file folder {path} doesn't exists, creating a new one...")
+            os.makedirs(path)
+        self.save_params(path)
+        variable_path = os.path.join(path, model_name)
+        np.savez_compressed(variable_path,
+                            user_vector=self.user_vector,
+                            item_weights=self.item_weights)
 
+    @classmethod
+    def load(cls, path, model_name, data_info):
+        variable_path = os.path.join(path, f"{model_name}.npz")
+        variables = np.load(variable_path)
+        hparams = cls.load_params(path, data_info)
+        model = cls(**hparams)
+        model.user_vector = variables["user_vector"]
+        model.item_weights = variables["item_weights"]
+        return model

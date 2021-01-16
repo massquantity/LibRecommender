@@ -82,6 +82,7 @@ def user_interacted_seq(user_indices, item_indices, user_consumed, pad_index,
         consumed_set = user_consumed_set[u]
         # If i is a negative item, then random sample some items
         # from user's past interacted items.
+        # TODO: sample sequence from user past interactions
         if i not in consumed_set:
             if consumed_len >= num:
                 # `np.random.choice` is too slow,
