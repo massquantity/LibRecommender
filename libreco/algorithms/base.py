@@ -97,6 +97,23 @@ class Base(abc.ABC):
         """
         raise NotImplementedError
 
+    def convert_id(self, user, item, inner_id=False):
+        if not inner_id:
+            user = (
+                [self.data_info.user2id[user]]
+                if isinstance(user, int)
+                else [self.data_info.user2id[u] for u in user]
+            )
+            item = (
+                [self.data_info.item2id[item]]
+                if isinstance(item, int)
+                else [self.data_info.item2id[i] for i in item]
+            )
+        else:
+            user = [user] if isinstance(user, int) else user
+            item = [item] if isinstance(item, int) else item
+        return  np.asarray(user), np.asarray(item)
+
     def _check_unknown(self, user, item):
         unknown_user_indices = list(
             np.where(np.logical_or(user >= self.n_users, user < 0))[0]
@@ -191,16 +208,6 @@ class Base(abc.ABC):
         start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
         print(f"Training start time: {colorize(start_time, 'magenta')}")
 
-    def save(self, path, model_name):
-        if not os.path.isdir(path):
-            print(f"file folder {path} doesn't exists, creating a new one...")
-            os.makedirs(path)
-        self.save_params(path)
-        if hasattr(self, "sess"):
-            self.save_tf_model(path, model_name)
-        else:
-            self.save_model(path, model_name)
-
     def save_params(self, path):
         hparams = dict()
         arg_names = list(inspect.signature(self.__init__).parameters.keys())
@@ -276,7 +283,8 @@ class TfMixin(object):
                 self.print_metrics(eval_data=eval_data, metrics=metrics)
                 print("="*30)
 
-    def train_feat(self, data_generator, verbose, shuffle, eval_data, metrics):
+    def train_feat(self, data_generator, verbose, shuffle, eval_data, metrics,
+                   **kwargs):
         for epoch in range(1, self.n_epochs + 1):
             if self.lr_decay:
                 print(f"With lr_decay, epoch {epoch} learning rate: "
@@ -296,7 +304,8 @@ class TfMixin(object):
                     round(float(np.mean(train_total_loss)), 4)
                 )
                 print(f"\t {colorize(train_loss_str, 'green')}")
-                self.print_metrics(eval_data=eval_data, metrics=metrics)
+                self.print_metrics(eval_data=eval_data, metrics=metrics,
+                                   **kwargs)
                 print("="*30)
 
     def train_seq(self):
@@ -335,6 +344,29 @@ class TfMixin(object):
             feed_dict.update({self.labels: label})
         return feed_dict
 
+    def assign_oov(self):
+        assign_ops = []
+        for v in tf.trainable_variables():
+            if hasattr(self, "user_variables"):
+                for vu in self.user_variables:
+                    if v.name.startswith(vu):
+                        size = v.get_shape().as_list()[1]
+                        zero_op = tf.IndexedSlices(
+                            tf.zeros([1, size], dtype=tf.float32),
+                            [self.n_users]
+                        )
+                        assign_ops.append(v.scatter_update(zero_op))
+            if hasattr(self, "item_variables"):
+                for vi in self.item_variables:
+                    if v.name.startswith(vi):
+                        size = v.get_shape().as_list()[1]
+                        zero_op = tf.IndexedSlices(
+                            tf.zeros([1, size], dtype=tf.float32),
+                            [self.n_items]
+                        )
+                        assign_ops.append(v.scatter_update(zero_op))
+        self.sess.run(assign_ops)
+
     def save_tf_model(self, path, model_name):
         model_path = os.path.join(path,  model_name)
         saver = tf.train.Saver()
@@ -349,4 +381,28 @@ class TfMixin(object):
         # saver = tf.train.import_meta_graph(os.path.join(path, model_name + ".meta"))
         saver = tf.train.Saver()
         saver.restore(model.sess, model_path)
+        return model
+
+    def save_variables(self, path, model_name):
+        variable_path = os.path.join(path, f"{model_name}_variables")
+        variables = dict()
+        for v in tf.trainable_variables():
+            variables[v.name] = self.sess.run(v)
+        np.savez_compressed(variable_path, **variables)
+
+    @classmethod
+    def load_variables(cls, path, model_name, data_info):
+        variable_path = os.path.join(path, f"{model_name}_variables.npz")
+        variables = np.load(variable_path)
+        hparams = cls.load_params(path, data_info)
+        model = cls(**hparams)
+        model._build_model()
+        # model.sess.run(tf.trainable_variables()[0].initializer)
+        # print(model.sess.run(tf.trainable_variables()[0]))
+        assign_ops = []
+        for v in tf.trainable_variables():
+            assign_ops.append(v.assign(variables[v.name]))
+            # v.load(variables[v.name], session=model.sess)
+        model.sess.run(assign_ops)
+        # print(model.sess.run(tf.trainable_variables()[0]))
         return model
