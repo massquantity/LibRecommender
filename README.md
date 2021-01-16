@@ -122,7 +122,7 @@ For how to serve a trained model in LibRecommender, see [Serving Guide](<https:/
 From pypi : &nbsp;  
 
 ```
-$ pip install LibRecommender==0.2.2
+$ pip install LibRecommender==0.4.0
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
@@ -177,6 +177,8 @@ $ python setup.py install
 |        DIN        |   feat, seq   | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) |
 | Item2Vec | pure, seq | [Item2Vec: Neural Item Embedding for Collaborative Filtering](https://arxiv.org/pdf/1603.04259.pdf) |
 | RNN4Rec / GRU4Rec | pure, seq | [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939.pdf) |
+| Caser | pure, seq | [Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding](https://arxiv.org/pdf/1809.07426.pdf) |
+| WaveNet | pure, seq | [WaveNet: A Generative Model for Raw Audio](https://arxiv.org/pdf/1609.03499.pdf) |
 
 > `pure` means collaborative-filtering algorithms which only use behavior data,  `feat` means other features can be included, `seq` means sequence or graph algorithms.
 
