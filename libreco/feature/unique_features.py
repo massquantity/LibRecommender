@@ -53,13 +53,15 @@ def get_predict_indices_and_values(data_info, user, item, n_items,
         item = list([item])
 
     sparse_indices = get_sparse_indices(
-        data_info, user, item, mode="predict") if sparse else None
+        data_info, user, item, mode="predict"
+    ) if sparse else None
     dense_values = get_dense_values(
-        data_info, user, item, mode="predict") if dense else None
+        data_info, user, item, mode="predict"
+    ) if dense else None
     if sparse and dense:
         assert len(sparse_indices) == len(dense_values), (
-            "indices and values length must equal")
-
+            "indices and values length must equal"
+        )
     return user, item, sparse_indices, dense_values
 
 
@@ -68,9 +70,11 @@ def get_recommend_indices_and_values(data_info, user, n_items, sparse, dense):
     item_indices = np.arange(n_items)
 
     sparse_indices = get_sparse_indices(
-        data_info, user, n_items=n_items, mode="recommend") if sparse else None
+        data_info, user, n_items=n_items, mode="recommend"
+    ) if sparse else None
     dense_values = get_dense_values(
-        data_info, user, n_items=n_items, mode="recommend") if dense else None
+        data_info, user, n_items=n_items, mode="recommend"
+    ) if dense else None
     if sparse and dense:
         assert len(sparse_indices) == len(dense_values), (
             "indices and values length must equal")
@@ -154,3 +158,24 @@ def get_dense_values(data_info, user, item=None, n_items=None, mode="predict"):
         elif item_dense_col:
             return data_info.item_dense_unique
 
+
+def assign_features(data_info, sparse_indices, dense_values, feats):
+    for col, val in feats.items():
+        if (sparse_indices is not None and
+                col in data_info.col_name_mapping["sparse_col"]):
+            # data_info.col_name_mapping: {"sparse_col": {col: index}}
+            field_idx = data_info.col_name_mapping["sparse_col"][col]
+            if val in data_info.sparse_unique_vals[col]:
+                # data_info.sparse_unique_vals: {col: {value: index}}
+                feat_idx = data_info.sparse_unique_vals[col][val]
+                offset = data_info.sparse_offset[field_idx]
+                sparse_indices[:, field_idx] = feat_idx + offset
+            else:
+                # if val not exists, assign to oov position
+                sparse_indices[:, field_idx] = data_info.sparse_oov[field_idx]
+
+        elif (dense_values is not None and
+              col in data_info.col_name_mapping["dense_col"]):
+            field_idx = data_info.col_name_mapping["dense_col"][col]
+            dense_values[:, field_idx] = val
+    return sparse_indices, dense_values

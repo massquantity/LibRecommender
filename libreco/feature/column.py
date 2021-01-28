@@ -111,6 +111,54 @@ def get_multi_sparse_offset(data_class, multi_sparse_col):
     return np.array(offset)
 
 
+def merge_offset(data_class, sparse_col, multi_sparse_col):
+    if sparse_col and multi_sparse_col:
+        sparse_offset = get_sparse_offset(data_class, sparse_col)
+        multi_sparse_offset = get_multi_sparse_offset(
+            data_class, multi_sparse_col
+        ) + sparse_offset[-1]
+        return np.concatenate([sparse_offset[:-1], multi_sparse_offset])
+    elif sparse_col:
+        sparse_offset = get_sparse_offset(data_class, sparse_col)
+        return sparse_offset[:-1]
+    elif multi_sparse_col:
+        multi_sparse_offset = get_multi_sparse_offset(
+            data_class, multi_sparse_col
+        )
+        return multi_sparse_offset
+
+
+def sparse_oov(data_class, sparse_col):
+    unique_values = [
+        len(data_class.sparse_unique_vals[col]) + 1
+        for col in sparse_col
+    ]
+    return np.cumsum(unique_values) - 1
+
+
+def multi_sparse_oov(data_class, multi_sparse_col):
+    unique_values = [
+        len(data_class.multi_sparse_unique_vals[field[0]]) + 1
+        for field
+        in multi_sparse_col
+    ]
+    return np.cumsum(unique_values) - 1
+
+
+def get_oov_pos(data_class, sparse_col, multi_sparse_col):
+    if sparse_col and multi_sparse_col:
+        sparse = sparse_oov(data_class, sparse_col)
+        multi_sparse = (
+            multi_sparse_oov(data_class, multi_sparse_col)
+            + sparse[-1] + 1
+        )
+        return np.concatenate([sparse, multi_sparse])
+    elif sparse_col:
+        return sparse_oov(data_class, sparse_col)
+    elif multi_sparse_col:
+        return multi_sparse_oov(data_class, multi_sparse_col)
+
+
 def check_unknown(values, uniques):
     # diff = list(np.setdiff1d(values, uniques, assume_unique=True))
     mask = np.in1d(values, uniques, invert=True)
