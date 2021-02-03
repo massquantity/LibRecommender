@@ -18,12 +18,13 @@ def build_transformed_data(model, data, negative_sample, update_features, seed):
         sparse_indices, dense_values = features_from_batch_data(
             data_info, model.sparse, model.dense, data
         )
+    # todo: merge user_consumed
     transformed_data = TransformedSet(
         user_indices, item_indices, labels, sparse_indices,
         dense_values, train=False
     )
     if update_features:
-        # if a user or item has duplicated features, will only update the last one.
+        # if a user or item has duplicate features, will only update the last one.
         user_data = data.drop_duplicates(subset=["user"], keep="last")
         item_data = data.drop_duplicates(subset=["item"], keep="last")
         model.data_info.assign_user_features(user_data)
@@ -92,7 +93,7 @@ def compute_recommends(model, users, k):
         reco = [r[0] for r in reco]
         y_recommends[u] = reco
     if no_rec_num > 0:
-        print(f"{no_rec_num} users has no recommendation")
+        # print(f"{no_rec_num} users has no recommendation")
         users = list(set(users).difference(no_rec_users))
     return y_recommends, users
 

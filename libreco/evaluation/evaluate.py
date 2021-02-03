@@ -1,5 +1,6 @@
 import numbers
 import numpy as np
+import pandas as pd
 from sklearn.metrics import (
     mean_squared_error,
     mean_absolute_error,
@@ -10,16 +11,23 @@ from sklearn.metrics import (
     precision_recall_curve,
     auc
 )
-from tqdm import tqdm
+from ..data import TransformedSet
 from .metrics import precision_at_k, recall_at_k, map_at_k, ndcg_at_k
 from .metrics import POINTWISE_METRICS, LISTWISE_METRICS, ALLOWED_METRICS
+from .computation import (
+    compute_preds,
+    compute_probs,
+    compute_recommends,
+    build_transformed_data
+)
 
 
 class EvalMixin(object):
-    def __init__(self, task, data_info):
+    def __init__(self, task, data_info, eval_class=None):
         self.task = task
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
+        self.eval_class = eval_class
 
     def _check_metrics(self, metrics, k):
         if not isinstance(metrics, (list, tuple)):
@@ -40,69 +48,6 @@ class EvalMixin(object):
 
         return metrics
 
-    def evaluate(self, data, eval_batch_size=8192, metrics=None, k=10,
-                 sample_user_num=1000, **kwargs):
-        if not metrics:
-            metrics = ["loss"]
-        metrics = self._check_metrics(metrics, k)
-        seed = kwargs.get("seed", 42)
-        eval_result = dict()
-
-        if self.task == "rating":
-            y_pred, y_true = compute_preds(
-                self, data, eval_batch_size, "eval", self.n_users, self.n_items
-            )
-            for m in metrics:
-                if m in ["rmse", "loss"]:
-                    eval_result[m] = np.sqrt(
-                        mean_squared_error(y_true, y_pred))
-                elif m == "mae":
-                    eval_result[m] = mean_absolute_error(y_true, y_pred)
-                elif m == "r2":
-                    eval_result[m] = r2_score(y_true, y_pred)
-
-        elif self.task == "ranking":
-            if POINTWISE_METRICS.intersection(metrics):
-                y_prob, y_true = compute_probs(
-                    self, data, eval_batch_size, "eval",
-                    self.n_users, self.n_items
-                )
-            if LISTWISE_METRICS.intersection(metrics):
-                chosen_users = sample_user(data, seed, sample_user_num)
-                y_reco_list, users = compute_recommends(self, chosen_users, k)
-                y_true_list = data.user_consumed
-
-            for m in metrics:
-                if m in ["log_loss", "loss"]:
-                    eval_result[m] = log_loss(y_true, y_prob, eps=1e-7)
-                elif m == "balanced_accuracy":
-                    y_pred = np.round(y_prob)
-                    eval_result[m] = balanced_accuracy_score(y_true, y_pred)
-                elif m == "roc_auc":
-                    eval_result[m] = roc_auc_score(y_true, y_prob)
-                elif m == "pr_auc":
-                    precision, recall, _ = precision_recall_curve(y_true,
-                                                                  y_prob)
-                    eval_result[m] = auc(recall, precision)
-                elif m == "precision":
-                    eval_result[m] = precision_at_k(y_true_list,
-                                                    y_reco_list,
-                                                    users, k)
-                elif m == "recall":
-                    eval_result[m] = recall_at_k(y_true_list,
-                                                 y_reco_list,
-                                                 users, k)
-                elif m == "map":
-                    eval_result[m] = map_at_k(y_true_list,
-                                              y_reco_list,
-                                              users, k)
-                elif m == "ndcg":
-                    eval_result[m] = ndcg_at_k(y_true_list,
-                                               y_reco_list,
-                                               users, k)
-
-        return eval_result
-
     def print_metrics(self, train_data=None, eval_data=None, metrics=None,
                       eval_batch_size=8192, k=10, sample_user_num=2048,
                       **kwargs):
@@ -120,15 +65,14 @@ class EvalMixin(object):
         if self.task == "rating":
             if train_data:
                 y_pred, y_true = compute_preds(
-                    self, train_data, eval_batch_size, "train"
+                    self, train_data, eval_batch_size
                 )
                 # y_true = train_data.labels
                 print_metrics_rating(
                     metrics, y_true, y_pred, train=True, **kwargs)
             if eval_data:
                 y_pred, y_true = compute_preds(
-                    self, eval_data, eval_batch_size, "eval",
-                    self.n_users, self.n_items
+                    self, eval_data, eval_batch_size
                 )
                 # y_true = eval_data.labels
                 print_metrics_rating(
@@ -140,7 +84,7 @@ class EvalMixin(object):
                 if POINTWISE_METRICS.intersection(metrics):
                     (train_params["y_prob"],
                      train_params["y_true"]) = compute_probs(
-                        self, train_data, eval_batch_size, "train"
+                        self, train_data, eval_batch_size
                     )
                     # train_params["y_true"] = train_data.labels
 
@@ -151,8 +95,7 @@ class EvalMixin(object):
                 if POINTWISE_METRICS.intersection(metrics):
                     (test_params["y_prob"],
                      test_params["y_true"]) = compute_probs(
-                        self, eval_data, eval_batch_size, "eval",
-                        self.n_users, self.n_items
+                        self, eval_data, eval_batch_size
                     )
                     # test_params["y_true"] = eval_data.labels
 
@@ -171,6 +114,7 @@ def sample_user(data, seed, num):
     np.random.seed(seed)
     unique_users = np.unique(data.user_indices)
     if num > 0 and isinstance(num, numbers.Integral):
+        # noinspection PyTypeChecker
         users = np.random.choice(unique_users, num, replace=False)
     else:
         users = unique_users
@@ -179,50 +123,71 @@ def sample_user(data, seed, num):
     return users
 
 
-def compute_preds(model, data, batch_size, mode, n_users=None, n_items=None):
-    y_pred = list()
-    y_label = list()
-    for batch_data in tqdm(range(0, len(data), batch_size), desc="eval_pred"):
-        batch_slice = slice(batch_data, batch_data + batch_size)
-        users = data.user_indices[batch_slice]
-        items = data.item_indices[batch_slice]
-        labels = data.labels[batch_slice]
-        if mode == "eval":
-            user_allowed = np.where(
-                np.logical_and(users >= 0, users < n_users))[0]
-            item_allowed = np.where(
-                np.logical_and(items >= 0, items < n_items))[0]
-            indices = np.intersect1d(user_allowed, item_allowed)
-            users = users[indices]
-            items = items[indices]
-            labels = labels[indices]
-        preds = list(model.predict(users, items, inner_id=True))
-        y_pred.extend(preds)
-        y_label.extend(labels)
-    return y_pred, y_label
+def evaluate(model, data, eval_batch_size=8192, metrics=None, k=10,
+             sample_user_num=2048, neg_sample=False, update_features=False,
+             **kwargs):
+    seed = kwargs.get("seed", 42)
+    if isinstance(data, pd.DataFrame):
+        data = build_transformed_data(
+            model, data, neg_sample, update_features,seed
+        )
+    assert isinstance(data, TransformedSet), (
+        "The data from evaluation must be TransformedSet object."
+    )
+    if not metrics:
+        metrics = ["loss"]
+    metrics = model._check_metrics(metrics, k)
+    eval_result = dict()
 
+    if model.task == "rating":
+        y_pred, y_true = compute_preds(model, data, eval_batch_size,)
+        for m in metrics:
+            if m in ["rmse", "loss"]:
+                eval_result[m] = np.sqrt(
+                    mean_squared_error(y_true, y_pred))
+            elif m == "mae":
+                eval_result[m] = mean_absolute_error(y_true, y_pred)
+            elif m == "r2":
+                eval_result[m] = r2_score(y_true, y_pred)
 
-def compute_probs(model, data, batch_size, mode, n_users=None, n_items=None):
-    return compute_preds(model, data, batch_size, mode, n_users, n_items)
+    elif model.task == "ranking":
+        if POINTWISE_METRICS.intersection(metrics):
+            y_prob, y_true = compute_probs(model, data, eval_batch_size,)
+        if LISTWISE_METRICS.intersection(metrics):
+            chosen_users = sample_user(data, seed, sample_user_num)
+            y_reco_list, users = compute_recommends(model, chosen_users, k)
+            y_true_list = data.user_consumed
 
+        for m in metrics:
+            if m in ["log_loss", "loss"]:
+                eval_result[m] = log_loss(y_true, y_prob, eps=1e-7)
+            elif m == "balanced_accuracy":
+                y_pred = np.round(y_prob)
+                eval_result[m] = balanced_accuracy_score(y_true, y_pred)
+            elif m == "roc_auc":
+                eval_result[m] = roc_auc_score(y_true, y_prob)
+            elif m == "pr_auc":
+                precision, recall, _ = precision_recall_curve(y_true,
+                                                              y_prob)
+                eval_result[m] = auc(recall, precision)
+            elif m == "precision":
+                eval_result[m] = precision_at_k(y_true_list,
+                                                y_reco_list,
+                                                users, k)
+            elif m == "recall":
+                eval_result[m] = recall_at_k(y_true_list,
+                                             y_reco_list,
+                                             users, k)
+            elif m == "map":
+                eval_result[m] = map_at_k(y_true_list,
+                                          y_reco_list,
+                                          users, k)
+            elif m == "ndcg":
+                eval_result[m] = ndcg_at_k(y_true_list,
+                                           y_reco_list,
+                                           users, k)
 
-def compute_recommends(model, users, k):
-    y_recommends = dict()
-    no_rec_num = 0
-    no_rec_users = []
-    for u in tqdm(users, desc="eval_rec"):
-        reco = model.recommend_user(u, k, inner_id=True)
-        if not reco or reco == -1:   # user_cf
-            # print("no recommend user: ", u)
-            no_rec_num += 1
-            no_rec_users.append(u)
-            continue
-        reco = [r[0] for r in reco]
-        y_recommends[u] = reco
-    if no_rec_num > 0:
-        print(f"{no_rec_num} users has no recommendation")
-        users = list(set(users).difference(no_rec_users))
-    return y_recommends, users
+    return eval_result
 
 
 def print_metrics_rating(metrics, y_true, y_pred, train=True, **kwargs):
