@@ -8,4 +8,4 @@ from .split import (
     split_by_ratio_chrono,
     random_split
 )
-
+from .transformed import TransformedSet
