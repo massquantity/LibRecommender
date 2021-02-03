@@ -1,5 +1,6 @@
 import numbers
 import numpy as np
+from ..utils.misc import colorize
 
 
 def construct_unique_feat(user_indices, item_indices, sparse_indices,
@@ -35,14 +36,26 @@ def construct_unique_feat(user_indices, item_indices, sparse_indices,
     return rets
 
 
-def _compress_unique_values(orig_val, col, unique_indices):
+def _compress_unique_values(orig_val, col, indices):
     values = np.take(orig_val, col, axis=1)
     values = values.reshape(-1, 1) if orig_val.ndim == 1 else values
-    unique_indices = unique_indices.reshape(-1, 1)
-    indices_plus_values = np.concatenate([unique_indices, values], axis=-1)
+    indices = indices.reshape(-1, 1)
+    unique_indices = np.unique(indices)
+    indices_plus_values = np.concatenate([indices, values], axis=-1)
     # np.unique(axis=0) will sort the data based on first column,
     # so we can do direct mapping, then remove redundant unique_indices
-    return np.unique(indices_plus_values, axis=0)[:, 1:]
+    unique_values = np.unique(indices_plus_values, axis=0)
+    diff = True if len(unique_indices) != len(unique_values) else False
+    if diff:
+        print(colorize("some users or items contain different features, "
+                       "will only keep the last one", "red"))
+        # https://stackoverflow.com/questions/46390376/drop-duplicates-from-structured-numpy-array-python3-x
+        mask = np.concatenate([unique_values[:-1, 0] != unique_values[1:, 0],
+                               np.array([True])])
+        unique_values = unique_values[mask]
+    assert len(unique_indices) == len(unique_values)
+    # return np.unique(indices_plus_values, axis=0)[:, 1:]
+    return unique_values[:, 1:]
 
 
 def get_predict_indices_and_values(data_info, user, item, n_items,
@@ -106,14 +119,14 @@ def get_sparse_indices(data_info, user, item=None, n_items=None,
         if user_sparse_col and item_sparse_col:
             user_sparse_part = np.tile(data_info.user_sparse_unique[user],
                                        (n_items, 1))
-            item_sparse_part = data_info.item_sparse_unique
+            item_sparse_part = data_info.item_sparse_unique[:-1]  # remove oov
             sparse_indices = np.concatenate(
                 [user_sparse_part, item_sparse_part], axis=-1)[:, col_reindex]
             return sparse_indices
         elif user_sparse_col:
             return np.tile(data_info.user_sparse_unique[user], (n_items, 1))
         elif item_sparse_col:
-            return data_info.item_sparse_unique
+            return data_info.item_sparse_unique[:-1]
 
 
 def get_dense_indices(data_info, user, n_items=None, mode="predict"):
@@ -149,33 +162,139 @@ def get_dense_values(data_info, user, item=None, n_items=None, mode="predict"):
         if user_dense_col and item_dense_col:
             user_dense_part = np.tile(data_info.user_dense_unique[user],
                                       (n_items, 1))
-            item_dense_part = data_info.item_dense_unique
+            item_dense_part = data_info.item_dense_unique[:-1]  # remove oov
             dense_values = np.concatenate(
                 [user_dense_part, item_dense_part], axis=-1)[:, col_reindex]
             return dense_values
         elif user_dense_col:
             return np.tile(data_info.user_dense_unique[user], (n_items, 1))
         elif item_dense_col:
-            return data_info.item_dense_unique
+            return data_info.item_dense_unique[:-1]
 
 
-def assign_features(data_info, sparse_indices, dense_values, feats):
+# This function will try not to modify the original numpy arrays
+def features_from_dict(data_info, sparse_indices, dense_values, feats, mode):
+    if mode == "predict":
+        # data_info.col_name_mapping: {"sparse_col": {col: index}}
+        sparse_mapping = data_info.col_name_mapping["sparse_col"]
+        dense_mapping = data_info.col_name_mapping["dense_col"]
+    elif mode == "recommend":
+        # in recommend scenario will only change user features
+        sparse_mapping = data_info.col_name_mapping["user_sparse_col"]
+        dense_mapping = data_info.col_name_mapping["user_dense_col"]
+    else:
+        raise ValueError("mode must be predict or recommend")
+
+    sparse_indices_copy = (None if sparse_indices is None
+                           else sparse_indices.copy())
+    dense_values_copy = (None if dense_values is None
+                         else dense_values.copy())
     for col, val in feats.items():
-        if (sparse_indices is not None and
-                col in data_info.col_name_mapping["sparse_col"]):
-            # data_info.col_name_mapping: {"sparse_col": {col: index}}
-            field_idx = data_info.col_name_mapping["sparse_col"][col]
-            if val in data_info.sparse_unique_vals[col]:
-                # data_info.sparse_unique_vals: {col: {value: index}}
-                feat_idx = data_info.sparse_unique_vals[col][val]
+        if sparse_indices is not None and col in sparse_mapping:
+            field_idx = sparse_mapping[col]
+            if val in data_info.sparse_unique_idxs[col]:
+                # data_info.sparse_unique_idxs: {col: {value: index}}
+                feat_idx = data_info.sparse_unique_idxs[col][val]
                 offset = data_info.sparse_offset[field_idx]
-                sparse_indices[:, field_idx] = feat_idx + offset
-            else:
+                sparse_indices_copy[:, field_idx] = feat_idx + offset
+            # else:
                 # if val not exists, assign to oov position
-                sparse_indices[:, field_idx] = data_info.sparse_oov[field_idx]
+            #    sparse_indices_copy[:, field_idx] = (
+            #        data_info.sparse_oov[field_idx]
+            #    )
+        elif dense_values is not None and col in dense_mapping:
+            field_idx = dense_mapping[col]
+            dense_values_copy[:, field_idx] = val
 
-        elif (dense_values is not None and
-              col in data_info.col_name_mapping["dense_col"]):
-            field_idx = data_info.col_name_mapping["dense_col"][col]
-            dense_values[:, field_idx] = val
+    return sparse_indices_copy, dense_values_copy
+
+
+def features_from_batch_data(data_info, sparse, dense, data):
+    if sparse:
+        sparse_col_num = len(data_info.col_name_mapping["sparse_col"])
+        sparse_indices = [_ for _ in range(sparse_col_num)]
+        for col, field_idx in data_info.col_name_mapping["sparse_col"].items():
+            if col not in data.columns:
+                continue
+            sparse_indices[field_idx] = compute_sparse_feat_indices(
+                data_info, data, field_idx, col)
+        sparse_indices = np.array(sparse_indices).astype(np.int64).T
+    else:
+        sparse_indices = None
+
+    if dense:
+        dense_col_num = len(data_info.col_name_mapping["dense_col"])
+        dense_values = [_ for _ in range(dense_col_num)]
+        for col, field_idx in data_info.col_name_mapping["dense_col"].items():
+            if col not in data.columns:
+                continue
+            dense_values[field_idx] = data[col].to_numpy()
+        dense_values = np.array(dense_values).T
+    else:
+        dense_values = None
+
+    if sparse and dense:
+        assert len(sparse_indices) == len(dense_values), (
+            "indices and values length must equal"
+        )
     return sparse_indices, dense_values
+
+
+# This function will try not to modify the original numpy arrays
+def add_item_features(data_info, sparse_indices, dense_values, data):
+    data = _check_oov(data_info, data, "item")
+    row_idx = data["item"].to_numpy()
+
+    sparse_indices_copy = (None if sparse_indices is None
+                           else sparse_indices.copy())
+    col_info = data_info.item_sparse_col
+    if sparse_indices is not None and col_info.name:
+        sparse_indices_copy = sparse_indices.copy()
+        for feat_idx, col in enumerate(col_info.name):
+            if col not in data.columns:
+                continue
+            sparse_indices_copy[row_idx, feat_idx] = (
+                compute_sparse_feat_indices(
+                    data_info, data, col_info.index[feat_idx], col)
+            )
+
+    dense_values_copy = (None if dense_values is None
+                         else dense_values.copy())
+    col_info = data_info.item_dense_col
+    if dense_values is not None and col_info.name:
+        dense_values_copy = dense_values.copy()
+        for feat_idx, col in enumerate(col_info.name):
+            if col not in data.columns:
+                continue
+            dense_values_copy[row_idx, feat_idx] = data[col].to_numpy()
+    return sparse_indices_copy, dense_values_copy
+
+
+def compute_sparse_feat_indices(data_info, data, field_idx, column):
+    offset = data_info.sparse_offset[field_idx]
+    oov_val = data_info.sparse_oov[field_idx]
+    map_vals = data_info.sparse_unique_idxs[column]
+    values = data[column].tolist()
+    feat_indices = np.array(
+        [map_vals[v] + offset if v in map_vals else oov_val
+         for v in values]
+    )
+    return feat_indices
+
+
+# This function will try not to modify the original data
+def _check_oov(data_info, orig_data, mode):
+    data = orig_data.copy()
+    if mode == "user":
+        users = data.user.tolist()
+        user_mapping = data_info.user2id
+        user_ids = [user_mapping[u] if u in user_mapping else -1 for u in users]
+        data["user"] = user_ids
+        data = data[data.user != -1]
+    elif mode == "item":
+        items = data.item.tolist()
+        item_mapping = data_info.item2id
+        item_ids = [item_mapping[i] if i in item_mapping else -1 for i in items]
+        data["item"] = item_ids
+        data = data[data.item != -1]
+    return data

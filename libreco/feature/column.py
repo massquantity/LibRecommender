@@ -1,13 +1,16 @@
+from array import array
+from collections import defaultdict
 import itertools
 import numpy as np
 
 
-def get_user_item_sparse_indices(data_class, data, mode="train"):
+def get_user_item_sparse_indices(data, user_unique_vals, item_unique_vals,
+                                 mode, ordered):
     user_indices = column_sparse_indices(
-        data.user.to_numpy(), data_class.user_unique_vals, mode
+        data.user.to_numpy(), user_unique_vals, mode, ordered
     )
     item_indices = column_sparse_indices(
-        data.item.to_numpy(), data_class.item_unique_vals, mode
+        data.item.to_numpy(), item_unique_vals, mode, ordered
     )
     return user_indices, item_indices
 
@@ -17,16 +20,17 @@ def merge_sparse_col(sparse_col, multi_sparse_col):
     return flatten_cols if not sparse_col else sparse_col + flatten_cols
 
 
-def merge_sparse_indices(data_class, data, sparse_col, multi_sparse_col, mode):
+def merge_sparse_indices(data_class, data, sparse_col, multi_sparse_col, mode,
+                         ordered):
     if sparse_col and multi_sparse_col:
         sparse_indices = get_sparse_indices_matrix(
-            data_class, data, sparse_col, mode
+            data_class, data, sparse_col, mode, ordered
         )
         sparse_offset = get_sparse_offset(data_class, sparse_col)
         sparse_indices = sparse_indices + sparse_offset[:-1]
 
         multi_sparse_indices = get_multi_sparse_indices_matrix(
-            data_class, data, multi_sparse_col, mode
+            data_class, data, multi_sparse_col, mode, ordered
         )
         multi_sparse_offset = get_multi_sparse_offset(
             data_class, multi_sparse_col
@@ -38,13 +42,13 @@ def merge_sparse_indices(data_class, data, sparse_col, multi_sparse_col, mode):
 
     elif sparse_col:
         sparse_indices = get_sparse_indices_matrix(
-            data_class, data, sparse_col, mode)
+            data_class, data, sparse_col, mode, ordered)
         sparse_offset = get_sparse_offset(data_class, sparse_col)
         return sparse_indices + sparse_offset[:-1]
 
     elif multi_sparse_col:
         multi_sparse_indices = get_multi_sparse_indices_matrix(
-            data_class, data, multi_sparse_col, mode
+            data_class, data, multi_sparse_col, mode, ordered
         )
         multi_sparse_offset = get_multi_sparse_offset(
             data_class, multi_sparse_col
@@ -52,20 +56,20 @@ def merge_sparse_indices(data_class, data, sparse_col, multi_sparse_col, mode):
         return multi_sparse_indices + multi_sparse_offset
 
 
-def get_sparse_indices_matrix(data_class, data, sparse_col, mode="train"):
+def get_sparse_indices_matrix(data_class, data, sparse_col, mode, ordered):
     n_samples, n_features = len(data), len(sparse_col)
     sparse_indices = np.zeros((n_samples, n_features), dtype=np.int32)
     for i, col in enumerate(sparse_col):
         col_values = data[col].to_numpy()
         unique_values = data_class.sparse_unique_vals[col]
         sparse_indices[:, i] = column_sparse_indices(
-            col_values, unique_values, mode
+            col_values, unique_values, mode, ordered
         )
     return sparse_indices
 
 
 def get_multi_sparse_indices_matrix(data_class, data, multi_sparse_col,
-                                    mode="train"):
+                                    mode, ordered):
     n_samples = len(data)
     # n_fields = len(multi_sparse_col)
     n_features = len(list(itertools.chain.from_iterable(multi_sparse_col)))
@@ -77,7 +81,7 @@ def get_multi_sparse_indices_matrix(data_class, data, multi_sparse_col,
             for col in field:
                 col_values = data[col].to_numpy()
                 multi_sparse_indices[:, i] = column_sparse_indices(
-                    col_values, unique_values, mode
+                    col_values, unique_values, mode, ordered
                 )
                 i += 1
     return multi_sparse_indices
@@ -165,13 +169,31 @@ def check_unknown(values, uniques):
     return mask
 
 
-def column_sparse_indices(values, unique, mode="train"):
-    if mode == "test":
-        not_in_mask = check_unknown(values, unique)
-        col_indices = np.searchsorted(unique, values)
-        col_indices[not_in_mask] = len(unique)
-    elif mode == "train":
-        col_indices = np.searchsorted(unique, values)
-    else:
+def column_sparse_indices(values, unique, mode="train", ordered=True):
+    if mode not in ("train", "test"):
         raise ValueError("mode must either be \"train\" or \"test\" ")
+    if ordered:
+        if mode == "test":
+            not_in_mask = check_unknown(values, unique)
+            col_indices = np.searchsorted(unique, values)
+            col_indices[not_in_mask] = len(unique)
+        else:
+            col_indices = np.searchsorted(unique, values)
+    else:
+        map_vals = dict(zip(unique, range(len(unique))))
+        oov_val = len(unique)
+        if mode == "test":
+            col_indices = np.array([map_vals[v] if v in map_vals else oov_val
+                                    for v in values])
+        else:
+            col_indices = np.array([map_vals[v] for v in values])
     return col_indices
+
+
+def interaction_consumed(user_indices, item_indices):
+    user_consumed = defaultdict(lambda: array("I"))
+    item_consumed = defaultdict(lambda: array("I"))
+    for u, i in zip(user_indices, item_indices):
+        user_consumed[u].append(i)
+        item_consumed[i].append(u)
+    return user_consumed, item_consumed
