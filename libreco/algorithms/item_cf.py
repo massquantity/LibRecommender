@@ -8,7 +8,7 @@ from tqdm import tqdm
 from .base import Base
 from ..utils.similarities import cosine_sim, pearson_sim, jaccard_sim
 from ..utils.misc import time_block, colorize
-from ..evaluate.evaluate import EvalMixin
+from ..evaluation.evaluate import EvalMixin
 
 
 class ItemCF(Base, EvalMixin):

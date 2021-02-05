@@ -7,15 +7,16 @@ author: massquantity
 
 """
 from itertools import islice
+import os
 import numpy as np
-import tensorflow as tf2
+import tensorflow.compat.v1 as tf
 from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal,
     orthogonal as tf_orthogonal,
     glorot_normal as tf_glorot_normal
 )
 from .base import Base, TfMixin
-from ..evaluate.evaluate import EvalMixin
+from ..evaluation.evaluate import EvalMixin
 from ..utils.tf_ops import (
     reg_config,
     dropout_config,
@@ -25,12 +26,16 @@ from ..data.data_generator import DataGenSequence
 from ..data.sequence import user_last_interacted
 from ..utils.sampling import PairwiseSamplingSeq
 from ..utils.misc import time_block, colorize
-from ..utils.misc import count_params
-tf = tf2.compat.v1
+from ..utils.misc import count_params, assign_oov_vector
 tf.disable_v2_behavior()
 
 
 class RNN4Rec(Base, TfMixin, EvalMixin):
+    # user_variables = []
+    item_variables = ["item_weights", "item_biases", "input_embed"]
+    user_variables_np = ["user_vector"]
+    item_variables_np = ["item_vector"]
+
     def __init__(
             self,
             task,
@@ -55,7 +60,7 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
     ):
         Base.__init__(self, task, data_info, lower_upper_bound)
         TfMixin.__init__(self, tf_sess_config)
-        EvalMixin.__init__(self, task)
+        EvalMixin.__init__(self, task, data_info)
 
         self.task = task
         self.data_info = data_info
@@ -86,8 +91,11 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         self.sparse = False
         self.dense = False
         self._check_params()
+        self.vector_infer = True
+        self.all_args = locals()
 
     def _build_model(self):
+        self.graph_built = True
         tf.set_random_seed(self.seed)
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
@@ -225,7 +233,7 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
                 inputs=out, units=self.embed_size, activation=None
             )
 
-    def _build_train_ops(self, global_steps=None):
+    def _build_train_ops(self, **kwargs):
         if self.task == "rating":
             self.loss = tf.losses.mean_squared_error(labels=self.labels,
                                                      predictions=self.output)
@@ -243,6 +251,13 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         else:
             total_loss = self.loss
 
+        if self.lr_decay:
+            n_batches = int(self.data_info.data_size / self.batch_size)
+            self.lr, global_steps = lr_decay_config(self.lr, n_batches,
+                                                    **kwargs)
+        else:
+            global_steps = None
+
         optimizer = tf.train.AdamOptimizer(self.lr)
         optimizer_op = optimizer.minimize(total_loss, global_step=global_steps)
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -252,16 +267,9 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None, **kwargs):
         self.show_start_time()
-        if self.lr_decay:
-            n_batches = int(len(train_data) / self.batch_size)
-            self.lr, global_steps = lr_decay_config(
-                self.lr, n_batches, **kwargs
-            )
-        else:
-            global_steps = None
-
-        self._build_model()
-        self._build_train_ops(global_steps)
+        if not self.graph_built:
+            self._build_model()
+            self._build_train_ops(**kwargs)
 
         if self.task == "rating" or self.loss_type == "cross_entropy":
             self._fit(train_data, verbose, shuffle, eval_data, metrics)
@@ -310,6 +318,7 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
 
         # for prediction and recommendation
         self._set_latent_factors()
+        assign_oov_vector(self)
 
     def _fit_bpr(self, train_data, verbose, shuffle, eval_data, metrics):
         data_generator = PairwiseSamplingSeq(
@@ -352,18 +361,10 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
 
         # for prediction and recommendation
         self._set_latent_factors()
+        assign_oov_vector(self)
 
-    def predict(self, user, item):
-        user = (
-            np.asarray([user])
-            if isinstance(user, int)
-            else np.asarray(user)
-        )
-        item = (
-            np.asarray([item])
-            if isinstance(item, int)
-            else np.asarray(item)
-        )
+    def predict(self, user, item, cold_start="average", inner_id=False):
+        user, item = self.convert_id(user, item, inner_id)
         unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
         preds = np.sum(
@@ -377,29 +378,34 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         elif self.task == "ranking":
             preds = 1 / (1 + np.exp(-preds))
 
-        if unknown_num > 0:
+        if unknown_num > 0 and cold_start == "popular":
             preds[unknown_index] = self.default_prediction
+        return preds
 
-        return preds[0] if len(user) == 1 else preds
+    def recommend_user(self, user, n_rec, cold_start="average", inner_id=False):
+        user_id = self._check_unknown_user(user, inner_id)
+        if user_id is None:
+            if cold_start == "average":
+                user_id = self.n_users
+            elif cold_start == "popular":
+                return self.data_info.popular_items[:n_rec]
+            else:
+                raise ValueError(user)
 
-    def recommend_user(self, user, n_rec, **kwargs):
-        user = self._check_unknown_user(user)
-        if not user:
-            return
+        consumed = set(self.user_consumed[user_id])
+        count = n_rec + len(consumed)
+        recos = self.user_vector[user_id] @ self.item_vector.T
 
-        recos = self.user_vector[user] @ self.item_vector.T
         if self.task == "ranking":
             recos = 1 / (1 + np.exp(-recos))
-
-        consumed = self.user_consumed[user]
-        count = n_rec + len(consumed)
         ids = np.argpartition(recos, -count)[-count:]
         rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
-        return list(
-            islice(
-                (rec for rec in rank if rec[0] not in consumed), n_rec
-            )
+        recs_and_scores = islice(
+            (rec if inner_id else (self.data_info.id2item[rec[0]], rec[1])
+             for rec in rank if rec[0] not in consumed),
+            n_rec
         )
+        return list(recs_and_scores)
 
     def _set_last_interacted(self):
         if (self.user_last_interacted is None
@@ -441,3 +447,26 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         assert self.rnn_type in ("lstm", "gru"), (
             "rnn_type must be either lstm or gru"
         )
+
+    def save(self, path, model_name, manual=True, inference_only=False):
+        if not os.path.isdir(path):
+            print(f"file folder {path} doesn't exists, creating a new one...")
+            os.makedirs(path)
+        self.save_params(path)
+        if inference_only:
+            variable_path = os.path.join(path, model_name)
+            np.savez_compressed(variable_path,
+                                user_vector=self.user_vector,
+                                item_vector=self.item_vector)
+        else:
+            self.save_variables(path, model_name, inference_only=False)
+
+    @classmethod
+    def load(cls, path, model_name, data_info, manual=True):
+        variable_path = os.path.join(path, f"{model_name}.npz")
+        variables = np.load(variable_path)
+        hparams = cls.load_params(path, data_info)
+        model = cls(**hparams)
+        model.user_vector = variables["user_vector"]
+        model.item_vector = variables["item_vector"]
+        return model

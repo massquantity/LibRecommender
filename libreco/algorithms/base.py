@@ -5,7 +5,11 @@ import os
 import multiprocessing
 import time
 import numpy as np
+import pandas as pd
 import tensorflow as tf2
+from tqdm import tqdm
+from ..feature import features_from_batch_data
+from ..utils.tf_ops import modify_variable_names
 from ..utils.misc import time_block, colorize
 from ..utils.exception import NotSamplingError
 tf = tf2.compat.v1
@@ -27,6 +31,7 @@ class Base(abc.ABC):
 
     def __init__(self, task, data_info, lower_upper_bound=None):
         self.task = task
+        self.model_built = False
         if task == "rating":
             self.global_mean = data_info.global_mean
             if lower_upper_bound is not None:
@@ -36,8 +41,6 @@ class Base(abc.ABC):
                 self.upper_bound = lower_upper_bound[1]
             else:
                 self.lower_bound, self.upper_bound = data_info.min_max_rating
-        #    print(f"lower bound: {self.lower_bound}, "
-        #          f"upper bound: {self.upper_bound}")
 
         elif task != "ranking":
             raise ValueError("task must either be rating or ranking")
@@ -93,41 +96,60 @@ class Base(abc.ABC):
         result : list of tuples
             A recommendation list, each recommendation
             contains an (item_id, score) tuple.
+        """
+        raise NotImplementedError
 
+    @abc.abstractmethod
+    def save(self, path, model_name, **kwargs):
+        """save model for inference or retraining.
+
+        Parameters
+        ----------
+        path : str
+            file folder path to save model.
+        model_name : str
+            name of the saved model file.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    @abc.abstractmethod
+    def load(cls, path, model_name, data_info, **kwargs):
+        """load saved model for inference.
+
+        Parameters
+        ----------
+        path : str
+            file folder path to save model.
+        model_name : str
+            name of the saved model file.
+        data_info : `DataInfo` object
+            Object that contains some useful information.
         """
         raise NotImplementedError
 
     def convert_id(self, user, item, inner_id=False):
+        if not isinstance(user, (list, tuple, np.ndarray, pd.Series)):
+            user = [user]
+        if not isinstance(item, (list, tuple, np.ndarray, pd.Series)):
+            item = [item]
         if not inner_id:
-            user = (
-                [self.data_info.user2id[user]]
-                if isinstance(user, int)
-                else [self.data_info.user2id[u] for u in user]
-            )
-            item = (
-                [self.data_info.item2id[item]]
-                if isinstance(item, int)
-                else [self.data_info.item2id[i] for i in item]
-            )
-        else:
-            user = [user] if isinstance(user, int) else user
-            item = [item] if isinstance(item, int) else item
-        return  np.asarray(user), np.asarray(item)
+            user = [self.data_info.user2id.get(u, self.n_users) for u in user]
+            item = [self.data_info.item2id.get(i, self.n_items) for i in item]
+        return np.array(user), np.array(item)
 
     def _check_unknown(self, user, item):
-        unknown_user_indices = list(
-            np.where(np.logical_or(user >= self.n_users, user < 0))[0]
-        )
-        unknown_item_indices = list(
-            np.where(np.logical_or(item >= self.n_items, item < 0))[0]
-        )
+        # unknown_user_indices = list(np.where(np.logical_or(user >= self.n_users, user < 0))[0])
+        # unknown_item_indices = list(np.where(np.logical_or(item >= self.n_items, item < 0))[0])
+        unknown_user_indices = list(np.where(user == self.n_users)[0])
+        unknown_item_indices = list(np.where(item == self.n_items)[0])
 
-        unknown_user = (list(user[unknown_user_indices])
-                        if unknown_user_indices
-                        else None)
-        unknown_item = (list(item[unknown_item_indices])
-                        if unknown_item_indices
-                        else None)
+        # unknown_user = (list(user[unknown_user_indices])
+        #                if unknown_user_indices
+        #                else None)
+        # unknown_item = (list(item[unknown_item_indices])
+        #                if unknown_item_indices
+        #                else None)
         unknown_index = list(
             set(unknown_user_indices) | set(unknown_item_indices)
         )
@@ -135,22 +157,27 @@ class Base(abc.ABC):
 
         if unknown_num > 0:
             # temp conversion, will convert back in the main model
-            user[unknown_index] = 0
-            item[unknown_index] = 0
+            # user[unknown_index] = 0
+            # item[unknown_index] = 0
             unknown_str = (f"Detect {unknown_num} unknown interaction(s), "
-                           f"including user: {unknown_user}, "
-                           f"item: {unknown_item}, "
-                           f"will be handled as default prediction")
+                           # f"including user: {unknown_user}, "
+                           # f"item: {unknown_item}, "
+                           # f"will be handled as default prediction"
+                           f"position: {unknown_index}")
             print(f"{colorize(unknown_str, 'red')}")
         return unknown_num, unknown_index, user, item
 
-    def _check_unknown_user(self, user):
-        if 0 <= user < self.n_users:
-            return user
+    def _check_unknown_user(self, user, inner_id=False):
+        user_id = (
+            self.data_info.user2id.get(user, -1)
+            if not inner_id else user
+        )
+        if 0 <= user_id < self.n_users:
+            return user_id
         else:
-            unknown_str = (f"detect unknown user {user}, "
-                           f"return default recommendation")
-            print(f"{colorize(unknown_str, 'red')}")
+            if not inner_id:
+                unknown_str = f"detect unknown user: {user}"
+                print(f"{colorize(unknown_str, 'red')}")
             return
 
     @staticmethod
@@ -217,7 +244,7 @@ class Base(abc.ABC):
 
         param_path = os.path.join(path, "hyper_parameters.json")
         with open(param_path, 'w') as f:
-            json.dump(hparams, f, separators=(',', ':'))
+            json.dump(hparams, f, separators=(",", ":"), indent=4)
 
     @classmethod
     def load_params(cls, path, data_info):
@@ -235,6 +262,8 @@ class TfMixin(object):
     def __init__(self, tf_sess_config=None):
         self.cpu_num = multiprocessing.cpu_count()
         self.sess = self._sess_config(tf_sess_config)
+        self.graph_built = False
+        self.vector_infer = False
 
     def _sess_config(self, tf_sess_config=None):
         if not tf_sess_config:
@@ -278,7 +307,7 @@ class TfMixin(object):
 
                 class_name = self.__class__.__name__.lower()
                 if class_name.startswith("svd"):
-                    # set up parameters for prediction evaluate
+                    # set up parameters for prediction evaluation
                     self._set_latent_factors()
 
                 self.print_metrics(eval_data=eval_data, metrics=metrics,
@@ -346,28 +375,102 @@ class TfMixin(object):
             feed_dict.update({self.labels: label})
         return feed_dict
 
+    def predict_data_with_feats(self, data, batch_size=None,
+                                cold_start="average", inner_id=False):
+        assert isinstance(data, pd.DataFrame), "data must be pandas DataFrame"
+        user, item = self.convert_id(data.user, data.item, inner_id)
+        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
+
+        if batch_size is not None:
+            preds = np.zeros(len(data), dtype=np.float32)
+            for index in tqdm(range(0, len(data), batch_size), "pred_data"):
+                batch_slice = slice(index, index + batch_size)
+                batch_data = data.iloc[batch_slice]
+                user_indices = user[batch_slice]
+                item_indices = item[batch_slice]
+                sparse_indices, dense_values = features_from_batch_data(
+                    self.data_info, self.sparse, self.dense, batch_data)
+                if hasattr(self, "user_last_interacted"):
+                    feed_dict = self._get_seq_feed_dict(
+                        self.user_last_interacted[user_indices],
+                        self.last_interacted_len[user_indices],
+                        user_indices, item_indices,
+                        None, sparse_indices,
+                        dense_values, False)
+                else:
+                    feed_dict = self._get_feed_dict(
+                        user_indices, item_indices,
+                        sparse_indices, dense_values,
+                        None, False)
+                preds[batch_slice] = self.sess.run(self.output, feed_dict)
+        else:
+            sparse_indices, dense_values = features_from_batch_data(
+                self.data_info, self.sparse, self.dense, data)
+            if hasattr(self, "user_last_interacted"):
+                feed_dict = self._get_seq_feed_dict(
+                    self.user_last_interacted[user],
+                    self.last_interacted_len[user],
+                    user, item, None, sparse_indices,
+                    dense_values, False)
+            else:
+                feed_dict = self._get_feed_dict(
+                    user, item, sparse_indices,
+                    dense_values, None, False)
+            preds = self.sess.run(self.output, feed_dict)
+
+        if self.task == "rating":
+            preds = np.clip(preds, self.lower_bound, self.upper_bound)
+        elif self.task == "ranking":
+            preds = 1 / (1 + np.exp(-preds))
+
+        if unknown_num > 0 and cold_start == "popular":
+            preds[unknown_index] = self.default_prediction
+        return preds
+
     def assign_oov(self):
-        assign_ops = []
+        (
+            user_variables,
+            item_variables,
+            sparse_variables,
+            dense_variables,
+            _
+        ) = modify_variable_names(self, trainable=True)
+
+        update_ops = []
         for v in tf.trainable_variables():
-            if hasattr(self, "user_variables"):
-                for vu in self.user_variables:
-                    if v.name.startswith(vu):
-                        size = v.get_shape().as_list()[1]
-                        zero_op = tf.IndexedSlices(
-                            tf.zeros([1, size], dtype=tf.float32),
-                            [self.n_users]
-                        )
-                        assign_ops.append(v.scatter_update(zero_op))
-            if hasattr(self, "item_variables"):
-                for vi in self.item_variables:
-                    if v.name.startswith(vi):
-                        size = v.get_shape().as_list()[1]
-                        zero_op = tf.IndexedSlices(
-                            tf.zeros([1, size], dtype=tf.float32),
-                            [self.n_items]
-                        )
-                        assign_ops.append(v.scatter_update(zero_op))
-        self.sess.run(assign_ops)
+            if user_variables is not None and v.name in user_variables:
+                # size = v.get_shape().as_list()[1]
+                mean_op = tf.IndexedSlices(
+                    tf.reduce_mean(
+                        tf.gather(v, tf.range(self.n_users)),
+                        axis=0, keepdims=True
+                    ), [self.n_users]
+                )
+                update_ops.append(v.scatter_update(mean_op))
+
+            if item_variables is not None and v.name in item_variables:
+                mean_op = tf.IndexedSlices(
+                    tf.reduce_mean(
+                        tf.gather(v, tf.range(self.n_items)),
+                        axis=0, keepdims=True
+                    ), [self.n_items]
+                )
+                update_ops.append(v.scatter_update(mean_op))
+
+            if sparse_variables is not None and v.name in sparse_variables:
+                sparse_oovs = self.data_info.sparse_oov
+                start = 0
+                for oov in sparse_oovs:
+                    mean_tensor = tf.reduce_mean(
+                        tf.gather(v, tf.range(start, oov)),
+                        axis=0, keepdims=True
+                    )
+                    update_ops.append(
+                        v.scatter_nd_update([[oov]], mean_tensor)
+                    )
+                    start = oov + 1
+
+        self.sess.run(update_ops)
 
     def save_tf_model(self, path, model_name):
         model_path = os.path.join(path,  model_name)
@@ -387,11 +490,16 @@ class TfMixin(object):
         saver.restore(model.sess, model_path)
         return model
 
-    def save_variables(self, path, model_name):
+    def save_variables(self, path, model_name, inference_only):
         variable_path = os.path.join(path, f"{model_name}_variables")
         variables = dict()
         for v in tf.global_variables():
-            variables[v.name] = self.sess.run(v)
+            if inference_only:
+                # also save moving_mean and moving_var for batch_normalization
+                if v in tf.trainable_variables() or "moving" in v.name:
+                    variables[v.name] = self.sess.run(v)
+            else:
+                variables[v.name] = self.sess.run(v)
         np.savez_compressed(variable_path, **variables)
 
     @classmethod
@@ -404,11 +512,123 @@ class TfMixin(object):
         if hasattr(model, "user_last_interacted"):
             model._set_last_interacted()
         # model.sess.run(tf.trainable_variables()[0].initializer)
-        # print(model.sess.run(tf.trainable_variables()[0]))
-        assign_ops = []
+        update_ops = []
         for v in tf.global_variables():
-            assign_ops.append(v.assign(variables[v.name]))
+            # also load moving_mean and moving_var for batch_normalization
+            if v in tf.trainable_variables() or "moving" in v.name:
+                update_ops.append(v.assign(variables[v.name]))
             # v.load(variables[v.name], session=model.sess)
-        model.sess.run(assign_ops)
-        # print(model.sess.run(tf.trainable_variables()[0]))
+        model.sess.run(update_ops)
         return model
+
+    def rebuild_graph(self, path, model_name, full_assign=False):
+        self._build_model()
+        self._build_train_ops()
+
+        variable_path = os.path.join(path, f"{model_name}_variables.npz")
+        variables = np.load(variable_path)
+        variables = dict(variables.items())
+
+        (
+            user_variables,
+            item_variables,
+            sparse_variables,
+            dense_variables,
+            manual_variables
+        ) = modify_variable_names(self, trainable=True)
+
+        update_ops = []
+        for v in tf.trainable_variables():
+            if user_variables is not None and v.name in user_variables:
+                # remove oov values
+                old_var = (
+                    variables[v.name]
+                    if self.vector_infer
+                    else variables[v.name][:-1]
+                )
+                user_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
+                update_ops.append(v.scatter_update(user_op))
+
+            if item_variables is not None and v.name in item_variables:
+                old_var = (
+                    variables[v.name]
+                    if self.vector_infer
+                    else variables[v.name][:-1]
+                )
+                item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
+                update_ops.append(v.scatter_update(item_op))
+
+            if sparse_variables is not None and v.name in sparse_variables:
+                old_var = variables[v.name]
+                # remove oov values
+                old_var = np.delete(
+                    old_var, self.data_info.old_sparse_oov,axis=0
+                )
+                indices = []
+                for offset, size in zip(self.data_info.sparse_offset,
+                                        self.data_info.old_sparse_len):
+                    indices.extend(range(offset, offset + size))
+                sparse_op = tf.IndexedSlices(old_var, indices)
+                update_ops.append(v.scatter_update(sparse_op))
+
+            if dense_variables is not None and v.name in dense_variables:
+                # dense values are same, no need to scatter_update
+                old_var = variables[v.name]
+                update_ops.append(v.assign(old_var))
+
+        if full_assign:
+            (
+                optimizer_user_variables,
+                optimizer_item_variables,
+                optimizer_sparse_variables,
+                optimizer_dense_variables,
+                _
+            ) = modify_variable_names(self, trainable=False)
+
+            other_variables = [v for v in tf.global_variables()
+                               if v.name not in manual_variables]
+            for v in other_variables:
+                if (optimizer_user_variables is not None
+                        and v.name in optimizer_user_variables):
+                    old_var = (
+                        variables[v.name]
+                        if self.vector_infer
+                        else variables[v.name][:-1]
+                    )
+                    user_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
+                    update_ops.append(v.scatter_update(user_op))
+
+                elif (optimizer_item_variables is not None
+                          and v.name in optimizer_item_variables):
+                    old_var = (
+                        variables[v.name]
+                        if self.vector_infer
+                        else variables[v.name][:-1]
+                    )
+                    item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
+                    update_ops.append(v.scatter_update(item_op))
+
+                elif (optimizer_sparse_variables is not None
+                          and v.name in optimizer_sparse_variables):
+                    old_var = variables[v.name]
+                    # remove oov values
+                    old_var = np.delete(
+                        old_var, self.data_info.old_sparse_oov, axis=0
+                    )
+                    indices = []
+                    for offset, size in zip(self.data_info.sparse_offset,
+                                            self.data_info.old_sparse_len):
+                        indices.extend(range(offset, offset + size))
+                    sparse_op = tf.IndexedSlices(old_var, indices)
+                    update_ops.append(v.scatter_update(sparse_op))
+
+                elif (optimizer_dense_variables is not None
+                          and v.name in optimizer_dense_variables):
+                    old_var = variables[v.name]
+                    update_ops.append(v.assign(old_var))
+
+                else:
+                    old_var = variables[v.name]
+                    update_ops.append(v.assign(old_var))
+
+        self.sess.run(update_ops)

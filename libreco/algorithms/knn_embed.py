@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from .base import Base
 from ..utils.misc import time_block, colorize
-from ..evaluate.evaluate import EvalMixin
+from ..evaluation.evaluate import EvalMixin
 from ..embedding import Item2Vec
 
 

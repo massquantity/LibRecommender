@@ -9,13 +9,13 @@ author: massquantity
 import os
 from itertools import islice
 import numpy as np
-import tensorflow as tf2
+import tensorflow.compat.v1 as tf
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
-from ..evaluate.evaluate import EvalMixin
+from ..evaluation.evaluate import EvalMixin
 from ..utils.tf_ops import (
     reg_config,
     dropout_config,
@@ -24,8 +24,7 @@ from ..utils.tf_ops import (
 )
 from ..data.data_generator import DataGenSequence
 from ..data.sequence import sparse_user_last_interacted
-from ..utils.misc import time_block, colorize
-tf = tf2.compat.v1
+from ..utils.misc import time_block, colorize, assign_oov_vector
 tf.disable_v2_behavior()
 
 
@@ -34,6 +33,13 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
     The model implemented mainly corresponds to the candidate generation
     phase based on the original paper.
     """
+    # user_variables = []
+    item_variables = ["item_interaction_features", "nce_weights", "nce_biases"]
+    sparse_variables = ["sparse_features"]
+    dense_variables = ["dense_features"]
+    user_variables_np = ["user_vector"]
+    item_variables_np = ["item_weights"]
+
     def __init__(
             self,
             task="ranking",
@@ -92,11 +98,13 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             self.sparse_field_size = self._sparse_field_size(data_info)
         if self.dense:
             self.dense_field_size = self._dense_field_size(data_info)
+        self.vector_infer = True
         self.all_args = locals()
 
     def _build_model(self):
+        self.graph_built = True
         tf.set_random_seed(self.seed)
-        # item_indices actually served as labels in YouTubeMatch model
+        # item_indices actually serve as labels in YouTubeMatch model
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
         self.concat_embed = []
@@ -173,7 +181,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             dense_embed, [-1, self.dense_field_size * self.embed_size])
         self.concat_embed.append(dense_embed)
 
-    def _build_train_ops(self, global_steps=None):
+    def _build_train_ops(self, **kwargs):
         self.nce_weights = tf.get_variable(
             name="nce_weights",
             # n_classes, embed_size
@@ -224,6 +232,13 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         else:
             total_loss = self.loss
 
+        if self.lr_decay:
+            n_batches = int(self.data_info.data_size / self.batch_size)
+            self.lr, global_steps = lr_decay_config(self.lr, n_batches,
+                                                    **kwargs)
+        else:
+            global_steps = None
+
         optimizer = tf.train.AdamOptimizer(self.lr)
         optimizer_op = optimizer.minimize(total_loss, global_step=global_steps)
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -237,15 +252,9 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         )
         self._check_item_col()
         self.show_start_time()
-        if self.lr_decay:
-            n_batches = int(len(train_data) / self.batch_size)
-            self.lr, global_steps = lr_decay_config(self.lr, n_batches,
-                                                    **kwargs)
-        else:
-            global_steps = None
-
-        self._build_model()
-        self._build_train_ops(global_steps)
+        if not self.graph_built:
+            self._build_model()
+            self._build_train_ops(**kwargs)
 
         data_generator = DataGenSequence(
             train_data, self.data_info, self.sparse, self.dense,
@@ -283,8 +292,9 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
 
         # for prediction and recommendation
         self._set_latent_vectors()
+        assign_oov_vector(self)
 
-    def predict(self, user, item, inner_id=False):
+    def predict(self, user, item, cold_start="average", inner_id=False):
         user, item = self.convert_id(user, item, inner_id)
         unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
@@ -294,21 +304,23 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             axis=1)
         preds = 1 / (1 + np.exp(-preds))
 
-        if unknown_num > 0:
+        if unknown_num > 0 and cold_start == "popular":
             preds[unknown_index] = self.default_prediction
+        return preds
 
-        return preds[0] if len(user) == 1 else preds
+    def recommend_user(self, user, n_rec, cold_start="average", inner_id=False):
+        user_id = self._check_unknown_user(user, inner_id)
+        if user_id is None:
+            if cold_start == "average":
+                user_id = self.n_users
+            elif cold_start == "popular":
+                return self.data_info.popular_items[:n_rec]
+            else:
+                raise ValueError(user)
 
-    def recommend_user(self, user, n_rec, inner_id=False, **kwargs):
-        if not inner_id:
-            user = self.data_info.user2id[user]
-        user = self._check_unknown_user(user)
-        if user is None:  ####################
-            return   # popular ?
-
-        consumed = set(self.user_consumed[user])
+        consumed = set(self.user_consumed[user_id])
         count = n_rec + len(consumed)
-        recos = self.user_vector[user] @ self.item_weights.T
+        recos = self.user_vector[user_id] @ self.item_weights.T
         recos = 1 / (1 + np.exp(-recos))
 
         ids = np.argpartition(recos, -count)[-count:]
@@ -335,10 +347,11 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
                      self.is_training: False}
 
         if self.sparse:
-            user_sparse_indices = self.data_info.user_sparse_unique
+            # remove oov
+            user_sparse_indices = self.data_info.user_sparse_unique[:-1]
             feed_dict.update({self.sparse_indices: user_sparse_indices})
         if self.dense:
-            user_dense_values = self.data_info.user_dense_unique
+            user_dense_values = self.data_info.user_dense_unique[:-1]
             feed_dict.update({self.dense_values: user_dense_values})
 
         user_vector = self.sess.run(self.user_vector_repr, feed_dict)
@@ -359,18 +372,21 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
                 "The YouTubeMatch model assumes no item features."
             )
 
-    def save(self, path, model_name):
+    def save(self, path, model_name, manual=True, inference_only=False):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
         self.save_params(path)
-        variable_path = os.path.join(path, model_name)
-        np.savez_compressed(variable_path,
-                            user_vector=self.user_vector,
-                            item_weights=self.item_weights)
+        if inference_only:
+            variable_path = os.path.join(path, model_name)
+            np.savez_compressed(variable_path,
+                                user_vector=self.user_vector,
+                                item_weights=self.item_weights)
+        else:
+            self.save_variables(path, model_name, inference_only=False)
 
     @classmethod
-    def load(cls, path, model_name, data_info):
+    def load(cls, path, model_name, data_info, manual=True):
         variable_path = os.path.join(path, f"{model_name}.npz")
         variables = np.load(variable_path)
         hparams = cls.load_params(path, data_info)

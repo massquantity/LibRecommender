@@ -9,12 +9,13 @@ author: massquantity
 import os
 from itertools import islice
 import numpy as np
-import tensorflow as tf2
+import pandas as pd
+import tensorflow.compat.v1 as tf
 from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
-from ..evaluate.evaluate import EvalMixin
+from ..evaluation.evaluate import EvalMixin
 from ..utils.tf_ops import (
     reg_config,
     dropout_config,
@@ -27,13 +28,19 @@ from ..utils.misc import time_block, colorize
 from ..utils.misc import count_params
 from ..feature import (
     get_predict_indices_and_values,
-    get_recommend_indices_and_values
+    get_recommend_indices_and_values,
+    features_from_dict,
+    add_item_features
 )
-tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 
 class DIN(Base, TfMixin, EvalMixin):
+    user_variables = ["user_feat"]
+    item_variables = ["item_feat"]
+    sparse_variables = ["sparse_feat"]
+    dense_variables = ["dense_feat"]
+
     def __init__(
             self,
             task,
@@ -106,10 +113,9 @@ class DIN(Base, TfMixin, EvalMixin):
         self.user_last_interacted = None
         self.last_interacted_len = None
         self.all_args = locals()
-        self.user_variables = ["user_feat"]
-        self.item_variables = ["item_feat"]
 
     def _build_model(self):
+        self.graph_built = True
         tf.set_random_seed(self.seed)
         self.concat_embed, self.item_embed, self.seq_embed = [], [], []
         self._build_placeholders()
@@ -316,7 +322,7 @@ class DIN(Base, TfMixin, EvalMixin):
             pooled_outputs = attention_scores @ keys
             return pooled_outputs
 
-    def _build_train_ops(self, global_steps=None):
+    def _build_train_ops(self, **kwargs):
         if self.task == "rating":
             self.loss = tf.losses.mean_squared_error(labels=self.labels,
                                                      predictions=self.output)
@@ -332,6 +338,13 @@ class DIN(Base, TfMixin, EvalMixin):
         else:
             total_loss = self.loss
 
+        if self.lr_decay:
+            n_batches = int(self.data_info.data_size / self.batch_size)
+            self.lr, global_steps = lr_decay_config(self.lr, n_batches,
+                                                    **kwargs)
+        else:
+            global_steps = None
+
         optimizer = tf.train.AdamOptimizer(self.lr)
         optimizer_op = optimizer.minimize(total_loss, global_step=global_steps)
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -341,15 +354,9 @@ class DIN(Base, TfMixin, EvalMixin):
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None, **kwargs):
         self.show_start_time()
-        if self.lr_decay:
-            n_batches = int(len(train_data) / self.batch_size)
-            self.lr, global_steps = lr_decay_config(self.lr, n_batches,
-                                                    **kwargs)
-        else:
-            global_steps = None
-
-        self._build_model()
-        self._build_train_ops(global_steps)
+        if not self.graph_built:
+            self._build_model()
+            self._build_train_ops(**kwargs)
 
         data_generator = DataGenSequence(train_data, self.data_info,
                                          self.sparse, self.dense,
@@ -385,17 +392,28 @@ class DIN(Base, TfMixin, EvalMixin):
 
         # for prediction and recommendation
         self._set_last_interacted()
+        self.assign_oov()
 
-    def predict(self, user, item, inner_id=False):
+    def predict(self, user, item, feats=None, cold_start="average",
+                inner_id=False):
         user, item = self.convert_id(user, item, inner_id)
         unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
-        (user_indices,
-         item_indices,
-         sparse_indices,
-         dense_values) = get_predict_indices_and_values(
-            self.data_info, user, item, self.n_items, self.sparse, self.dense
-        )
+        (
+            user_indices,
+            item_indices,
+            sparse_indices,
+            dense_values
+        ) = get_predict_indices_and_values(
+            self.data_info, user, item, self.n_items, self.sparse, self.dense)
+
+        if feats is not None:
+            assert isinstance(feats, (dict, pd.Series)), (
+                "feats must be dict or pandas.Series.")
+            assert len(user_indices) == 1, "only support single user for feats"
+            sparse_indices, dense_values = features_from_dict(
+                self.data_info, sparse_indices, dense_values, feats, "predict")
+
         feed_dict = self._get_seq_feed_dict(self.user_last_interacted[user],
                                             self.last_interacted_len[user],
                                             user_indices, item_indices,
@@ -403,35 +421,60 @@ class DIN(Base, TfMixin, EvalMixin):
                                             dense_values, False)
 
         preds = self.sess.run(self.output, feed_dict)
-        preds = 1 / (1 + np.exp(-preds))
-        if unknown_num > 0:
+        if self.task == "rating":
+            preds = np.clip(preds, self.lower_bound, self.upper_bound)
+        elif self.task == "ranking":
+            preds = 1 / (1 + np.exp(-preds))
+
+        if unknown_num > 0 and cold_start == "popular":
             preds[unknown_index] = self.default_prediction
+        return preds
 
-        return preds[0] if len(user) == 1 else preds
+    def recommend_user(self, user, n_rec, user_feats=None, item_data=None,
+                       cold_start="average", inner_id=False):
+        user_id = self._check_unknown_user(user, inner_id)
+        if user_id is None:
+            if cold_start == "average":
+                user_id = self.n_users
+            elif cold_start == "popular":
+                return self.data_info.popular_items[:n_rec]
+            else:
+                raise ValueError(user)
 
-    def recommend_user(self, user, n_rec, inner_id=False, **kwargs):
-        if not inner_id:
-            user = self.data_info.user2id[user]
-        user = self._check_unknown_user(user)
-        if user is None:  ####################
-            return   # popular ?
+        (
+            user_indices,
+            item_indices,
+            sparse_indices,
+            dense_values
+        ) = get_recommend_indices_and_values(
+            self.data_info, user_id, self.n_items, self.sparse, self.dense)
 
-        (user_indices,
-         item_indices,
-         sparse_indices,
-         dense_values) = get_recommend_indices_and_values(
-            self.data_info, user, self.n_items, self.sparse, self.dense)
-        u_last_interacted = np.tile(self.user_last_interacted[user],
+        if user_feats is not None:
+            assert isinstance(user_feats, (dict, pd.Series)), (
+                "feats must be dict or pandas.Series.")
+            sparse_indices, dense_values = features_from_dict(
+                self.data_info, sparse_indices, dense_values, user_feats,
+                "recommend")
+        if item_data is not None:
+            assert isinstance(item_data, pd.DataFrame), (
+                "item_data must be pandas DataFrame")
+            assert "item" in item_data.columns, (
+                "item_data must contain 'item' column")
+            sparse_indices, dense_values = add_item_features(
+                self.data_info, sparse_indices, dense_values, item_data)
+
+        u_last_interacted = np.tile(self.user_last_interacted[user_id],
                                     (self.n_items, 1))
-        u_interacted_len = np.repeat(self.last_interacted_len[user],
+        u_interacted_len = np.repeat(self.last_interacted_len[user_id],
                                      self.n_items)
         feed_dict = self._get_seq_feed_dict(u_last_interacted, u_interacted_len,
                                             user_indices, item_indices, None,
                                             sparse_indices, dense_values, False)
 
         recos = self.sess.run(self.output, feed_dict)
-        recos = 1 / (1 + np.exp(-recos))
-        consumed = set(self.user_consumed[user])
+        if self.task == "ranking":
+            recos = 1 / (1 + np.exp(-recos))
+        consumed = set(self.user_consumed[user_id])
         count = n_rec + len(consumed)
         ids = np.argpartition(recos, -count)[-count:]
         rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
@@ -446,23 +489,30 @@ class DIN(Base, TfMixin, EvalMixin):
         if (self.user_last_interacted is None
                 and self.last_interacted_len is None):
             user_indices = np.arange(self.n_users)
-            (self.user_last_interacted,
-             self.last_interacted_len) = user_last_interacted(
-                user_indices, self.user_consumed, 0, self.max_seq_len)
+            (
+                self.user_last_interacted,
+                self.last_interacted_len
+            ) = user_last_interacted(user_indices, self.user_consumed,
+                                     self.n_items, self.max_seq_len)
 
-    def save(self, path, model_name, manual=False):
+            oov = np.full(self.max_seq_len, self.n_items, dtype=np.int32)
+            self.user_last_interacted = np.vstack(
+                [self.user_last_interacted, oov]
+            )
+            self.last_interacted_len = np.append(self.last_interacted_len, [1])
+
+    def save(self, path, model_name, manual=True, inference_only=False):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
         self.save_params(path)
         if manual:
-            self.save_variables(path, model_name)
+            self.save_variables(path, model_name, inference_only)
         else:
             self.save_tf_model(path, model_name)
 
     @classmethod
-    def load(cls, path, model_name, data_info, manual=False):
-        tf.reset_default_graph()
+    def load(cls, path, model_name, data_info, manual=True):
         if manual:
             return cls.load_variables(path, model_name, data_info)
         else:
