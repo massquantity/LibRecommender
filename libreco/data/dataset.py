@@ -99,7 +99,15 @@ class DatasetPure(Dataset):
     """
 
     @classmethod
-    def build_trainset(cls, train_data, shuffle=False, seed=42):
+    def build_trainset(
+            cls,
+            train_data,
+            revolution=False,
+            data_info=None,
+            merge_behavior=True,
+            popular_nums=100,
+            shuffle=False,
+            seed=42):
         """Build transformed pure train_data from original data.
 
         Normally, pure data only contains `user` and `item` columns,
@@ -110,6 +118,14 @@ class DatasetPure(Dataset):
         train_data : `pandas.DataFrame`
             Data must at least contains three columns,
             i.e. `user`, `item`, `label`.
+        revolution : bool, optional
+            Whether to retrain model with new data.
+        data_info : `DataInfo`
+            `DataInfo` object that contains past data information.
+        merge_behavior : bool, optional
+            Whether to merge the user behavior in old and new data.
+        popular_nums : int, optional
+            NUmber of popular items to store.
         shuffle : bool, optional
             Whether to fully shuffle data.
         seed: int, optional
@@ -126,34 +142,74 @@ class DatasetPure(Dataset):
 
         cls._check_subclass()
         cls._check_col_names(train_data, mode="train")
-        cls._set_sparse_unique_vals(train_data)
-        if shuffle:
-            train_data = train_data.sample(
-                frac=1, random_state=seed
-            ).reset_index(drop=True)
 
-        user_indices, item_indices = get_user_item_sparse_indices(
-            train_data, cls.user_unique_vals, cls.item_unique_vals,
-            mode="train", ordered=True
-        )
-        labels = train_data["label"].to_numpy(dtype=np.float32)
+        if revolution:
+            assert isinstance(data_info, DataInfo), (
+                "The passed data_info is not a DataInfo object.")
+            data_info.expand_sparse_unique_vals_and_matrix(train_data)
+            user_indices, item_indices = get_user_item_sparse_indices(
+                train_data,
+                data_info.user_unique_vals,
+                data_info.item_unique_vals,
+                mode="train",
+                ordered=False
+            )
+            labels = train_data["label"].to_numpy(dtype=np.float32)
+            train_transformed = TransformedSet(
+                user_indices, item_indices, labels, train=True
+            )
 
-        interaction_data = train_data[["user", "item", "label"]]
-        train_transformed = TransformedSet(
-            user_indices, item_indices, labels, train=True
-        )
+            user_indices, item_indices = data_info.update_consumed(
+                user_indices, item_indices, merge=merge_behavior
+            )
+            data_info.interaction_data = train_data[["user", "item", "label"]]
+            data_info.set_popular_items(popular_nums)
+            data_info.store_args(user_indices, item_indices)
 
-        data_info = DataInfo(interaction_data=interaction_data,
-                             user_indices=user_indices,
-                             item_indices=item_indices)
+        else:
+            cls._set_sparse_unique_vals(train_data)
+            if shuffle:
+                train_data = train_data.sample(
+                    frac=1, random_state=seed
+                ).reset_index(drop=True)
+
+            user_indices, item_indices = get_user_item_sparse_indices(
+                train_data,
+                cls.user_unique_vals,
+                cls.item_unique_vals,
+                mode="train",
+                ordered=True
+            )
+            labels = train_data["label"].to_numpy(dtype=np.float32)
+
+            interaction_data = train_data[["user", "item", "label"]]
+            train_transformed = TransformedSet(
+                user_indices, item_indices, labels, train=True
+            )
+
+            data_info = DataInfo(interaction_data=interaction_data,
+                                 user_indices=user_indices,
+                                 item_indices=item_indices,
+                                 user_unique_vals=cls.user_unique_vals,
+                                 item_unique_vals=cls.item_unique_vals)
+        cls.train_called = True
         return train_transformed, data_info
 
     @classmethod
-    def build_evalset(cls, eval_data, shuffle=False, seed=42):
-        return cls.build_testset(eval_data, shuffle, seed)
+    def build_evalset(cls, eval_data, revolution=False, data_info=None,
+                      shuffle=False, seed=42):
+        return cls.build_testset(eval_data, revolution, data_info,
+                                 shuffle, seed)
 
     @classmethod
-    def build_testset(cls, test_data, shuffle=False, seed=42):
+    def build_testset(
+            cls,
+            test_data,
+            revolution=False,
+            data_info=None,
+            shuffle=False,
+            seed=42
+    ):
         """Build transformed pure eval_data or test_data from original data.
 
         Normally, pure data only contains `user` and `item` columns,
@@ -163,6 +219,10 @@ class DatasetPure(Dataset):
         ----------
         test_data : `pandas.DataFrame`
             Data must at least contains two columns, i.e. `user`, `item`.
+        revolution : bool, optional
+            Whether to retrain model with new data.
+        data_info : `DataInfo`
+            `DataInfo` object that contains past data information.
         shuffle : bool, optional
             Whether to fully shuffle data.
         seed: int, optional
@@ -173,18 +233,37 @@ class DatasetPure(Dataset):
         testset : `TransformedSet` object
             Data object used for evaluation and test.
         """
-
+        if not revolution and not cls.train_called:
+            raise RuntimeError(
+                "must first build trainset before building evalset or testset"
+            )
         cls._check_subclass()
         cls._check_col_names(test_data, mode="test")
+
         if shuffle:
             test_data = test_data.sample(
                 frac=1, random_state=seed
             ).reset_index(drop=True)
 
-        test_user_indices, test_item_indices = get_user_item_sparse_indices(
-            test_data, cls.user_unique_vals, cls.item_unique_vals,
-            mode="test", ordered=False
-        )
+        if revolution:
+            assert isinstance(data_info, DataInfo), (
+                "The passed data_info is not a DataInfo object.")
+            test_user_indices, test_item_indices = get_user_item_sparse_indices(
+                test_data,
+                data_info.user_unique_vals,
+                data_info.item_unique_vals,
+                mode="test",
+                ordered=False
+            )
+        else:
+            test_user_indices, test_item_indices = get_user_item_sparse_indices(
+                test_data,
+                cls.user_unique_vals,
+                cls.item_unique_vals,
+                mode="test",
+                ordered=False
+            )
+
         if "label" in test_data.columns:
             labels = test_data["label"].to_numpy(dtype=np.float32)
         else:

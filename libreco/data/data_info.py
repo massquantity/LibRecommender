@@ -38,8 +38,6 @@ class DataInfo(object):
         self.user_dense_unique = user_dense_unique
         self.item_sparse_unique = item_sparse_unique
         self.item_dense_unique = item_dense_unique
-        # self.user_indices = user_indices
-        # self.item_indices = item_indices
         self.user_consumed, self.item_consumed = interaction_consumed(
             user_indices, item_indices
         )
@@ -241,10 +239,11 @@ class DataInfo(object):
         self._data_size = None
 
     def store_old_info(self):
-        self.old_sparse_len, self.old_sparse_oov = [], []
-        for i, col in enumerate(self.sparse_col.name):
-            self.old_sparse_len.append(len(self.sparse_unique_vals[col]))
-            self.old_sparse_oov.append(self.sparse_oov[i])
+        if self.sparse_unique_vals is not None:
+            self.old_sparse_len, self.old_sparse_oov = [], []
+            for i, col in enumerate(self.sparse_col.name):
+                self.old_sparse_len.append(len(self.sparse_unique_vals[col]))
+                self.old_sparse_oov.append(self.sparse_oov[i])
 
     def expand_sparse_unique_vals_and_matrix(self, data):
         self.reset_property()
@@ -313,13 +312,16 @@ class DataInfo(object):
     def modify_sparse_indices(self):
         old_offset = [i + 1 for i in self.old_sparse_oov[:-1]]
         old_offset = np.insert(old_offset, 0, 0)
-        user_idx = self.user_sparse_col.index
-        diff = self.sparse_offset[user_idx] - old_offset[user_idx]
-        self.user_sparse_unique += diff
-        item_idx = self.item_sparse_col.index
-        diff = self.sparse_offset[item_idx] - old_offset[item_idx]
-        self.item_sparse_unique += diff
+        if self.user_sparse_unique is not None:
+            user_idx = self.user_sparse_col.index
+            diff = self.sparse_offset[user_idx] - old_offset[user_idx]
+            self.user_sparse_unique += diff
+        if self.item_sparse_unique is not None:
+            item_idx = self.item_sparse_col.index
+            diff = self.sparse_offset[item_idx] - old_offset[item_idx]
+            self.item_sparse_unique += diff
 
+    # todo: ignore feature oov value
     def assign_sparse_features(self, data, mode):
         data = _check_oov(self, data, mode)
         if mode == "user":
@@ -431,7 +433,7 @@ class DataInfo(object):
         ]
         all_variables = vars(self)
         for arg in inside_args:
-            if arg in all_variables:
+            if arg in all_variables and all_variables[arg] is not None:
                 self.all_args[arg] = all_variables[arg]
         self.all_args["user_indices"] = user_indices
         self.all_args["item_indices"] = item_indices
@@ -440,16 +442,21 @@ class DataInfo(object):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        name_mapping_path = os.path.join(path, "data_info_name_mapping.json")
-        with open(name_mapping_path, 'w') as f:
-            json.dump(self.all_args["col_name_mapping"],
-                      f, separators=(',', ':'), indent=4)
+        if self.col_name_mapping is not None:
+            name_mapping_path = os.path.join(
+                path, "data_info_name_mapping.json"
+            )
+            with open(name_mapping_path, 'w') as f:
+                json.dump(self.all_args["col_name_mapping"],
+                          f, separators=(',', ':'), indent=4)
 
         other_path = os.path.join(path, "data_info")
         hparams = dict()
         arg_names = inspect.signature(self.__init__).parameters.keys()
         for arg in arg_names:
-            if arg == "col_name_mapping" or self.all_args[arg] is None:
+            if (arg == "col_name_mapping" or
+                    arg not in self.all_args or
+                    self.all_args[arg] is None):
                 continue
             if arg == "interaction_data":
                 hparams[arg] = self.all_args[arg].to_numpy()
@@ -469,12 +476,17 @@ class DataInfo(object):
 
         hparams = dict()
         name_mapping_path = os.path.join(path, "data_info_name_mapping.json")
-        with open(name_mapping_path, 'r') as f:
-            hparams["col_name_mapping"] = json.load(f)
+        if os.path.exists(name_mapping_path):
+            with open(name_mapping_path, 'r') as f:
+                hparams["col_name_mapping"] = json.load(f)
 
         other_path = os.path.join(path, "data_info.npz")
         info = np.load(other_path, allow_pickle=True)
-        hparams["sparse_unique_vals"] = dict()
+        info = dict(info.items())
+        for i in info:
+            if i.startswith("unique_"):
+                hparams["sparse_unique_vals"] = dict()
+                break
         for arg in info:
             if arg == "interaction_data":
                 # noinspection PyTypeChecker
