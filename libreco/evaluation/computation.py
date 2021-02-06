@@ -62,10 +62,11 @@ def build_transformed_data(model, data, negative_sample, update_features, seed):
 def compute_preds(model, data, batch_size):
     y_pred = list()
     y_label = list()
+    predict_func = choose_pred_func(model)
     for batch_data in tqdm(range(0, len(data), batch_size), desc="eval_pred"):
         batch_slice = slice(batch_data, batch_data + batch_size)
         labels = data.labels[batch_slice]
-        preds = list(predict_tf_feat(model, data, batch_slice))
+        preds = predict_func(model, data, batch_slice)
         y_pred.extend(preds)
         y_label.extend(labels)
     return y_pred, y_label
@@ -98,6 +99,22 @@ def compute_recommends(model, users, k):
     return y_recommends, users
 
 
+def choose_pred_func(model):
+    pure_models = ["SVD", "SVDpp", "ALS", "BPR", "NCF", "YouTubeMatch",
+                   "Caser", "RNN4Rec", "WaveNet"]
+    if model.__class__.__name__ in pure_models:
+        pred_func = predict_pure
+    else:
+        pred_func = predict_tf_feat
+    return pred_func
+
+
+def predict_pure(model, transformed_data, batch_slice):
+    user_indices, item_indices, labels, _, _ = transformed_data[batch_slice]
+    preds = model.predict(user_indices, item_indices, inner_id=True)
+    return preds.tolist() if isinstance(preds, np.ndarray) else [preds]
+
+
 def predict_tf_feat(model, transformed_data, batch_slice):
     (
         user_indices,
@@ -106,9 +123,18 @@ def predict_tf_feat(model, transformed_data, batch_slice):
         sparse_indices,
         dense_values
     ) = transformed_data[batch_slice]
-    feed_dict = model._get_feed_dict(user_indices, item_indices,
-                                     sparse_indices, dense_values,
-                                     None, False)
+    if hasattr(model, "user_last_interacted"):
+        feed_dict = model._get_seq_feed_dict(
+            model.user_last_interacted[user_indices],
+            model.last_interacted_len[user_indices],
+            user_indices, item_indices, None,
+            sparse_indices, dense_values, False
+        )
+    else:
+        feed_dict = model._get_feed_dict(
+            user_indices, item_indices, sparse_indices,
+            dense_values, None, False
+        )
 
     preds = model.sess.run(model.output, feed_dict)
     if model.task == "rating":

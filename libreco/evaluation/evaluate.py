@@ -113,7 +113,7 @@ class EvalMixin(object):
 def sample_user(data, seed, num):
     np.random.seed(seed)
     unique_users = np.unique(data.user_indices)
-    if num > 0 and isinstance(num, numbers.Integral):
+    if isinstance(num, numbers.Integral) and num < len(unique_users):
         # noinspection PyTypeChecker
         users = np.random.choice(unique_users, num, replace=False)
     else:
@@ -129,7 +129,7 @@ def evaluate(model, data, eval_batch_size=8192, metrics=None, k=10,
     seed = kwargs.get("seed", 42)
     if isinstance(data, pd.DataFrame):
         data = build_transformed_data(
-            model, data, neg_sample, update_features,seed
+            model, data, neg_sample, update_features, seed
         )
     assert isinstance(data, TransformedSet), (
         "The data from evaluation must be TransformedSet object."
