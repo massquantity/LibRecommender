@@ -184,7 +184,7 @@ Likewise, the new category of one feature are also handled as an average embeddi
 
 ## Changing Feature
 
-If you want to predict or recommend with new features, the usage is pretty straight forward.  For prediction, just pass the `feats` argument, which only accepts `dict` or `pands.Series` type: 
+If you want to predict or recommend with specific features, the usage is pretty straight forward.  For prediction, just pass the `feats` argument, which only accepts `dict` or `pands.Series` type: 
 
 ```python
 >>> model.predict(user=1, item=110, feats={"sex": "F", "occupation": 2, "age": 23})
@@ -192,7 +192,7 @@ If you want to predict or recommend with new features, the usage is pretty strai
 
 There is no need to specify a feature belongs to user or item, because these information has already been stored in model's `DataInfo` object. Note if you misspelled some feature names, e.g. "sex" -> "sax", the model will simply ignore this feature. If you pass a feature category that doesn't appear in training data, e.g. "sex" -> "bisexual", then it will be ignored too.
 
-If you want to predict on a whole dataset with features, you can use the `predict_data_with_feats` function. By setting `batch_size` to None, the model will treat all the data as one batch, which may cause memory issues: 
+If you want to predict on a whole dataset with features, you can use the `predict_data_with_feats` function. By setting `batch_size` to `None`, the model will treat all the data as one batch, which may cause memory issues: 
 
 ```python
  >>> model.predict_data_with_feats(data=dataset, batch_size=1024, cold_start="average")
@@ -208,7 +208,7 @@ To make recommendation for one user, we can pass the user features to `user_feat
 
 
 
-Note the three functions described above doesn't change the features inside the `DataInfo` object. So the next time you call `model.predict(user=1, item=110)` , it will still use the features stored in `DataInfo`. However, if you do want to change the features in `DataInfo`, then you can use `assign_user_features` and `assign_item_features` :
+Note the three functions described above doesn't change the unique user/item features inside the `DataInfo` object. So the next time you call `model.predict(user=1, item=110)` , it will still use the features stored in `DataInfo`. However, if you do want to change the features in `DataInfo`, then you can use `assign_user_features` and `assign_item_features` :
 
 ```python
 >>> data_info.assign_user_features(user_data=data)
@@ -217,7 +217,7 @@ Note the three functions described above doesn't change the features inside the 
 
 The passed `data` argument is a `pandas.DataFrame` that contains the user/item information. Be careful with this assign operation if you are not sure if the features in `data` are useful.
 
-During evaluation, one can also evaluate directly on one data. By default it also won't update features in `DataInfo`, but you can choose `update_features=True` to achieve that. Also note that if your evaluate data is implicit and only contains positive label, then negative sampling is needed by passing `neg_sample=True` :
+During evaluation, one can also evaluate directly on one data. By default it also won't update features in `DataInfo`, but you can choose `update_features=True` to achieve that. Also note that if your evaluation data is implicit and only contains positive label, then negative sampling is needed by passing `neg_sample=True` :
 
 ```python
 eval_result = evaluate(model, data, eval_batch_size=8192, k=10,
@@ -228,19 +228,17 @@ eval_result = evaluate(model, data, eval_batch_size=8192, k=10,
 
 See [changing_feature_example.py]() 
 
-```
-# set neg_sample=True if data is implicit and only contains positive label
-```
+
 
 ## Model Retrain 
 
-How can we retrain a model if we can't change the shape of the variables in TensorFlow? Well, if we can't alter it, we create a new one, then explicitly assign the old one to the new one. Specifically, in TensorFlow, we build a new graph with variables with new shape, then assign the old values to the correct indices of new variables. For the new indices, i.e. the new user/item part, they are initialized randomly as usual.
+When we want to retrain a deep learning model with new data that contains new users/items, the embedding variables' shapes need to be expanded. As described above, this is not allowed in TensorFlow. So how can we retrain a model if we can't change the shape of the variables in TensorFlow? Well, if we can't alter it, we create a new one, then explicitly assign the old one to the new one. Specifically, in TensorFlow, we build a new graph with variables with new shape, then assign the old values to the correct indices of new variables. For the new indices, i.e. the new user/item part, they are initialized randomly as usual.
 
 The problem with this solution is that we can not use TensorFlow's default method such as [`tf.train.Saver` ](https://www.tensorflow.org/api_docs/python/tf/compat/v1/train/Saver)or [`tf.saved_model` ](https://tensorflow.google.cn/versions/r1.15/api_docs/python/tf/saved_model)to save the deep learning models, since it can only load to the exact same model with same shapes. So our solution is extracting all the variables to numpy array format, then save them using the save method in numpy. After that the variables are loaded from numpy, we then build the new graph and update the new variables with old ones. 
 
 So it's crucial to set `manual=True, inference_only=False` when you save the model, which means leveraging the numpy way. If you set `manual=False`, the model may use the `tf.train.Saver` to save the model, which is OK if you are certain that there will be no new user/item in new data.
 
-Before retraining the model, we also should build the new data. Since the old data_info already exists, we just need to update some information to the data_info by passing `revolution=True, data_info=True`. During recommendation, we always want to filter some items that a user has consumed, which are also stored in `DataInfo` object. So if you want to combine the user-consumed information in old data with new data, you can pass `merge_behavior=True`:
+Before retraining the model, we also should build the new data. Since the old data_info already exists, we just need to update some information to the data_info by passing `revolution=True, data_info=True`. During recommendation, we always want to filter some items that a user has consumed, which are also stored in `DataInfo` object. So if you want to combine the user-consumed information in old data with that in new data, you can pass `merge_behavior=True`:
 
 ```python
 train_data, data_info = DatasetFeat.build_trainset(
