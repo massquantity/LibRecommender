@@ -146,7 +146,7 @@ In general, we may want to save/load a model for two reasons:
 
 The `save/load` API mainly deal with the first one, and the retrain problem is quite different, which will be covered in the [model retrain part](#model-retrain). When making predictions and recommendations, it may be unnecessary to save all the model variables. So one can pass `inference_only=True` to only save the essential model part.
 
-After loading the model, one can also evaluate the model directly, see [save_load_example.py]() for typical usages.
+After loading the model, one can also evaluate the model directly, see [save_load_example.py](https://github.com/massquantity/LibRecommender/blob/master/examples/save_load_example.py) for typical usages.
 
 
 
@@ -178,7 +178,7 @@ There are two strategies in the library to handle cold-start problem: `popular` 
 
 The `average` strategy means using the average of all the user/item embeddings as the representation of the cold-start user/item. Once we have the embedding, we can make predictions and recommendations. This strategy indicates that a cold-start user/item's behavior is treated as the "average" behavior of all the known users/items. 
 
-Likewise, the new category of one feature are also handled as an average embedding of the known categories of this feature. See [pure_example.py](), [feat_example.py]() for cold-start usage.
+Likewise, the new category of one feature are also handled as an average embedding of the known categories of this feature. See [pure_example.py](https://github.com/massquantity/LibRecommender/blob/master/examples/pure_example.py), [feat_example.py](https://github.com/massquantity/LibRecommender/blob/master/examples/feat_example.py) for cold-start usage.
 
 
 
@@ -226,7 +226,7 @@ eval_result = evaluate(model, data, eval_batch_size=8192, k=10,
                        update_features=False, seed=2222)
 ```
 
-See [changing_feature_example.py]() 
+See [changing_feature_example.py](https://github.com/massquantity/LibRecommender/blob/master/examples/changing_feature_example.py) 
 
 
 
@@ -246,7 +246,7 @@ train_data, data_info = DatasetFeat.build_trainset(
 )
 ```
 
-See [model_retrain_example.py]().
+See [model_retrain_example.py](https://github.com/massquantity/LibRecommender/blob/master/examples/model_retrain_example.py).
 
 
 
