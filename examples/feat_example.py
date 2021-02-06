@@ -46,8 +46,16 @@ if __name__ == "__main__":
                              "recall", "map", "ndcg"])
 
     # predict preference of user 1 to item 2333
-    print("prediction: ", ytb_ranking.predict(user=1, item=2333))
+    print("prediction: ", ytb_ranking.predict(user=2211, item=110))
     # recommend 7 items for user 1
-    print("recommendation: ", ytb_ranking.recommend_user(user=1, n_rec=7))
+    print("recommendation: ", ytb_ranking.recommend_user(user=2211, n_rec=7))
+
+    # cold-start prediction
+    print("cold prediction: ", ytb_ranking.predict(user="ccc", item="not item",
+                                                   cold_start="average"))
+    # cold-start recommendation
+    print("cold recommendation: ", ytb_ranking.recommend_user(user="are we good?",
+                                                              n_rec=7,
+                                                              cold_start="popular"))
 
 

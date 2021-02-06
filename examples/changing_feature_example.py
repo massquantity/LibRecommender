@@ -6,11 +6,10 @@ from libreco.algorithms import DeepFM
 from libreco.evaluation import evaluate
 
 import os
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ["KMP_WARNINGS"] = "FALSE"
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-
+tf.logging.set_verbosity(tf.logging.ERROR)
 
 if __name__ == "__main__":
     col_names = ["user", "item", "label", "time", "sex",
@@ -42,36 +41,42 @@ if __name__ == "__main__":
                         "precision", "recall", "map", "ndcg"],
                eval_batch_size=8192, k=10, sample_user_num=2048)
 
-    print("prediction: ", deepfm.predict(user=2211, item=110))
-    print("recommendation: ", deepfm.recommend_user(user=2211, n_rec=7))
-
-    # save data_info, specify model save folder
     data_info.save(path="model_path")
-    # set manual=True will use numpy to save model
-    # set manual=False will use tf.train.Saver to save model
-    # set inference=True will only save the necessary variables for prediction and recommendation
     deepfm.save(path="model_path", model_name="deepfm_model", manual=True,
                 inference_only=True)
 
     # =========================== load model ==============================
-    print("\n", "="*50, " after load model ", "="*50)
-    # important to reset graph if model is loaded in the same shell.
-    tf.compat.v1.reset_default_graph()
-    # load data_info
+    print("\n", "=" * 50, " after load model ", "=" * 50)
+    tf.reset_default_graph()
     data_info = DataInfo.load("model_path")
-    print(data_info)
-    # load model, should specify the model name, e.g., DeepFM
     model = DeepFM.load(path="model_path", model_name="deepfm_model",
                         data_info=data_info, manual=True)
 
-    data = pd.read_csv("sample_data/sample_movielens_merged.csv",
-                       sep=",", header=0)
-    train, test = split_by_ratio_chrono(data, test_size=0.2)
-    eval_result = evaluate(model=model, data=test, eval_batch_size=8192,
-                           k=10, metrics=["roc_auc", "precision"],
+    # predict with feats needed
+    print("prediction: ", model.predict(user=2211, item=110,
+                                        feats={"sex": "mmm", "genre1": "crime"}))
+    print("recommendation: ", model.recommend_user(
+        user=2211, n_rec=7, inner_id=False, cold_start="average",
+        user_feats=pd.Series({"sex": "F", "occupation": 2, "age": 23}),
+        item_data=data.iloc[4:10]))
+    print()
+
+    # change some user to cold-start user
+    data.iloc[2, 0] = -999
+    print("changed data: \n", data.head())
+    print("prediction with data: ", model.predict_data_with_feats(
+        data.iloc[:5, :], batch_size=2, cold_start="average"))
+    print()
+
+    # assign features to DataInfo object
+    data_info.assign_user_features(user_data=data)
+    data_info.assign_item_features(item_data=data)
+
+    # set neg_sample=True if data is implicit and only contains positive label
+    eval_result = evaluate(model=model, data=test, eval_batch_size=8192, k=10,
+                           metrics=["roc_auc", "pr_auc", "precision",
+                                    "recall", "map", "ndcg"],
                            sample_user_num=2048, neg_sample=True,
                            update_features=False, seed=2222)
-    print("eval result: ", eval_result)
-
-    print("prediction: ", model.predict(user=2211, item=110))
-    print("recommendation: ", model.recommend_user(user=2211, n_rec=7))
+    print("Eval Result: ")
+    print(eval_result)
