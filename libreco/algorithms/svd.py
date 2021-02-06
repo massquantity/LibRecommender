@@ -9,21 +9,25 @@ author: massquantity
 import os
 from itertools import islice
 import numpy as np
-import tensorflow as tf2
+import tensorflow.compat.v1 as tf
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
-from ..evaluate.evaluate import EvalMixin
+from ..evaluation.evaluate import EvalMixin
 from ..utils.tf_ops import reg_config
 from ..utils.sampling import NegativeSampling
 from ..data.data_generator import DataGenPure
-tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 
 class SVD(Base, TfMixin, EvalMixin):
+    user_variables = ["bu_var", "pu_var"]
+    item_variables = ["bi_var", "qi_var"]
+    user_variables_np = ["bu", "pu"]
+    item_variables_np = ["bi", "qi"]
+
     def __init__(
             self,
             task,
@@ -62,27 +66,25 @@ class SVD(Base, TfMixin, EvalMixin):
         self.qi = None
         self.all_args = locals()
 
-        self._build_model()
-        self._build_train_ops()
-
     def _build_model(self):
+        self.graph_built = True
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
 
-        self.bu_var = tf.get_variable(name="bu_var", shape=[self.n_users],
+        self.bu_var = tf.get_variable(name="bu_var", shape=[self.n_users + 1],
                                       initializer=tf_zeros,
                                       regularizer=self.reg)
-        self.bi_var = tf.get_variable(name="bi_var", shape=[self.n_items],
+        self.bi_var = tf.get_variable(name="bi_var", shape=[self.n_items + 1],
                                       initializer=tf_zeros,
                                       regularizer=self.reg)
         self.pu_var = tf.get_variable(name="pu_var",
-                                      shape=[self.n_users, self.embed_size],
+                                      shape=[self.n_users + 1, self.embed_size],
                                       initializer=tf_truncated_normal(
                                           0.0, 0.05),
                                       regularizer=self.reg)
-        self.qi_var = tf.get_variable(name="pi_var",
-                                      shape=[self.n_items, self.embed_size],
+        self.qi_var = tf.get_variable(name="qi_var",
+                                      shape=[self.n_items + 1, self.embed_size],
                                       initializer=tf_truncated_normal(
                                           0.0, 0.05),
                                       regularizer=self.reg)
@@ -120,6 +122,10 @@ class SVD(Base, TfMixin, EvalMixin):
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None, **kwargs):
         self.show_start_time()
+        if not self.graph_built:
+            self._build_model()
+            self._build_train_ops()
+
         if self.task == "ranking" and self.batch_sampling:
             self._check_has_sampled(train_data, verbose)
             data_generator = NegativeSampling(train_data,
@@ -132,9 +138,10 @@ class SVD(Base, TfMixin, EvalMixin):
 
         self.train_pure(data_generator, verbose, shuffle, eval_data, metrics,
                         **kwargs)
+        self.assign_oov()
         self._set_latent_factors()
 
-    def predict(self, user, item, inner_id=False):
+    def predict(self, user, item, cold_start="average", inner_id=False):
         user, item = self.convert_id(user, item, inner_id)
         unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
@@ -147,21 +154,23 @@ class SVD(Base, TfMixin, EvalMixin):
         elif self.task == "ranking":
             preds = 1 / (1 + np.exp(-preds))
 
-        if unknown_num > 0:
+        if unknown_num > 0 and cold_start == "popular":
             preds[unknown_index] = self.default_prediction
+        return preds
 
-        return preds[0] if len(user) == 1 else preds
+    def recommend_user(self, user, n_rec, cold_start="average", inner_id=False):
+        user_id = self._check_unknown_user(user, inner_id)
+        if user_id is None:
+            if cold_start == "average":
+                user_id = self.n_users
+            elif cold_start == "popular":
+                return self.data_info.popular_items[:n_rec]
+            else:
+                raise ValueError(user)
 
-    def recommend_user(self, user, n_rec, inner_id=False, **kwargs):
-        if not inner_id:
-            user = self.data_info.user2id[user]
-        user = self._check_unknown_user(user)
-        if user is None:
-            return  # popular ?
-
-        consumed = set(self.user_consumed[user])
+        consumed = set(self.user_consumed[user_id])
         count = n_rec + len(consumed)
-        recos = self.bu[user] + self.bi + self.pu[user] @ self.qi.T
+        recos = self.bu[user_id] + self.bi + self.pu[user_id] @ self.qi.T
 
         if self.task == "rating":
             recos += self.global_mean
@@ -181,21 +190,23 @@ class SVD(Base, TfMixin, EvalMixin):
             [self.bu_var, self.bi_var, self.pu_var, self.qi_var]
         )
 
-    def save(self, path, model_name):
+    def save(self, path, model_name, manual=True, inference_only=False):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
         self.save_params(path)
-        variable_path = os.path.join(path, model_name)
-        np.savez_compressed(variable_path,
-                            bu=self.bu,
-                            bi=self.bi,
-                            pu=self.pu,
-                            qi=self.qi)
+        if inference_only:
+            variable_path = os.path.join(path, model_name)
+            np.savez_compressed(variable_path,
+                                bu=self.bu,
+                                bi=self.bi,
+                                pu=self.pu,
+                                qi=self.qi)
+        else:
+            self.save_variables(path, model_name, inference_only=False)
 
     @classmethod
-    def load(cls, path, model_name, data_info):
-        tf.reset_default_graph()
+    def load(cls, path, model_name, data_info, manual=True):
         variable_path = os.path.join(path, f"{model_name}.npz")
         variables = np.load(variable_path)
         hparams = cls.load_params(path, data_info)

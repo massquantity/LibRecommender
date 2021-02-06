@@ -15,4 +15,4 @@ from .din import DIN
 from .knn_embed import KnnEmbedding, KnnEmbeddingApproximate
 from .rnn4rec import RNN4Rec
 from .caser import Caser
-from .wave_net import WaverNet
+from .wave_net import WaveNet

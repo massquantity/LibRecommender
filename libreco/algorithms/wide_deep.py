@@ -5,15 +5,16 @@ Reference: Heng-Tze Cheng et al. "Wide & Deep Learning for Recommender Systems" 
 author: massquantity
 
 """
-import os
 from itertools import islice
+import os
 import numpy as np
-import tensorflow as tf2
+import pandas as pd
+import tensorflow.compat.v1 as tf
 from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
-from ..evaluate.evaluate import EvalMixin
+from ..evaluation.evaluate import EvalMixin
 from ..utils.tf_ops import (
     reg_config,
     dropout_config,
@@ -22,13 +23,14 @@ from ..utils.tf_ops import (
     var_list_by_name
 )
 from ..data.data_generator import DataGenFeat
-from ..utils.misc import colorize
 from ..utils.sampling import NegativeSampling
+from ..utils.misc import count_params
 from ..feature import (
     get_predict_indices_and_values,
-    get_recommend_indices_and_values
+    get_recommend_indices_and_values,
+    features_from_dict,
+    add_item_features
 )
-tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 
@@ -38,6 +40,11 @@ class WideDeep(Base, TfMixin, EvalMixin):
     FTRL with L1 regularization as the optimizer, so we'll also adopt it here.
     Note this may not be suitable for your specific task.
     """
+    user_variables = ["wide_user_feat", "deep_user_feat"]
+    item_variables = ["wide_item_feat", "deep_item_feat"]
+    sparse_variables = ["wide_sparse_feat", "deep_sparse_feat"]
+    dense_variables = ["wide_dense_feat", "deep_dense_feat"]
+
     def __init__(
             self,
             task,
@@ -86,10 +93,9 @@ class WideDeep(Base, TfMixin, EvalMixin):
         if self.dense:
             self.dense_field_size = self._dense_field_size(data_info)
         self.all_args = locals()
-        self.user_variables = ["wide_user_feat", "deep_user_feat"]
-        self.item_variables = ["wide_item_feat", "deep_item_feat"]
 
     def _build_model(self):
+        self.graph_built = True
         tf.set_random_seed(self.seed)
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
@@ -213,7 +219,7 @@ class WideDeep(Base, TfMixin, EvalMixin):
         self.wide_embed.append(wide_dense_embed)
         self.deep_embed.append(deep_dense_embed)
 
-    def _build_train_ops(self, global_steps=None):
+    def _build_train_ops(self, **kwargs):
         if self.task == "rating":
             self.loss = tf.losses.mean_squared_error(labels=self.labels,
                                                      predictions=self.output)
@@ -228,6 +234,13 @@ class WideDeep(Base, TfMixin, EvalMixin):
             total_loss = self.loss + tf.add_n(reg_keys)
         else:
             total_loss = self.loss
+
+        if self.lr_decay:
+            n_batches = int(self.data_info.data_size / self.batch_size)
+            self.lr, global_steps = lr_decay_config(self.lr, n_batches,
+                                                    **kwargs)
+        else:
+            global_steps = None
 
         var_dict = var_list_by_name(names=["wide", "deep"])
         # print(f"{colorize('Wide_variables', 'blue')}: {var_dict['wide']}\n"
@@ -252,15 +265,9 @@ class WideDeep(Base, TfMixin, EvalMixin):
     def fit(self, train_data, verbose=1, shuffle=True,
             eval_data=None, metrics=None, **kwargs):
         self.show_start_time()
-        if self.lr_decay:
-            n_batches = int(len(train_data) / self.batch_size)
-            self.lr, global_steps = lr_decay_config(self.lr, n_batches,
-                                                    **kwargs)
-        else:
-            global_steps = None
-
-        self._build_model()
-        self._build_train_ops(global_steps)
+        if not self.graph_built:
+            self._build_model()
+            self._build_train_ops(**kwargs)
 
         if self.task == "ranking" and self.batch_sampling:
             self._check_has_sampled(train_data, verbose)
@@ -278,16 +285,28 @@ class WideDeep(Base, TfMixin, EvalMixin):
 
         self.train_feat(data_generator, verbose, shuffle, eval_data, metrics,
                         **kwargs)
+        self.assign_oov()
 
-    def predict(self, user, item, inner_id=False):
+    def predict(self, user, item, feats=None, cold_start="average",
+                inner_id=False):
         user, item = self.convert_id(user, item, inner_id)
         unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
-        (user_indices,
-         item_indices,
-         sparse_indices,
-         dense_values) = get_predict_indices_and_values(
+        (
+            user_indices,
+            item_indices,
+            sparse_indices,
+            dense_values
+        ) = get_predict_indices_and_values(
             self.data_info, user, item, self.n_items, self.sparse, self.dense)
+
+        if feats is not None:
+            assert isinstance(feats, (dict, pd.Series)), (
+                "feats must be dict or pandas.Series.")
+            assert len(user_indices) == 1, "only support single user for feats"
+            sparse_indices, dense_values = features_from_dict(
+                self.data_info, sparse_indices, dense_values, feats, "predict")
+
         feed_dict = self._get_feed_dict(user_indices, item_indices,
                                         sparse_indices, dense_values,
                                         None, False)
@@ -298,23 +317,43 @@ class WideDeep(Base, TfMixin, EvalMixin):
         elif self.task == "ranking":
             preds = 1 / (1 + np.exp(-preds))
 
-        if unknown_num > 0:
+        if unknown_num > 0 and cold_start == "popular":
             preds[unknown_index] = self.default_prediction
-
         return preds
 
-    def recommend_user(self, user, n_rec, inner_id=False, **kwargs):
-        if not inner_id:
-            user = self.data_info.user2id[user]
-        user = self._check_unknown_user(user)
-        if user is None:  ####################
-            return   # popular ?
+    def recommend_user(self, user, n_rec, user_feats=None, item_data=None,
+                       cold_start="average", inner_id=False):
+        user_id = self._check_unknown_user(user, inner_id)
+        if user_id is None:
+            if cold_start == "average":
+                user_id = self.n_users
+            elif cold_start == "popular":
+                return self.data_info.popular_items[:n_rec]
+            else:
+                raise ValueError(user)
 
-        (user_indices,
-         item_indices,
-         sparse_indices,
-         dense_values) = get_recommend_indices_and_values(
-            self.data_info, user, self.n_items, self.sparse, self.dense)
+        (
+            user_indices,
+            item_indices,
+            sparse_indices,
+            dense_values
+        ) = get_recommend_indices_and_values(
+            self.data_info, user_id, self.n_items, self.sparse, self.dense)
+
+        if user_feats is not None:
+            assert isinstance(user_feats, (dict, pd.Series)), (
+                "feats must be dict or pandas.Series.")
+            sparse_indices, dense_values = features_from_dict(
+                self.data_info, sparse_indices, dense_values, user_feats,
+                "recommend")
+        if item_data is not None:
+            assert isinstance(item_data, pd.DataFrame), (
+                "item_data must be pandas DataFrame")
+            assert "item" in item_data.columns, (
+                "item_data must contain 'item' column")
+            sparse_indices, dense_values = add_item_features(
+                self.data_info, sparse_indices, dense_values, item_data)
+
         feed_dict = self._get_feed_dict(user_indices, item_indices,
                                         sparse_indices, dense_values,
                                         None, False)
@@ -322,8 +361,7 @@ class WideDeep(Base, TfMixin, EvalMixin):
         recos = self.sess.run(self.output, feed_dict)
         if self.task == "ranking":
             recos = 1 / (1 + np.exp(-recos))
-
-        consumed = set(self.user_consumed[user])
+        consumed = set(self.user_consumed[user_id])
         count = n_rec + len(consumed)
         ids = np.argpartition(recos, -count)[-count:]
         rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
@@ -334,22 +372,19 @@ class WideDeep(Base, TfMixin, EvalMixin):
         )
         return list(recs_and_scores)
 
-    def save(self, path, model_name, manual=False):
+    def save(self, path, model_name, manual=True, inference_only=False):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
         self.save_params(path)
         if manual:
-            self.save_variables(path, model_name)
+            self.save_variables(path, model_name, inference_only)
         else:
             self.save_tf_model(path, model_name)
 
     @classmethod
-    def load(cls, path, model_name, data_info, manual=False):
-        tf.reset_default_graph()
+    def load(cls, path, model_name, data_info, manual=True):
         if manual:
             return cls.load_variables(path, model_name, data_info)
         else:
             return cls.load_tf_model(path, model_name, data_info)
-
-

@@ -9,22 +9,27 @@ author: massquantity
 import os
 from itertools import islice
 import numpy as np
-import tensorflow as tf2
+import tensorflow.compat.v1 as tf
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
-from ..evaluate.evaluate import EvalMixin
+from ..evaluation.evaluate import EvalMixin
 from ..utils.tf_ops import reg_config
 from ..utils.sampling import NegativeSampling
 from ..data.data_generator import DataGenPure
-from ..utils.tf_ops import sparse_tensor_interaction
-tf = tf2.compat.v1
+from ..utils.tf_ops import sparse_tensor_interaction, modify_variable_names
+from ..utils.misc import assign_oov_vector
 tf.disable_v2_behavior()
 
 
 class SVDpp(Base, TfMixin, EvalMixin):
+    user_variables = ["bu_var", "pu_var", "yj_var"]
+    item_variables = ["bi_var", "qi_var"]
+    user_variables_np = ["bu", "pu", "puj"]
+    item_variables_np = ["bi", "qi"]
+
     def __init__(
             self,
             task,
@@ -66,6 +71,7 @@ class SVDpp(Base, TfMixin, EvalMixin):
         self.all_args = locals()
 
     def _build_model(self, sparse_implicit_interaction):
+        self.graph_built = True
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
@@ -81,7 +87,7 @@ class SVDpp(Base, TfMixin, EvalMixin):
                                       initializer=tf_truncated_normal(
                                           0.0, 0.03),
                                       regularizer=self.reg)
-        self.qi_var = tf.get_variable(name="pi_var",
+        self.qi_var = tf.get_variable(name="qi_var",
                                       shape=[self.n_items, self.embed_size],
                                       initializer=tf_truncated_normal(
                                           0.0, 0.03),
@@ -130,11 +136,13 @@ class SVDpp(Base, TfMixin, EvalMixin):
     def fit(self, train_data, verbose=1, shuffle=True, sample_rate=None,
             recent_num=None, eval_data=None, metrics=None, **kwargs):
         self.show_start_time()
-        sparse_implicit_interaction = sparse_tensor_interaction(
-            train_data, random_sample_rate=sample_rate, recent_num=recent_num)
+        if not self.graph_built:
+            sparse_implicit_interaction = sparse_tensor_interaction(
+                train_data, random_sample_rate=sample_rate,
+                recent_num=recent_num)
 
-        self._build_model(sparse_implicit_interaction)
-        self._build_train_ops()
+            self._build_model(sparse_implicit_interaction)
+            self._build_train_ops()
 
         if self.task == "ranking" and self.batch_sampling:
             self._check_has_sampled(train_data, verbose)
@@ -148,8 +156,9 @@ class SVDpp(Base, TfMixin, EvalMixin):
         self.train_pure(data_generator, verbose, shuffle, eval_data, metrics,
                         **kwargs)
         self._set_latent_factors()
+        assign_oov_vector(self)
 
-    def predict(self, user, item, inner_id=False):
+    def predict(self, user, item, cold_start="average", inner_id=False):
         user, item = self.convert_id(user, item, inner_id)
         unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
@@ -162,21 +171,23 @@ class SVDpp(Base, TfMixin, EvalMixin):
         elif self.task == "ranking":
             preds = 1 / (1 + np.exp(-preds))
 
-        if unknown_num > 0:
+        if unknown_num > 0 and cold_start == "popular":
             preds[unknown_index] = self.default_prediction
+        return preds
 
-        return preds[0] if len(user) == 1 else preds
+    def recommend_user(self, user, n_rec, cold_start="average", inner_id=False):
+        user_id = self._check_unknown_user(user, inner_id)
+        if user_id is None:
+            if cold_start == "average":
+                user_id = self.n_users
+            elif cold_start == "popular":
+                return self.data_info.popular_items[:n_rec]
+            else:
+                raise ValueError(user)
 
-    def recommend_user(self, user, n_rec, inner_id=False, **kwargs):
-        if not inner_id:
-            user = self.data_info.user2id[user]
-        user = self._check_unknown_user(user)
-        if user is None:
-            return  # popular ?
-
-        consumed = set(self.user_consumed[user])
+        consumed = set(self.user_consumed[user_id])
         count = n_rec + len(consumed)
-        recos = self.bu[user] + self.bi + self.puj[user] @ self.qi.T
+        recos = self.bu[user_id] + self.bi + self.puj[user_id] @ self.qi.T
 
         if self.task == "rating":
             recos += self.global_mean
@@ -196,22 +207,24 @@ class SVDpp(Base, TfMixin, EvalMixin):
             [self.bu_var, self.bi_var, self.pu_var, self.qi_var, self.puj_var]
         )
 
-    def save(self, path, model_name):
+    def save(self, path, model_name, manual=True, inference_only=False):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
         self.save_params(path)
-        variable_path = os.path.join(path, model_name)
-        np.savez_compressed(variable_path,
-                            bu=self.bu,
-                            bi=self.bi,
-                            pu=self.pu,
-                            qi=self.qi,
-                            puj=self.puj)
+        if inference_only:
+            variable_path = os.path.join(path, model_name)
+            np.savez_compressed(variable_path,
+                                bu=self.bu,
+                                bi=self.bi,
+                                pu=self.pu,
+                                qi=self.qi,
+                                puj=self.puj)
+        else:
+            self.save_variables(path, model_name, inference_only=False)
 
     @classmethod
-    def load(cls, path, model_name, data_info):
-        tf.reset_default_graph()
+    def load(cls, path, model_name, data_info, manual=True):
         variable_path = os.path.join(path, f"{model_name}.npz")
         variables = np.load(variable_path)
         hparams = cls.load_params(path, data_info)
@@ -223,6 +236,67 @@ class SVDpp(Base, TfMixin, EvalMixin):
         model.puj = variables["puj"]
         return model
 
+    def rebuild_graph(self, path, model_name, full_assign=False,
+                      train_data=None):
+        if train_data is None:
+            raise ValueError("SVDpp model must provide train_data "
+                             "when rebuilding graph")
+        sparse_implicit_interaction = sparse_tensor_interaction(
+            train_data, recent_num=10)
+        self._build_model(sparse_implicit_interaction)
+        self._build_train_ops()
 
+        variable_path = os.path.join(path, f"{model_name}_variables.npz")
+        variables = np.load(variable_path)
+        variables = dict(variables.items())
 
+        (
+            user_variables,
+            item_variables,
+            sparse_variables,
+            dense_variables,
+            manual_variables
+        ) = modify_variable_names(self, trainable=True)
 
+        update_ops = []
+        for v in tf.trainable_variables():
+            if user_variables is not None and v.name in user_variables:
+                # no need to remove oov values
+                old_var = variables[v.name]
+                user_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
+                update_ops.append(v.scatter_update(user_op))
+
+            if item_variables is not None and v.name in item_variables:
+                old_var = variables[v.name]
+                item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
+                update_ops.append(v.scatter_update(item_op))
+
+        if full_assign:
+            (
+                optimizer_user_variables,
+                optimizer_item_variables,
+                optimizer_sparse_variables,
+                optimizer_dense_variables,
+                _
+            ) = modify_variable_names(self, trainable=False)
+
+            other_variables = [v for v in tf.global_variables()
+                               if v.name not in manual_variables]
+            for v in other_variables:
+                if (optimizer_user_variables is not None
+                        and v.name in optimizer_user_variables):
+                    old_var = variables[v.name]
+                    user_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
+                    update_ops.append(v.scatter_update(user_op))
+
+                elif (optimizer_item_variables is not None
+                          and v.name in optimizer_item_variables):
+                    old_var = variables[v.name]
+                    item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
+                    update_ops.append(v.scatter_update(item_op))
+
+                else:
+                    old_var = variables[v.name]
+                    update_ops.append(v.assign(old_var))
+
+        self.sess.run(update_ops)

@@ -1,6 +1,7 @@
 import functools
 import time
 from contextlib import contextmanager
+from itertools import chain
 import numpy as np
 import tensorflow as tf2
 tf = tf2.compat.v1
@@ -42,6 +43,20 @@ def count_params():
                     f"network params: "
                     f"{colorize(network_params, 'yellow')}")
     print(print_params)
+
+
+def assign_oov_vector(model, add=True):
+    for v_name in chain.from_iterable(
+            [model.user_variables_np, model.item_variables_np]
+    ):
+        if v_name not in model.__dict__:
+            raise KeyError(f"{v_name} is not an attribute of the model.")
+        var = model.__dict__[v_name]
+        if var.ndim == 1:
+            var = np.append(var, np.mean(var))
+        else:
+            var = np.vstack([var, np.mean(var, axis=0)])
+        setattr(model, v_name, var)
 
 
 def time_func(func):

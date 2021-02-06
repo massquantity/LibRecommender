@@ -2,10 +2,11 @@ import numpy as np
 
 
 def truncated_normal(shape, mean=0.0, scale=0.05):
-    total_num = np.multiply(*shape)
+    # total_num = np.multiply(*shape)
+    total_num = shape if len(shape) == 1 else np.multiply(*shape)
     array = np.random.normal(mean, scale, total_num).astype(np.float32)
     while True:
-        index = np.logical_and(
+        index = np.logical_or(
             (array > mean + 2 * scale),
             (array < mean - 2 * scale)
         )

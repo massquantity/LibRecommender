@@ -19,8 +19,8 @@ from itertools import islice
 from functools import partial
 import numpy as np
 from .base import Base
-from ..evaluate.evaluate import EvalMixin
-from ..utils.misc import time_block
+from ..evaluation.evaluate import EvalMixin
+from ..utils.misc import time_block, assign_oov_vector
 from ..utils.initializers import truncated_normal
 try:
     from ._als import als_update
@@ -32,6 +32,9 @@ except ImportError:
 
 
 class ALS(Base, EvalMixin):
+    user_variables_np = ["user_embed"]
+    item_variables_np = ["item_embed"]
+
     def __init__(
             self,
             task,
@@ -60,18 +63,19 @@ class ALS(Base, EvalMixin):
         self.item_embed = None
         self.all_args = locals()
 
-        self._build_model()
-
     def _build_model(self):
         np.random.seed(self.seed)
         self.user_embed = truncated_normal(
-            shape=[self.n_users + 1, self.embed_size], mean=0.0, scale=0.03)
+            shape=[self.n_users, self.embed_size], mean=0.0, scale=0.03)
         self.item_embed = truncated_normal(
-            shape=[self.n_items + 1, self.embed_size], mean=0.0, scale=0.03)
+            shape=[self.n_items, self.embed_size], mean=0.0, scale=0.03)
 
     def fit(self, train_data, verbose=1, shuffle=True, use_cg=True,
             n_threads=1, eval_data=None, metrics=None, **kwargs):
         self.show_start_time()
+        if not self.model_built:
+            self._build_model()
+
         user_interaction = train_data.sparse_interaction  # sparse.csr_matrix
         item_interaction = user_interaction.T.tocsr()
         if self.task == "ranking":
@@ -97,17 +101,13 @@ class ALS(Base, EvalMixin):
                 self.print_metrics(eval_data=eval_data, metrics=metrics,
                                    **kwargs)
                 print("="*30)
-        self.assign_oov()
+        assign_oov_vector(self)
 
     def _choose_algo(self, use_cg):
         trainer = partial(als_update, task=self.task, use_cg=use_cg)
         return trainer
 
-    def assign_oov(self):
-        self.user_embed[-1, :] = 0.
-        self.item_embed[-1, :] = 0.
-
-    def predict(self, user, item, inner_id=False):
+    def predict(self, user, item, cold_start="average", inner_id=False):
         user, item = self.convert_id(user, item, inner_id)
         unknown_num, unknown_index, user, item = self._check_unknown(user, item)
 
@@ -121,21 +121,23 @@ class ALS(Base, EvalMixin):
         elif self.task == "ranking":
             preds = 1 / (1 + np.exp(-preds))
 
-        if unknown_num > 0:
+        if unknown_num > 0 and cold_start == "popular":
             preds[unknown_index] = self.default_prediction
+        return preds
 
-        return preds[0] if len(user) == 1 else preds
+    def recommend_user(self, user, n_rec, cold_start="average", inner_id=False):
+        user_id = self._check_unknown_user(user, inner_id)
+        if user_id is None:
+            if cold_start == "average":
+                user_id = self.n_users
+            elif cold_start == "popular":
+                return self.data_info.popular_items[:n_rec]
+            else:
+                raise ValueError(user)
 
-    def recommend_user(self, user, n_rec, inner_id=False, **kwargs):
-        if not inner_id:
-            user = self.data_info.user2id[user]
-        user = self._check_unknown_user(user)
-        if user is None:
-            return   # popular ?
-
-        consumed = set(self.user_consumed[user])
+        consumed = set(self.user_consumed[user_id])
         count = n_rec + len(consumed)
-        recos = self.user_embed[user] @ self.item_embed.T
+        recos = self.user_embed[user_id] @ self.item_embed.T
         if self.task == "ranking":
             recos = 1 / (1 + np.exp(-recos))
         ids = np.argpartition(recos, -count)[-count:]
@@ -147,7 +149,7 @@ class ALS(Base, EvalMixin):
         )
         return list(recs_and_scores)
 
-    def save(self, path, model_name):
+    def save(self, path, model_name, manual=True, inference_only=False):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
@@ -158,7 +160,7 @@ class ALS(Base, EvalMixin):
                             item_embed=self.item_embed)
 
     @classmethod
-    def load(cls, path, model_name, data_info):
+    def load(cls, path, model_name, data_info, manual=True):
         variable_path = os.path.join(path, f"{model_name}.npz")
         variables = np.load(variable_path)
         hparams = cls.load_params(path, data_info)
@@ -166,6 +168,16 @@ class ALS(Base, EvalMixin):
         model.user_embed = variables["user_embed"]
         model.item_embed = variables["item_embed"]
         return model
+
+    def rebuild_graph(self, path, model_name, full_assign=False):
+        self._build_model()
+        variable_path = os.path.join(path, f"{model_name}.npz")
+        variables = np.load(variable_path)
+        # remove oov values
+        old_var = variables["user_embed"][:-1]
+        self.user_embed[:len(old_var)] = old_var
+        old_var = variables["item_embed"][:-1]
+        self.item_embed[:len(old_var)] = old_var
 
 
 def _least_squares(sparse_interaction, X, Y, reg, embed_size, num, mode):
@@ -247,6 +259,3 @@ def _least_squares_cg(sparse_interaction, X, Y, reg, embed_size, num,
 
     else:
         raise ValueError("mode must either be 'explicit' or 'implicit'")
-
-
-

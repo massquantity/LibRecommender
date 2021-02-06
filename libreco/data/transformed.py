@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 from .data_info import DataInfo
+from ..feature import interaction_consumed
 from ..utils.sampling import NegativeSampling
 
 
@@ -23,12 +24,10 @@ class TransformedSet(object):
         if train:
             self._sparse_interaction = csr_matrix(
                 (labels, (user_indices, item_indices)),
-                dtype=np.float32
-            )
+                dtype=np.float32)
         if not train:
-            self.user_consumed, _ = DataInfo.interaction_consumed(
-                user_indices, item_indices
-            )
+            self.user_consumed, _ = interaction_consumed(
+                user_indices, item_indices)
 
         self.user_indices_orig = None
         self.item_indices_orig = None
@@ -65,6 +64,24 @@ class TransformedSet(object):
     def __len__(self):
         return len(self.labels)
 
+    def __getitem__(self, index):
+        pure_part = (
+            self.user_indices[index],
+            self.item_indices[index],
+            self.labels[index]
+        )
+        sparse_part = (
+            (self.sparse_indices[index],)
+            if self.sparse_indices is not None
+            else (None,)
+        )
+        dense_part = (
+            (self.dense_values[index],)
+            if self.dense_values is not None
+            else (None,)
+        )
+        return pure_part + sparse_part + dense_part
+
     @property
     def user_indices(self):
         return self._user_indices
@@ -92,7 +109,3 @@ class TransformedSet(object):
     @property
     def sparse_interaction(self):
         return self._sparse_interaction
-
-    # TODO
-    def remove_oov(self, data_info):
-        pass

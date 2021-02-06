@@ -5,18 +5,13 @@
 **LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation. The main features are:
 
 + Implemented a number of popular recommendation algorithms such as SVD++, DeepFM, BPR etc, [see full algorithm list](#references).
-
-+ A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features or both.
-
++ A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features or both. New features can be used on the fly.
 + Low memory usage, automatically convert categorical and multi-value categorical features to sparse representation.
-
 + Support training for both explicit and implicit datasets, and negative sampling can be used for implicit dataset.
-
 + Making use of Cython or Tensorflow for high-speed model training.
-
 + Provide end-to-end workflow, i.e. data handling / preprocessing -> model training -> evaluate -> serving.
-
-+ Provide unified and friendly API for all algorithms.
++ Support cold-start prediction and recommendation.
++ Provide unified and friendly API for all algorithms. Easy to retrain model with new users/items.
 
 
 
@@ -29,29 +24,39 @@ import numpy as np
 import pandas as pd
 from libreco.data import random_split, DatasetPure
 from libreco.algorithms import SVDpp  # pure data, algorithm SVD++
+from libreco.evaluation import evaluate
 
-data = pd.read_csv("examples/sample_data/sample_movielens_rating.dat", sep="::", 
+data = pd.read_csv("examples/sample_data/sample_movielens_rating.dat", sep="::",
                    names=["user", "item", "label", "time"])
 
 # split whole data into three folds for training, evaluating and testing
 train_data, eval_data, test_data = random_split(data, multi_ratios=[0.8, 0.1, 0.1])
 
 train_data, data_info = DatasetPure.build_trainset(train_data)
-eval_data = DatasetPure.build_testset(eval_data)
+eval_data = DatasetPure.build_evalset(eval_data)
 test_data = DatasetPure.build_testset(test_data)
 print(data_info)   # n_users: 5894, n_items: 3253, data sparsity: 0.4172 %
 
-svdpp = SVDpp(task="rating", data_info=data_info, embed_size=16, n_epochs=3, lr=0.001, 
+svdpp = SVDpp(task="rating", data_info=data_info, embed_size=16, n_epochs=3, lr=0.001,
               reg=None, batch_size=256)
 # monitor metrics on eval_data during training
 svdpp.fit(train_data, verbose=2, eval_data=eval_data, metrics=["rmse", "mae", "r2"])
 
 # do final evaluation on test data
-svdpp.evaluate(test_data, metrics=["rmse", "mae"])  
-# predict preference of user 1 to item 2333
-print("prediction: ", svdpp.predict(user=1, item=2333))
-# recommend 7 items for user 1
-print("recommendation(id, probability): ", svdpp.recommend_user(user=1, n_rec=7))  
+print("evaluate_result: ", evaluate(model=svdpp, data=test_data,
+                                    metrics=["rmse", "mae"]))
+# predict preference of user 2211 to item 110
+print("prediction: ", svdpp.predict(user=2211, item=110))
+# recommend 7 items for user 2211
+print("recommendation: ", svdpp.recommend_user(user=2211, n_rec=7))
+
+# cold-start prediction
+print("cold prediction: ", svdpp.predict(user="ccc", item="not item",
+                                         cold_start="average"))
+# cold-start recommendation
+print("cold recommendation: ", svdpp.recommend_user(user="are we good?",
+                                                    n_rec=7,
+                                                    cold_start="popular"))
 ```
 
 #### _include features example_ : 
@@ -82,16 +87,24 @@ train_data.build_negative_samples(data_info)  # sample negative items for each r
 test_data.build_negative_samples(data_info)
 print(data_info)  # n_users: 5962, n_items: 3226, data sparsity: 0.4185 %
 
-ytb_ranking = YouTubeRanking(task="ranking", data_info=data_info, embed_size=16, 
-                             n_epochs=3, lr=1e-4, batch_size=512, use_bn=True, 
+ytb_ranking = YouTubeRanking(task="ranking", data_info=data_info, embed_size=16,
+                             n_epochs=3, lr=1e-4, batch_size=512, use_bn=True,
                              hidden_units="128,64,32")
 ytb_ranking.fit(train_data, verbose=2, shuffle=True, eval_data=test_data,
                 metrics=["loss", "roc_auc", "precision", "recall", "map", "ndcg"])
 
-# predict preference of user 1 to item 2333
-print("prediction: ", ytb_ranking.predict(user=1, item=2333))  
-# recommend 7 items for user 1
-print("recommendation(id, probability): ", ytb_ranking.recommend_user(user=1, n_rec=7))  
+# predict preference of user 2211 to item 110
+print("prediction: ", ytb_ranking.predict(user=2211, item=110))
+# recommend 7 items for user 2211
+print("recommendation(id, probability): ", ytb_ranking.recommend_user(user=2211, n_rec=7))
+
+# cold-start prediction
+print("cold prediction: ", ytb_ranking.predict(user="ccc", item="not item",
+                                               cold_start="average"))
+# cold-start recommendation
+print("cold recommendation: ", ytb_ranking.recommend_user(user="are we good?",
+                                                          n_rec=7,
+                                                          cold_start="popular"))
 ```
 
 ### For more examples and usages, see [User Guide](https://github.com/massquantity/LibRecommender/tree/master/examples)
@@ -122,7 +135,7 @@ For how to serve a trained model in LibRecommender, see [Serving Guide](<https:/
 From pypi : &nbsp;  
 
 ```
-$ pip install LibRecommender==0.4.0
+$ pip install LibRecommender==0.6.0
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
