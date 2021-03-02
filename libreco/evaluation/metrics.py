@@ -51,7 +51,7 @@ def average_precision_at_k(y_true, y_reco, k):
 def map_at_k(y_true_list, y_reco_list, users, k):
     map_all = list()
     for u in users:
-        y_true = y_true_list[u]
+        y_true = list(set(y_true_list[u]))
         y_reco = y_reco_list[u]
         map_all.append(average_precision_at_k(y_true, y_reco, k))
     return np.mean(map_all)
@@ -61,7 +61,7 @@ def ndcg_at_k(y_true_list, y_reco_list, users, k):
     ndcg_all = list()
     for u in users:
         rank_list = np.zeros(k)
-        y_true = y_true_list[u]
+        y_true = list(set(y_true_list[u]))
         y_reco = y_reco_list[u]
         common_items, indices_in_true, indices_in_reco = np.intersect1d(
             y_true, y_reco, assume_unique=True, return_indices=True)

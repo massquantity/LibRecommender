@@ -77,7 +77,7 @@ class Dataset(object):
     def _set_sparse_unique_vals(cls, train_data):
         if cls.sparse_col:
             for col in cls.sparse_col:
-                cls.sparse_unique_vals[col] = np.unique(train_data[col])
+                cls.sparse_unique_vals[col] = np.sort(train_data[col].unique())
 
         if cls.multi_sparse_col:
             for field in cls.multi_sparse_col:
@@ -89,8 +89,8 @@ class Dataset(object):
                     )
                 )
 
-        cls.user_unique_vals = np.unique(train_data["user"])
-        cls.item_unique_vals = np.unique(train_data["item"])
+        cls.user_unique_vals = np.sort(train_data["user"].unique())
+        cls.item_unique_vals = np.sort(train_data["item"].unique())
 
 
 class DatasetPure(Dataset):
@@ -330,6 +330,7 @@ class DatasetFeat(Dataset):
             revolution=False,
             data_info=None,
             merge_behavior=True,
+            unique_feat=False,
             popular_nums=100,
             shuffle=False,
             seed=42
@@ -361,6 +362,8 @@ class DatasetFeat(Dataset):
             `DataInfo` object that contains past data information.
         merge_behavior : bool, optional
             Whether to merge the user behavior in old and new data.
+        unique_feat : bool, optional
+            Whether the features of users and items are unique in train data.
         popular_nums : int, optional
             NUmber of popular items to store.
         shuffle : bool, optional
@@ -481,6 +484,7 @@ class DatasetFeat(Dataset):
                 if cls.multi_sparse_col
                 else sparse_col
             )
+
             col_name_mapping = col_name2index(
                 user_col, item_col, all_sparse_col, cls.dense_col
             )
@@ -509,7 +513,8 @@ class DatasetFeat(Dataset):
                                       user_sparse_col_indices,
                                       user_dense_col_indices,
                                       item_sparse_col_indices,
-                                      item_dense_col_indices)
+                                      item_dense_col_indices,
+                                      unique_feat)
 
             sparse_offset = (
                 merge_offset(cls, cls.sparse_col, cls.multi_sparse_col)

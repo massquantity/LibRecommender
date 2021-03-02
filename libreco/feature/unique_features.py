@@ -5,29 +5,33 @@ from ..utils.misc import colorize
 
 def construct_unique_feat(user_indices, item_indices, sparse_indices,
                           dense_values, user_sparse_col, user_dense_col,
-                          item_sparse_col, item_dense_col):
+                          item_sparse_col, item_dense_col, unique_feat):
+    # use mergesort to preserve order
+    sort_kind = "quicksort" if unique_feat else "mergesort"
+    user_pos = np.argsort(user_indices, kind=sort_kind)
+    item_pos = np.argsort(item_indices, kind=sort_kind)
 
     if user_sparse_col:
         user_sparse_matrix = _compress_unique_values(
-            sparse_indices, user_sparse_col, user_indices)
+            sparse_indices, user_sparse_col, user_indices, user_pos)
     else:
         user_sparse_matrix = None
 
     if item_sparse_col:
         item_sparse_matrix = _compress_unique_values(
-            sparse_indices, item_sparse_col, item_indices)
+            sparse_indices, item_sparse_col, item_indices, item_pos)
     else:
         item_sparse_matrix = None
 
     if user_dense_col:
         user_dense_matrix = _compress_unique_values(
-            dense_values, user_dense_col, user_indices)
+            dense_values, user_dense_col, user_indices, user_pos)
     else:
         user_dense_matrix = None
 
     if item_dense_col:
         item_dense_matrix = _compress_unique_values(
-            dense_values, item_dense_col, item_indices)
+            dense_values, item_dense_col, item_indices, item_pos)
     else:
         item_dense_matrix = None
 
@@ -36,26 +40,39 @@ def construct_unique_feat(user_indices, item_indices, sparse_indices,
     return rets
 
 
-def _compress_unique_values(orig_val, col, indices):
+def _compress_unique_values(orig_val, col, indices, pos):
     values = np.take(orig_val, col, axis=1)
     values = values.reshape(-1, 1) if orig_val.ndim == 1 else values
-    indices = indices.reshape(-1, 1)
-    unique_indices = np.unique(indices)
-    indices_plus_values = np.concatenate([indices, values], axis=-1)
-    # np.unique(axis=0) will sort the data based on first column,
-    # so we can do direct mapping, then remove redundant unique_indices
-    unique_values = np.unique(indices_plus_values, axis=0)
-    diff = True if len(unique_indices) != len(unique_values) else False
-    if diff:
-        print(colorize("some users or items contain different features, "
-                       "will only keep the last one", "red"))
-        # https://stackoverflow.com/questions/46390376/drop-duplicates-from-structured-numpy-array-python3-x
-        mask = np.concatenate([unique_values[:-1, 0] != unique_values[1:, 0],
-                               np.array([True])])
-        unique_values = unique_values[mask]
-    assert len(unique_indices) == len(unique_values)
-    # return np.unique(indices_plus_values, axis=0)[:, 1:]
-    return unique_values[:, 1:]
+    indices = indices[pos]
+    # https://stackoverflow.com/questions/46390376/drop-duplicates-from-structured-numpy-array-python3-x
+    mask = np.empty(len(indices), dtype=np.bool)
+    mask[:-1] = (indices[:-1] != indices[1:])
+    mask[-1] = True
+    mask = pos[mask]
+    unique_values = values[mask]
+    assert len(np.unique(indices)) == len(unique_values)
+    return unique_values
+
+
+# def _compress_unique_values(orig_val, col, indices):
+    # values = np.take(orig_val, col, axis=1)
+    # values = values.reshape(-1, 1) if orig_val.ndim == 1 else values
+    # indices = indices.reshape(-1, 1)
+    # unique_indices = np.unique(indices)
+    # indices_plus_values = np.concatenate([indices, values], axis=-1)
+    #   np.unique(axis=0) will sort the data based on first column,
+    #   so we can do direct mapping, then remove redundant unique_indices
+    # unique_values = np.unique(indices_plus_values, axis=0)
+    # diff = True if len(unique_indices) != len(unique_values) else False
+    # if diff:
+    #    print(colorize("some users or items contain different features, "
+    #                   "will only keep the last one", "red"))
+    #    mask = np.concatenate([unique_values[:-1, 0] != unique_values[1:, 0],
+    #                           np.array([True])])
+    #    unique_values = unique_values[mask]
+
+    # assert len(unique_indices) == len(unique_values)
+    # return unique_values[:, 1:]
 
 
 def get_predict_indices_and_values(data_info, user, item, n_items,
