@@ -122,6 +122,8 @@ If you have only one data, you can split the data in following ways:
 + `split_by_ratio_chrono`. For each user, assign certain ratio of items to test_data, where items are sorted by time first. In this case, data should contain a `time` column.
 + `split_by_num_chrono`. For each user, assign certain number of items to test_data, where items are sorted by time first. In this case, data should contain a `time` column.
 
+**Note that your data should not contain any missing value.**
+
 See [`split_data_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/split_data_example.py) .
 
 
@@ -238,7 +240,7 @@ The problem with this solution is that we can not use TensorFlow's default metho
 
 So it's crucial to set `manual=True, inference_only=False` when you save the model, which means leveraging the numpy way. If you set `manual=False`, the model may use the `tf.train.Saver` to save the model, which is OK if you are certain that there will be no new user/item in new data.
 
-Before retraining the model, we also should build the new data. Since the old data_info already exists, we just need to update some information to the data_info by passing `revolution=True, data_info=True`. During recommendation, we always want to filter some items that a user has consumed, which are also stored in `DataInfo` object. So if you want to combine the user-consumed information in old data with that in new data, you can pass `merge_behavior=True`:
+Before retraining the model, we also should build the new data. Since the old `data_info` already exists, we just need to update some information to the `data_info` by passing `revolution=True`. During recommendation, we always want to filter some items that a user has consumed, which are also stored in `DataInfo` object. So if you want to combine the user-consumed information in old data with that in new data, you can pass `merge_behavior=True`:
 
 ```python
 train_data, data_info = DatasetFeat.build_trainset(

@@ -122,6 +122,8 @@ JUST normal data format, each line represents a sample. One thing is important, 
 
 Besides, if you want to use some other meta features (e.g., age, sex, category etc.),  you need to tell the model which columns are [`sparse_col, dense_col, user_col, item_col`], which means all features must be in a same table. See above `YouTubeRanking` for example.
 
+**Also note that your data should not contain missing values.**
+
 
 
 ## Serving
