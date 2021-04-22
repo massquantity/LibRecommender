@@ -248,4 +248,4 @@ class ItemCF(Base, EvalMixin):
         return model
 
     def rebuild_graph(self, path, model_name, full_assign=False):
-        raise NotImplementedError("ItemCF doesn't model retraining")
+        raise NotImplementedError("ItemCF doesn't support model retraining")

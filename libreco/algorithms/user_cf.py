@@ -254,4 +254,4 @@ class UserCF(Base, EvalMixin):
         return model
 
     def rebuild_graph(self, path, model_name, full_assign=False):
-        raise NotImplementedError("UserCF doesn't model retraining")
+        raise NotImplementedError("UserCF doesn't support model retraining")
