@@ -1,9 +1,14 @@
+import os
 import random
 from operator import itemgetter
 from itertools import islice, takewhile
 from collections import defaultdict
 import numpy as np
-from scipy.sparse import issparse
+from scipy.sparse import (
+    issparse,
+    save_npz as save_sparse,
+    load_npz as load_sparse
+)
 from tqdm import tqdm
 from .base import Base
 from ..utils.similarities import cosine_sim, pearson_sim, jaccard_sim
@@ -21,9 +26,10 @@ class ItemCF(Base, EvalMixin):
             lower_upper_bound=None
     ):
         Base.__init__(self, task, data_info, lower_upper_bound)
-        EvalMixin.__init__(self, task)
+        EvalMixin.__init__(self, task, data_info)
 
         self.task = task
+        self.data_info = data_info
         self.k = k
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
@@ -38,6 +44,7 @@ class ItemCF(Base, EvalMixin):
         self.topk_sim = None
         self.print_count = 0
         self._caution_sim_type()
+        self.all_args = locals()
 
     def fit(self, train_data, block_size=None, num_threads=1, min_common=1,
             mode="invert", verbose=1, eval_data=None, metrics=None,
@@ -77,24 +84,20 @@ class ItemCF(Base, EvalMixin):
             self.print_metrics(eval_data=eval_data, metrics=metrics)
             print("=" * 30)
 
-    def predict(self, user, item):
-        user = (
-            np.asarray([user])
-            if isinstance(user, int)
-            else np.asarray(user)
-        )
-        item = (
-            np.asarray([item])
-            if isinstance(item, int)
-            else np.asarray(item)
-        )
-        unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item)
+    def predict(self, user, item, cold="popular", inner_id=False):
+        user, item = self.convert_id(user, item, inner_id)
+        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
+        if unknown_num > 0 and cold != "popular":
+            raise ValueError("ItemCF only supports popular strategy")
 
         preds = []
         sim_matrix = self.sim_matrix
         interaction = self.user_interaction
         for u, i in zip(user, item):
+            if u == self.n_users or i == self.n_items:
+                preds.append(self.default_prediction)
+                continue
+
             item_slice = slice(sim_matrix.indptr[i], sim_matrix.indptr[i+1])
             sim_items = sim_matrix.indices[item_slice]
             sim_values = sim_matrix.data[item_slice]
@@ -142,15 +145,18 @@ class ItemCF(Base, EvalMixin):
                 elif self.task == "ranking":
                     preds.append(np.mean(k_neighbor_sims))
 
-        if unknown_num > 0:
-            preds[unknown_index] = self.default_prediction
-
         return preds[0] if len(user) == 1 else preds
 
-    def recommend_user(self, user, n_rec, random_rec=False):
-        user = self._check_unknown_user(user)
-        if not user:
-            return   # popular ?
+    def recommend_user(self, user, n_rec, random_rec=False,
+                       cold_start="popular", inner_id=False):
+        user_id = self._check_unknown_user(user)
+        if user_id is None:
+            if cold_start == "popular":
+                return self.data_info.popular_items[:n_rec]
+            elif cold_start != "popular":
+                raise ValueError("ItemCF only supports popular strategy")
+            else:
+                raise ValueError(user)
 
         u_consumed = set(self.user_consumed[user])
         user_slice = slice(self.user_interaction.indptr[user],
@@ -184,7 +190,7 @@ class ItemCF(Base, EvalMixin):
                       f"return default recommendation")
             if self.print_count < 7:
                 print(f"{colorize(no_str, 'red')}")
-            return -1
+            return self.data_info.popular_items[:n_rec]
 
         rank_items = [(k, v) for k, v in result.items()]
         rank_items.sort(key=lambda x: -x[1])
@@ -221,3 +227,25 @@ class ItemCF(Base, EvalMixin):
             )[:self.k]
         self.topk_sim = top_k
 
+    def save(self, path, model_name, **kwargs):
+        if not os.path.isdir(path):
+            print(f"file folder {path} doesn't exists, creating a new one...")
+            os.makedirs(path)
+        self.save_params(path)
+        model_path = os.path.join(path, model_name)
+        save_sparse(f"{model_path}_sim_matrix", self.sim_matrix)
+        save_sparse(f"{model_path}_user_inter", self.user_interaction)
+        save_sparse(f"{model_path}_item_inter", self.item_interaction)
+
+    @classmethod
+    def load(cls, path, model_name, data_info, **kwargs):
+        hparams = cls.load_params(path, data_info)
+        model = cls(**hparams)
+        model_path = os.path.join(path, model_name)
+        model.sim_matrix = load_sparse(f"{model_path}_sim_matrix.npz")
+        model.user_interaction = load_sparse(f"{model_path}_user_inter.npz")
+        model.item_interaction = load_sparse(f"{model_path}_item_inter.npz")
+        return model
+
+    def rebuild_graph(self, path, model_name, full_assign=False):
+        raise NotImplementedError("ItemCF doesn't support model retraining")

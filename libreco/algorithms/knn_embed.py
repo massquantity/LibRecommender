@@ -22,7 +22,7 @@ class KnnEmbedding(Base, EvalMixin):
             lower_upper_bound=None
     ):
         Base.__init__(self, task, data_info, lower_upper_bound)
-        EvalMixin.__init__(self, task)
+        EvalMixin.__init__(self, task, data_info)
 
         self.task = task
         self.data_info = data_info
@@ -38,6 +38,7 @@ class KnnEmbedding(Base, EvalMixin):
         self.item_vectors = None
         self._item_norms = None
         self.print_count = 0
+        self.all_args = locals()
 
     def fit(self, train_data, n_threads=0, verbose=1, eval_data=None,
             metrics=None, store_top_k=True):
@@ -54,19 +55,11 @@ class KnnEmbedding(Base, EvalMixin):
             self.print_metrics(eval_data=eval_data, metrics=metrics)
             print("=" * 30)
 
-    def predict(self, user, item):
-        user = (
-            np.asarray([user])
-            if isinstance(user, int)
-            else np.asarray(user)
-        )
-        item = (
-            np.asarray([item])
-            if isinstance(item, int)
-            else np.asarray(item)
-        )
-        unknown_num, unknown_index, user, item = self._check_unknown(
-            user, item)
+    def predict(self, user, item, cold="popular", inner_id=False):
+        user, item = self.convert_id(user, item, inner_id)
+        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
+        if unknown_num > 0 and cold != "popular":
+            raise ValueError("KnnEmbedding only supports popular strategy.")
 
         preds = []
         for u, i in zip(user, item):
@@ -85,10 +78,16 @@ class KnnEmbedding(Base, EvalMixin):
 
         return preds[0] if len(user) == 1 else preds
 
-    def recommend_user(self, user, n_rec, **kwargs):
-        user = self._check_unknown_user(user)
-        if not user:
-            return
+    def recommend_user(self, user, n_rec, random_rec=False,
+                       cold_start="popular", inner_id=False):
+        user_id = self._check_unknown_user(user)
+        if user_id is None:
+            if cold_start == "popular":
+                return self.data_info.popular_items[:n_rec]
+            elif cold_start != "popular":
+                raise ValueError("KnnEmbedding only supports popular strategy.")
+            else:
+                raise ValueError(user)
 
         u_consumed = set(self.user_consumed[user])
         user_interacted = self.user_consumed[user]
@@ -111,7 +110,7 @@ class KnnEmbedding(Base, EvalMixin):
                       f"return default recommendation")
             if self.print_count < 7:
                 print(f"{colorize(no_str, 'red')}")
-            return -1
+            return self.data_info.popular_items[:n_rec]
 
         rank_items = [(k, v) for k, v in result.items()]
         rank_items.sort(key=lambda x: -x[1])
@@ -156,6 +155,17 @@ class KnnEmbedding(Base, EvalMixin):
             self._item_norms = np.linalg.norm(self.item_vectors, axis=-1)
             self._item_norms[self._item_norms == 0] = 1e-10
         return self._item_norms
+
+    def save(self, path, model_name, **kwargs):
+        raise NotImplementedError("KnnEmbedding doesn't support model saving.")
+
+    @classmethod
+    def load(cls, path, model_name, data_info, **kwargs):
+        raise NotImplementedError("KnnEmbedding doesn't support model loading.")
+
+    def rebuild_graph(self, path, model_name, full_assign=False):
+        raise NotImplementedError(
+            "KnnEmbedding doesn't support model retraining")
 
 
 class KnnEmbeddingApproximate(KnnEmbedding):
@@ -237,3 +247,14 @@ class KnnEmbeddingApproximate(KnnEmbedding):
         top_k = self.approximate_algo.knn_query(self.item_vectors, k=self.k)
         top_k = np.stack(top_k, axis=0)
         self.topk_sim = np.transpose(top_k, [1, 2, 0])
+
+    def save(self, path, model_name, **kwargs):
+        raise NotImplementedError("KnnEmbedding doesn't support model saving.")
+
+    @classmethod
+    def load(cls, path, model_name, data_info, **kwargs):
+        raise NotImplementedError("KnnEmbedding doesn't support model loading.")
+
+    def rebuild_graph(self, path, model_name, full_assign=False):
+        raise NotImplementedError(
+            "KnnEmbedding doesn't support model retraining")

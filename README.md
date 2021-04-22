@@ -122,6 +122,8 @@ JUST normal data format, each line represents a sample. One thing is important, 
 
 Besides, if you want to use some other meta features (e.g., age, sex, category etc.),  you need to tell the model which columns are [`sparse_col, dense_col, user_col, item_col`], which means all features must be in a same table. See above `YouTubeRanking` for example.
 
+**Also note that your data should not contain missing values.**
+
 
 
 ## Serving
@@ -135,7 +137,7 @@ For how to serve a trained model in LibRecommender, see [Serving Guide](<https:/
 From pypi : &nbsp;  
 
 ```
-$ pip install LibRecommender==0.6.2
+$ pip install LibRecommender==0.6.4
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
