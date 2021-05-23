@@ -7,12 +7,15 @@ import pandas as pd
 from ..feature import (
     interaction_consumed,
     compute_sparse_feat_indices,
-    _check_oov
+    _check_oov,
 )
 
 
 Feature = namedtuple("Feature", ["name", "index"])
 Empty_Feature = Feature(name=[], index=[])
+
+MultiSparseInfo = namedtuple("MultiSparseInfo",
+                             ["field_offset", "field_len", "feat_oov"])
 
 
 class DataInfo(object):
@@ -31,6 +34,8 @@ class DataInfo(object):
             sparse_unique_vals=None,
             sparse_offset=None,
             sparse_oov=None,
+            multi_sparse_unique_vals=None,
+            multi_sparse_combine_info=None,
     ):
         self.col_name_mapping = col_name_mapping
         self.interaction_data = interaction_data
@@ -44,9 +49,14 @@ class DataInfo(object):
         self.user_unique_vals = user_unique_vals
         self.item_unique_vals = item_unique_vals
         self.sparse_unique_vals = sparse_unique_vals
-        self.sparse_unique_idxs = self.map_unique_vals(sparse_unique_vals)
+        self.sparse_unique_idxs = DataInfo.map_unique_vals(
+            sparse_unique_vals)
         self.sparse_offset = sparse_offset
         self.sparse_oov = sparse_oov
+        self.multi_sparse_unique_vals = multi_sparse_unique_vals
+        self.multi_sparse_unique_idxs = DataInfo.map_unique_vals(
+            multi_sparse_unique_vals)
+        self.multi_sparse_combine_info = multi_sparse_combine_info
         self._n_users = None
         self._n_items = None
         self._user2id = None
@@ -58,12 +68,14 @@ class DataInfo(object):
         # store old sparse len and oov
         self.old_sparse_len = None
         self.old_sparse_oov = None
+        self.old_sparse_offset = None
         self.all_args = locals()
         self.add_oov()
         if self.popular_items is None:
             self.set_popular_items(100)
 
-    def map_unique_vals(self, sparse_unique_vals):
+    @staticmethod
+    def map_unique_vals(sparse_unique_vals):
         if sparse_unique_vals is None:
             return None
         res = dict()
@@ -239,15 +251,36 @@ class DataInfo(object):
         self._data_size = None
 
     def store_old_info(self):
-        if self.sparse_unique_vals is not None:
-            self.old_sparse_len, self.old_sparse_oov = [], []
+        if (self.sparse_unique_vals is not None
+                or self.multi_sparse_unique_vals is not None):
+            self.old_sparse_len = list()
+            self.old_sparse_oov = list()
+            self.old_sparse_offset = list()
             for i, col in enumerate(self.sparse_col.name):
-                self.old_sparse_len.append(len(self.sparse_unique_vals[col]))
-                self.old_sparse_oov.append(self.sparse_oov[i])
+                if (self.sparse_unique_vals is not None
+                        and col in self.sparse_unique_vals):
+                    self.old_sparse_len.append(len(self.sparse_unique_vals[col]))
+                    self.old_sparse_oov.append(self.sparse_oov[i])
+                    self.old_sparse_offset.append(self.sparse_offset[i])
+                elif (self.multi_sparse_unique_vals is not None
+                      and col in self.multi_sparse_unique_vals):
+                    self.old_sparse_len.append(len(self.multi_sparse_unique_vals[col]))
+                    self.old_sparse_oov.append(self.sparse_oov[i])
+                    self.old_sparse_offset.append(self.sparse_offset[i])
+                elif (self.multi_sparse_unique_vals is not None
+                      and col in self.col_name_mapping["multi_sparse"]):
+                    main_name = self.col_name_mapping["multi_sparse"][col]
+                    pos = self.sparse_col.name.index(main_name)
+                    # multi_sparse case, second to last is redundant.
+                    # Used in base.py, rebuild_graph()
+                    self.old_sparse_len.append(-1)
+                    # self.old_sparse_oov.append(self.sparse_oov[pos])
+                    self.old_sparse_offset.append(self.sparse_offset[pos])
 
     def expand_sparse_unique_vals_and_matrix(self, data):
         self.reset_property()
         self.store_old_info()
+
         user_diff = np.setdiff1d(data.user.to_numpy(), self.user_unique_vals)
         if len(user_diff) > 0:
             self.user_unique_vals = np.append(self.user_unique_vals, user_diff)
@@ -258,18 +291,25 @@ class DataInfo(object):
             self.item_unique_vals = np.append(self.item_unique_vals, item_diff)
             self.extend_unique_matrix("item", len(item_diff))
 
-        if self.sparse_unique_vals is not None:
-            for sparse_col in self.sparse_unique_vals:
-                unique_vals = list(self.sparse_unique_vals[sparse_col])
+        def update_sparse_unique(unique_dicts, unique_idxs):
+            for sparse_col in unique_dicts:
+                unique_vals = list(unique_dicts[sparse_col])
                 sparse_diff = np.setdiff1d(data[sparse_col].to_numpy(),
                                            unique_vals)
                 if len(sparse_diff) > 0:
                     unique_vals = np.append(unique_vals, sparse_diff)
-                    self.sparse_unique_vals[sparse_col] = unique_vals
+                    unique_dicts[sparse_col] = unique_vals
                     size = len(unique_vals)
-                    self.sparse_unique_idxs[sparse_col] = dict(
+                    unique_idxs[sparse_col] = dict(
                         zip(unique_vals, range(size))
                     )
+
+        if self.sparse_unique_vals is not None:
+            update_sparse_unique(self.sparse_unique_vals,
+                                 self.sparse_unique_idxs)
+        if self.multi_sparse_unique_vals is not None:
+            update_sparse_unique(self.multi_sparse_unique_vals,
+                                 self.multi_sparse_unique_idxs)
 
     def extend_unique_matrix(self, mode, diff_num):
         if mode == "user":
@@ -278,7 +318,7 @@ class DataInfo(object):
                     [diff_num, self.user_sparse_unique.shape[1]],
                     dtype=self.user_sparse_unique.dtype
                 )
-                # do not include last oov unique values
+                # exclude last oov unique values
                 self.user_sparse_unique = np.vstack(
                     [self.user_sparse_unique[:-1], new_users]
                 )
@@ -310,8 +350,9 @@ class DataInfo(object):
 
     # sparse_indices and offset will increase if sparse feature encounter new categories
     def modify_sparse_indices(self):
-        old_offset = [i + 1 for i in self.old_sparse_oov[:-1]]
-        old_offset = np.insert(old_offset, 0, 0)
+        # old_offset = [i + 1 for i in self.old_sparse_oov[:-1]]
+        # old_offset = np.insert(old_offset, 0, 0)
+        old_offset = np.array(self.old_sparse_offset)
         if self.user_sparse_unique is not None:
             user_idx = self.user_sparse_col.index
             diff = self.sparse_offset[user_idx] - old_offset[user_idx]
@@ -430,6 +471,9 @@ class DataInfo(object):
             "sparse_unique_vals",
             "sparse_offset",
             "sparse_oov",
+            "multi_sparse_unique_vals",
+            "multi_sparse_combine_info",
+            "multi_sparse_map"
         ]
         all_variables = vars(self)
         for arg in inside_args:
@@ -464,6 +508,10 @@ class DataInfo(object):
                 sparse_unique_vals = self.all_args[arg]
                 for col, val in sparse_unique_vals.items():
                     hparams["unique_"+str(col)] = np.asarray(val)
+            elif arg == "multi_sparse_unique_vals":
+                multi_sparse_unique_vals = self.all_args[arg]
+                for col, val in multi_sparse_unique_vals.items():
+                    hparams["munique_"+str(col)] = np.asarray(val)
             else:
                 hparams[arg] = self.all_args[arg]
 
@@ -483,17 +531,21 @@ class DataInfo(object):
         other_path = os.path.join(path, "data_info.npz")
         info = np.load(other_path, allow_pickle=True)
         info = dict(info.items())
-        for i in info:
-            if i.startswith("unique_"):
-                hparams["sparse_unique_vals"] = dict()
-                break
         for arg in info:
             if arg == "interaction_data":
-                # noinspection PyTypeChecker
                 hparams[arg] = pd.DataFrame(
                     info[arg], columns=["user", "item", "label"])
+            elif arg == "multi_sparse_combine_info":
+                hparams[arg] = MultiSparseInfo(*info[arg])
             elif arg.startswith("unique_"):
+                if "sparse_unique_vals" not in hparams:
+                    hparams["sparse_unique_vals"] = dict()
                 hparams["sparse_unique_vals"][arg[7:]] = info[arg]
+            elif arg.startswith("munique_"):
+                if "multi_sparse_unique_vals" not in hparams:
+                    hparams["multi_sparse_unique_vals"] = dict()
+                hparams["multi_sparse_unique_vals"][arg[8:]] = info[arg]
             else:
                 hparams[arg] = info[arg]
+
         return cls(**hparams)
