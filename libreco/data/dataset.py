@@ -89,6 +89,17 @@ class Dataset(object):
         cls.user_unique_vals = np.sort(train_data["user"].unique())
         cls.item_unique_vals = np.sort(train_data["item"].unique())
 
+    @classmethod
+    def reset_feature_state(cls):
+        cls.sparse_unique_vals.clear()
+        cls.multi_sparse_unique_vals.clear()
+        cls.user_unique_vals = None
+        cls.item_unique_vals = None
+        cls.dense_col = None
+        cls.sparse_col = None
+        cls.multi_sparse_col = None
+        cls.train_called = False
+
 
 class DatasetPure(Dataset):
     """A derived class from :class:`Dataset`, used for pure
@@ -104,6 +115,7 @@ class DatasetPure(Dataset):
             merge_behavior=True,
             popular_nums=100,
             shuffle=False,
+            reset_state=False,
             seed=42):
         """Build transformed pure train_data from original data.
 
@@ -125,6 +137,8 @@ class DatasetPure(Dataset):
             NUmber of popular items to store.
         shuffle : bool, optional
             Whether to fully shuffle data.
+        reset_state : bool, optional
+            Whether to reset previous state before building new data.
         seed: int, optional
             random seed.
 
@@ -139,6 +153,8 @@ class DatasetPure(Dataset):
 
         cls._check_subclass()
         cls._check_col_names(train_data, mode="train")
+        if reset_state:
+            cls.reset_feature_state()
 
         if revolution:
             assert isinstance(data_info, DataInfo), (
@@ -331,6 +347,7 @@ class DatasetFeat(Dataset):
             popular_nums=100,
             pad_val="missing",
             shuffle=False,
+            reset_state=False,
             seed=42
     ):
         """Build transformed feat train_data from original data.
@@ -369,6 +386,8 @@ class DatasetFeat(Dataset):
             To ensure same length of all samples.
         shuffle : bool, optional
             Whether to fully shuffle data.
+        reset_state : bool, optional
+            Whether to reset previous feature state before building new data.
         seed: int, optional
             random seed.
 
@@ -383,6 +402,8 @@ class DatasetFeat(Dataset):
 
         cls._check_subclass()
         cls._check_col_names(train_data, mode="train")
+        if reset_state:
+            cls.reset_feature_state()
 
         if revolution:
             assert isinstance(data_info, DataInfo), (

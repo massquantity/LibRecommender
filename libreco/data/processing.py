@@ -90,6 +90,11 @@ def split_multi_value(data, multi_value_col, sep, max_len=None,
                 and len(max_len) == len(multi_value_col)
         ), "max_len must be list and have same length as multi_value_col"
 
+    if not isinstance(pad_val, (list, tuple)):
+        pad_val = [pad_val] * len(multi_value_col)
+    assert len(multi_value_col) == len(pad_val), (
+        "length of multi_sparse_col and pad_val doesn't match")
+
     user_sparse_col, item_sparse_col, multi_sparse_col = [], [], []
     for j, col in enumerate(multi_value_col):
         sparse_col = []
@@ -110,6 +115,7 @@ def split_multi_value(data, multi_value_col, sep, max_len=None,
             new_col_name = col + f"_{i+1}"
             sparse_col.append(new_col_name)
             data[new_col_name] = split_col.str.get(i)
+            data[new_col_name].fillna(pad_val[j], inplace=True)
 
         multi_sparse_col.append(sparse_col)
         if user_col is not None and col in user_col:
@@ -117,6 +123,6 @@ def split_multi_value(data, multi_value_col, sep, max_len=None,
         elif item_col is not None and col in item_col:
             item_sparse_col.extend(sparse_col)
 
-    data.fillna(pad_val, inplace=True)
+    data.fillna(pad_val[0], inplace=True)
     data.drop(multi_value_col, axis=1, inplace=True)
     return multi_sparse_col, user_sparse_col, item_sparse_col
