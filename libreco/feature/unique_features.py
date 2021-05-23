@@ -214,7 +214,10 @@ def features_from_dict(data_info, sparse_indices, dense_values, feats, mode):
     dense_values_copy = (None if dense_values is None
                          else dense_values.copy())
     for col, val in feats.items():
-        if sparse_indices is not None and col in sparse_mapping:
+        if (sparse_indices is not None
+                and col in sparse_mapping
+                and col in data_info.sparse_unique_idxs):
+
             field_idx = sparse_mapping[col]
             if val in data_info.sparse_unique_idxs[col]:
                 # data_info.sparse_unique_idxs: {col: {value: index}}
