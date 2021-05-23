@@ -4,7 +4,11 @@ from .column import (
     merge_sparse_col,
     merge_offset,
     get_oov_pos,
-    interaction_consumed
+    interaction_consumed,
+    multi_sparse_combine_info,
+    multi_sparse_true_size,
+    multi_sparse_col_map,
+    recover_sparse_cols,
 )
 from .column_mapping import col_name2index
 from .unique_features import (
