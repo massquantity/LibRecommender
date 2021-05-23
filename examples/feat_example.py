@@ -57,5 +57,3 @@ if __name__ == "__main__":
     print("cold recommendation: ", ytb_ranking.recommend_user(user="are we good?",
                                                               n_rec=7,
                                                               cold_start="popular"))
-
-
