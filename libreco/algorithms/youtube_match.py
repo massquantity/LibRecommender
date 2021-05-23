@@ -15,16 +15,17 @@ from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
+from ..data.data_generator import DataGenSequence
+from ..data.sequence import sparse_user_last_interacted
 from ..evaluation.evaluate import EvalMixin
 from ..utils.tf_ops import (
     reg_config,
     dropout_config,
     dense_nn,
-    lr_decay_config
+    lr_decay_config,
+    multi_sparse_combine_embedding
 )
-from ..data.data_generator import DataGenSequence
-from ..data.sequence import sparse_user_last_interacted
-from ..utils.misc import time_block, colorize, assign_oov_vector
+from ..utils.misc import time_block, colorize, assign_oov_vector, count_params
 tf.disable_v2_behavior()
 
 
@@ -57,6 +58,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             loss_type="nce",
             recent_num=10,
             random_num=None,
+            multi_sparse_combiner="sqrtn",
             seed=42,
             lower_upper_bound=None,
             tf_sess_config=None
@@ -96,6 +98,10 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         if self.sparse:
             self.sparse_feature_size = self._sparse_feat_size(data_info)
             self.sparse_field_size = self._sparse_field_size(data_info)
+            self.multi_sparse_combiner = self._check_multi_sparse(
+                data_info, multi_sparse_combiner)
+            self.true_sparse_field_size = self._true_sparse_field_size(
+                data_info, self.sparse_field_size, self.multi_sparse_combiner)
         if self.dense:
             self.dense_field_size = self._dense_field_size(data_info)
         self.vector_infer = True
@@ -121,6 +127,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
                                          use_bn=self.use_bn,
                                          dropout_rate=self.dropout_rate,
                                          is_training=self.is_training)
+        count_params()
 
     def _build_item_interaction(self):
         self.item_interaction_indices = tf.placeholder(
@@ -154,10 +161,17 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
 
-        sparse_embed = tf.nn.embedding_lookup(
-            sparse_features, self.sparse_indices)
+        if (self.data_info.multi_sparse_combine_info
+                and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")):
+            sparse_embed = multi_sparse_combine_embedding(
+                self.data_info, sparse_features, self.sparse_indices,
+                self.multi_sparse_combiner, self.embed_size)
+        else:
+            sparse_embed = tf.nn.embedding_lookup(
+                sparse_features, self.sparse_indices)
+
         sparse_embed = tf.reshape(
-            sparse_embed, [-1, self.sparse_field_size * self.embed_size])
+            sparse_embed, [-1, self.true_sparse_field_size * self.embed_size])
         self.concat_embed.append(sparse_embed)
 
     def _build_dense(self):

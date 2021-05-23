@@ -14,15 +14,16 @@ from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal
 )
 from .base import Base, TfMixin
+from ..data.data_generator import DataGenFeat
 from ..evaluation.evaluate import EvalMixin
 from ..utils.tf_ops import (
     reg_config,
     dropout_config,
     dense_nn,
     lr_decay_config,
-    var_list_by_name
+    var_list_by_name,
+    multi_sparse_combine_embedding
 )
-from ..data.data_generator import DataGenFeat
 from ..utils.sampling import NegativeSampling
 from ..utils.misc import count_params
 from ..feature import (
@@ -60,6 +61,7 @@ class WideDeep(Base, TfMixin, EvalMixin):
             dropout_rate=None,
             hidden_units="128,64,32",
             batch_sampling=False,
+            multi_sparse_combiner="sqrtn",
             seed=42,
             lower_upper_bound=None,
             tf_sess_config=None
@@ -90,6 +92,10 @@ class WideDeep(Base, TfMixin, EvalMixin):
         if self.sparse:
             self.sparse_feature_size = self._sparse_feat_size(data_info)
             self.sparse_field_size = self._sparse_field_size(data_info)
+            self.multi_sparse_combiner = self._check_multi_sparse(
+                data_info, multi_sparse_combiner)
+            self.true_sparse_field_size = self._true_sparse_field_size(
+                data_info, self.sparse_field_size, self.multi_sparse_combiner)
         if self.dense:
             self.dense_field_size = self._dense_field_size(data_info)
         self.all_args = locals()
@@ -125,6 +131,7 @@ class WideDeep(Base, TfMixin, EvalMixin):
                                     activation=None,
                                     name="deep_term")
         self.output = tf.squeeze(tf.add(wide_term, deep_term))
+        count_params()
 
     def _build_user_item(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
@@ -178,12 +185,22 @@ class WideDeep(Base, TfMixin, EvalMixin):
             initializer=tf_truncated_normal(0.0, 0.01),
             regularizer=self.reg)
 
-        wide_sparse_embed = tf.nn.embedding_lookup(
-            wide_sparse_feat, self.sparse_indices)
-        deep_sparse_embed = tf.nn.embedding_lookup(
-            deep_sparse_feat, self.sparse_indices)
+        if (self.data_info.multi_sparse_combine_info
+                and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")):
+            wide_sparse_embed = multi_sparse_combine_embedding(
+                self.data_info, wide_sparse_feat, self.sparse_indices,
+                self.multi_sparse_combiner, 1)
+            deep_sparse_embed = multi_sparse_combine_embedding(
+                self.data_info, deep_sparse_feat, self.sparse_indices,
+                self.multi_sparse_combiner, self.embed_size)
+        else:
+            wide_sparse_embed = tf.nn.embedding_lookup(
+                wide_sparse_feat, self.sparse_indices)
+            deep_sparse_embed = tf.nn.embedding_lookup(
+                deep_sparse_feat, self.sparse_indices)
+
         deep_sparse_embed = tf.reshape(
-            deep_sparse_embed, [-1, self.sparse_field_size * self.embed_size])
+            deep_sparse_embed, [-1, self.true_sparse_field_size * self.embed_size])
         self.wide_embed.append(wide_sparse_embed)
         self.deep_embed.append(deep_sparse_embed)
 
