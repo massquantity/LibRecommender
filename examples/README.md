@@ -90,7 +90,7 @@ Usually we can handle this kind of feature by using multi-hot encoding, so in `L
 | 4       | Waiting to Exhale (1995)           | Comedy    | Drama      | missing |
 | 5       | Father of the Bride Part II (1995) | Comedy    | missing    | missing |
 
-In this case, a `multi_sparse_col` should be provided, see [`multi_sparse_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/multi_sparse_example.py). 
+In this case, a `multi_sparse_col` can be used:  
 
 ```python
 multi_sparse_col = [["genre1", "genre2", "genre3"]]
@@ -98,12 +98,32 @@ multi_sparse_col = [["genre1", "genre2", "genre3"]]
 
 Note it's a list of list, because there are possibly many multi_sparse features,  for instance, `[[a1, a2, a3], [b1, b2]]` .
 
-`LibRecommender` also provides a convenient function (`split_multi_value`) to transform the original `multi_sparse` features to the divided features illustrated above. See [`multi_sparse_processing_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/multi_sparse_processing_example.py)
+When you specify a feature as `multi_sparse` feature like this, each sub-feature, i.e. `genre1`, `genre2`, `genre3` in the table above, will share the same embedding of the original feature `genre`. Whether the embedding sharing would improve the model performance is data-dependent. But one thing is certain, it will reduce the total number of model parameters.
+
+`LibRecommender` provides multiple ways of dealing with `multi_sparse` features, i.e. `normal`, `sum` , `mean` and `sqrtn`. `normal` means treating each sub-feature's embedding separately, where in most cases they will be concatenated at last. `sum` and `mean` means computing the sum or mean of each sub-feature's embedding, in this case they are combined as one feature. `sqrtn` means the result of `sum` divided by the square root of sub-feature number, e.g. sqrt(3) in `genre` feature. I'm not sure about this, but I think this `sqrtn` idea originally came from [SVD++](https://people.engr.tamu.edu/huangrh/Spring16/papers_course/matrix_factorization.pdf). Generally the four methods described here have similar functionality as in [tf.nn.embedding_lookup_sparse](https://www.tensorflow.org/versions/r1.15/api_docs/python/tf/nn/embedding_lookup_sparse), but we didn't use it directly in out implementation since it has no `normal` choice.
+
+So in general you should choose a strategy in parameter `multi_sparse_combiner` when building models with `multi_sparse` features:
+
+```python
+>>> model = DeepFM(..., multi_sparse_combiner="sqrtn")  # other options: normal, sum, mean
+```
+
+Note the `genre` feature above has different number of sub-features among all the samples. Some movie only has one genre, whereas others may have three. So the value "missing" is used to pad them into same length. However, when using `sum`, `mean` or `sqrtn` to combine these sub-features, the padding value should be excluded. Thus you can pass the `pad_val` parameter when building the data, and the model will do all the work. Otherwise the padding value will be included in the transformed features.
+
+```python
+>>> train_data, data_info = DatasetFeat.build_trainset(multi_sparse_col=[["genre1", "genre2", "genre3"]], pad_val=["missing"])
+```
+
+Although here we use "missing" as the padding value, this is not always true. It is fine with `str` type, but with features that is numerical type, a value with corresponding type should be used. e.g. 0 or -999.99. Also be aware that the `pad_val` parameter is a list and should have the same length as the number of `multi_sparse` features, and the reason for this is obvious. So all in all an example script is enough to illustrate the usage of `multi_sparse` features, see [`multi_sparse_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/multi_sparse_example.py).
+
+
+
+`LibRecommender` also provides a convenient function (`split_multi_value`) to transform the original `multi_sparse` features to the divided sub-features illustrated above. See [`multi_sparse_processing_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/multi_sparse_processing_example.py)
 
 ```python
 multi_value_col = ["genre"]
 multi_sparse_col, multi_user_col, multi_item_col = split_multi_value(
-    data, multi_value_col, sep="|", max_len=[3], pad_val="missing",
+    data, multi_value_col, sep="|", max_len=[3], pad_val=["missing"],
     user_col=user_col, item_col=item_col
 )
 ```

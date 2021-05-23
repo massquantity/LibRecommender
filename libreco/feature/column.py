@@ -81,7 +81,8 @@ def get_multi_sparse_indices_matrix(data_class, data, multi_sparse_col,
             for col in field:
                 col_values = data[col].to_numpy()
                 multi_sparse_indices[:, i] = column_sparse_indices(
-                    col_values, unique_values, mode, ordered
+                    col_values, unique_values, mode, ordered,
+                    multi_sparse=True
                 )
                 i += 1
     return multi_sparse_indices
@@ -94,7 +95,7 @@ def get_dense_indices_matrix(data, dense_col):
 
 
 def get_sparse_offset(data_class, sparse_col):
-    # plus one for value only in test data
+    # plus one for oov value
     unique_values = [
         len(data_class.sparse_unique_vals[col]) + 1
         for col in sparse_col
@@ -140,13 +141,21 @@ def sparse_oov(data_class, sparse_col):
     return np.cumsum(unique_values) - 1
 
 
-def multi_sparse_oov(data_class, multi_sparse_col):
+def multi_sparse_oov(data_class, multi_sparse_col, extend=True):
     unique_values = [
         len(data_class.multi_sparse_unique_vals[field[0]]) + 1
         for field
         in multi_sparse_col
     ]
-    return np.cumsum(unique_values) - 1
+    # return np.cumsum(unique_values) - 1
+    field_oov = np.cumsum(unique_values) - 1
+    if extend:
+        oov = []
+        for i, field in enumerate(multi_sparse_col):
+            oov.extend([field_oov[i]] * len(field))
+        return np.array(oov)
+    else:
+        return field_oov
 
 
 def get_oov_pos(data_class, sparse_col, multi_sparse_col):
@@ -163,17 +172,46 @@ def get_oov_pos(data_class, sparse_col, multi_sparse_col):
         return multi_sparse_oov(data_class, multi_sparse_col)
 
 
+def multi_sparse_combine_info(data_class, all_sparse_cols,
+                              sparse_col, multi_sparse_col):
+    from ..data import MultiSparseInfo
+    # sparse_last_offset = get_sparse_offset(data_class, sparse_col)[-1]
+    # unique_values = [
+    #    len(data_class.multi_sparse_unique_vals[field[0]]) + 1
+    #    for field
+    #    in multi_sparse_col
+    # ]
+    # offset = np.cumsum(np.array([0] + unique_values))
+    # offset = offset.tolist()[:-1] + sparse_last_offset
+
+    # all_sparse_cols = data_class.sparse_col.name
+    field_offset = [all_sparse_cols.index(field[0]) for field in multi_sparse_col]
+    field_length = [len(col) for col in multi_sparse_col]
+    sparse_offset = sparse_oov(data_class, sparse_col)[-1] + 1 if sparse_col else 0
+    feat_oov = multi_sparse_oov(data_class, multi_sparse_col, extend=False)
+    return MultiSparseInfo(field_offset, field_length, feat_oov + sparse_offset)
+
+
+def multi_sparse_true_size(data, multi_sparse_col, pad_val):
+    sizes = [
+        np.sum(data[field].to_numpy() != pad_val, axis=1)
+        for field in multi_sparse_col
+    ]
+    return np.vstack(sizes)
+
+
 def check_unknown(values, uniques):
     # diff = list(np.setdiff1d(values, uniques, assume_unique=True))
     mask = np.in1d(values, uniques, invert=True)
     return mask
 
 
-def column_sparse_indices(values, unique, mode="train", ordered=True):
+def column_sparse_indices(values, unique, mode="train",
+                          ordered=True, multi_sparse=False):
     if mode not in ("train", "test"):
         raise ValueError("mode must either be \"train\" or \"test\" ")
     if ordered:
-        if mode == "test":
+        if mode == "test" or multi_sparse:
             not_in_mask = check_unknown(values, unique)
             col_indices = np.searchsorted(unique, values)
             col_indices[not_in_mask] = len(unique)
@@ -182,7 +220,7 @@ def column_sparse_indices(values, unique, mode="train", ordered=True):
     else:
         map_vals = dict(zip(unique, range(len(unique))))
         oov_val = len(unique)
-        if mode == "test":
+        if mode == "test" or multi_sparse:
             col_indices = np.array([map_vals[v] if v in map_vals else oov_val
                                     for v in values])
         else:
@@ -197,3 +235,40 @@ def interaction_consumed(user_indices, item_indices):
         user_consumed[u].append(i)
         item_consumed[i].append(u)
     return user_consumed, item_consumed
+
+
+def multi_sparse_col_map(multi_sparse_col):
+    multi_sparse_map = dict()
+    for field in multi_sparse_col:
+        if len(field) > 1:
+            for col in field[1:]:
+                multi_sparse_map[col] = field[0]
+    return multi_sparse_map
+
+
+def recover_sparse_cols(data_info):
+    total_sparse_cols = data_info.sparse_col.name
+    if data_info.sparse_unique_vals:
+        sparse_cols = [col for col in total_sparse_cols
+                       if col in data_info.sparse_unique_vals]
+    else:
+        sparse_cols = None
+
+    if data_info.multi_sparse_unique_vals:
+        multi_sparse_cols = []
+        i, field = 0, 0
+        while i < len(total_sparse_cols):
+            col = total_sparse_cols[i]
+            if col in data_info.multi_sparse_unique_vals:
+                field_len = data_info.multi_sparse_combine_info.field_len[field]
+                multi_sparse_cols.append(
+                    [total_sparse_cols[k] for k in range(i, i + field_len)]
+                )
+                i += field_len
+                field += 1
+            else:
+                i += 1
+    else:
+        multi_sparse_cols = None
+
+    return sparse_cols, multi_sparse_cols

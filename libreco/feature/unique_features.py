@@ -1,11 +1,18 @@
 import numbers
 import numpy as np
-from ..utils.misc import colorize
 
 
-def construct_unique_feat(user_indices, item_indices, sparse_indices,
-                          dense_values, user_sparse_col, user_dense_col,
-                          item_sparse_col, item_dense_col, unique_feat):
+def construct_unique_feat(
+        user_indices,
+        item_indices,
+        sparse_indices,
+        dense_values,
+        user_sparse_col,
+        user_dense_col,
+        item_sparse_col,
+        item_dense_col,
+        unique_feat
+):
     # use mergesort to preserve order
     sort_kind = "quicksort" if unique_feat else "mergesort"
     user_pos = np.argsort(user_indices, kind=sort_kind)
@@ -207,7 +214,10 @@ def features_from_dict(data_info, sparse_indices, dense_values, feats, mode):
     dense_values_copy = (None if dense_values is None
                          else dense_values.copy())
     for col, val in feats.items():
-        if sparse_indices is not None and col in sparse_mapping:
+        if (sparse_indices is not None
+                and col in sparse_mapping
+                and col in data_info.sparse_unique_idxs):
+
             field_idx = sparse_mapping[col]
             if val in data_info.sparse_unique_idxs[col]:
                 # data_info.sparse_unique_idxs: {col: {value: index}}
@@ -290,7 +300,20 @@ def add_item_features(data_info, sparse_indices, dense_values, data):
 def compute_sparse_feat_indices(data_info, data, field_idx, column):
     offset = data_info.sparse_offset[field_idx]
     oov_val = data_info.sparse_oov[field_idx]
-    map_vals = data_info.sparse_unique_idxs[column]
+
+    if (data_info.sparse_unique_idxs
+            and column in data_info.sparse_unique_idxs):
+        map_vals = data_info.sparse_unique_idxs[column]
+    elif (data_info.multi_sparse_unique_idxs
+          and column in data_info.multi_sparse_unique_idxs):
+        map_vals = data_info.multi_sparse_unique_idxs[column]
+    elif ("multi_sparse" in data_info.col_name_mapping
+          and column in data_info.col_name_mapping["multi_sparse"]):
+        main_col = data_info.col_name_mapping["multi_sparse"][column]
+        map_vals = data_info.multi_sparse_unique_idxs[main_col]
+    else:
+        raise ValueError(f"Unknown sparse column: {column}")
+    # map_vals = data_info.sparse_unique_idxs[column]
     values = data[column].tolist()
     feat_indices = np.array(
         [map_vals[v] + offset if v in map_vals else oov_val

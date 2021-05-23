@@ -58,6 +58,7 @@ if __name__ == "__main__":
         sparse_col=sparse_col,
         dense_col=dense_col,
         multi_sparse_col=multi_sparse_col,
+        pad_val=["missing"]   # specify padding value
     )
     eval_data = DatasetFeat.build_testset(eval_data)
     print(data_info)
@@ -70,9 +71,12 @@ if __name__ == "__main__":
     deepfm = DeepFM("ranking", data_info, embed_size=16, n_epochs=2,
                     lr=1e-4, lr_decay=False, reg=None, batch_size=2048,
                     num_neg=1, use_bn=False, dropout_rate=None,
-                    hidden_units="128,64,32", tf_sess_config=None)
+                    hidden_units="128,64,32", tf_sess_config=None,
+                    multi_sparse_combiner="normal")  # specify multi_sparse combiner
+
     deepfm.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
                metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
                         "precision", "recall", "map", "ndcg"])
+
     print("prediction: ", deepfm.predict(user=1, item=2333))
     print("recommendation: ", deepfm.recommend_user(user=1, n_rec=7))
