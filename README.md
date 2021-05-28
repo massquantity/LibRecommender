@@ -107,7 +107,7 @@ print("cold recommendation: ", ytb_ranking.recommend_user(user="are we good?",
                                                           cold_start="popular"))
 ```
 
-### For more examples and usages, see [User Guide](https://github.com/massquantity/LibRecommender/tree/master/examples)
+### For more examples and usages, see [User Guide](https://github.com/massquantity/LibRecommender/tree/master/examples#user-guide)
 
 
 
@@ -134,23 +134,29 @@ For how to serve a trained model in LibRecommender, see [Serving Guide](<https:/
 
 ## Installation & Dependencies 
 
-From pypi : &nbsp;  
+From pypi : &nbsp;
 
-```
+```shell
 $ pip install LibRecommender==0.6.6
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
 
-```
+```shell
 $ # pip install numpy cython
 $ git clone https://github.com/massquantity/LibRecommender.git
 $ cd LibRecommender
 $ python setup.py install
 ```
 
+If you encounter problems installing from pypi, try installing Cython first. However, in case that none of above method works, one can use a limited version of the library, which will not include algorithms implemented by Cython, i.e. UserCF, ItemCF and ALS.
+
+```shell
+$ pip install LibRecommender-limited==0.1
+```
 
 #### Basic Dependencies in `libreco`:
+
 - Python >= 3.6
 - tensorflow >= 1.14
 - numpy >= 1.15.4
