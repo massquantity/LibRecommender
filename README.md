@@ -5,7 +5,7 @@
 **LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation. The main features are:
 
 + Implemented a number of popular recommendation algorithms such as SVD++, DeepFM, BPR etc, [see full algorithm list](#references).
-+ A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features or both. New features can be used on the fly.
++ A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features or both. New features can be added on the fly.
 + Low memory usage, automatically convert categorical and multi-value categorical features to sparse representation.
 + Support training for both explicit and implicit datasets, and negative sampling can be used for implicit dataset.
 + Making use of Cython or Tensorflow for high-speed model training.
@@ -137,7 +137,7 @@ For how to serve a trained model in LibRecommender, see [Serving Guide](<https:/
 From pypi : &nbsp;
 
 ```shell
-$ pip install LibRecommender==0.6.6
+$ pip install LibRecommender==0.6.8
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
@@ -149,25 +149,24 @@ $ cd LibRecommender
 $ python setup.py install
 ```
 
-If you encounter problems installing from pypi, try installing Cython first. However, in case that none of above method works, one can use a limited version of the library, which will not include algorithms implemented by Cython, i.e. UserCF, ItemCF and ALS.
 
-```shell
-$ pip install LibRecommender-limited==0.1
-```
 
 #### Basic Dependencies in `libreco`:
 
 - Python >= 3.6
-- tensorflow >= 1.14
-- numpy >= 1.15.4
-- pandas >= 0.23.4
-- scipy >= 1.2.1
+- TensorFlow >= 1.14
+- Numpy >= 1.15.4
+- Cython >= 0.29.0
+- Pandas >= 0.23.4
+- Scipy >= 1.2.1
 - scikit-learn >= 0.20.0
-- gensim>=3.6.0
+- gensim >= 4.0.0
 - tqdm >= 4.46.0
 - [hnswlib](https://github.com/nmslib/hnswlib)
 
-`LibRecommender` is tested under tensorflow 1.14 and 2.3. If you encounter any problem during running, feel free to open an issue.
+`LibRecommender` is tested under TensorFlow 1.14 and 2.5. If you encounter any problem during running, feel free to open an issue.
+
+**Known issue**: TensorFlow 2.x is not fully compatible with Numpy >= 1.20. Try downgrading Numpy `pip install numpy==1.19.5` if you encounter tf errors. Refer to [Numpy v1.20+ compatibility](https://github.com/tensorflow/tensorflow/issues/47691)
 
 #### Optional Serving Dependencies:
 
