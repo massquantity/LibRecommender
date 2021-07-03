@@ -1,87 +1,118 @@
 from codecs import open
+import glob
+import logging
 import os
+import platform
 import sys
 
 from setuptools import setup, find_packages, Extension
-from setuptools import dist  # Install numpy right now
-dist.Distribution().fetch_build_eggs(['numpy>=1.15.4'])
+import numpy as np
+from Cython.Build import cythonize
+from Cython.Distutils import build_ext
 
-try:
-    import numpy as np
-except ImportError:
-    exit('Please install numpy>=1.15.4 first.')
 
-try:
-    from Cython.Build import cythonize
-    from Cython.Distutils import build_ext
-except ImportError:
-    USE_CYTHON = False
-else:
-    USE_CYTHON = True
+NAME = "LibRecommender"
+VERSION = "0.6.8"
 
-__version__ = "0.6.6"
 
 here = os.path.abspath(os.path.dirname(__file__))
+
 
 # Get the long description from README.md
 with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+
 # get the dependencies and installs
 with open(os.path.join(here, 'requirements.txt'), encoding='utf-8') as f:
     all_reqs = f.read().split('\n')
 
+
 install_requires = [x.strip() for x in all_reqs]
+
+
+def extract_gcc_binaries():
+    """Try to find GCC on OSX for OpenMP support."""
+    patterns = [
+        "/opt/local/bin/g++-mp-[0-9]*.[0-9]*",
+        "/opt/local/bin/g++-mp-[0-9]*",
+        "/usr/local/bin/g++-[0-9]*.[0-9]*",
+        "/usr/local/bin/g++-[0-9]*",
+    ]
+    if platform.system() == "Darwin":
+        gcc_binaries = []
+        for pattern in patterns:
+            gcc_binaries += glob.glob(pattern)
+        gcc_binaries.sort()
+        if gcc_binaries:
+            _, gcc = os.path.split(gcc_binaries[-1])
+            return gcc
+        else:
+            return None
+    else:
+        return None
+
 
 if sys.platform.startswith("win"):
     compile_args = ["/O2", "/openmp"]
     link_args = []
 else:
-    compile_args = ['-Wno-unused-function', '-Wno-maybe-uninitialized',
-                    '-O3', '-ffast-math', '-fopenmp', '-std=c++11']
-    link_args = ['-fopenmp', '-std=c++11']
+    use_openmp = True
+    compile_args = ["-Wno-unused-function", "-Wno-maybe-uninitialized",
+                    "-O3", "-ffast-math"]
+    link_args = []
+    if sys.platform.startswith("darwin"):
+        gcc = extract_gcc_binaries()
+        if gcc is not None:
+            logging.info(f"gcc on macOS: {gcc}")
+            os.environ["CC"] = gcc
+            os.environ["CXX"] = gcc
+        else:
+            use_openmp = False
+            logging.warning(
+                "No GCC available. Install gcc from Homebrew: brew install gcc."
+            )
 
-ext = '.pyx' if USE_CYTHON else '.cpp'
+    if use_openmp:
+        compile_args.append("-fopenmp")
+        link_args.append("-fopenmp")
+    compile_args.append("-std=c++11")
+    link_args.append("-std=c++11")
+
 
 extensions = [
     Extension('libreco.algorithms._bpr',
-              [os.path.join("libreco", "algorithms", "_bpr" + ext)],
+              [os.path.join("libreco", "algorithms", "_bpr.pyx")],
               include_dirs=[np.get_include()],
               language="c++",
               extra_compile_args=compile_args,
               extra_link_args=link_args),
     Extension('libreco.algorithms._als',
-              [os.path.join("libreco", "algorithms", "_als" + ext)],
+              [os.path.join("libreco", "algorithms", "_als.pyx")],
               include_dirs=[np.get_include()],
               language="c++",
               extra_compile_args=compile_args,
               extra_link_args=link_args),
     Extension('libreco.utils._similarities',
-              [os.path.join("libreco", "utils", "_similarities" + ext)],
+              [os.path.join("libreco", "utils", "_similarities.pyx")],
               include_dirs=[np.get_include()],
               language="c++",
               extra_compile_args=compile_args,
               extra_link_args=link_args),
 ]
 
-if USE_CYTHON:
-    ext_modules = cythonize(extensions)
-    cmdclass = {'build_ext': build_ext}
-else:
-    ext_modules = extensions
-    cmdclass = {}
 
 setup(
-    name='LibRecommender',
-    author='massquantity',
-    author_email='jinxin_madie@163.com',
+    name=NAME,
+    author="massquantity",
+    author_email="jinxin_madie@163.com",
     description=(
         'A collaborative-filtering and content-based recommender system '
         'for both explicit and implicit datasets.'
     ),
     long_description=long_description,
     long_description_content_type='text/markdown',
-    version=__version__,
+    version=VERSION,
     url='https://github.com/massquantity/LibRecommender',
     license='MIT',
     classifiers=[
@@ -92,6 +123,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Cython',
     ],
     keywords=['Matrix Factorization', 'Collaborative Filtering', 
@@ -99,9 +131,10 @@ setup(
               'Deep Learning', 'Data Mining'], 
 
     packages=find_packages(exclude=['test*', 'examples']),
+    setup_requires=["Cython>=0.29"],
     include_package_data=True,
-    ext_modules=ext_modules,
-    cmdclass=cmdclass,
+    ext_modules=cythonize(extensions),
+    cmdclass={'build_ext': build_ext},
     install_requires=install_requires,
 )
 

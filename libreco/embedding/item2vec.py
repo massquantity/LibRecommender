@@ -39,13 +39,13 @@ class Item2Vec(object):
         with time_block(f"gensim word2vec training", verbose):
             model = Word2Vec(
                 sentences=data,
-                size=self.embed_size,
+                vector_size=self.embed_size,
                 window=self.window_size,
                 sg=1,
                 hs=0,
                 negative=5,
                 seed=self.seed,
-                iter=5,
+                epochs=5,
                 min_count=1,
                 workers=os.cpu_count() if not n_threads else n_threads,
                 sorted_vocab=0
