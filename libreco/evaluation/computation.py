@@ -1,3 +1,4 @@
+import numbers
 import numpy as np
 from tqdm import tqdm
 from ..data import TransformedSet
@@ -87,7 +88,7 @@ def compute_recommends(model, users, k):
     for u in tqdm(users, desc="eval_rec"):
         reco = model.recommend_user(u, k, inner_id=True)
         # user_cf popular
-        if not reco or isinstance(reco[0], int):
+        if not reco or isinstance(reco[0], numbers.Real):
             # print("no recommend user: ", u)
             no_rec_num += 1
             no_rec_users.append(u)
