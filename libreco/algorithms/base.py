@@ -251,6 +251,13 @@ class Base(abc.ABC):
         else:
             return sparse_field_size
 
+    def popular_recommends(self, inner_id, n_rec):
+        if not inner_id:
+            return self.data_info.popular_items[:n_rec]
+        else:
+            top_populars = self.data_info.popular_items[:n_rec]
+            return [self.data_info.item2id[i] for i in top_populars]
+
     @staticmethod
     def show_start_time():
         start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())

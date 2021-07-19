@@ -347,7 +347,7 @@ class DeepFM(Base, TfMixin, EvalMixin):
             if cold_start == "average":
                 user_id = self.n_users
             elif cold_start == "popular":
-                return self.data_info.popular_items[:n_rec]
+                return self.popular_recommends(inner_id, n_rec)
             else:
                 raise ValueError(user)
 

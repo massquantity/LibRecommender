@@ -80,10 +80,10 @@ class KnnEmbedding(Base, EvalMixin):
 
     def recommend_user(self, user, n_rec, random_rec=False,
                        cold_start="popular", inner_id=False):
-        user_id = self._check_unknown_user(user)
+        user_id = self._check_unknown_user(user, inner_id)
         if user_id is None:
             if cold_start == "popular":
-                return self.data_info.popular_items[:n_rec]
+                return self.popular_recommends(inner_id, n_rec)
             elif cold_start != "popular":
                 raise ValueError("KnnEmbedding only supports popular strategy.")
             else:
