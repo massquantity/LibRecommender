@@ -130,8 +130,8 @@ if __name__ == "__main__":
     ytb_match = YouTubeMatch("ranking", data_info, embed_size=16, n_epochs=3,
                              lr=1e-4, lr_decay=False, reg=None, batch_size=2048,
                              num_neg=1, use_bn=False, dropout_rate=None,
-                             loss_type="nce", hidden_units="128,64,32",
-                             tf_sess_config=None)
+                             loss_type="sampled_softmax", hidden_units="128,64,32",
+                             tf_sess_config=None, sampler="uniform")
     ytb_match.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
                   metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
                            "precision", "recall", "map", "ndcg"])

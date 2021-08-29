@@ -59,6 +59,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             recent_num=10,
             random_num=None,
             multi_sparse_combiner="sqrtn",
+            sampler="uniform",
             seed=42,
             lower_upper_bound=None,
             tf_sess_config=None
@@ -91,6 +92,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self.seed = seed
         self.user_vector = None
         self.item_weights = None
+        self.sampler = sampler
         # self.item_biases = None
         self.user_consumed = data_info.user_consumed
         self.sparse = self._decide_sparse_indices(data_info)
@@ -111,7 +113,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self.graph_built = True
         tf.set_random_seed(self.seed)
         # item_indices actually serve as labels in YouTubeMatch model
-        self.item_indices = tf.placeholder(tf.int32, shape=[None])
+        self.item_indices = tf.placeholder(tf.int64, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
         self.concat_embed = []
 
@@ -211,27 +213,41 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             trainable=True
         )
 
+        # By default, `sampled_softmax_loss` and `nce_loss` in tf uses `log_uniform_candidate_sampler`
+        # to sample negative items, which may not be suitable in recommendation scenarios.
+        labels = tf.reshape(self.item_indices, [-1, 1])
+        sampled_values = tf.random.uniform_candidate_sampler(
+            true_classes=labels,
+            num_true=1,
+            num_sampled=self.num_neg,
+            unique=True,
+            range_max=self.n_items,
+        ) if self.sampler == "uniform" else None
+
         if self.loss_type == "nce":
             self.loss = tf.reduce_mean(tf.nn.nce_loss(
                 weights=self.nce_weights,
                 biases=self.nce_biases,
-                labels=tf.reshape(self.item_indices, [-1, 1]),
+                labels=labels,
                 inputs=self.user_vector_repr,
                 num_sampled=self.num_neg,
                 num_classes=self.n_items,
                 num_true=1,
+                sampled_values=sampled_values,
                 remove_accidental_hits=True,
+                seed=self.seed,
                 partition_strategy="div")
             )
         elif self.loss_type == "sampled_softmax":
             self.loss = tf.reduce_mean(tf.nn.sampled_softmax_loss(
                 weights=self.nce_weights,
                 biases=self.nce_biases,
-                labels=tf.reshape(self.item_indices, [-1, 1]),
+                labels=labels,
                 inputs=self.user_vector_repr,
                 num_sampled=self.num_neg,
                 num_classes=self.n_items,
                 num_true=1,
+                sampled_values=sampled_values,
                 remove_accidental_hits=True,
                 seed=self.seed,
                 partition_strategy="div")
@@ -374,11 +390,11 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
 
         user_bias = np.ones([len(user_vector), 1], dtype=user_vector.dtype)
         item_bias = item_biases[:, None]
-        u_vector = np.hstack([user_vector, user_bias])
-        i_weights = np.hstack([item_weights, item_bias])
-        oov_zeros = np.zeros(self.user_vector_size + 1, dtype=np.float32)
-        self.user_vector = np.vstack([u_vector, oov_zeros])
-        self.item_weights = np.vstack([i_weights, oov_zeros])
+        self.user_vector = np.hstack([user_vector, user_bias])
+        self.item_weights = np.hstack([item_weights, item_bias])
+        # oov_zeros = np.zeros(self.user_vector_size + 1, dtype=np.float32)
+        # self.user_vector = np.vstack([u_vector, oov_zeros])
+        # self.item_weights = np.vstack([i_weights, oov_zeros])
 
     def _check_item_col(self):
         if len(self.data_info.item_col) > 0:
