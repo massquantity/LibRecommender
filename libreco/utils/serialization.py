@@ -146,10 +146,11 @@ def save_model_tf_serving(path, model, model_name,
                           version=1, simple_save=False):
     if not path:
         model_base_path = os.path.realpath("..")
-        export_path = os.path.join(model_base_path,
-                                   f"serving/models/{model_name}/{version}")
+        export_path = os.path.join(
+            model_base_path, "serving", "models", f"{model_name}", f"{version}"
+        )
     else:
-        export_path = os.path.join(path, f"{model_name}/{version}")
+        export_path = os.path.join(path, f"{model_name}", f"{version}")
 
     if os.path.isdir(export_path):
         answered = False
