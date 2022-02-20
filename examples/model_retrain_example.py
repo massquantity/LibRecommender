@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 from libreco.data import DatasetFeat, DataInfo
 from libreco.data import split_by_ratio_chrono
@@ -15,7 +14,7 @@ if __name__ == "__main__":
     col_names = ["user", "item", "label", "time", "sex",
                  "age", "occupation", "genre1", "genre2", "genre3"]
     all_data = pd.read_csv("sample_data/sample_movielens_merged.csv",
-                       sep=",", header=0)
+                           sep=",", header=0)
 
     # use first half data as first training part
     first_half_data = all_data[:(len(all_data) // 2)]
@@ -61,7 +60,7 @@ if __name__ == "__main__":
         train, revolution=True, data_info=data_info, merge_behavior=True
     )
     test_data = DatasetFeat.build_testset(test, revolution=True,
-                                             data_info=data_info)
+                                          data_info=data_info)
     print("new data_info: ", data_info)
     train_data.build_negative_samples(data_info, item_gen_mode="random",
                                       seed=2020)

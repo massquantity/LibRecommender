@@ -9,7 +9,7 @@ author: massquantity
 import os
 from itertools import islice
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf2
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
@@ -26,10 +26,11 @@ from ..utils.tf_ops import (
     multi_sparse_combine_embedding
 )
 from ..utils.misc import time_block, colorize, assign_oov_vector, count_params
+tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 
-class YouTubeMatch(Base, TfMixin, EvalMixin):
+class YouTuBeRetrieval(Base, TfMixin, EvalMixin):
     """
     The model implemented mainly corresponds to the candidate generation
     phase based on the original paper.
@@ -51,7 +52,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             lr_decay=False,
             reg=None,
             batch_size=256,
-            num_neg=1,
+            num_sampled_per_batch=None,
             use_bn=True,
             dropout_rate=None,
             hidden_units="128,64,32",
@@ -76,7 +77,11 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
         self.lr_decay = lr_decay
         self.reg = reg_config(reg)
         self.batch_size = batch_size
-        self.num_neg = num_neg
+        self.num_sampled_per_batch = (
+            num_sampled_per_batch
+            if num_sampled_per_batch and num_sampled_per_batch > 0
+            else batch_size
+        )
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
         self.hidden_units = list(map(int, hidden_units.split(",")))
@@ -112,7 +117,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
     def _build_model(self):
         self.graph_built = True
         tf.set_random_seed(self.seed)
-        # item_indices actually serve as labels in YouTubeMatch model
+        # item_indices actually serve as labels in YouTuBeRetrieval model
         self.item_indices = tf.placeholder(tf.int64, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
         self.concat_embed = []
@@ -213,13 +218,14 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
             trainable=True
         )
 
-        # By default, `sampled_softmax_loss` and `nce_loss` in tf uses `log_uniform_candidate_sampler`
-        # to sample negative items, which may not be suitable in recommendation scenarios.
+        # By default, `sampled_softmax_loss` and `nce_loss` in tensorflow
+        # uses `log_uniform_candidate_sampler` to sample negative items,
+        # which may not be suitable in recommendation scenarios.
         labels = tf.reshape(self.item_indices, [-1, 1])
         sampled_values = tf.random.uniform_candidate_sampler(
             true_classes=labels,
             num_true=1,
-            num_sampled=self.num_neg,
+            num_sampled=self.num_sampled_per_batch,
             unique=True,
             range_max=self.n_items,
         ) if self.sampler == "uniform" else None
@@ -230,12 +236,11 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
                 biases=self.nce_biases,
                 labels=labels,
                 inputs=self.user_vector_repr,
-                num_sampled=self.num_neg,
+                num_sampled=self.num_sampled_per_batch,
                 num_classes=self.n_items,
                 num_true=1,
                 sampled_values=sampled_values,
                 remove_accidental_hits=True,
-                seed=self.seed,
                 partition_strategy="div")
             )
         elif self.loss_type == "sampled_softmax":
@@ -244,7 +249,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
                 biases=self.nce_biases,
                 labels=labels,
                 inputs=self.user_vector_repr,
-                num_sampled=self.num_neg,
+                num_sampled=self.num_sampled_per_batch,
                 num_classes=self.n_items,
                 num_true=1,
                 sampled_values=sampled_values,
@@ -318,7 +323,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
                 self._set_latent_vectors()
                 self.print_metrics(eval_data=eval_data, metrics=metrics,
                                    **kwargs)
-                print("="*30)
+                print("=" * 30)
 
         # for prediction and recommendation
         self._set_latent_vectors()
@@ -399,7 +404,7 @@ class YouTubeMatch(Base, TfMixin, EvalMixin):
     def _check_item_col(self):
         if len(self.data_info.item_col) > 0:
             raise ValueError(
-                "The YouTubeMatch model assumes no item features."
+                "The YouTuBeRetrieval model assumes no item features."
             )
 
     def save(self, path, model_name, manual=True, inference_only=False):

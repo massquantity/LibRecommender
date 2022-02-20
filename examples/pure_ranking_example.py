@@ -1,5 +1,4 @@
 import time
-import numpy as np
 import pandas as pd
 from libreco.data import split_by_ratio_chrono, DatasetPure
 from libreco.algorithms import (
@@ -101,8 +100,8 @@ if __name__ == "__main__":
               reg=5.0, alpha=10, seed=42)
     als.fit(train_data, verbose=2, use_cg=True, n_threads=1,
             eval_data=eval_data, metrics=["loss", "balanced_accuracy",
-                                              "roc_auc", "pr_auc", "precision",
-                                              "recall", "map", "ndcg"])
+                                          "roc_auc", "pr_auc", "precision",
+                                          "recall", "map", "ndcg"])
     print("prediction: ", als.predict(user=1, item=2333))
     print("recommendation: ", als.recommend_user(user=1, n_rec=7))
 

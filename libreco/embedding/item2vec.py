@@ -8,11 +8,11 @@ author: massquantity
 """
 import os
 import warnings
-warnings.filterwarnings("ignore")
 from gensim.models import Word2Vec
 from tqdm import tqdm
 import numpy as np
 from ..utils.misc import time_block, colorize
+warnings.filterwarnings("ignore")
 
 
 class Item2Vec(object):
@@ -36,7 +36,7 @@ class Item2Vec(object):
 
     def fit(self, n_threads=0, verbose=1):
         data = ItemCorpus(self.data_info.user_consumed)
-        with time_block(f"gensim word2vec training", verbose):
+        with time_block("gensim word2vec training", verbose):
             model = Word2Vec(
                 sentences=data,
                 vector_size=self.embed_size,

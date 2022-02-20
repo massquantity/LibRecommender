@@ -183,9 +183,9 @@ class Base(abc.ABC):
     @staticmethod
     def _check_has_sampled(data, verbose):
         if not data.has_sampled and verbose > 1:
-            exception_str = (f"During training, "
-                             f"one must do whole data sampling "
-                             f"before evaluating on epochs.")
+            exception_str = ("During training, "
+                             "one must do whole data sampling "
+                             "before evaluating on epochs.")
             raise NotSamplingError(f"{colorize(exception_str, 'red')}")
 
     @staticmethod
@@ -340,7 +340,7 @@ class TfMixin(object):
 
                 self.print_metrics(eval_data=eval_data, metrics=metrics,
                                    **kwargs)
-                print("="*30)
+                print("=" * 30)
 
     def train_feat(self, data_generator, verbose, shuffle, eval_data, metrics,
                    **kwargs):
@@ -365,7 +365,7 @@ class TfMixin(object):
                 print(f"\t {colorize(train_loss_str, 'green')}")
                 self.print_metrics(eval_data=eval_data, metrics=metrics,
                                    **kwargs)
-                print("="*30)
+                print("=" * 30)
 
     def train_seq(self):
         pass  # TODO: combine train_feat and train_seq
@@ -504,7 +504,7 @@ class TfMixin(object):
         self.sess.run(update_ops)
 
     def save_tf_model(self, path, model_name):
-        model_path = os.path.join(path,  model_name)
+        model_path = os.path.join(path, model_name)
         saver = tf.train.Saver()
         saver.save(self.sess, model_path, write_meta_graph=True)
 

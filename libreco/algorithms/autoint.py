@@ -10,7 +10,7 @@ import os
 from itertools import islice
 import numpy as np
 import pandas as pd
-import tensorflow.compat.v1 as tf
+import tensorflow as tf2
 from tensorflow.keras.initializers import truncated_normal
 from .base import Base, TfMixin
 from ..data.data_generator import DataGenFeat
@@ -28,6 +28,7 @@ from ..feature import (
     features_from_dict,
     add_item_features
 )
+tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 

@@ -9,7 +9,7 @@ from itertools import islice
 import os
 import numpy as np
 import pandas as pd
-import tensorflow.compat.v1 as tf
+import tensorflow as tf2
 from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal
 )
@@ -32,6 +32,7 @@ from ..feature import (
     features_from_dict,
     add_item_features
 )
+tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 
@@ -74,7 +75,7 @@ class WideDeep(Base, TfMixin, EvalMixin):
         self.data_info = data_info
         self.embed_size = embed_size
         self.n_epochs = n_epochs
-        self.lr = lr if lr is not None else {"wide": 0.01, "deep": 1e-4}
+        self.lr = self.check_lr(lr)
         self.lr_decay = lr_decay
         self.reg = reg_config(reg)
         self.batch_size = batch_size
@@ -254,10 +255,15 @@ class WideDeep(Base, TfMixin, EvalMixin):
 
         if self.lr_decay:
             n_batches = int(self.data_info.data_size / self.batch_size)
-            self.lr, global_steps = lr_decay_config(self.lr, n_batches,
-                                                    **kwargs)
+            self.lr["wide"], wide_global_steps = lr_decay_config(
+                self.lr["wide"], n_batches, **kwargs
+            )
+            self.lr["deep"], deep_global_steps = lr_decay_config(
+                self.lr["deep"], n_batches, **kwargs
+            )
+
         else:
-            global_steps = None
+            wide_global_steps = deep_global_steps = None
 
         var_dict = var_list_by_name(names=["wide", "deep"])
         # print(f"{colorize('Wide_variables', 'blue')}: {var_dict['wide']}\n"
@@ -265,12 +271,12 @@ class WideDeep(Base, TfMixin, EvalMixin):
         wide_optimizer = tf.train.FtrlOptimizer(
             self.lr["wide"], l1_regularization_strength=1e-3)
         wide_optimizer_op = wide_optimizer.minimize(total_loss,
-                                                    global_step=global_steps,
+                                                    global_step=wide_global_steps,
                                                     var_list=var_dict["wide"])
 
         deep_optimizer = tf.train.AdamOptimizer(self.lr["deep"])
         deep_optimizer_op = deep_optimizer.minimize(total_loss,
-                                                    global_step=global_steps,
+                                                    global_step=deep_global_steps,
                                                     var_list=var_dict["deep"])
 
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -388,6 +394,18 @@ class WideDeep(Base, TfMixin, EvalMixin):
             n_rec
         )
         return list(recs_and_scores)
+
+    @staticmethod
+    def check_lr(lr):
+        if not lr:
+            return {"wide": 0.01, "deep": 1e-4}
+        else:
+            assert (isinstance(lr, dict)
+                    and "wide" in lr
+                    and "deep" in lr
+                    and lr["wide"]
+                    and lr["deep"])
+            return lr
 
     def save(self, path, model_name, manual=True, inference_only=False):
         if not os.path.isdir(path):

@@ -1,5 +1,3 @@
-import time
-import numpy as np
 import pandas as pd
 from libreco.data import split_by_ratio_chrono, split_multi_value, DatasetFeat
 from libreco.algorithms import DeepFM
@@ -42,11 +40,11 @@ if __name__ == "__main__":
     # the multi-value feature may belong to user or item, so we add them together.
     user_col += multi_user_col
     item_col += multi_item_col
-    # we do not need the original genre feature any more
+    # we do not need the original genre feature anymore
     item_col.remove("genre")
     print("final user col: ", user_col)
     print("final item col: ", item_col, "\n")
-    print("="*30, "transformed data", "=" * 30)
+    print("=" * 30, "transformed data", "=" * 30)
     print(data.head(), "\n")
 
     train_data, eval_data = split_by_ratio_chrono(data, test_size=0.2)

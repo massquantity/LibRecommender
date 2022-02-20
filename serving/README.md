@@ -72,7 +72,7 @@ $ curl -d '{"user": "1", "n_rec": 10, "k_neighbors": 10}' -X POST http://127.0.0
 
 ## Vector-based model
 
-Vector-based model relies on the dot product of two vectors to make recommendation, so we only need to save a bunch of vectors. This kind of model includes `SVD`, `SVD++`, `ALS`, `BPR` and `YouTubeMatch`.
+Vector-based model relies on the dot product of two vectors to make recommendation, so we only need to save a bunch of vectors. This kind of model includes `SVD`, `SVD++`, `ALS`, `BPR` and `YouTuBeRetrieval`.
 
 In practice, to speed up serving, some ANN(Approximate Nearest Neighbors) libraries are often used to find similar vectors. Here in LibRecommender, we use [faiss](<https://github.com/facebookresearch/faiss>) to do such thing.
 

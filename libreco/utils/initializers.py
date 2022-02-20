@@ -44,6 +44,3 @@ def variance_scaling(scala, fan_in=None, fan_out=None, mode="fan_in"):
         raise ValueError(
             "mode must be one of these: fan_in, fan_out, fan_average")
     return truncated_normal(mean=0.0, scale=std, shape=[fan_in, fan_out])
-
-
-

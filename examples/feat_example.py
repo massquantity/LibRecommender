@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 from libreco.data import split_by_ratio_chrono, DatasetFeat
 from libreco.algorithms import YouTubeRanking

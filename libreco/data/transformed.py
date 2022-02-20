@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.sparse import csr_matrix
-from .data_info import DataInfo
 from ..feature import interaction_consumed
 from ..utils.sampling import NegativeSampling
 

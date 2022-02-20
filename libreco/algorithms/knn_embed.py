@@ -125,7 +125,7 @@ class KnnEmbedding(Base, EvalMixin):
 
     def sort_topk_items(self, item):
         sim = self.item_vectors[item].dot(self.item_vectors.T) / (
-                self.item_norms[item] * self.item_norms
+            self.item_norms[item] * self.item_norms
         )
         ids = np.argpartition(sim, -self.k)[-self.k:]
         sorted_result = sorted(

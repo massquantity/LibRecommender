@@ -73,7 +73,7 @@ class ItemCF(Base, EvalMixin):
         assert self.sim_matrix.has_sorted_indices
         if issparse(self.sim_matrix):
             n_elements = self.sim_matrix.getnnz()
-            sparsity_ratio = 100*n_elements / (self.n_users*self.n_users)
+            sparsity_ratio = 100 * n_elements / (self.n_users * self.n_users)
             print(f"sim_matrix, shape: {self.sim_matrix.shape}, "
                   f"num_elements: {n_elements}, "
                   f"sparsity: {sparsity_ratio:5.4f} %")
@@ -98,11 +98,11 @@ class ItemCF(Base, EvalMixin):
                 preds.append(self.default_prediction)
                 continue
 
-            item_slice = slice(sim_matrix.indptr[i], sim_matrix.indptr[i+1])
+            item_slice = slice(sim_matrix.indptr[i], sim_matrix.indptr[i + 1])
             sim_items = sim_matrix.indices[item_slice]
             sim_values = sim_matrix.data[item_slice]
 
-            user_slice = slice(interaction.indptr[u], interaction.indptr[u+1])
+            user_slice = slice(interaction.indptr[u], interaction.indptr[u + 1])
             user_interacted_i = interaction.indices[user_slice]
             user_interacted_values = interaction.data[user_slice]
             common_items, indices_in_i, indices_in_u = np.intersect1d(
@@ -133,7 +133,7 @@ class ItemCF(Base, EvalMixin):
 
                 if self.task == "rating":
                     sims_distribution = (
-                            k_neighbor_sims / np.sum(k_neighbor_sims)
+                        k_neighbor_sims / np.sum(k_neighbor_sims)
                     )
                     weighted_pred = np.average(
                         k_neighbor_labels, weights=sims_distribution
@@ -170,7 +170,7 @@ class ItemCF(Base, EvalMixin):
                 item_sim_topk = self.topk_sim[i]
             else:
                 item_slice = slice(self.sim_matrix.indptr[i],
-                                   self.sim_matrix.indptr[i+1])
+                                   self.sim_matrix.indptr[i + 1])
                 sim_items = self.sim_matrix.indices[item_slice]
                 sim_values = self.sim_matrix.data[item_slice]
                 item_sim_topk = sorted(
@@ -217,7 +217,7 @@ class ItemCF(Base, EvalMixin):
         top_k = dict()
         for i in tqdm(range(self.n_items), desc="top_k"):
             item_slice = slice(self.sim_matrix.indptr[i],
-                               self.sim_matrix.indptr[i+1])
+                               self.sim_matrix.indptr[i + 1])
             sim_items = self.sim_matrix.indices[item_slice].tolist()
             sim_values = self.sim_matrix.data[item_slice].tolist()
             top_k[i] = sorted(

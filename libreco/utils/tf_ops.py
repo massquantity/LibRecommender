@@ -11,10 +11,16 @@ tf.disable_v2_behavior()
 # https://www.zhihu.com/question/283715823
 # Also according to the discussions, it is generally NOT recommended to use
 # batch normalization and dropout simultaneously.
-def dense_nn(net, hidden_units, activation=tf.nn.elu, use_bn=True,
-             bn_after_activation=True, dropout_rate=None, is_training=True,
-             name="mlp"):
-    hidden_length = len(hidden_units)
+def dense_nn(
+        net,
+        hidden_units,
+        activation=tf.nn.elu,
+        use_bn=True,
+        bn_after_activation=True,
+        dropout_rate=None,
+        is_training=True,
+        name="mlp"
+):
     if activation is None:
         activation = tf.identity
 
@@ -22,11 +28,10 @@ def dense_nn(net, hidden_units, activation=tf.nn.elu, use_bn=True,
         if use_bn:
             net = tf.layers.batch_normalization(net, training=is_training)
         for i, units in enumerate(hidden_units, start=1):
-            # if i < hidden_length:
             net = tf.layers.dense(inputs=net,
                                   units=units,
                                   activation=None,
-                                  name=name+"_layer"+str(i),
+                                  name=name + "_layer" + str(i),
                                   reuse=tf.AUTO_REUSE)
 
             if use_bn and bn_after_activation:
@@ -192,13 +197,13 @@ def modify_variable_names(model, trainable):
     manual_var = None
     if trainable:
         if hasattr(model, "user_variables"):
-            user_var = [v+":0" for v in model.user_variables]
+            user_var = [v + ":0" for v in model.user_variables]
         if hasattr(model, "item_variables"):
-            item_var = [v+":0" for v in model.item_variables]
+            item_var = [v + ":0" for v in model.item_variables]
         if hasattr(model, "sparse_variables"):
-            sparse_var = [v+":0" for v in model.sparse_variables]
+            sparse_var = [v + ":0" for v in model.sparse_variables]
         if hasattr(model, "dense_variables"):
-            dense_var = [v+":0" for v in model.dense_variables]
+            dense_var = [v + ":0" for v in model.dense_variables]
 
         manual_var = []
         if user_var is not None:

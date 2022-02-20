@@ -71,7 +71,7 @@ class UserCF(Base, EvalMixin):
         assert self.sim_matrix.has_sorted_indices
         if issparse(self.sim_matrix):
             n_elements = self.sim_matrix.getnnz()
-            sparsity_ratio = 100*n_elements / (self.n_users*self.n_users)
+            sparsity_ratio = 100 * n_elements / (self.n_users * self.n_users)
             print(f"sim_matrix, shape: {self.sim_matrix.shape}, "
                   f"num_elements: {n_elements}, "
                   f"sparsity: {sparsity_ratio:5.4f} %")
@@ -96,11 +96,11 @@ class UserCF(Base, EvalMixin):
                 preds.append(self.default_prediction)
                 continue
 
-            user_slice = slice(sim_matrix.indptr[u], sim_matrix.indptr[u+1])
+            user_slice = slice(sim_matrix.indptr[u], sim_matrix.indptr[u + 1])
             sim_users = sim_matrix.indices[user_slice]
             sim_values = sim_matrix.data[user_slice]
 
-            item_slice = slice(interaction.indptr[i], interaction.indptr[i+1])
+            item_slice = slice(interaction.indptr[i], interaction.indptr[i + 1])
             item_interacted_u = interaction.indices[item_slice]
             item_interacted_values = interaction.data[item_slice]
             common_users, indices_in_u, indices_in_i = np.intersect1d(
@@ -131,7 +131,7 @@ class UserCF(Base, EvalMixin):
 
                 if self.task == "rating":
                     sims_distribution = (
-                            k_neighbor_sims / np.sum(k_neighbor_sims)
+                        k_neighbor_sims / np.sum(k_neighbor_sims)
                     )
                     weighted_pred = np.average(
                         k_neighbor_labels, weights=sims_distribution
@@ -157,7 +157,7 @@ class UserCF(Base, EvalMixin):
                 raise ValueError(user)
 
         user_slice = slice(self.sim_matrix.indptr[user],
-                           self.sim_matrix.indptr[user+1])
+                           self.sim_matrix.indptr[user + 1])
         sim_users = self.sim_matrix.indices[user_slice]
         sim_values = self.sim_matrix.data[user_slice]
 
@@ -188,7 +188,7 @@ class UserCF(Base, EvalMixin):
 
         result = defaultdict(lambda: [0.0, 0])  # [sim, count]
         for n, n_sim in k_nbs_and_sims:
-            item_slices = slice(all_item_indptr[n], all_item_indptr[n+1])
+            item_slices = slice(all_item_indptr[n], all_item_indptr[n + 1])
             n_interacted_items = all_item_indices[item_slices]
             n_interacted_values = all_item_values[item_slices]
             for i, v in zip(n_interacted_items, n_interacted_values):
@@ -222,7 +222,7 @@ class UserCF(Base, EvalMixin):
         top_k = dict()
         for u in tqdm(range(self.n_users), desc="top_k"):
             user_slice = slice(self.sim_matrix.indptr[u],
-                               self.sim_matrix.indptr[u+1])
+                               self.sim_matrix.indptr[u + 1])
             sim_users = self.sim_matrix.indices[user_slice].tolist()
             sim_values = self.sim_matrix.data[user_slice].tolist()
 

@@ -41,7 +41,7 @@ def average_precision_at_k(y_true, y_reco, k):
     rank_list = np.zeros(k)
     if common_items.size > 0:
         rank_list[indices_in_reco] = 1
-        ap = [np.mean(rank_list[:i+1]) for i in range(k) if rank_list[i]]
+        ap = [np.mean(rank_list[:i + 1]) for i in range(k) if rank_list[i]]
         assert len(ap) == common_items.size, "common size doesn't match..."
         return np.mean(ap)
     else:
@@ -76,4 +76,3 @@ def ndcg_at_k(y_true_list, y_reco_list, users, k):
             ndcg = 0
         ndcg_all.append(ndcg)
     return np.mean(ndcg_all)
-

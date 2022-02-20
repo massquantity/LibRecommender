@@ -9,7 +9,7 @@ author: massquantity
 from itertools import islice
 import os
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf2
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal,
@@ -27,6 +27,7 @@ from ..data.sequence import user_last_interacted
 from ..utils.misc import time_block, colorize
 from ..utils.misc import count_params, assign_oov_vector
 from ..utils.tf_ops import conv_nn, max_pool
+tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 
@@ -118,7 +119,7 @@ class Caser(Base, TfMixin, EvalMixin):
         self.user_interacted_len = tf.placeholder(tf.int64, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
-        
+
     def _build_variables(self):
         self.user_feat = tf.get_variable(
             name="user_feat",
@@ -275,7 +276,7 @@ class Caser(Base, TfMixin, EvalMixin):
                 self._set_latent_factors()
                 self.print_metrics(eval_data=eval_data, metrics=metrics,
                                    **kwargs)
-                print("="*30)
+                print("=" * 30)
 
         # for prediction and recommendation
         self._set_latent_factors()

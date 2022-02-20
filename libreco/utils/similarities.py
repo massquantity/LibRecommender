@@ -1,10 +1,8 @@
-import time
 import math
 import logging
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import norm as spnorm
-from sklearn.metrics.pairwise import cosine_similarity, linear_kernel
 try:
     from ._similarities import (
         forward_cosine,
@@ -167,7 +165,7 @@ def compute_sparse_mean_centered_norm(sparse_data):
     data = sparse_data.data.copy()
     length = sparse_data.shape[0]
     for x in range(length):
-        x_slice = slice(indptr[x], indptr[x+1])
+        x_slice = slice(indptr[x], indptr[x + 1])
         x_mean = np.mean(data[x_slice])
         data[x_slice] -= x_mean
     sparse_data_mean_centered = csr_matrix((data, indices, indptr),
@@ -177,4 +175,3 @@ def compute_sparse_mean_centered_norm(sparse_data):
 
 def compute_sparse_count(sparse_data):
     return np.diff(sparse_data.indptr)
-

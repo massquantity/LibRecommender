@@ -100,7 +100,7 @@ class ALS(Base, EvalMixin):
             if verbose > 1:
                 self.print_metrics(eval_data=eval_data, metrics=metrics,
                                    **kwargs)
-                print("="*30)
+                print("=" * 30)
         assign_oov_vector(self)
 
     def _choose_algo(self, use_cg):
@@ -197,7 +197,7 @@ def _least_squares(sparse_interaction, X, Y, reg, embed_size, num, mode):
         for m in range(num):
             A = init_A.copy()
             b = np.zeros(embed_size, dtype=np.float32)
-            for i in range(indptr[m], indptr[m+1]):
+            for i in range(indptr[m], indptr[m + 1]):
                 factor = Y[indices[i]]
                 confidence = data[i]
                 # If confidence = 1, r_ui = 0 means no interaction.
@@ -240,7 +240,7 @@ def _least_squares_cg(sparse_interaction, X, Y, reg, embed_size, num,
 
             for _ in range(cg_steps):
                 Ap = init_A @ p
-                for i in range(indptr[m], indptr[m+1]):
+                for i in range(indptr[m], indptr[m + 1]):
                     y = Y[indices[i]]
                     confidence = data[i]
                     Ap += (confidence - 1) * (y @ p) * y
