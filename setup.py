@@ -12,7 +12,7 @@ from Cython.Distutils import build_ext
 
 
 NAME = "LibRecommender"
-VERSION = "0.6.10"
+VERSION = "0.8.0"
 
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -124,11 +124,12 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Programming Language :: Cython',
     ],
-    keywords=['Matrix Factorization', 'Collaborative Filtering', 
-              'Content-Based', 'Recommender System', 
-              'Deep Learning', 'Data Mining'], 
+    keywords=['Matrix Factorization', 'Collaborative Filtering',
+              'Content-Based', 'Recommender System',
+              'Deep Learning', 'Data Mining'],
 
     packages=find_packages(exclude=['test*', 'examples']),
     setup_requires=["Cython>=0.29"],
@@ -137,4 +138,3 @@ setup(
     cmdclass={'build_ext': build_ext},
     install_requires=install_requires,
 )
-
