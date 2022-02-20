@@ -1,5 +1,4 @@
 import time
-import numpy as np
 import pandas as pd
 from libreco.data import split_by_ratio_chrono, DatasetPure
 from libreco.algorithms import SVD, SVDpp, NCF, ALS, UserCF, ItemCF, RNN4Rec

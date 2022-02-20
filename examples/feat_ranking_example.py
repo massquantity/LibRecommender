@@ -1,9 +1,8 @@
 import time
-import numpy as np
 import pandas as pd
 from libreco.data import split_by_ratio_chrono, DatasetFeat
 from libreco.algorithms import (
-    FM, WideDeep, DeepFM, AutoInt, DIN, YouTubeMatch, YouTubeRanking
+    FM, WideDeep, DeepFM, AutoInt, DIN, YouTuBeRetrieval, YouTubeRanking
 )
 
 # remove unnecessary tensorflow logging
@@ -109,9 +108,9 @@ if __name__ == "__main__":
     print("prediction: ", ytb_ranking.predict(user=1, item=2333))
     print("recommendation: ", ytb_ranking.recommend_user(user=1, n_rec=7))
 
-    # Since according to the paper, the YouTubeMatch model can not use item features,
+    # Since according to the paper, the YouTuBeRetrieval model can not use item features,
     # we provide an example here.
-    reset_state("YouTubeMatch")
+    reset_state("YouTuBeRetrieval")
     train_data, eval_data = split_by_ratio_chrono(data, test_size=0.2)
     sparse_col = ["sex", "occupation"]  # no item feature
     dense_col = ["age"]
@@ -127,13 +126,14 @@ if __name__ == "__main__":
     eval_data.build_negative_samples(data_info, item_gen_mode="random",
                                      num_neg=1, seed=2222)
 
-    ytb_match = YouTubeMatch("ranking", data_info, embed_size=16, n_epochs=3,
-                             lr=1e-4, lr_decay=False, reg=None, batch_size=2048,
-                             num_neg=1, use_bn=False, dropout_rate=None,
-                             loss_type="sampled_softmax", hidden_units="128,64,32",
-                             tf_sess_config=None, sampler="uniform")
-    ytb_match.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
-                  metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
-                           "precision", "recall", "map", "ndcg"])
+    ytb_retrieval = YouTuBeRetrieval("ranking", data_info, embed_size=16, n_epochs=3,
+                                     lr=1e-4, lr_decay=False, reg=None, batch_size=2048,
+                                     num_sampled_per_batch=1, use_bn=False,
+                                     dropout_rate=None, loss_type="sampled_softmax",
+                                     hidden_units="128,64,32", sampler="uniform",
+                                     tf_sess_config=None)
+    ytb_retrieval.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
+                      metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
+                               "precision", "recall", "map", "ndcg"])
 
     print(f"total running time: {(time.perf_counter() - start_time):.2f}")

@@ -51,4 +51,3 @@ def _extract_common_col(col1, col2):
                                                     assume_unique=True,
                                                     return_indices=True)
     return common_col[np.lexsort((common_col, indices_in_col1))]
-

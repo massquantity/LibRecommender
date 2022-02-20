@@ -50,12 +50,14 @@ class DataInfo(object):
         self.item_unique_vals = item_unique_vals
         self.sparse_unique_vals = sparse_unique_vals
         self.sparse_unique_idxs = DataInfo.map_unique_vals(
-            sparse_unique_vals)
+            sparse_unique_vals
+        )
         self.sparse_offset = sparse_offset
         self.sparse_oov = sparse_oov
         self.multi_sparse_unique_vals = multi_sparse_unique_vals
         self.multi_sparse_unique_idxs = DataInfo.map_unique_vals(
-            multi_sparse_unique_vals)
+            multi_sparse_unique_vals
+        )
         self.multi_sparse_combine_info = multi_sparse_combine_info
         self._n_users = None
         self._n_items = None
@@ -217,7 +219,7 @@ class DataInfo(object):
         n_items = self.n_items
         n_labels = len(self.interaction_data)
         return "n_users: %d, n_items: %d, data sparsity: %.4f %%" % (
-            n_users, n_items, 100 * n_labels / (n_users*n_items)
+            n_users, n_items, 100 * n_labels / (n_users * n_items)
         )
 
     def get_indexed_interaction(self):
@@ -498,20 +500,22 @@ class DataInfo(object):
         hparams = dict()
         arg_names = inspect.signature(self.__init__).parameters.keys()
         for arg in arg_names:
-            if (arg == "col_name_mapping" or
-                    arg not in self.all_args or
-                    self.all_args[arg] is None):
+            if (
+                arg == "col_name_mapping"
+                or arg not in self.all_args
+                or self.all_args[arg] is None
+            ):
                 continue
             if arg == "interaction_data":
                 hparams[arg] = self.all_args[arg].to_numpy()
             elif arg == "sparse_unique_vals":
                 sparse_unique_vals = self.all_args[arg]
                 for col, val in sparse_unique_vals.items():
-                    hparams["unique_"+str(col)] = np.asarray(val)
+                    hparams["unique_" + str(col)] = np.asarray(val)
             elif arg == "multi_sparse_unique_vals":
                 multi_sparse_unique_vals = self.all_args[arg]
                 for col, val in multi_sparse_unique_vals.items():
-                    hparams["munique_"+str(col)] = np.asarray(val)
+                    hparams["munique_" + str(col)] = np.asarray(val)
             else:
                 hparams[arg] = self.all_args[arg]
 

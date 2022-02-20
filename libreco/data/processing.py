@@ -85,10 +85,9 @@ def process_data(data, dense_col=None, normalizer="min_max",
 def split_multi_value(data, multi_value_col, sep, max_len=None,
                       pad_val="missing", user_col=None, item_col=None):
     if max_len is not None:
-        assert (
-                isinstance(max_len, (list, tuple))
+        assert (isinstance(max_len, (list, tuple))
                 and len(max_len) == len(multi_value_col)
-        ), "max_len must be list and have same length as multi_value_col"
+                ), "max_len must be list and have same length as multi_value_col"
 
     if not isinstance(pad_val, (list, tuple)):
         pad_val = [pad_val] * len(multi_value_col)
@@ -101,7 +100,7 @@ def split_multi_value(data, multi_value_col, sep, max_len=None,
         data[col] = (
             data[col]
             .str.strip(sep + " ")
-            .str.replace("\s+", "", regex=True)
+            .str.replace("\\s+", "", regex=True)
             .str.lower()
         )
         data.loc[data[col] == "", col] = pad_val

@@ -1,12 +1,6 @@
 name: Build wheels
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
   # Manual run
   workflow_dispatch:
     inputs:
@@ -30,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Window 64 bit
+          # Windows 64 bit
           - os: windows-latest
             python: 36
             bitness: 64

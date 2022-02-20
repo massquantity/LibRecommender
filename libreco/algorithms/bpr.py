@@ -11,7 +11,7 @@ import logging
 from itertools import islice
 from functools import partial
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf2
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
@@ -28,6 +28,7 @@ except (ImportError, ModuleNotFoundError):
     logging.basicConfig(format=LOG_FORMAT)
     logging.warning("BPR cython version is not available")
     pass  # may use tf version, then raise error will fail
+tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 
@@ -156,12 +157,18 @@ class BPR(Base, TfMixin, EvalMixin):
         self.show_start_time()
         self._check_has_sampled(train_data, verbose)
 
-        if not self.graph_built and not self.model_built:
-            if self.use_tf:
-                self._build_model_tf()
-                self._build_train_ops()
-            else:
-                self._build_model()
+        if self.use_tf and not self.graph_built:
+            self._build_model_tf()
+            self._build_train_ops()
+        elif not self.use_tf and not self.model_built:
+            self._build_model()
+
+        # if not self.graph_built and not self.model_built:
+        #    if self.use_tf:
+        #        self._build_model_tf()
+        #        self._build_train_ops()
+        #    else:
+        #        self._build_model()
 
         if self.use_tf:
             self._fit_tf(train_data, verbose=verbose, shuffle=shuffle,
@@ -223,7 +230,7 @@ class BPR(Base, TfMixin, EvalMixin):
             if verbose > 1:
                 self.print_metrics(eval_data=eval_data, metrics=metrics,
                                    **kwargs)
-                print("="*30)
+                print("=" * 30)
         assign_oov_vector(self)
 
     def _fit_tf(self, train_data, verbose=1, shuffle=True,
@@ -247,7 +254,7 @@ class BPR(Base, TfMixin, EvalMixin):
                 self._set_latent_factors()
                 self.print_metrics(eval_data=eval_data, metrics=metrics,
                                    **kwargs)
-                print("="*30)
+                print("=" * 30)
 
         # for prediction and recommendation
         self.assign_oov()

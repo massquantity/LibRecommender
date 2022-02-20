@@ -9,10 +9,9 @@ author: massquantity
 from itertools import islice
 import os
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf2
 from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal,
-    orthogonal as tf_orthogonal,
     glorot_normal as tf_glorot_normal
 )
 from .base import Base, TfMixin
@@ -27,6 +26,7 @@ from ..data.sequence import user_last_interacted
 from ..utils.sampling import PairwiseSamplingSeq
 from ..utils.misc import time_block, colorize
 from ..utils.misc import count_params, assign_oov_vector
+tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 

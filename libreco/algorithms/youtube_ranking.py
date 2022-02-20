@@ -10,7 +10,7 @@ import os
 from itertools import islice
 import numpy as np
 import pandas as pd
-import tensorflow.compat.v1 as tf
+import tensorflow as tf2
 from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal
 )
@@ -33,6 +33,7 @@ from ..feature import (
     features_from_dict,
     add_item_features
 )
+tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 
@@ -340,9 +341,9 @@ class YouTubeRanking(Base, TfMixin, EvalMixin):
             sparse_indices, dense_values = add_item_features(
                 self.data_info, sparse_indices, dense_values, item_data)
 
-        u_last_interacted = np.tile(self.user_last_interacted[user],
+        u_last_interacted = np.tile(self.user_last_interacted[user_id],
                                     (self.n_items, 1))
-        u_interacted_len = np.repeat(self.last_interacted_len[user],
+        u_interacted_len = np.repeat(self.last_interacted_len[user_id],
                                      self.n_items)
         feed_dict = self._get_seq_feed_dict(u_last_interacted, u_interacted_len,
                                             user_indices, item_indices, None,

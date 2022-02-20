@@ -9,7 +9,7 @@ author: massquantity
 import os
 from itertools import islice
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf2
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
@@ -21,6 +21,7 @@ from ..utils.sampling import NegativeSampling
 from ..data.data_generator import DataGenPure
 from ..utils.tf_ops import sparse_tensor_interaction, modify_variable_names
 from ..utils.misc import assign_oov_vector
+tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 
@@ -290,7 +291,7 @@ class SVDpp(Base, TfMixin, EvalMixin):
                     update_ops.append(v.scatter_update(user_op))
 
                 elif (optimizer_item_variables is not None
-                          and v.name in optimizer_item_variables):
+                      and v.name in optimizer_item_variables):
                     old_var = variables[v.name]
                     item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
                     update_ops.append(v.scatter_update(item_op))

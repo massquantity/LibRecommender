@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 from libreco.data import random_split, DatasetPure
 from libreco.algorithms import SVDpp  # pure data, algorithm SVD++

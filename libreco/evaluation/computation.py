@@ -102,7 +102,7 @@ def compute_recommends(model, users, k):
 
 
 def choose_pred_func(model):
-    pure_models = ["SVD", "SVDpp", "ALS", "BPR", "NCF", "YouTubeMatch",
+    pure_models = ["SVD", "SVDpp", "ALS", "BPR", "NCF", "YouTuBeRetrieval",
                    "Caser", "RNN4Rec", "WaveNet", "UserCF", "ItemCF",
                    "KnnEmbedding", "KnnEmbeddingApproximate"]
     if model.__class__.__name__ in pure_models:

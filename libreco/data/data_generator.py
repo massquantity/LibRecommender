@@ -171,4 +171,3 @@ class DataGenSequence(object):
             self.labels = self.labels[mask]
 
         return self.__iter__(batch_size)
-

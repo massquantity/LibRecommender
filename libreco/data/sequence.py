@@ -133,5 +133,3 @@ def user_last_interacted(user_indices, user_consumed, pad_index, recent_num=10):
             interacted_len.append(float(recent_num))
 
     return u_last_interacted, np.asarray(interacted_len)
-
-

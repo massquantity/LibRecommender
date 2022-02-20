@@ -249,4 +249,3 @@ def print_metrics_ranking(metrics, y_prob=None, y_true=None, y_reco_list=None,
             elif m == "ndcg":
                 ndcg_all = ndcg_at_k(y_true_list, y_reco_list, users, k)
                 print(f"\t eval ndcg@{k}: {ndcg_all:.4f}")
-

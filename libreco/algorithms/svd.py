@@ -9,7 +9,7 @@ author: massquantity
 import os
 from itertools import islice
 import numpy as np
-import tensorflow.compat.v1 as tf
+import tensorflow as tf2
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal
@@ -19,6 +19,7 @@ from ..evaluation.evaluate import EvalMixin
 from ..utils.tf_ops import reg_config
 from ..utils.sampling import NegativeSampling
 from ..data.data_generator import DataGenPure
+tf = tf2.compat.v1
 tf.disable_v2_behavior()
 
 

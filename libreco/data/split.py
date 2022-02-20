@@ -3,8 +3,15 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 
-def random_split(data, test_size=None, multi_ratios=None, shuffle=True,
-                 filter_unknown=True, pad_unknown=False, seed=42):
+def random_split(
+        data,
+        test_size=None,
+        multi_ratios=None,
+        shuffle=True,
+        filter_unknown=True,
+        pad_unknown=False,
+        seed=42
+):
     ratios, n_splits = _check_and_convert_ratio(test_size, multi_ratios)
     if not isinstance(ratios, list):
         ratios = list(ratios)
@@ -68,9 +75,16 @@ def _pad_unknown_user_item(data_list):
     return split_data_all
 
 
-def split_by_ratio(data, order=True, shuffle=False, test_size=None,
-                   multi_ratios=None, filter_unknown=True, pad_unknown=False,
-                   seed=42):
+def split_by_ratio(
+        data,
+        order=True,
+        shuffle=False,
+        test_size=None,
+        multi_ratios=None,
+        filter_unknown=True,
+        pad_unknown=False,
+        seed=42
+):
     np.random.seed(seed)
     assert ("user" in data.columns), "data must contains user column"
     ratios, n_splits = _check_and_convert_ratio(test_size, multi_ratios)
@@ -106,8 +120,15 @@ def split_by_ratio(data, order=True, shuffle=False, test_size=None,
     return split_data_all
 
 
-def split_by_num(data, order=True, shuffle=False, test_size=1,
-                 filter_unknown=True, pad_unknown=False, seed=42):
+def split_by_num(
+        data,
+        order=True,
+        shuffle=False,
+        test_size=1,
+        filter_unknown=True,
+        pad_unknown=False,
+        seed=42
+):
     np.random.seed(seed)
     assert ("user" in data.columns), "data must contains user column"
     assert isinstance(test_size, int), "test_size must be int value"
@@ -129,7 +150,7 @@ def split_by_num(data, order=True, shuffle=False, test_size=1,
             test_indices.extend(u_data[-1:])
         else:
             k = test_size
-            train_indices.extend(u_data[:(u_data_len-k)])
+            train_indices.extend(u_data[:(u_data_len - k)])
             test_indices.extend(u_data[-k:])
 
     if shuffle:
@@ -144,8 +165,14 @@ def split_by_num(data, order=True, shuffle=False, test_size=1,
     return split_data_all
 
 
-def split_by_ratio_chrono(data, order=True, shuffle=False, test_size=None,
-                          multi_ratios=None, seed=42):
+def split_by_ratio_chrono(
+        data,
+        order=True,
+        shuffle=False,
+        test_size=None,
+        multi_ratios=None,
+        seed=42
+):
     assert all([
         "user" in data.columns,
         "time" in data.columns
@@ -156,7 +183,13 @@ def split_by_ratio_chrono(data, order=True, shuffle=False, test_size=None,
     return split_by_ratio(**locals())
 
 
-def split_by_num_chrono(data, order=True, shuffle=False, test_size=1, seed=42):
+def split_by_num_chrono(
+        data,
+        order=True,
+        shuffle=False,
+        test_size=1,
+        seed=42
+):
     assert all([
         "user" in data.columns,
         "time" in data.columns
@@ -200,5 +233,3 @@ def _check_and_convert_ratio(test_size, multi_ratios):
 
     else:
         raise ValueError("multi_ratios should be list or tuple")
-
-

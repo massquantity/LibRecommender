@@ -36,11 +36,11 @@ def count_params():
     total_params = f"{total_params:,}"
     embedding_params = f"{embedding_params:,}"
     network_params = f"{network_params:,}"
-    print_params = (f"total params: "
-                    f"{colorize(total_params, 'yellow')} | " 
-                    f"embedding params: "
-                    f"{colorize(embedding_params, 'yellow')} | " 
-                    f"network params: "
+    print_params = ("total params: "
+                    f"{colorize(total_params, 'yellow')} | "
+                    "embedding params: "
+                    f"{colorize(embedding_params, 'yellow')} | "
+                    "network params: "
                     f"{colorize(network_params, 'yellow')}")
     print(print_params)
 
@@ -100,9 +100,11 @@ def colorize(string, color, bold=False, highlight=False):
 
     attr = []
     num = color2num[color]
-    if highlight: num += 10
+    if highlight:
+        num += 10
     attr.append(str(num))
-    if bold: attr.append('1')
+    if bold:
+        attr.append('1')
     attrs = ';'.join(attr)
     return '\x1b[%sm%s\x1b[0m' % (attrs, string)
 
@@ -118,5 +120,3 @@ color2num = dict(
     white=37,
     crimson=38
 )
-
-

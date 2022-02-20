@@ -6,4 +6,3 @@ class NotSamplingError(Exception):
     raised. Because in this case, unsampled data can't be evaluated.
     """
     pass
-

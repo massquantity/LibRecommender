@@ -44,10 +44,7 @@ class Dataset(object):
                 "'user', 'item' must be the first two columns of the data"
             )
         if mode == "train":
-            assert (
-                "label" in data.columns,
-                "train data should contain label column"
-            )
+            assert "label" in data.columns, "train data should contain label column"
 
     @classmethod
     def _check_subclass(cls):
@@ -76,7 +73,8 @@ class Dataset(object):
             if not isinstance(pad_val, (list, tuple)):
                 pad_val = [pad_val] * len(cls.multi_sparse_col)
             assert len(cls.multi_sparse_col) == len(pad_val), (
-                "length of multi_sparse_col and pad_val doesn't match")
+                "length of multi_sparse_col and pad_val doesn't match"
+            )
             for i, field in enumerate(cls.multi_sparse_col):
                 unique_vals = set(
                     itertools.chain.from_iterable(train_data[field].to_numpy().T)
@@ -762,7 +760,7 @@ class DatasetFeat(Dataset):
         dense_col : list of str, optional
             List of dense feature column names.
         multi_sparse_col : list of list of str
-            List of list of multi_sparse feature columns names.
+            Nested list of list of multi_sparse feature columns names.
             For example, [["a", "b", "c"], ["d", "e"]]
         shuffle : list of bool, optional
             Whether to fully shuffle data.

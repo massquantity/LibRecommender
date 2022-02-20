@@ -22,7 +22,7 @@ For example, using the `SVD` model with `rating` task:
 
 The implicit data typically may only contains positive feedback, i.e. only has samples that labeled as 1. In this case negative sampling is needed to effectively train a model. We'll cover negative sampling issue in the [section below](#negative-sampling).
 
-By the way, some models such as `BPR` , `KNNEmbedding`,  `YouTubeMatch` and `YouTubeRanking`, can only be used for `ranking` tasks because they are specially designed for that. 
+By the way, some models such as `BPR` , `KNNEmbedding`,  `YouTuBeRetrieval` and `YouTubeRanking`, can only be used for `ranking` tasks because they are specially designed for that. 
 
 
 
@@ -30,7 +30,7 @@ By the way, some models such as `BPR` , `KNNEmbedding`,  `YouTubeMatch` and `You
 
 `LibRecommender` is a hybrid recommender system, which means you can choose whether to use features other than user behaviors or not. For models only use user behaviors, we classify them as  `pure` models. This category includes `userCF, itemCF, SVD, SVD++, ALS, NCF, BPR, KnnEmbedding, RNN4Rec`. 
 
-Then for models that can include other features (e.g., age, sex, name etc.), we call them `feat` models. This category includes `Wide & Deep, FM, DeepFM, YouTubeMatch, YouTubeRanking, AutoInt, DIN`.
+Then for models that can include other features (e.g., age, sex, name etc.), we call them `feat` models. This category includes `Wide & Deep, FM, DeepFM, YouTuBeRetrieval, YouTubeRanking, AutoInt, DIN`.
 
  The main difference on usage between these two kinds of models are:
 
@@ -150,7 +150,7 @@ See [`split_data_example.py`](https://github.com/massquantity/LibRecommender/blo
 
 ## Negative Sampling
 
-For implicit data with only positive labels, negative sampling is typically needed for model training. There are some special cases, such as `user_cf, item_cf, BPR, YouTubeMatch, RNN4Rec with bpr loss`, because these models do not need negative sampling during training. However, when evaluating these models using some metrics such as `cross_entropy loss, roc_auc, pr_auc`, negative labels are indeed needed. So we recommend doing negative sampling as long as the data is implicit and only contains positive labels, no matter which model you choose. Also note that train_data and test_data should use different sampling seed.
+For implicit data with only positive labels, negative sampling is typically needed for model training. There are some special cases, such as `user_cf, item_cf, BPR, YouTuBeRetrieval, RNN4Rec with bpr loss`, because these models do not need negative sampling during training. However, when evaluating these models using some metrics such as `cross_entropy loss, roc_auc, pr_auc`, negative labels are indeed needed. So we recommend doing negative sampling as long as the data is implicit and only contains positive labels, no matter which model you choose. Also note that train_data and test_data should use different sampling seed.
 
 ```python
 >>> train_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2020)

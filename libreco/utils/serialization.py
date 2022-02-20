@@ -67,7 +67,7 @@ def convert_sim_to_json(sim_csr_matrix, k=20):
     indptr = sim_csr_matrix.indptr.tolist()
     data = sim_csr_matrix.data.tolist()
     for i in range(num):
-        i_slice = slice(indptr[i], indptr[i+1])
+        i_slice = slice(indptr[i], indptr[i + 1])
         res[i] = sorted(zip(indices[i_slice], data[i_slice]),
                         key=lambda x: -x[1])[:k]
     return res
@@ -87,7 +87,7 @@ def convert_user_consumed_to_json(sparse_interacted_matrix):
     indptr = sparse_interacted_matrix.indptr.tolist()
     data = sparse_interacted_matrix.data.tolist()
     for u in range(num):
-        user_slice = slice(indptr[u], indptr[u+1])
+        user_slice = slice(indptr[u], indptr[u + 1])
         for i, r in zip(indices[user_slice], data[user_slice]):
             consumed[u][i] = r
     return consumed
@@ -255,4 +255,3 @@ def vector_from_model(model):
     else:
         raise ValueError("Not suitable for vector model")
     return user_vec, item_vec
-

@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 from libreco.data import DatasetFeat, DataInfo
 from libreco.data import split_by_ratio_chrono
@@ -54,7 +53,7 @@ if __name__ == "__main__":
                 inference_only=True)
 
     # =========================== load model ==============================
-    print("\n", "="*50, " after load model ", "="*50)
+    print("\n", "=" * 50, " after load model ", "=" * 50)
     # important to reset graph if model is loaded in the same shell.
     tf.compat.v1.reset_default_graph()
     # load data_info
