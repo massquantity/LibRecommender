@@ -137,7 +137,7 @@ For how to serve a trained model in LibRecommender, see [Serving Guide](<https:/
 From pypi : &nbsp;
 
 ```shell
-$ pip install LibRecommender==0.6.10
+$ pip install LibRecommender==0.8.0
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
@@ -192,7 +192,7 @@ $ python setup.py install
 |    Wide & Deep    |   feat   | [Wide & Deep Learning for Recommender Systems](https://arxiv.org/pdf/1606.07792.pdf) |
 |        FM         |   feat   | [Factorization Machines](https://www.csie.ntu.edu.tw/~b97053/paper/Rendle2010FM.pdf) |
 |      DeepFM       |   feat   | [DeepFM: A Factorization-Machine based Neural Network for CTR Prediction](https://arxiv.org/pdf/1703.04247.pdf) |
-|   YouTubeMatch  YouTubeRanking |   feat, seq   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
+|   YouTuBeRetrieval  YouTubeRanking |   feat, seq   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
 | AutoInt | feat | [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921.pdf) |
 |        DIN        |   feat, seq   | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) |
 | Item2Vec | pure, seq | [Item2Vec: Neural Item Embedding for Collaborative Filtering](https://arxiv.org/pdf/1603.04259.pdf) |
