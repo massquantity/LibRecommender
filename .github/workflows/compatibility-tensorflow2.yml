@@ -1,4 +1,4 @@
-name: numpy-tensorflow-compatibility-test
+name: compatibility test for Numpy and TensorFlow 2
 
 on:
   # Manual run
@@ -12,10 +12,24 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9]
-        tensorflow-version: [1.15.5, 2.5.0, 2.8.0]
+        python-version: [3.7, 3.8, 3.9]
+        tensorflow-version: [2.5.0, 2.8.0]
         numpy-version: [1.19.5, 1.20.3, 1.21.5, 1.22.2]
         include:
+          # Python 3.6 only supports Numpy 1.19.5
+          - os: ubuntu-latest
+            python-version: '3.6'
+            tensorflow-version: 2.5.0
+            numpy-version: 1.19.5
+          - os: windows-latest
+            python-version: '3.6'
+            tensorflow-version: 2.5.0
+            numpy-version: 1.19.5
+          - os: macos-latest
+            python-version: '3.6'
+            tensorflow-version: 2.5.0
+            numpy-version: 1.19.5
+
           # TensorFlow 2.8 starts to support python 3.10
           - os: ubuntu-latest
             python-version: '3.10'
@@ -49,7 +63,20 @@ jobs:
           python -m pip install tensorflow==${{ matrix.tensorflow-version }}
           python -m pip install numpy==${{ matrix.numpy-version }}
 
-      - name: Test wheels compatibility
+      - name: Test wheels compatibility on Linux
+        run: |
+          cp tests/compatibility_test.py /home/runner/work/ && cd /home/runner/work/
+          python -m compatibility_test
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Test wheels compatibility on Windows
+        run: |
+          cp tests\compatibility_test.py D:\Users\runner\work\ && cd D:\Users\runner\work\
+          python -m compatibility_test
+        if: matrix.os == 'windows-latest'
+
+      - name: Test wheels compatibility on macOS
         run: |
           cp tests/compatibility_test.py /Users/runner/work/ && cd /Users/runner/work/
           python -m compatibility_test
+        if: matrix.os == 'macos-latest'
