@@ -1,4 +1,4 @@
-name: compatibility
+name: numpy-tensorflow-compatibility-test
 
 on:
   # Manual run
@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    name: numpy-tensorflow-compatibility-test
+    name: compatibility
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -51,5 +51,5 @@ jobs:
 
       - name: Test wheels compatibility
         run: |
-          cp tests/compatibility_test.py /home/runner/work/ && cd /home/runner/work/
+          cp tests/compatibility_test.py /Users/runner/work/ && cd /Users/runner/work/
           python -m compatibility_test
