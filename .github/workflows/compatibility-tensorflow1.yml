@@ -31,9 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel setuptools
-          python -m pip install $(sed "/tensorflow*/d" requirements.txt)
           python -m pip install LibRecommender==0.8.2
-          python -m pip install tensorflow==${{ matrix.tensorflow-version }}
           python -m pip install numpy==${{ matrix.numpy-version }}
 
       - name: Test wheels compatibility on Linux
@@ -44,7 +42,7 @@ jobs:
 
       - name: Test wheels compatibility on Windows
         run: |
-          copy D:\a\LibRecommender\LibRecommender\tests\compatibility_test.py D:\Users\runner\work\ && Set-Location -Path "D:\Users\runner\work\"
+          copy D:\a\LibRecommender\LibRecommender\tests\compatibility_test.py D:\a\ && Set-Location -Path "D:\a\"
           python -m compatibility_test
         if: matrix.os == 'windows-latest'
 
