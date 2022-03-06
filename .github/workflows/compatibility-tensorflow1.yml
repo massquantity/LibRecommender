@@ -11,21 +11,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.7]
-        tensorflow-version: [1.15.5]
-        numpy-version: [1.20.3, 1.21.5, 1.22.2]
         include:
-          # Python 3.6 only supports Numpy 1.19.5
-          - os: ubuntu-latest
-            python-version: '3.6'
-            tensorflow-version: 1.15.5
-            numpy-version: 1.19.5
           - os: windows-latest
-            python-version: '3.6'
-            tensorflow-version: 1.15.5
-            numpy-version: 1.19.5
-          - os: macos-latest
             python-version: '3.6'
             tensorflow-version: 1.15.5
             numpy-version: 1.19.5
@@ -57,7 +44,7 @@ jobs:
 
       - name: Test wheels compatibility on Windows
         run: |
-          cp tests\compatibility_test.py D:\Users\runner\work\ && cd D:\Users\runner\work\
+          copy %cd%\tests\compatibility_test.py D:\Users\runner\work\ && Set-Location -Path "D:\Users\runner\work\"
           python -m compatibility_test
         if: matrix.os == 'windows-latest'
 
