@@ -12,7 +12,7 @@ from Cython.Distutils import build_ext
 
 
 NAME = "LibRecommender"
-VERSION = "0.8.0"
+VERSION = "0.8.2"
 
 
 here = os.path.abspath(os.path.dirname(__file__))
