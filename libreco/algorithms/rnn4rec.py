@@ -11,6 +11,7 @@ import os
 import numpy as np
 import tensorflow as tf2
 from tensorflow.keras.initializers import (
+    zeros as tf_zeros,
     truncated_normal as tf_truncated_normal,
     glorot_normal as tf_glorot_normal
 )
@@ -147,7 +148,7 @@ class RNN4Rec(Base, TfMixin, EvalMixin):
         self.item_biases = tf.get_variable(
             name="item_biases",
             shape=[self.n_items],
-            initializer=tf.zeros,
+            initializer=tf_zeros,
             regularizer=self.reg
         )
         self.item_weights = tf.get_variable(
