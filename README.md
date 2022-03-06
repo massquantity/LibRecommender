@@ -137,7 +137,7 @@ For how to serve a trained model in LibRecommender, see [Serving Guide](<https:/
 From pypi : &nbsp;
 
 ```shell
-$ pip install LibRecommender==0.8.0
+$ pip install LibRecommender==0.8.2
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
@@ -154,19 +154,30 @@ $ python setup.py install
 #### Basic Dependencies in `libreco`:
 
 - Python >= 3.6
-- TensorFlow >= 1.14
-- Numpy >= 1.15.4
+- TensorFlow >= 1.15
+- Numpy >= 1.19.5
 - Cython >= 0.29.0
-- Pandas >= 0.23.4
+- Pandas >= 1.0.0
 - Scipy >= 1.2.1
 - scikit-learn >= 0.20.0
 - gensim >= 4.0.0
 - tqdm >= 4.46.0
 - [hnswlib](https://github.com/nmslib/hnswlib)
 
-`LibRecommender` is tested under TensorFlow 1.14 and 2.5. If you encounter any problem during running, feel free to open an issue.
+`LibRecommender` is tested under TensorFlow 1.15, 2.5 and 2.8. If you encounter any problem during running, feel free to open an issue.
 
-**Known issue**: TensorFlow 2.x is not fully compatible with Numpy >= 1.20. Try downgrading Numpy `pip install numpy==1.19.5` if you encounter tf errors. Refer to [Numpy v1.20+ compatibility](https://github.com/tensorflow/tensorflow/issues/47691)
+**Known issue**: Sometimes one may encounter errors like `ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject`. In this case try upgrading numpy, and version 1.22.0 or higher is probably a safe option.
+
+The table below shows some compatible version combinations: 
+
+| Python |     Numpy      |   TensorFlow   |          OS           |
+|:------:|:--------------:|:--------------:|:---------------------:|
+|  3.6   |     1.19.5     |   1.15, 2.5    | linux, windows, macos |
+|  3.7   | 1.20.3, 1.21.5 | 1.15, 2.5, 2.8 | linux, windows, macos |
+|  3.8   |     1.22.2     |    2.5, 2.8    | linux, windows, macos |
+|  3.9   |     1.22.2     |    2.5, 2.8    | linux, windows, macos |
+|  3.10  |     1.22.2     |      2.8       | linux, windows, macos |
+
 
 #### Optional Serving Dependencies:
 
@@ -181,24 +192,24 @@ $ python setup.py install
 
 ## References
 
-|     Algorithm     | Category | Paper                                                        |
-| :---------------: | :------: | :----------------------------------------------------------- |
-| userCF / itemCF |   pure   | [Item-Based Collaborative Filtering Recommendation Algorithms](http://www.ra.ethz.ch/cdstore/www10/papers/pdf/p519.pdf) |
-|        SVD        |   pure   | [Matrix Factorization Techniques for Recommender Systems](https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf) |
-|      SVD ++       |   pure   | [Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model](https://dl.acm.org/citation.cfm?id=1401944) |
-|        ALS        |   pure   | 1. [Matrix Completion via Alternating Least Square(ALS)](https://stanford.edu/~rezab/classes/cme323/S15/notes/lec14.pdf) / <br>2. [Collaborative Filtering for Implicit Feedback Datasets](http://yifanhu.net/PUB/cf.pdf) / <br>3. [Applications of the Conjugate Gradient Method for Implicit Feedback Collaborative Filtering](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.379.6473&rep=rep1&type=pdf) |
-|        NCF        |   pure   | [Neural Collaborative Filtering](https://arxiv.org/pdf/1708.05031.pdf) |
-|        BPR        |   pure   | [BPR: Bayesian Personalized Ranking from Implicit Feedback](https://arxiv.org/ftp/arxiv/papers/1205/1205.2618.pdf) |
-|    Wide & Deep    |   feat   | [Wide & Deep Learning for Recommender Systems](https://arxiv.org/pdf/1606.07792.pdf) |
-|        FM         |   feat   | [Factorization Machines](https://www.csie.ntu.edu.tw/~b97053/paper/Rendle2010FM.pdf) |
-|      DeepFM       |   feat   | [DeepFM: A Factorization-Machine based Neural Network for CTR Prediction](https://arxiv.org/pdf/1703.04247.pdf) |
-|   YouTuBeRetrieval  YouTubeRanking |   feat, seq   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
-| AutoInt | feat | [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921.pdf) |
-|        DIN        |   feat, seq   | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) |
-| Item2Vec | pure, seq | [Item2Vec: Neural Item Embedding for Collaborative Filtering](https://arxiv.org/pdf/1603.04259.pdf) |
-| RNN4Rec / GRU4Rec | pure, seq | [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939.pdf) |
-| Caser | pure, seq | [Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding](https://arxiv.org/pdf/1809.07426.pdf) |
-| WaveNet | pure, seq | [WaveNet: A Generative Model for Raw Audio](https://arxiv.org/pdf/1609.03499.pdf) |
+|             Algorithm             | Category | Paper                                                        |
+|:---------------------------------:| :------: | :----------------------------------------------------------- |
+|          userCF / itemCF          |   pure   | [Item-Based Collaborative Filtering Recommendation Algorithms](http://www.ra.ethz.ch/cdstore/www10/papers/pdf/p519.pdf) |
+|                SVD                |   pure   | [Matrix Factorization Techniques for Recommender Systems](https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf) |
+|              SVD ++               |   pure   | [Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model](https://dl.acm.org/citation.cfm?id=1401944) |
+|                ALS                |   pure   | 1. [Matrix Completion via Alternating Least Square(ALS)](https://stanford.edu/~rezab/classes/cme323/S15/notes/lec14.pdf) / <br>2. [Collaborative Filtering for Implicit Feedback Datasets](http://yifanhu.net/PUB/cf.pdf) / <br>3. [Applications of the Conjugate Gradient Method for Implicit Feedback Collaborative Filtering](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.379.6473&rep=rep1&type=pdf) |
+|                NCF                |   pure   | [Neural Collaborative Filtering](https://arxiv.org/pdf/1708.05031.pdf) |
+|                BPR                |   pure   | [BPR: Bayesian Personalized Ranking from Implicit Feedback](https://arxiv.org/ftp/arxiv/papers/1205/1205.2618.pdf) |
+|            Wide & Deep            |   feat   | [Wide & Deep Learning for Recommender Systems](https://arxiv.org/pdf/1606.07792.pdf) |
+|                FM                 |   feat   | [Factorization Machines](https://www.csie.ntu.edu.tw/~b97053/paper/Rendle2010FM.pdf) |
+|              DeepFM               |   feat   | [DeepFM: A Factorization-Machine based Neural Network for CTR Prediction](https://arxiv.org/pdf/1703.04247.pdf) |
+| YouTuBeRetrieval,  YouTubeRanking |   feat, seq   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
+|              AutoInt              | feat | [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921.pdf) |
+|                DIN                |   feat, seq   | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) |
+|             Item2Vec              | pure, seq | [Item2Vec: Neural Item Embedding for Collaborative Filtering](https://arxiv.org/pdf/1603.04259.pdf) |
+|         RNN4Rec / GRU4Rec         | pure, seq | [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939.pdf) |
+|               Caser               | pure, seq | [Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding](https://arxiv.org/pdf/1809.07426.pdf) |
+|              WaveNet              | pure, seq | [WaveNet: A Generative Model for Raw Audio](https://arxiv.org/pdf/1609.03499.pdf) |
 
 > `pure` means collaborative-filtering algorithms which only use behavior data,  `feat` means other features can be included, `seq` means sequence or graph algorithms.
 
