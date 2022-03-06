@@ -71,7 +71,7 @@ jobs:
 
       - name: Test wheels compatibility on Windows
         run: |
-          cp tests\compatibility_test.py D:\Users\runner\work\ && cd D:\Users\runner\work\
+          copy D:\a\LibRecommender\LibRecommender\tests\compatibility_test.py D:\a\ && Set-Location -Path "D:\a\"
           python -m compatibility_test
         if: matrix.os == 'windows-latest'
 
