@@ -194,7 +194,7 @@ The table below shows some compatible version combinations:
 ## References
 
 |             Algorithm             | Category | Backend | Sequence | Graph | Embedding | Paper                                                        |
-|:---------------------------------:| :------: | :----------------------------------------------------------: |-----------------------------------|:---------------------------------:|:---------------------------------:|-----------------------------------|
+|:---------------------------------:| :------: | :----------------------------------------------------------: |:---------------------------------:|:---------------------------------:|:---------------------------------:|-----------------------------------|
 |          userCF / itemCF          |   pure   |   Cython   |      |      |      | [Item-Based Collaborative Filtering Recommendation Algorithms](http://www.ra.ethz.ch/cdstore/www10/papers/pdf/p519.pdf) |
 |                SVD                |   pure   |   TensorFlow1   |      |      |   :heavy_check_mark:   | [Matrix Factorization Techniques for Recommender Systems](https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf) |
 |              SVD++               |   pure   |   TensorFlow1   |      |      |   :heavy_check_mark:   | [Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model](https://dl.acm.org/citation.cfm?id=1401944) |
