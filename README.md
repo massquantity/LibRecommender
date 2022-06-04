@@ -155,6 +155,7 @@ $ python setup.py install
 
 - Python >= 3.6
 - TensorFlow >= 1.15
+- PyTorch >= 1.10
 - Numpy >= 1.19.5
 - Cython >= 0.29.0
 - Pandas >= 1.0.0
@@ -192,26 +193,38 @@ The table below shows some compatible version combinations:
 
 ## References
 
-|             Algorithm             | Category | Paper                                                        |
-|:---------------------------------:| :------: | :----------------------------------------------------------- |
-|          userCF / itemCF          |   pure   | [Item-Based Collaborative Filtering Recommendation Algorithms](http://www.ra.ethz.ch/cdstore/www10/papers/pdf/p519.pdf) |
-|                SVD                |   pure   | [Matrix Factorization Techniques for Recommender Systems](https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf) |
-|              SVD ++               |   pure   | [Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model](https://dl.acm.org/citation.cfm?id=1401944) |
-|                ALS                |   pure   | 1. [Matrix Completion via Alternating Least Square(ALS)](https://stanford.edu/~rezab/classes/cme323/S15/notes/lec14.pdf) / <br>2. [Collaborative Filtering for Implicit Feedback Datasets](http://yifanhu.net/PUB/cf.pdf) / <br>3. [Applications of the Conjugate Gradient Method for Implicit Feedback Collaborative Filtering](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.379.6473&rep=rep1&type=pdf) |
-|                NCF                |   pure   | [Neural Collaborative Filtering](https://arxiv.org/pdf/1708.05031.pdf) |
-|                BPR                |   pure   | [BPR: Bayesian Personalized Ranking from Implicit Feedback](https://arxiv.org/ftp/arxiv/papers/1205/1205.2618.pdf) |
-|            Wide & Deep            |   feat   | [Wide & Deep Learning for Recommender Systems](https://arxiv.org/pdf/1606.07792.pdf) |
-|                FM                 |   feat   | [Factorization Machines](https://www.csie.ntu.edu.tw/~b97053/paper/Rendle2010FM.pdf) |
-|              DeepFM               |   feat   | [DeepFM: A Factorization-Machine based Neural Network for CTR Prediction](https://arxiv.org/pdf/1703.04247.pdf) |
-| YouTuBeRetrieval,  YouTubeRanking |   feat, seq   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
-|              AutoInt              | feat | [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921.pdf) |
-|                DIN                |   feat, seq   | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) |
-|             Item2Vec              | pure, seq | [Item2Vec: Neural Item Embedding for Collaborative Filtering](https://arxiv.org/pdf/1603.04259.pdf) |
-|         RNN4Rec / GRU4Rec         | pure, seq | [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939.pdf) |
-|               Caser               | pure, seq | [Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding](https://arxiv.org/pdf/1809.07426.pdf) |
-|              WaveNet              | pure, seq | [WaveNet: A Generative Model for Raw Audio](https://arxiv.org/pdf/1609.03499.pdf) |
+|             Algorithm             | Category | Backend | Sequence | Graph | Embedding | Paper                                                        |
+|:---------------------------------:| :------: | :----------------------------------------------------------: |-----------------------------------|:---------------------------------:|:---------------------------------:|-----------------------------------|
+|          userCF / itemCF          |   pure   |   Cython   |      |      |      | [Item-Based Collaborative Filtering Recommendation Algorithms](http://www.ra.ethz.ch/cdstore/www10/papers/pdf/p519.pdf) |
+|                SVD                |   pure   |   TensorFlow1   |      |      |   :heavy_check_mark:   | [Matrix Factorization Techniques for Recommender Systems](https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf) |
+|              SVD++               |   pure   |   TensorFlow1   |      |      |   :heavy_check_mark:   | [Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model](https://dl.acm.org/citation.cfm?id=1401944) |
+|                ALS                |   pure   |   Cython   |      |      |   :heavy_check_mark:   | 1. [Matrix Completion via Alternating Least Square(ALS)](https://stanford.edu/~rezab/classes/cme323/S15/notes/lec14.pdf)  <br>2. [Collaborative Filtering for Implicit Feedback Datasets](http://yifanhu.net/PUB/cf.pdf)  <br>3. [Applications of the Conjugate Gradient Method for Implicit Feedback Collaborative Filtering](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.379.6473&rep=rep1&type=pdf) |
+|                NCF                |   pure   |   TensorFlow1   |      |      |      | [Neural Collaborative Filtering](https://arxiv.org/pdf/1708.05031.pdf) |
+|                BPR                |   pure   |   Cython, TensorFlow1   |      |      |   :heavy_check_mark:   | [BPR: Bayesian Personalized Ranking from Implicit Feedback](https://arxiv.org/ftp/arxiv/papers/1205/1205.2618.pdf) |
+|            Wide & Deep            |   feat   |   TensorFlow1   |      |      |      | [Wide & Deep Learning for Recommender Systems](https://arxiv.org/pdf/1606.07792.pdf) |
+|                FM                 |   feat   |   TensorFlow1   |      |      |      | [Factorization Machines](https://www.csie.ntu.edu.tw/~b97053/paper/Rendle2010FM.pdf) |
+|              DeepFM               |   feat   |   TensorFlow1   |      |      |      | [DeepFM: A Factorization-Machine based Neural Network for CTR Prediction](https://arxiv.org/pdf/1703.04247.pdf) |
+| YouTuBeRetrieval |   feat   |   TensorFlow1   |   :heavy_check_mark:   |      |   :heavy_check_mark:   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
+| YouTubeRanking | feat | TensorFlow1 | :heavy_check_mark: |  |  | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
+|              AutoInt              | feat | TensorFlow1 |  |  |  | [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921.pdf) |
+|                DIN                |   feat   |   TensorFlow1   |   :heavy_check_mark:   |      |      | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) |
+|             Item2Vec              | pure | Gensim | :heavy_check_mark: |  | :heavy_check_mark: | [Item2Vec: Neural Item Embedding for Collaborative Filtering](https://arxiv.org/pdf/1603.04259.pdf) |
+|         RNN4Rec / GRU4Rec         | pure | TensorFlow1 | :heavy_check_mark: |  | :heavy_check_mark: | [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939.pdf) |
+|               Caser               | pure | TensorFlow1 | :heavy_check_mark: |  | :heavy_check_mark: | [Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding](https://arxiv.org/pdf/1809.07426.pdf) |
+|              WaveNet              | pure | TensorFlow1 | :heavy_check_mark: |  | :heavy_check_mark: | [WaveNet: A Generative Model for Raw Audio](https://arxiv.org/pdf/1609.03499.pdf) |
+| DeepWalk | pure | Gensim |  | :heavy_check_mark: | :heavy_check_mark: | [DeepWalk: Online Learning of Social Representations](https://arxiv.org/pdf/1403.6652.pdf) |
+| NGCF | pure | PyTorch |  | :heavy_check_mark: | :heavy_check_mark: | [Neural Graph Collaborative Filtering](https://arxiv.org/pdf/1905.08108.pdf) |
+| LightGCN | pure | PyTorch |  | :heavy_check_mark: | :heavy_check_mark: | [LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation](https://arxiv.org/pdf/2002.02126.pdf) |
 
-> `pure` means collaborative-filtering algorithms which only use behavior data,  `feat` means other features can be included, `seq` means sequence or graph algorithms.
+> **Category**: `pure` means collaborative-filtering algorithms which only use behavior data,  `feat` means other side-features can be included.
+>
+> **Sequence**: Algorithms that leverage user behavior sequence.
+>
+> **Graph**: Algorithms that leverage graph information, including Graph Embedding (GE) and Graph Neural Network (GNN) .
+>
+> **Embedding**: Algorithms that can generate final user and item embeddings.
+
+
 
 ## License
 
