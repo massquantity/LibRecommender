@@ -2,8 +2,7 @@ import time
 import pandas as pd
 from libreco.data import split_by_ratio_chrono, DatasetPure
 from libreco.algorithms import (
-    SVD, SVDpp, NCF, ALS, UserCF, ItemCF, RNN4Rec, KnnEmbedding,
-    KnnEmbeddingApproximate, BPR
+    SVD, SVDpp, NCF, ALS, UserCF, ItemCF, RNN4Rec, BPR
 )
 
 # remove unnecessary tensorflow logging
@@ -76,24 +75,6 @@ if __name__ == "__main__":
                      "recall", "map", "ndcg"])
     print("prediction: ", rnn.predict(user=1, item=2333))
     print("recommendation: ", rnn.recommend_user(user=1, n_rec=7))
-
-    reset_state("KnnEmbeddingApproximate")
-    knn_app = KnnEmbeddingApproximate("ranking", data_info,
-                                      embedding_method="item2vec",
-                                      embed_size=16, window_size=10,
-                                      k=10, seed=42)
-    knn_app.fit(train_data, verbose=2, n_threads=4, store_top_k=True,
-                eval_data=eval_data, metrics=[
-                    "loss", "balanced_accuracy", "roc_auc", "pr_auc",
-                    "precision", "recall", "map", "ndcg"])
-
-    reset_state("KnnEmbedding")
-    knn = KnnEmbedding("ranking", data_info, embedding_method="item2vec",
-                       embed_size=16, window_size=10, k=10, seed=42)
-    knn.fit(train_data, verbose=2, n_threads=4, store_top_k=True,
-            eval_data=eval_data, metrics=[
-                "loss", "balanced_accuracy", "roc_auc", "pr_auc",
-                "precision", "recall", "map", "ndcg"])
 
     reset_state("ALS")
     als = ALS(task="ranking", data_info=data_info, embed_size=16, n_epochs=2,
