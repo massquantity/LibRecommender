@@ -22,13 +22,13 @@ For example, using the `SVD` model with `rating` task:
 
 The implicit data typically may only contains positive feedback, i.e. only has samples that labeled as 1. In this case negative sampling is needed to effectively train a model. We'll cover negative sampling issue in the [section below](#negative-sampling).
 
-By the way, some models such as `BPR` , `KNNEmbedding`,  `YouTuBeRetrieval` and `YouTubeRanking`, can only be used for `ranking` tasks because they are specially designed for that. 
+By the way, some models such as `BPR` , `YouTuBeRetrieval`, `YouTuBeRanking`, `Item2Vec`, `DeepWalk`, `LightGCN` etc. , can only be used for `ranking` tasks since they are specially designed for that. 
 
 
 
 ## `Pure` and `Feat` model
 
-`LibRecommender` is a hybrid recommender system, which means you can choose whether to use features other than user behaviors or not. For models only use user behaviors, we classify them as  `pure` models. This category includes `userCF, itemCF, SVD, SVD++, ALS, NCF, BPR, KnnEmbedding, RNN4Rec`. 
+`LibRecommender` is a hybrid recommender system, which means you can choose whether to use features other than user behaviors or not. For models only use user behaviors, we classify them as  `pure` models. This category includes `userCF, itemCF, SVD, SVD++, ALS, NCF, BPR, RNN4Rec, Item2Vec, Caser, WaveNet, DeepWalk, NGCF, LightGCN`. 
 
 Then for models that can include other features (e.g., age, sex, name etc.), we call them `feat` models. This category includes `Wide & Deep, FM, DeepFM, YouTuBeRetrieval, YouTubeRanking, AutoInt, DIN`.
 
@@ -44,7 +44,7 @@ You can find some typical usages in these files:
 + [`feat_rating_example.py `](https://github.com/massquantity/LibRecommender/blob/master/examples/feat_rating_example.py)
 + [`feat_ranking_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/feat_ranking_example.py)
 
-Actually, there exists a third model category in `LibRecommender`, which we call them `seq` models. These models typically leverage some sequence or graph information of users. This category includes `KnnEmbedding, RNN4Rec, YouTuBeMatch, YouTubeRanking, DIN`. As you can see, `seq` models overlap with `pure` and `feat` models. But no need to worry, the APIs still remains the same, and you can just use the examples above.
+Actually, there exists two other kinds of model categories in `LibRecommender`, which we call them `sequence` and `graph` models. Sequence models leverage information of user behavior sequence, whereas Graph models leverage information from graph. Sequence models include `RNN4Rec, YouTuBeRetrieval, YouTuBeRanking, DIN, Item2Vec, Caser, WaveNet ` and Graph models include `DeepWalk, NGCF, LightGCN`. As you can see, these models overlap with `pure` and `feat` models. But no need to worry, the APIs remain the same, and you can just use the examples above.
 
 
 
