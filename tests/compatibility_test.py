@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     data_path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
-        "sample_data",
+        # "sample_data",
         "sample_movielens_rating.dat"
     )
     pd_data = pd.read_csv(data_path, sep="::", names=["user", "item", "label", "time"])
