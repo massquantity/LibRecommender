@@ -4,10 +4,12 @@ import json
 import os
 import multiprocessing
 import time
+
 import numpy as np
 import pandas as pd
 import tensorflow as tf2
 from tqdm import tqdm
+
 from ..feature import features_from_batch_data
 from ..utils.tf_ops import modify_variable_names
 from ..utils.misc import time_block, colorize
@@ -266,7 +268,10 @@ class Base(abc.ABC):
     def save_params(self, path):
         hparams = dict()
         arg_names = list(inspect.signature(self.__init__).parameters.keys())
-        arg_names.remove("data_info")
+        if "data_info" in arg_names:
+            arg_names.remove("data_info")
+        if "device" in arg_names:
+            arg_names.remove("device")
         for p in arg_names:
             hparams[p] = self.all_args[p]
 

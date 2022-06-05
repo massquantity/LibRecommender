@@ -1,6 +1,7 @@
 """
 
-Reference: Xiangnan He et al. "Neural Collaborative Filtering" (https://arxiv.org/pdf/1708.05031.pdf)
+Reference: Xiangnan He et al. "Neural Collaborative Filtering"
+           (https://arxiv.org/pdf/1708.05031.pdf)
 
 author: massquantity
 
@@ -160,8 +161,7 @@ class NCF(Base, TfMixin, EvalMixin):
         else:
             data_generator = DataGenPure(train_data)
 
-        self.train_pure(data_generator, verbose, shuffle, eval_data, metrics,
-                        **kwargs)
+        self.train_pure(data_generator, verbose, shuffle, eval_data, metrics, **kwargs)
         self.assign_oov()
 
     def predict(self, user, item, cold_start="average", inner_id=False):

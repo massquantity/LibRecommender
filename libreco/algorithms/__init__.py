@@ -12,10 +12,13 @@ from .wide_deep import WideDeep
 from .deepfm import DeepFM
 from .autoint import AutoInt
 from .din import DIN
-from .knn_embed import KnnEmbedding, KnnEmbeddingApproximate
 from .rnn4rec import RNN4Rec
 from .caser import Caser
 from .wave_net import WaveNet
+from .item2vec import Item2Vec
+from .deepwalk import DeepWalk
+from .ngcf import NGCF
+from .lightgcn import LightGCN
 
 __all__ = [
     "UserCF",
@@ -32,9 +35,11 @@ __all__ = [
     "DeepFM",
     "AutoInt",
     "DIN",
-    "KnnEmbedding",
-    "KnnEmbeddingApproximate",
     "RNN4Rec",
     "Caser",
-    "WaveNet"
+    "WaveNet",
+    "Item2Vec",
+    "DeepWalk",
+    "NGCF",
+    "LightGCN"
 ]

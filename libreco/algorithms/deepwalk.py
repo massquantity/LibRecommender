@@ -11,14 +11,13 @@ import random
 from collections import defaultdict
 from itertools import islice
 
-
 import numpy as np
 from gensim.models import Word2Vec
 from tqdm import tqdm
 
 from .base import Base
 from ..evaluation.evaluate import EvalMixin
-from ..utils.misc import time_block
+from ..utils.misc import assign_oov_vector, time_block
 
 
 class DeepWalk(Base, EvalMixin):
@@ -37,9 +36,8 @@ class DeepWalk(Base, EvalMixin):
             n_epochs=5,
             n_threads=0,
             seed=42,
-            lower_upper_bound=None,
     ):
-        Base.__init__(self, task, data_info, lower_upper_bound)
+        Base.__init__(self, task, data_info)
         EvalMixin.__init__(self, task, data_info)
 
         self.task = task
@@ -87,6 +85,7 @@ class DeepWalk(Base, EvalMixin):
                 sorted_vocab=0
             )
         self._set_latent_vectors(model)
+        assign_oov_vector(self)
         if verbose > 1:
             self.print_metrics(eval_data=eval_data, metrics=metrics, **kwargs)
             print("=" * 30)
@@ -99,7 +98,6 @@ class DeepWalk(Base, EvalMixin):
             axis=1
         )
         preds = 1 / (1 + np.exp(-preds))
-
         if unknown_num > 0 and cold_start == "popular":
             preds[unknown_index] = self.default_prediction
         return preds
@@ -147,14 +145,24 @@ class DeepWalk(Base, EvalMixin):
             self.item_embed /= item_norms
 
     def save(self, path, model_name, manual=True, inference_only=False):
-        pass
+        if not os.path.isdir(path):
+            print(f"file folder {path} doesn't exists, creating a new one...")
+            os.makedirs(path)
+        self.save_params(path)
+        variable_path = os.path.join(path, model_name)
+        np.savez_compressed(variable_path,
+                            user_embed=self.user_embed,
+                            item_embed=self.item_embed)
 
     @classmethod
     def load(cls, path, model_name, data_info, manual=True):
-        pass
-
-    def rebuild_graph(self, path, model_name, full_assign=False):
-        pass
+        variable_path = os.path.join(path, f"{model_name}.npz")
+        variables = np.load(variable_path)
+        hparams = cls.load_params(path, data_info)
+        model = cls(**hparams)
+        model.user_embed = variables["user_embed"]
+        model.item_embed = variables["item_embed"]
+        return model
 
 
 class ItemCorpus(object):
