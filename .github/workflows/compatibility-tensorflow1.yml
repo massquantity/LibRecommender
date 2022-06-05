@@ -51,18 +51,21 @@ jobs:
 
       - name: Test wheels compatibility on Linux
         run: |
+          cp tests/sample_data/sample_movielens_rating.dat /home/runner/work/
           cp tests/compatibility_test.py /home/runner/work/ && cd /home/runner/work/
           python -m compatibility_test
         if: matrix.os == 'ubuntu-latest'
 
       - name: Test wheels compatibility on Windows
         run: |
+          copy D:\a\LibRecommender\LibRecommender\tests\sample_data\sample_movielens_rating.dat D:\a\
           copy D:\a\LibRecommender\LibRecommender\tests\compatibility_test.py D:\a\ && Set-Location -Path "D:\a\"
           python -m compatibility_test
         if: matrix.os == 'windows-latest'
 
       - name: Test wheels compatibility on macOS
         run: |
+          cp tests/sample_data/sample_movielens_rating.dat /Users/runner/work/
           cp tests/compatibility_test.py /Users/runner/work/ && cd /Users/runner/work/
           python -m compatibility_test
         if: matrix.os == 'macos-latest'
