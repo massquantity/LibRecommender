@@ -1,20 +1,18 @@
 import pytest
 import tensorflow as tf
 
-from libreco.algorithms import BPR
+from libreco.algorithms import LightGCN
 from libreco.utils.exception import NotSamplingError
 from tests.utils_data import prepare_pure_data
 from tests.utils_reco import recommend_in_former_consumed
 
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
-@pytest.mark.parametrize("reg, num_neg, use_tf", [
-    (None, 1, True),
-    (0.001, 3, True),
-    (None, 1, False),
-    (0.001, 3, False)
+@pytest.mark.parametrize("reg, dropout, num_neg", [
+    (0.0, 0.0, 1),
+    (0.01, 0.2, 3)
 ])
-def test_bpr(prepare_pure_data, task, reg, num_neg, use_tf):
+def test_lightgcn(prepare_pure_data, task, reg, dropout, num_neg):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
@@ -27,16 +25,17 @@ def test_bpr(prepare_pure_data, task, reg, num_neg, use_tf):
         if task == "rating"
         else ["roc_auc", "precision", "ndcg"]
     )
-    model = BPR(
+    model = LightGCN(
         task=task,
         data_info=data_info,
         embed_size=16,
         n_epochs=2,
         lr=1e-4,
-        reg=reg,
         batch_size=256,
-        num_neg=num_neg,
-        use_tf=use_tf,
+        n_layers=3,
+        reg=reg,
+        dropout=dropout,
+        num_neg=num_neg
     )
     if task == "rating":
         # noinspection PyTypeChecker

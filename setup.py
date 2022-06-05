@@ -12,7 +12,7 @@ from Cython.Distutils import build_ext
 
 
 NAME = "LibRecommender"
-VERSION = "0.8.2"
+VERSION = "0.8.4"
 
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -125,6 +125,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Programming Language :: Cython',
     ],
     keywords=['Matrix Factorization', 'Collaborative Filtering',
