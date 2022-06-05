@@ -1,19 +1,18 @@
 import pytest
 import tensorflow as tf
 
-from libreco.algorithms import KnnEmbedding, KnnEmbeddingApproximate
+from libreco.algorithms import LightGCN
+from libreco.utils.exception import NotSamplingError
 from tests.utils_data import prepare_pure_data
 from tests.utils_reco import recommend_in_former_consumed
 
 
-@pytest.mark.parametrize("algorithm", [KnnEmbedding, KnnEmbeddingApproximate])
 @pytest.mark.parametrize("task", ["rating", "ranking"])
-@pytest.mark.parametrize("embedding_method, window_size", [
-    ("item2vec", None),
-    ("another", None),
-    ("item2vec", 1)
+@pytest.mark.parametrize("reg, dropout, num_neg", [
+    (0.0, 0.0, 1),
+    (0.01, 0.2, 3)
 ])
-def test_knn_embed(prepare_pure_data, algorithm, task, embedding_method, window_size):
+def test_lightgcn(prepare_pure_data, task, reg, dropout, num_neg):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
@@ -26,32 +25,25 @@ def test_knn_embed(prepare_pure_data, algorithm, task, embedding_method, window_
         if task == "rating"
         else ["roc_auc", "precision", "ndcg"]
     )
-
-    if embedding_method != "item2vec":
-        with pytest.raises(ValueError):
-            _ = algorithm(
-                task=task,
-                data_info=data_info,
-                embedding_method=embedding_method,
-                embed_size=16,
-                window_size=window_size,
-                k=10
-            )
-
-    model = algorithm(
+    model = LightGCN(
         task=task,
         data_info=data_info,
-        embedding_method="item2vec",
         embed_size=16,
-        window_size=window_size,
-        k=10
+        n_epochs=2,
+        lr=1e-4,
+        batch_size=256,
+        n_layers=3,
+        reg=reg,
+        dropout=dropout,
+        num_neg=num_neg
     )
-
     if task == "rating":
-        with pytest.raises(AssertionError):
+        # noinspection PyTypeChecker
+        with pytest.raises((AssertionError, NotSamplingError)):
             model.fit(
                 train_data,
                 verbose=2,
+                shuffle=True,
                 eval_data=eval_data,
                 metrics=metrics
             )
@@ -59,6 +51,7 @@ def test_knn_embed(prepare_pure_data, algorithm, task, embedding_method, window_
         model.fit(
             train_data,
             verbose=2,
+            shuffle=True,
             eval_data=eval_data,
             metrics=metrics
         )
@@ -69,9 +62,9 @@ def test_knn_embed(prepare_pure_data, algorithm, task, embedding_method, window_
         else:
             assert 0 <= pred <= 1
 
-        # cold_pred1 = model.predict(user="cold user1", item="cold item2")
-        # cold_pred2 = model.predict(user="cold user2", item="cold item2")
-        # assert cold_pred1 == cold_pred2
+        cold_pred1 = model.predict(user="cold user1", item="cold item2")
+        cold_pred2 = model.predict(user="cold user2", item="cold item2")
+        assert cold_pred1 == cold_pred2
 
         # cold start strategy
         with pytest.raises(ValueError):

@@ -1,20 +1,25 @@
 import pytest
 import tensorflow as tf
 
-from libreco.algorithms import BPR
+from libreco.algorithms import DeepWalk
 from libreco.utils.exception import NotSamplingError
 from tests.utils_data import prepare_pure_data
 from tests.utils_reco import recommend_in_former_consumed
 
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
-@pytest.mark.parametrize("reg, num_neg, use_tf", [
-    (None, 1, True),
-    (0.001, 3, True),
-    (None, 1, False),
-    (0.001, 3, False)
+@pytest.mark.parametrize("norm_embed, n_walks, walk_length, window_size", [
+    (True, 10, 10, 5),
+    (False, 1, 1, 1)
 ])
-def test_bpr(prepare_pure_data, task, reg, num_neg, use_tf):
+def test_deepwalk(
+        prepare_pure_data,
+        task,
+        norm_embed,
+        n_walks,
+        walk_length,
+        window_size
+):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
@@ -27,16 +32,15 @@ def test_bpr(prepare_pure_data, task, reg, num_neg, use_tf):
         if task == "rating"
         else ["roc_auc", "precision", "ndcg"]
     )
-    model = BPR(
+    model = DeepWalk(
         task=task,
         data_info=data_info,
         embed_size=16,
         n_epochs=2,
-        lr=1e-4,
-        reg=reg,
-        batch_size=256,
-        num_neg=num_neg,
-        use_tf=use_tf,
+        norm_embed=norm_embed,
+        window_size=window_size,
+        n_walks=n_walks,
+        walk_length=walk_length
     )
     if task == "rating":
         # noinspection PyTypeChecker

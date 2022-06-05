@@ -1,9 +1,22 @@
 import time
 import pandas as pd
+import torch
 from libreco.data import split_by_ratio_chrono, DatasetPure
 from libreco.algorithms import (
-    SVD, SVDpp, NCF, ALS, UserCF, ItemCF, RNN4Rec, KnnEmbedding,
-    KnnEmbeddingApproximate, BPR
+    SVD,
+    SVDpp,
+    NCF,
+    ALS,
+    BPR,
+    UserCF,
+    ItemCF,
+    RNN4Rec,
+    Caser,
+    WaveNet,
+    Item2Vec,
+    DeepWalk,
+    NGCF,
+    LightGCN
 )
 
 # remove unnecessary tensorflow logging
@@ -65,36 +78,6 @@ if __name__ == "__main__":
     print("prediction: ", ncf.predict(user=1, item=2333))
     print("recommendation: ", ncf.recommend_user(user=1, n_rec=7))
 
-    reset_state("RNN4Rec")
-    rnn = RNN4Rec("ranking", data_info, rnn_type="gru", loss_type="cross_entropy",
-                  embed_size=16, n_epochs=2, lr=0.001, lr_decay=None,
-                  hidden_units="16,16", reg=None, batch_size=256, num_neg=1,
-                  dropout_rate=None, recent_num=10, tf_sess_config=None)
-    rnn.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
-            metrics=["loss", "balanced_accuracy",
-                     "roc_auc", "pr_auc", "precision",
-                     "recall", "map", "ndcg"])
-    print("prediction: ", rnn.predict(user=1, item=2333))
-    print("recommendation: ", rnn.recommend_user(user=1, n_rec=7))
-
-    reset_state("KnnEmbeddingApproximate")
-    knn_app = KnnEmbeddingApproximate("ranking", data_info,
-                                      embedding_method="item2vec",
-                                      embed_size=16, window_size=10,
-                                      k=10, seed=42)
-    knn_app.fit(train_data, verbose=2, n_threads=4, store_top_k=True,
-                eval_data=eval_data, metrics=[
-                    "loss", "balanced_accuracy", "roc_auc", "pr_auc",
-                    "precision", "recall", "map", "ndcg"])
-
-    reset_state("KnnEmbedding")
-    knn = KnnEmbedding("ranking", data_info, embedding_method="item2vec",
-                       embed_size=16, window_size=10, k=10, seed=42)
-    knn.fit(train_data, verbose=2, n_threads=4, store_top_k=True,
-            eval_data=eval_data, metrics=[
-                "loss", "balanced_accuracy", "roc_auc", "pr_auc",
-                "precision", "recall", "map", "ndcg"])
-
     reset_state("ALS")
     als = ALS(task="ranking", data_info=data_info, embed_size=16, n_epochs=2,
               reg=5.0, alpha=10, seed=42)
@@ -112,6 +95,80 @@ if __name__ == "__main__":
             metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
                      "precision", "recall", "map", "ndcg"],
             optimizer="adam")
+
+    reset_state("RNN4Rec")
+    rnn = RNN4Rec("ranking", data_info, rnn_type="gru", loss_type="cross_entropy",
+                  embed_size=16, n_epochs=2, lr=0.001, lr_decay=None,
+                  hidden_units="16,16", reg=None, batch_size=256, num_neg=1,
+                  dropout_rate=None, recent_num=10, tf_sess_config=None)
+    rnn.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
+            metrics=["loss", "balanced_accuracy",
+                     "roc_auc", "pr_auc", "precision",
+                     "recall", "map", "ndcg"])
+    print("prediction: ", rnn.predict(user=1, item=2333))
+    print("recommendation: ", rnn.recommend_user(user=1, n_rec=7))
+
+    reset_state("Caser")
+    caser = Caser("ranking", data_info, embed_size=16, n_epochs=2, lr=1e-4,
+                  lr_decay=None, reg=None, batch_size=2048, num_neg=1,
+                  dropout_rate=0.0, use_bn=False, nh_filters=16, nv_filters=4,
+                  recent_num=10, tf_sess_config=None)
+    caser.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
+              metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
+                       "precision", "recall", "map", "ndcg"])
+    print("prediction: ", caser.predict(user=1, item=2333))
+    print("recommendation: ", caser.recommend_user(user=1, n_rec=7))
+
+    reset_state("WaveNet")
+    wave = WaveNet("ranking", data_info, embed_size=16, n_epochs=2, lr=1e-4,
+                   lr_decay=None, reg=None, batch_size=2048, num_neg=1,
+                   dropout_rate=0.0, use_bn=False, n_filters=16, n_blocks=2,
+                   n_layers_per_block=4, recent_num=10, tf_sess_config=None)
+    wave.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
+             metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
+                      "precision", "recall", "map", "ndcg"])
+    print("prediction: ", wave.predict(user=1, item=2333))
+    print("recommendation: ", wave.recommend_user(user=1, n_rec=7))
+
+    reset_state("Item2Vec")
+    item2vec = Item2Vec("ranking", data_info, embed_size=16, norm_embed=False,
+                        window_size=3, n_epochs=2, n_threads=0)
+    item2vec.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
+                 metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
+                          "precision", "recall", "map", "ndcg"])
+    print("prediction: ", item2vec.predict(user=1, item=2333))
+    print("recommendation: ", item2vec.recommend_user(user=1, n_rec=7))
+
+    reset_state("DeepWalk")
+    deepwalk = DeepWalk("ranking", data_info, embed_size=16, norm_embed=False,
+                        n_walks=10, walk_length=10, window_size=5, n_epochs=2,
+                        n_threads=0)
+    deepwalk.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
+                 metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
+                          "precision", "recall", "map", "ndcg"])
+    print("prediction: ", deepwalk.predict(user=1, item=2333))
+    print("recommendation: ", deepwalk.recommend_user(user=1, n_rec=7))
+
+    reset_state("NGCF")
+    ngcf = NGCF("ranking", data_info, embed_size=16, n_epochs=2, lr=3e-4,
+                lr_decay=None, reg=0.0, batch_size=2048, num_neg=1,
+                node_dropout=0.0, message_dropout=0.0, hidden_units="64,64,64",
+                device=torch.device("cpu"))
+    ngcf.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
+             metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
+                      "precision", "recall", "map", "ndcg"])
+    print("prediction: ", ngcf.predict(user=1, item=2333))
+    print("recommendation: ", ngcf.recommend_user(user=1, n_rec=7))
+
+    reset_state("LightGCN")
+    lightgcn = LightGCN("ranking", data_info, embed_size=32, n_epochs=2, lr=1e-4,
+                        lr_decay=None, reg=0.0, batch_size=2048, num_neg=1,
+                        dropout=0.0, n_layers=3, device=torch.device("cpu"))
+    lightgcn.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
+                 metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
+                          "precision", "recall", "map", "ndcg"])
+    print("prediction: ", lightgcn.predict(user=1, item=2333))
+    print("recommendation: ", lightgcn.recommend_user(user=1, n_rec=7))
 
     reset_state("user_cf")
     user_cf = UserCF(task="ranking", data_info=data_info, k=20, sim_type="cosine")

@@ -154,6 +154,7 @@ class BPR(Base, TfMixin, EvalMixin):
 
     def fit(self, train_data, verbose=1, shuffle=True, num_threads=1,
             eval_data=None, metrics=None, optimizer="sgd", **kwargs):
+        assert self.task == "ranking", "BPR is only suitable for ranking"
         self.show_start_time()
         self._check_has_sampled(train_data, verbose)
 
@@ -228,8 +229,7 @@ class BPR(Base, TfMixin, EvalMixin):
                         epoch=epoch)
 
             if verbose > 1:
-                self.print_metrics(eval_data=eval_data, metrics=metrics,
-                                   **kwargs)
+                self.print_metrics(eval_data=eval_data, metrics=metrics, **kwargs)
                 print("=" * 30)
         assign_oov_vector(self)
 
