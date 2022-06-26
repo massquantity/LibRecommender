@@ -189,7 +189,8 @@ The table below shows some compatible version combinations:
 + [faiss](https://github.com/facebookresearch/faiss) == 1.5.2
 + [Tensorflow Serving](<https://github.com/tensorflow/serving>)
 
-
+## Docker
+One can also use the library in a docker container without installing dependencies, see [Docker](https://github.com/massquantity/LibRecommender/tree/master/docker).
 
 ## References
 
