@@ -1,9 +1,14 @@
 from collections import defaultdict, OrderedDict
+
 import numpy as np
 
 
-def col_name2index(user_col=None, item_col=None,
-                   sparse_col=None, dense_col=None):
+def col_name2index(
+    user_col=None,
+    item_col=None,
+    sparse_col=None,
+    dense_col=None
+):
     # format: {column_family_name: {column_name: index}}
     # if no such family, default format would be: {column_family_name: {[]: []}
     name_mapping = defaultdict(OrderedDict)
@@ -47,7 +52,7 @@ def _extract_common_col(col1, col2):
     # np.intersect1d will return the sorted common column names,
     # but we also want to preserve the original order of common column in
     # col1 and col2
-    common_col, indices_in_col1, _ = np.intersect1d(col1, col2,
-                                                    assume_unique=True,
-                                                    return_indices=True)
+    common_col, indices_in_col1, _ = np.intersect1d(
+        col1, col2, assume_unique=True, return_indices=True
+    )
     return common_col[np.lexsort((common_col, indices_in_col1))]

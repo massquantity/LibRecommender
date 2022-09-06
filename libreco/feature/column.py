@@ -1,11 +1,17 @@
 from array import array
 from collections import defaultdict
 import itertools
+
 import numpy as np
 
 
-def get_user_item_sparse_indices(data, user_unique_vals, item_unique_vals,
-                                 mode, ordered):
+def get_user_item_sparse_indices(
+    data,
+    user_unique_vals,
+    item_unique_vals,
+    mode,
+    ordered
+):
     user_indices = column_sparse_indices(
         data.user.to_numpy(), user_unique_vals, mode, ordered
     )
@@ -20,8 +26,14 @@ def merge_sparse_col(sparse_col, multi_sparse_col):
     return flatten_cols if not sparse_col else sparse_col + flatten_cols
 
 
-def merge_sparse_indices(data_class, data, sparse_col, multi_sparse_col, mode,
-                         ordered):
+def merge_sparse_indices(
+    data_class,
+    data,
+    sparse_col,
+    multi_sparse_col,
+    mode,
+    ordered
+):
     if sparse_col and multi_sparse_col:
         sparse_indices = get_sparse_indices_matrix(
             data_class, data, sparse_col, mode, ordered
@@ -68,8 +80,7 @@ def get_sparse_indices_matrix(data_class, data, sparse_col, mode, ordered):
     return sparse_indices
 
 
-def get_multi_sparse_indices_matrix(data_class, data, multi_sparse_col,
-                                    mode, ordered):
+def get_multi_sparse_indices_matrix(data_class, data, multi_sparse_col, mode, ordered):
     n_samples = len(data)
     # n_fields = len(multi_sparse_col)
     n_features = len(list(itertools.chain.from_iterable(multi_sparse_col)))
@@ -172,8 +183,12 @@ def get_oov_pos(data_class, sparse_col, multi_sparse_col):
         return multi_sparse_oov(data_class, multi_sparse_col)
 
 
-def multi_sparse_combine_info(data_class, all_sparse_cols,
-                              sparse_col, multi_sparse_col):
+def multi_sparse_combine_info(
+    data_class,
+    all_sparse_cols,
+    sparse_col,
+    multi_sparse_col
+):
     from ..data import MultiSparseInfo
     # sparse_last_offset = get_sparse_offset(data_class, sparse_col)[-1]
     # unique_values = [
@@ -206,8 +221,13 @@ def check_unknown(values, uniques):
     return mask
 
 
-def column_sparse_indices(values, unique, mode="train",
-                          ordered=True, multi_sparse=False):
+def column_sparse_indices(
+    values,
+    unique,
+    mode="train",
+    ordered=True,
+    multi_sparse=False
+):
     if mode not in ("train", "test"):
         raise ValueError("mode must either be \"train\" or \"test\" ")
     if ordered:

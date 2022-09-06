@@ -1,17 +1,18 @@
 import numbers
+
 import numpy as np
 
 
 def construct_unique_feat(
-        user_indices,
-        item_indices,
-        sparse_indices,
-        dense_values,
-        user_sparse_col,
-        user_dense_col,
-        item_sparse_col,
-        item_dense_col,
-        unique_feat
+    user_indices,
+    item_indices,
+    sparse_indices,
+    dense_values,
+    user_sparse_col,
+    user_dense_col,
+    item_sparse_col,
+    item_dense_col,
+    unique_feat
 ):
     # use mergesort to preserve order
     sort_kind = "quicksort" if unique_feat else "mergesort"
@@ -20,31 +21,38 @@ def construct_unique_feat(
 
     if user_sparse_col:
         user_sparse_matrix = _compress_unique_values(
-            sparse_indices, user_sparse_col, user_indices, user_pos)
+            sparse_indices, user_sparse_col, user_indices, user_pos
+        )
     else:
         user_sparse_matrix = None
 
     if item_sparse_col:
         item_sparse_matrix = _compress_unique_values(
-            sparse_indices, item_sparse_col, item_indices, item_pos)
+            sparse_indices, item_sparse_col, item_indices, item_pos
+        )
     else:
         item_sparse_matrix = None
 
     if user_dense_col:
         user_dense_matrix = _compress_unique_values(
-            dense_values, user_dense_col, user_indices, user_pos)
+            dense_values, user_dense_col, user_indices, user_pos
+        )
     else:
         user_dense_matrix = None
 
     if item_dense_col:
         item_dense_matrix = _compress_unique_values(
-            dense_values, item_dense_col, item_indices, item_pos)
+            dense_values, item_dense_col, item_indices, item_pos
+        )
     else:
         item_dense_matrix = None
 
-    rets = (user_sparse_matrix, user_dense_matrix,
-            item_sparse_matrix, item_dense_matrix)
-    return rets
+    return (
+        user_sparse_matrix,
+        user_dense_matrix,
+        item_sparse_matrix,
+        item_dense_matrix
+    )
 
 
 def _compress_unique_values(orig_val, col, indices, pos):
@@ -82,8 +90,14 @@ def _compress_unique_values(orig_val, col, indices, pos):
     # return unique_values[:, 1:]
 
 
-def get_predict_indices_and_values(data_info, user, item, n_items,
-                                   sparse, dense):
+def get_predict_indices_and_values(
+    data_info,
+    user,
+    item,
+    n_items,
+    sparse,
+    dense
+):
     if isinstance(user, numbers.Integral):
         user = list([user])
     if isinstance(item, numbers.Integral):
@@ -105,7 +119,6 @@ def get_predict_indices_and_values(data_info, user, item, n_items,
 def get_recommend_indices_and_values(data_info, user, n_items, sparse, dense):
     user_indices = np.repeat(user, n_items)
     item_indices = np.arange(n_items)
-
     sparse_indices = get_sparse_indices(
         data_info, user, n_items=n_items, mode="recommend"
     ) if sparse else None
@@ -114,13 +127,12 @@ def get_recommend_indices_and_values(data_info, user, n_items, sparse, dense):
     ) if dense else None
     if sparse and dense:
         assert len(sparse_indices) == len(dense_values), (
-            "indices and values length must equal")
-
+            "indices and values length must equal"
+        )
     return user_indices, item_indices, sparse_indices, dense_values
 
 
-def get_sparse_indices(data_info, user, item=None, n_items=None,
-                       mode="predict"):
+def get_sparse_indices(data_info, user, item=None, n_items=None, mode="predict"):
     user_sparse_col = data_info.user_sparse_col.index
     item_sparse_col = data_info.item_sparse_col.index
     orig_cols = user_sparse_col + item_sparse_col
@@ -132,7 +144,8 @@ def get_sparse_indices(data_info, user, item=None, n_items=None,
             user_sparse_part = data_info.user_sparse_unique[user]
             item_sparse_part = data_info.item_sparse_unique[item]
             sparse_indices = np.concatenate(
-                [user_sparse_part, item_sparse_part], axis=-1)[:, col_reindex]
+                [user_sparse_part, item_sparse_part], axis=-1
+            )[:, col_reindex]
             return sparse_indices
         elif user_sparse_col:
             return data_info.user_sparse_unique[user]
@@ -141,11 +154,13 @@ def get_sparse_indices(data_info, user, item=None, n_items=None,
 
     elif mode == "recommend":
         if user_sparse_col and item_sparse_col:
-            user_sparse_part = np.tile(data_info.user_sparse_unique[user],
-                                       (n_items, 1))
+            user_sparse_part = np.tile(
+                data_info.user_sparse_unique[user], (n_items, 1)
+            )
             item_sparse_part = data_info.item_sparse_unique[:-1]  # remove oov
             sparse_indices = np.concatenate(
-                [user_sparse_part, item_sparse_part], axis=-1)[:, col_reindex]
+                [user_sparse_part, item_sparse_part], axis=-1
+            )[:, col_reindex]
             return sparse_indices
         elif user_sparse_col:
             return np.tile(data_info.user_sparse_unique[user], (n_items, 1))
@@ -175,7 +190,8 @@ def get_dense_values(data_info, user, item=None, n_items=None, mode="predict"):
             user_dense_part = data_info.user_dense_unique[user]
             item_dense_part = data_info.item_dense_unique[item]
             dense_values = np.concatenate(
-                [user_dense_part, item_dense_part], axis=-1)[:, col_reindex]
+                [user_dense_part, item_dense_part], axis=-1
+            )[:, col_reindex]
             return dense_values
         elif user_dense_col:
             return data_info.user_dense_unique[user]
@@ -184,11 +200,13 @@ def get_dense_values(data_info, user, item=None, n_items=None, mode="predict"):
 
     elif mode == "recommend":
         if user_dense_col and item_dense_col:
-            user_dense_part = np.tile(data_info.user_dense_unique[user],
-                                      (n_items, 1))
+            user_dense_part = np.tile(
+                data_info.user_dense_unique[user], (n_items, 1)
+            )
             item_dense_part = data_info.item_dense_unique[:-1]  # remove oov
             dense_values = np.concatenate(
-                [user_dense_part, item_dense_part], axis=-1)[:, col_reindex]
+                [user_dense_part, item_dense_part], axis=-1
+            )[:, col_reindex]
             return dense_values
         elif user_dense_col:
             return np.tile(data_info.user_dense_unique[user], (n_items, 1))
@@ -209,15 +227,14 @@ def features_from_dict(data_info, sparse_indices, dense_values, feats, mode):
     else:
         raise ValueError("mode must be predict or recommend")
 
-    sparse_indices_copy = (None if sparse_indices is None
-                           else sparse_indices.copy())
-    dense_values_copy = (None if dense_values is None
-                         else dense_values.copy())
+    sparse_indices_copy = None if sparse_indices is None else sparse_indices.copy()
+    dense_values_copy = None if dense_values is None else dense_values.copy()
     for col, val in feats.items():
-        if (sparse_indices is not None
+        if (
+            sparse_indices is not None
                 and col in sparse_mapping
-                and col in data_info.sparse_unique_idxs):
-
+                and col in data_info.sparse_unique_idxs
+        ):
             field_idx = sparse_mapping[col]
             if val in data_info.sparse_unique_idxs[col]:
                 # data_info.sparse_unique_idxs: {col: {value: index}}
@@ -244,7 +261,8 @@ def features_from_batch_data(data_info, sparse, dense, data):
             if col not in data.columns:
                 continue
             sparse_indices[field_idx] = compute_sparse_feat_indices(
-                data_info, data, field_idx, col)
+                data_info, data, field_idx, col
+            )
         sparse_indices = np.array(sparse_indices).astype(np.int64).T
     else:
         sparse_indices = None
@@ -269,11 +287,9 @@ def features_from_batch_data(data_info, sparse, dense, data):
 
 # This function will try not to modify the original numpy arrays
 def add_item_features(data_info, sparse_indices, dense_values, data):
-    data = _check_oov(data_info, data, "item")
+    data = check_oov(data_info, data, "item")
     row_idx = data["item"].to_numpy()
-
-    sparse_indices_copy = (None if sparse_indices is None
-                           else sparse_indices.copy())
+    sparse_indices_copy = None if sparse_indices is None else sparse_indices.copy()
     col_info = data_info.item_sparse_col
     if sparse_indices is not None and col_info.name:
         sparse_indices_copy = sparse_indices.copy()
@@ -282,11 +298,11 @@ def add_item_features(data_info, sparse_indices, dense_values, data):
                 continue
             sparse_indices_copy[row_idx, feat_idx] = (
                 compute_sparse_feat_indices(
-                    data_info, data, col_info.index[feat_idx], col)
+                    data_info, data, col_info.index[feat_idx], col
+                )
             )
 
-    dense_values_copy = (None if dense_values is None
-                         else dense_values.copy())
+    dense_values_copy = None if dense_values is None else dense_values.copy()
     col_info = data_info.item_dense_col
     if dense_values is not None and col_info.name:
         dense_values_copy = dense_values.copy()
@@ -301,14 +317,20 @@ def compute_sparse_feat_indices(data_info, data, field_idx, column):
     offset = data_info.sparse_offset[field_idx]
     oov_val = data_info.sparse_oov[field_idx]
 
-    if (data_info.sparse_unique_idxs
-            and column in data_info.sparse_unique_idxs):
+    if (
+        data_info.sparse_unique_idxs
+            and column in data_info.sparse_unique_idxs
+    ):
         map_vals = data_info.sparse_unique_idxs[column]
-    elif (data_info.multi_sparse_unique_idxs
-          and column in data_info.multi_sparse_unique_idxs):
+    elif (
+        data_info.multi_sparse_unique_idxs
+            and column in data_info.multi_sparse_unique_idxs
+    ):
         map_vals = data_info.multi_sparse_unique_idxs[column]
-    elif ("multi_sparse" in data_info.col_name_mapping
-          and column in data_info.col_name_mapping["multi_sparse"]):
+    elif (
+        "multi_sparse" in data_info.col_name_mapping
+            and column in data_info.col_name_mapping["multi_sparse"]
+    ):
         main_col = data_info.col_name_mapping["multi_sparse"][column]
         map_vals = data_info.multi_sparse_unique_idxs[main_col]
     else:
@@ -323,7 +345,7 @@ def compute_sparse_feat_indices(data_info, data, field_idx, column):
 
 
 # This function will try not to modify the original data
-def _check_oov(data_info, orig_data, mode):
+def check_oov(data_info, orig_data, mode):
     data = orig_data.copy()
     if mode == "user":
         users = data.user.tolist()

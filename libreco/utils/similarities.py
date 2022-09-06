@@ -1,8 +1,10 @@
 import math
 import logging
+
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import norm as spnorm
+
 try:
     from ._similarities import (
         forward_cosine,
@@ -16,17 +18,19 @@ except (ImportError, ModuleNotFoundError):
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
     logging.basicConfig(format=LOG_FORMAT)
     logging.warning("Similarity cython version is not available")
-    pass
+    raise
 
 
 def _choose_blocks(num, b_size=None):
-    # To calculate an n by n similarity matrix (n is num of user or item),
-    # memory is usually a big concern, so the matrix is divided into several
-    # blocks to calculate separately. The default block size is 1024, so num
-    # of elements in a block is 2e8, which is roughly 1024 * 200000 users/items.
-    # Of course num of users/items will vary in various datasets,
-    # so here default block num is defined as how many blocks can exist,
-    # and block size is calculated to make sure data are divided evenly.
+    """
+    To calculate an n by n similarity matrix (n is num of user or item),
+    memory is usually a big concern, so the matrix is divided into several
+    blocks to calculate separately. The default block size is 1024, so num
+    of elements in a block is 2e8, which is roughly 1024 * 200000 users/items.
+    Of course num of users/items will vary in various datasets,
+    so here default block num is defined as how many blocks can exist,
+    and block size is calculated to make sure data are divided evenly.
+    """
     if not b_size:
         block_num = math.ceil(num / (2e8 / num))
         block_size = math.ceil(num / block_num)
@@ -37,8 +41,16 @@ def _choose_blocks(num, b_size=None):
     return block_size, block_num
 
 
-def cosine_sim(sparse_data_x, sparse_data_y, num_x, num_y, block_size=None,
-               num_threads=1, min_common=1, mode="invert"):
+def cosine_sim(
+    sparse_data_x,
+    sparse_data_y,
+    num_x,
+    num_y,
+    block_size=None,
+    num_threads=1,
+    min_common=1,
+    mode="invert"
+):
     block_size, block_num = _choose_blocks(num_x, block_size)
     n_x, n_y = num_x, num_y
 
@@ -49,7 +61,13 @@ def cosine_sim(sparse_data_x, sparse_data_y, num_x, num_y, block_size=None,
         x_norm = compute_sparse_norm(sparse_data_x)
 
         res_indices, res_indptr, res_data = forward_cosine(
-            indices, indptr, data, x_norm, min_common, n_x)
+            indices,
+            indptr,
+            data,
+            x_norm,
+            min_common,
+            n_x
+        )
 
     elif mode == "invert":
         indices = sparse_data_y.indices.astype(np.int32)
@@ -58,21 +76,39 @@ def cosine_sim(sparse_data_x, sparse_data_y, num_x, num_y, block_size=None,
         x_norm = compute_sparse_norm(sparse_data_x)
 
         res_indices, res_indptr, res_data = invert_cosine(
-            indices, indptr, data, x_norm, min_common, n_x, n_y,
-            block_size, block_num, num_threads)
+            indices,
+            indptr,
+            data,
+            x_norm,
+            min_common,
+            n_x,
+            n_y,
+            block_size,
+            block_num,
+            num_threads
+        )
 
     else:
         raise ValueError("mode must either be 'forward' or 'invert'")
 
     sim_upper_triangular = csr_matrix(
         (res_data, res_indices, res_indptr),
-        shape=(n_x, n_x), dtype=np.float32
+        shape=(n_x, n_x),
+        dtype=np.float32
     )
     return sim_upper_triangular + sim_upper_triangular.transpose()
 
 
-def pearson_sim(sparse_data_x, sparse_data_y, num_x, num_y, block_size=None,
-                num_threads=1, min_common=1, mode="invert"):
+def pearson_sim(
+    sparse_data_x,
+    sparse_data_y,
+    num_x,
+    num_y,
+    block_size=None,
+    num_threads=1,
+    min_common=1,
+    mode="invert"
+):
     block_size, block_num = _choose_blocks(num_x, block_size)
     n_x, n_y = num_x, num_y
 
@@ -84,8 +120,14 @@ def pearson_sim(sparse_data_x, sparse_data_y, num_x, num_y, block_size=None,
         x_mean_centered_norm = compute_sparse_mean_centered_norm(sparse_data_x)
 
         res_indices, res_indptr, res_data = forward_pearson(
-            indices, indptr, data, x_mean, x_mean_centered_norm,
-            min_common, n_x)
+            indices,
+            indptr,
+            data,
+            x_mean,
+            x_mean_centered_norm,
+            min_common,
+            n_x
+        )
 
     elif mode == "invert":
         indices = sparse_data_y.indices.astype(np.int32)
@@ -95,21 +137,40 @@ def pearson_sim(sparse_data_x, sparse_data_y, num_x, num_y, block_size=None,
         x_mean_centered_norm = compute_sparse_mean_centered_norm(sparse_data_x)
 
         res_indices, res_indptr, res_data = invert_pearson(
-            indices, indptr, data, x_mean, x_mean_centered_norm, min_common,
-            n_x, n_y, block_size, block_num, num_threads)
+            indices,
+            indptr,
+            data,
+            x_mean,
+            x_mean_centered_norm,
+            min_common,
+            n_x,
+            n_y,
+            block_size,
+            block_num,
+            num_threads
+        )
 
     else:
         raise ValueError("mode must either be 'forward' or 'invert'")
 
     sim_upper_triangular = csr_matrix(
         (res_data, res_indices, res_indptr),
-        shape=(n_x, n_x), dtype=np.float32
+        shape=(n_x, n_x),
+        dtype=np.float32
     )
     return sim_upper_triangular + sim_upper_triangular.transpose()
 
 
-def jaccard_sim(sparse_data_x, sparse_data_y, num_x, num_y, block_size=None,
-                num_threads=1, min_common=1, mode="invert"):
+def jaccard_sim(
+    sparse_data_x,
+    sparse_data_y,
+    num_x,
+    num_y,
+    block_size=None,
+    num_threads=1,
+    min_common=1,
+    mode="invert"
+):
     block_size, block_num = _choose_blocks(num_x, block_size)
     n_x, n_y = num_x, num_y
 
@@ -120,7 +181,13 @@ def jaccard_sim(sparse_data_x, sparse_data_y, num_x, num_y, block_size=None,
         x_count = compute_sparse_count(sparse_data_x)
 
         res_indices, res_indptr, res_data = forward_jaccard(
-            indices, indptr, data, x_count, min_common, n_x)
+            indices,
+            indptr,
+            data,
+            x_count,
+            min_common,
+            n_x
+        )
 
     elif mode == "invert":
         indices = sparse_data_y.indices.astype(np.int32)
@@ -129,15 +196,25 @@ def jaccard_sim(sparse_data_x, sparse_data_y, num_x, num_y, block_size=None,
         x_count = compute_sparse_count(sparse_data_x)
 
         res_indices, res_indptr, res_data = invert_jaccard(
-            indices, indptr, data, x_count, min_common,
-            n_x, n_y, block_size, block_num, num_threads)
+            indices,
+            indptr,
+            data,
+            x_count,
+            min_common,
+            n_x,
+            n_y,
+            block_size,
+            block_num,
+            num_threads
+        )
 
     else:
         raise ValueError("mode must either be 'forward' or 'invert'")
 
     sim_upper_triangular = csr_matrix(
         (res_data, res_indices, res_indptr),
-        shape=(n_x, n_x), dtype=np.float32
+        shape=(n_x, n_x),
+        dtype=np.float32
     )
     return sim_upper_triangular + sim_upper_triangular.transpose()
 
@@ -159,7 +236,8 @@ def compute_sparse_mean_centered_norm(sparse_data):
     # mainly for denominator of pearson correlation formula
     # only consider interacted data
     assert np.issubdtype(sparse_data.dtype, np.floating), (
-        "sparse_data type must be float...")
+        "sparse_data type must be float..."
+    )
     indices = sparse_data.indices.copy()
     indptr = sparse_data.indptr.copy()
     data = sparse_data.data.copy()
@@ -168,8 +246,9 @@ def compute_sparse_mean_centered_norm(sparse_data):
         x_slice = slice(indptr[x], indptr[x + 1])
         x_mean = np.mean(data[x_slice])
         data[x_slice] -= x_mean
-    sparse_data_mean_centered = csr_matrix((data, indices, indptr),
-                                           shape=sparse_data.shape)
+    sparse_data_mean_centered = csr_matrix(
+        (data, indices, indptr), shape=sparse_data.shape
+    )
     return compute_sparse_norm(sparse_data_mean_centered)
 
 

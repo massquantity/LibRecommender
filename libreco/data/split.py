@@ -4,13 +4,13 @@ from sklearn.model_selection import train_test_split
 
 
 def random_split(
-        data,
-        test_size=None,
-        multi_ratios=None,
-        shuffle=True,
-        filter_unknown=True,
-        pad_unknown=False,
-        seed=42
+    data,
+    test_size=None,
+    multi_ratios=None,
+    shuffle=True,
+    filter_unknown=True,
+    pad_unknown=False,
+    seed=42
 ):
     ratios, n_splits = _check_and_convert_ratio(test_size, multi_ratios)
     if not isinstance(ratios, list):
@@ -23,10 +23,12 @@ def random_split(
     for i in range(n_splits - 1):
         size = ratios.pop(-1)
         ratios = [r / math.fsum(ratios) for r in ratios]
-        train_data, split_data = train_test_split(train_data,
-                                                  test_size=size,
-                                                  shuffle=shuffle,
-                                                  random_state=seed)
+        train_data, split_data = train_test_split(
+            train_data,
+            test_size=size,
+            shuffle=shuffle,
+            random_state=seed
+        )
         split_data_all.insert(0, split_data)
     split_data_all.insert(0, train_data)  # insert final fold of data
 
@@ -39,8 +41,10 @@ def random_split(
 
 def _filter_unknown_user_item(data_list):
     train_data = data_list[0]
-    unique_values = dict(user=set(train_data.user.tolist()),
-                         item=set(train_data.item.tolist()))
+    unique_values = dict(
+        user=set(train_data.user.tolist()),
+        item=set(train_data.item.tolist())
+    )
 
     split_data_all = [train_data]
     for i, test_data in enumerate(data_list[1:], start=1):
@@ -52,8 +56,7 @@ def _filter_unknown_user_item(data_list):
                     out_of_bounds_row_indices.add(j)
 
         mask = np.arange(len(test_data))
-        test_data_clean = test_data[~np.isin(
-            mask, list(out_of_bounds_row_indices))]
+        test_data_clean = test_data[~np.isin(mask, list(out_of_bounds_row_indices))]
         split_data_all.append(test_data_clean)
         # print(f"Non_train_data {i} size after filtering: "
         #      f"{len(test_data_clean)}")
@@ -76,14 +79,14 @@ def _pad_unknown_user_item(data_list):
 
 
 def split_by_ratio(
-        data,
-        order=True,
-        shuffle=False,
-        test_size=None,
-        multi_ratios=None,
-        filter_unknown=True,
-        pad_unknown=False,
-        seed=42
+    data,
+    order=True,
+    shuffle=False,
+    test_size=None,
+    multi_ratios=None,
+    filter_unknown=True,
+    pad_unknown=False,
+    seed=42
 ):
     np.random.seed(seed)
     assert ("user" in data.columns), "data must contains user column"
@@ -109,7 +112,8 @@ def split_by_ratio(
 
     if shuffle:
         split_data_all = tuple(
-            np.random.permutation(data[idx]) for idx in split_indices_all)
+            np.random.permutation(data[idx]) for idx in split_indices_all
+        )
     else:
         split_data_all = list(data.iloc[idx] for idx in split_indices_all)
 
@@ -121,13 +125,13 @@ def split_by_ratio(
 
 
 def split_by_num(
-        data,
-        order=True,
-        shuffle=False,
-        test_size=1,
-        filter_unknown=True,
-        pad_unknown=False,
-        seed=42
+    data,
+    order=True,
+    shuffle=False,
+    test_size=1,
+    filter_unknown=True,
+    pad_unknown=False,
+    seed=42
 ):
     np.random.seed(seed)
     assert ("user" in data.columns), "data must contains user column"
@@ -166,12 +170,12 @@ def split_by_num(
 
 
 def split_by_ratio_chrono(
-        data,
-        order=True,
-        shuffle=False,
-        test_size=None,
-        multi_ratios=None,
-        seed=42
+    data,
+    order=True,
+    shuffle=False,
+    test_size=None,
+    multi_ratios=None,
+    seed=42
 ):
     assert all([
         "user" in data.columns,
@@ -184,11 +188,11 @@ def split_by_ratio_chrono(
 
 
 def split_by_num_chrono(
-        data,
-        order=True,
-        shuffle=False,
-        test_size=1,
-        seed=42
+    data,
+    order=True,
+    shuffle=False,
+    test_size=1,
+    seed=42
 ):
     assert all([
         "user" in data.columns,
@@ -202,11 +206,13 @@ def split_by_num_chrono(
 
 def _groupby_user(user_indices, order):
     sort_kind = "mergesort" if order else "quicksort"
-    users, user_position, user_counts = np.unique(user_indices,
-                                                  return_inverse=True,
-                                                  return_counts=True)
-    user_split_indices = np.split(np.argsort(user_position, kind=sort_kind),
-                                  np.cumsum(user_counts)[:-1])
+    users, user_position, user_counts = np.unique(
+        user_indices, return_inverse=True, return_counts=True
+    )
+    user_split_indices = np.split(
+        np.argsort(user_position, kind=sort_kind),
+        np.cumsum(user_counts)[:-1]
+    )
     return user_split_indices
 
 

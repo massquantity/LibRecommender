@@ -1,4 +1,5 @@
 import itertools
+
 import numpy as np
 import pandas as pd
 
@@ -106,15 +107,16 @@ class DatasetPure(Dataset):
 
     @classmethod
     def build_trainset(
-            cls,
-            train_data,
-            revolution=False,
-            data_info=None,
-            merge_behavior=True,
-            popular_nums=100,
-            shuffle=False,
-            reset_state=False,
-            seed=42):
+        cls,
+        train_data,
+        revolution=False,
+        data_info=None,
+        merge_behavior=True,
+        popular_nums=100,
+        shuffle=False,
+        reset_state=False,
+        seed=42
+    ):
         """Build transformed pure train_data from original data.
 
         Normally, pure data only contains `user` and `item` columns,
@@ -198,28 +200,35 @@ class DatasetPure(Dataset):
                 user_indices, item_indices, labels, train=True
             )
 
-            data_info = DataInfo(interaction_data=interaction_data,
-                                 user_indices=user_indices,
-                                 item_indices=item_indices,
-                                 user_unique_vals=cls.user_unique_vals,
-                                 item_unique_vals=cls.item_unique_vals)
+            data_info = DataInfo(
+                interaction_data=interaction_data,
+                user_indices=user_indices,
+                item_indices=item_indices,
+                user_unique_vals=cls.user_unique_vals,
+                item_unique_vals=cls.item_unique_vals
+            )
         cls.train_called = True
         return train_transformed, data_info
 
     @classmethod
-    def build_evalset(cls, eval_data, revolution=False, data_info=None,
-                      shuffle=False, seed=42):
-        return cls.build_testset(eval_data, revolution, data_info,
-                                 shuffle, seed)
+    def build_evalset(
+        cls,
+        eval_data,
+        revolution=False,
+        data_info=None,
+        shuffle=False,
+        seed=42
+    ):
+        return cls.build_testset(eval_data, revolution, data_info, shuffle, seed)
 
     @classmethod
     def build_testset(
-            cls,
-            test_data,
-            revolution=False,
-            data_info=None,
-            shuffle=False,
-            seed=42
+        cls,
+        test_data,
+        revolution=False,
+        data_info=None,
+        shuffle=False,
+        seed=42
     ):
         """Build transformed pure eval_data or test_data from original data.
 
@@ -258,7 +267,8 @@ class DatasetPure(Dataset):
 
         if revolution:
             assert isinstance(data_info, DataInfo), (
-                "The passed data_info is not a DataInfo object.")
+                "The passed data_info is not a DataInfo object."
+            )
             test_user_indices, test_item_indices = get_user_item_sparse_indices(
                 test_data,
                 data_info.user_unique_vals,
@@ -288,8 +298,13 @@ class DatasetPure(Dataset):
         return test_transformed
 
     @classmethod
-    def build_train_test(cls, train_data, test_data,
-                         shuffle=(False, False), seed=42):
+    def build_train_test(
+        cls,
+        train_data,
+        test_data,
+        shuffle=(False, False),
+        seed=42
+    ):
         """Build transformed pure train_data and test_data from original data.
 
         Normally, pure data only contains `user` and `item` columns,
@@ -331,22 +346,22 @@ class DatasetFeat(Dataset):
 
     @classmethod   # TODO: pseudo pure
     def build_trainset(
-            cls,
-            train_data,
-            user_col=None,
-            item_col=None,
-            sparse_col=None,
-            dense_col=None,
-            multi_sparse_col=None,
-            revolution=False,
-            data_info=None,
-            merge_behavior=True,
-            unique_feat=False,
-            popular_nums=100,
-            pad_val="missing",
-            shuffle=False,
-            reset_state=False,
-            seed=42
+        cls,
+        train_data,
+        user_col=None,
+        item_col=None,
+        sparse_col=None,
+        dense_col=None,
+        multi_sparse_col=None,
+        revolution=False,
+        data_info=None,
+        merge_behavior=True,
+        unique_feat=False,
+        popular_nums=100,
+        pad_val="missing",
+        shuffle=False,
+        reset_state=False,
+        seed=42
     ):
         """Build transformed feat train_data from original data.
 
@@ -419,8 +434,11 @@ class DatasetFeat(Dataset):
 
             train_sparse_indices = (
                 merge_sparse_indices(
-                    data_info, train_data, sparse_cols,
-                    multi_sparse_cols, mode="train",
+                    data_info,
+                    train_data,
+                    sparse_cols,
+                    multi_sparse_cols,
+                    mode="train",
                     ordered=False
                 )
                 if sparse_cols or multi_sparse_cols
@@ -435,12 +453,14 @@ class DatasetFeat(Dataset):
             )
             labels = train_data["label"].to_numpy(dtype=np.float32)
 
-            train_transformed = TransformedSet(user_indices,
-                                               item_indices,
-                                               labels,
-                                               train_sparse_indices,
-                                               train_dense_values,
-                                               train=True)
+            train_transformed = TransformedSet(
+                user_indices,
+                item_indices,
+                labels,
+                train_sparse_indices,
+                train_dense_values,
+                train=True
+            )
 
             data_info.sparse_offset = (
                 merge_offset(data_info, sparse_cols, multi_sparse_cols)
@@ -454,8 +474,11 @@ class DatasetFeat(Dataset):
             )
             data_info.multi_sparse_combine_info = (
                 multi_sparse_combine_info(
-                    data_info, data_info.sparse_col.name,
-                    sparse_cols, multi_sparse_cols)
+                    data_info,
+                    data_info.sparse_col.name,
+                    sparse_cols,
+                    multi_sparse_cols
+                )
                 if multi_sparse_cols
                 else None
             )
@@ -488,13 +511,19 @@ class DatasetFeat(Dataset):
                 ).reset_index(drop=True)
 
             user_indices, item_indices = get_user_item_sparse_indices(
-                train_data, cls.user_unique_vals, cls.item_unique_vals,
-                mode="train", ordered=True
+                train_data,
+                cls.user_unique_vals,
+                cls.item_unique_vals,
+                mode="train",
+                ordered=True
             )
             train_sparse_indices = (
                 merge_sparse_indices(
-                    cls, train_data, cls.sparse_col,
-                    cls.multi_sparse_col, mode="train",
+                    cls,
+                    train_data,
+                    cls.sparse_col,
+                    cls.multi_sparse_col,
+                    mode="train",
                     ordered=True
                 )
                 if cls.sparse_col or cls.multi_sparse_col
@@ -507,12 +536,14 @@ class DatasetFeat(Dataset):
             )
             labels = train_data["label"].to_numpy(dtype=np.float32)
 
-            train_transformed = TransformedSet(user_indices,
-                                               item_indices,
-                                               labels,
-                                               train_sparse_indices,
-                                               train_dense_values,
-                                               train=True)
+            train_transformed = TransformedSet(
+                user_indices,
+                item_indices,
+                labels,
+                train_sparse_indices,
+                train_dense_values,
+                train=True
+            )
 
             all_sparse_col = (
                 merge_sparse_col(cls.sparse_col, cls.multi_sparse_col)
@@ -541,15 +572,17 @@ class DatasetFeat(Dataset):
                 user_dense_unique,
                 item_sparse_unique,
                 item_dense_unique
-            ) = construct_unique_feat(user_indices,
-                                      item_indices,
-                                      train_sparse_indices,
-                                      train_dense_values,
-                                      user_sparse_col_indices,
-                                      user_dense_col_indices,
-                                      item_sparse_col_indices,
-                                      item_dense_col_indices,
-                                      unique_feat)
+            ) = construct_unique_feat(
+                user_indices,
+                item_indices,
+                train_sparse_indices,
+                train_dense_values,
+                user_sparse_col_indices,
+                user_dense_col_indices,
+                item_sparse_col_indices,
+                item_dense_col_indices,
+                unique_feat
+            )
 
             sparse_offset = (
                 merge_offset(cls, cls.sparse_col, cls.multi_sparse_col)
@@ -569,7 +602,8 @@ class DatasetFeat(Dataset):
 
             multi_sparse_info = (
                 multi_sparse_combine_info(
-                    cls, all_sparse_col, sparse_col, multi_sparse_col)
+                    cls, all_sparse_col, sparse_col, multi_sparse_col
+                )
                 if cls.multi_sparse_col
                 else None
             )
@@ -584,39 +618,46 @@ class DatasetFeat(Dataset):
                 col_name_mapping.update({"multi_sparse": multi_sparse_map})
 
             interaction_data = train_data[["user", "item", "label"]]
-            data_info = DataInfo(col_name_mapping,
-                                 interaction_data,
-                                 user_sparse_unique,
-                                 user_dense_unique,
-                                 item_sparse_unique,
-                                 item_dense_unique,
-                                 user_indices,
-                                 item_indices,
-                                 cls.user_unique_vals,
-                                 cls.item_unique_vals,
-                                 cls.sparse_unique_vals,
-                                 sparse_offset,
-                                 sparse_oov,
-                                 cls.multi_sparse_unique_vals,
-                                 multi_sparse_info)
+            data_info = DataInfo(
+                col_name_mapping,
+                interaction_data,
+                user_sparse_unique,
+                user_dense_unique,
+                item_sparse_unique,
+                item_dense_unique,
+                user_indices,
+                item_indices,
+                cls.user_unique_vals,
+                cls.item_unique_vals,
+                cls.sparse_unique_vals,
+                sparse_offset,
+                sparse_oov,
+                cls.multi_sparse_unique_vals,
+                multi_sparse_info
+            )
 
         cls.train_called = True
         return train_transformed, data_info
 
     @classmethod
-    def build_evalset(cls, eval_data, revolution=False, data_info=None,
-                      shuffle=False, seed=42):
-        return cls.build_testset(eval_data, revolution, data_info,
-                                 shuffle, seed)
+    def build_evalset(
+        cls,
+        eval_data,
+        revolution=False,
+        data_info=None,
+        shuffle=False,
+        seed=42
+    ):
+        return cls.build_testset(eval_data, revolution, data_info, shuffle, seed)
 
     @classmethod
     def build_testset(
-            cls,
-            test_data,
-            revolution=False,
-            data_info=None,
-            shuffle=False,
-            seed=42
+        cls,
+        test_data,
+        revolution=False,
+        data_info=None,
+        shuffle=False,
+        seed=42
     ):
         """Build transformed feat eval_data or test_data from original data.
 
@@ -651,7 +692,8 @@ class DatasetFeat(Dataset):
 
         if revolution:
             assert isinstance(data_info, DataInfo), (
-                "The passed data_info is not a DataInfo object.")
+                "The passed data_info is not a DataInfo object."
+            )
             user_indices, item_indices = get_user_item_sparse_indices(
                 test_data,
                 data_info.user_unique_vals,
@@ -661,11 +703,13 @@ class DatasetFeat(Dataset):
             )
 
             sparse_cols, multi_sparse_cols = recover_sparse_cols(data_info)
-
             train_sparse_indices = (
                 merge_sparse_indices(
-                    data_info, test_data, sparse_cols,
-                    multi_sparse_cols, mode="test",
+                    data_info,
+                    test_data,
+                    sparse_cols,
+                    multi_sparse_cols,
+                    mode="test",
                     ordered=False
                 )
                 if sparse_cols or multi_sparse_cols
@@ -686,12 +730,14 @@ class DatasetFeat(Dataset):
                 # create dummy labels for consistency
                 labels = np.zeros(len(test_data), dtype=np.float32)
 
-            test_transformed = TransformedSet(user_indices,
-                                              item_indices,
-                                              labels,
-                                              train_sparse_indices,
-                                              train_dense_values,
-                                              train=False)
+            test_transformed = TransformedSet(
+                user_indices,
+                item_indices,
+                labels,
+                train_sparse_indices,
+                train_dense_values,
+                train=False
+            )
 
         else:
             if shuffle:
@@ -700,20 +746,27 @@ class DatasetFeat(Dataset):
                 ).reset_index(drop=True)
 
             test_user_indices, test_item_indices = get_user_item_sparse_indices(
-                test_data, cls.user_unique_vals, cls.item_unique_vals,
-                mode="test", ordered=False
+                test_data,
+                cls.user_unique_vals,
+                cls.item_unique_vals,
+                mode="test",
+                ordered=False
             )
             test_sparse_indices = (
                 merge_sparse_indices(
-                    cls, test_data, cls.sparse_col,
-                    cls.multi_sparse_col, mode="test",
+                    cls,
+                    test_data,
+                    cls.sparse_col,
+                    cls.multi_sparse_col,
+                    mode="test",
                     ordered=False
                 )
                 if cls.sparse_col or cls.multi_sparse_col
                 else None
             )
             test_dense_values = (
-                test_data[cls.dense_col].to_numpy() if cls.dense_col else None
+                test_data[cls.dense_col].to_numpy()
+                if cls.dense_col else None
             )
 
             if "label" in test_data.columns:
@@ -723,20 +776,29 @@ class DatasetFeat(Dataset):
                 # create dummy labels for consistency
                 labels = np.zeros(len(test_data), dtype=np.float32)
 
-            test_transformed = TransformedSet(test_user_indices,
-                                              test_item_indices,
-                                              labels,
-                                              test_sparse_indices,
-                                              test_dense_values,
-                                              train=False)
-
+            test_transformed = TransformedSet(
+                test_user_indices,
+                test_item_indices,
+                labels,
+                test_sparse_indices,
+                test_dense_values,
+                train=False
+            )
         return test_transformed
 
     @classmethod
-    def build_train_test(cls, train_data, test_data, user_col=None,
-                         item_col=None, sparse_col=None, dense_col=None,
-                         multi_sparse_col=None, shuffle=(False, False),
-                         seed=42):
+    def build_train_test(
+        cls,
+        train_data,
+        test_data,
+        user_col=None,
+        item_col=None,
+        sparse_col=None,
+        dense_col=None,
+        multi_sparse_col=None,
+        shuffle=(False, False),
+        seed=42
+    ):
         """Build transformed feat train_data and test_data from original data.
 
         Normally, `user` and `item` column will be transformed into
@@ -778,8 +840,14 @@ class DatasetFeat(Dataset):
             for training and predicting
         """
         trainset, data_info = cls.build_trainset(
-            train_data, user_col, item_col, sparse_col,
-            dense_col, multi_sparse_col, shuffle[0], seed=seed
+            train_data,
+            user_col,
+            item_col,
+            sparse_col,
+            dense_col,
+            multi_sparse_col,
+            shuffle[0],
+            seed=seed
         )
         testset = cls.build_testset(test_data, shuffle[1], seed=seed)
         return trainset, testset, data_info

@@ -7,9 +7,12 @@ from sklearn.preprocessing import (
 )
 
 
-def process_data(data, dense_col=None, normalizer="min_max",
-                 transformer=("log", "sqrt", "square")):
-
+def process_data(
+    data,
+    dense_col=None,
+    normalizer="min_max",
+    transformer=("log", "sqrt", "square")
+):
     if not dense_col:
         print("nothing to preprocessing...")
         return data
@@ -32,11 +35,9 @@ def process_data(data, dense_col=None, normalizer="min_max",
     if isinstance(data, (list, tuple)):
         for i, d in enumerate(data):
             if i == 0:  # assume train_data is the first one
-                d[dense_col] = scaler.fit_transform(
-                    d[dense_col]).astype(np.float32)
+                d[dense_col] = scaler.fit_transform(d[dense_col]).astype(np.float32)
             else:
-                d[dense_col] = scaler.transform(
-                    d[dense_col]).astype(np.float32)
+                d[dense_col] = scaler.transform(d[dense_col]).astype(np.float32)
 
             for col in dense_col:
                 if d[col].min() < 0.0:
@@ -82,17 +83,26 @@ def process_data(data, dense_col=None, normalizer="min_max",
     return data, dense_col_transformed
 
 
-def split_multi_value(data, multi_value_col, sep, max_len=None,
-                      pad_val="missing", user_col=None, item_col=None):
+def split_multi_value(
+    data,
+    multi_value_col,
+    sep,
+    max_len=None,
+    pad_val="missing",
+    user_col=None,
+    item_col=None
+):
     if max_len is not None:
-        assert (isinstance(max_len, (list, tuple))
-                and len(max_len) == len(multi_value_col)
-                ), "max_len must be list and have same length as multi_value_col"
+        assert (
+            isinstance(max_len, (list, tuple))
+            and len(max_len) == len(multi_value_col)
+        ), "`max_len` must be list or tuple and have same length as `multi_value_col`"
 
     if not isinstance(pad_val, (list, tuple)):
         pad_val = [pad_val] * len(multi_value_col)
     assert len(multi_value_col) == len(pad_val), (
-        "length of multi_sparse_col and pad_val doesn't match")
+        "length of multi_sparse_col and pad_val doesn't match"
+    )
 
     user_sparse_col, item_sparse_col, multi_sparse_col = [], [], []
     for j, col in enumerate(multi_value_col):

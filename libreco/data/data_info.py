@@ -2,40 +2,44 @@ from collections import namedtuple
 import inspect
 import json
 import os
+
 import numpy as np
 import pandas as pd
+
 from ..feature import (
     interaction_consumed,
     compute_sparse_feat_indices,
-    _check_oov,
+    check_oov,
 )
 
 
 Feature = namedtuple("Feature", ["name", "index"])
 Empty_Feature = Feature(name=[], index=[])
 
-MultiSparseInfo = namedtuple("MultiSparseInfo",
-                             ["field_offset", "field_len", "feat_oov"])
+MultiSparseInfo = namedtuple(
+    "MultiSparseInfo",
+    ["field_offset", "field_len", "feat_oov"]
+)
 
 
 class DataInfo(object):
     def __init__(
-            self,
-            col_name_mapping=None,
-            interaction_data=None,
-            user_sparse_unique=None,
-            user_dense_unique=None,
-            item_sparse_unique=None,
-            item_dense_unique=None,
-            user_indices=None,
-            item_indices=None,
-            user_unique_vals=None,
-            item_unique_vals=None,
-            sparse_unique_vals=None,
-            sparse_offset=None,
-            sparse_oov=None,
-            multi_sparse_unique_vals=None,
-            multi_sparse_combine_info=None,
+        self,
+        col_name_mapping=None,
+        interaction_data=None,
+        user_sparse_unique=None,
+        user_dense_unique=None,
+        item_sparse_unique=None,
+        item_dense_unique=None,
+        user_indices=None,
+        item_indices=None,
+        user_unique_vals=None,
+        item_unique_vals=None,
+        sparse_unique_vals=None,
+        sparse_offset=None,
+        sparse_oov=None,
+        multi_sparse_unique_vals=None,
+        multi_sparse_combine_info=None,
     ):
         self.col_name_mapping = col_name_mapping
         self.interaction_data = interaction_data
@@ -240,7 +244,8 @@ class DataInfo(object):
             user_indices = np.append(old_data.user.to_numpy(), user_indices)
             item_indices = np.append(old_data.item.to_numpy(), item_indices)
         self.user_consumed, self.item_consumed = interaction_consumed(
-            user_indices, item_indices)
+            user_indices, item_indices
+        )
         return user_indices, item_indices
 
     def reset_property(self):
@@ -253,24 +258,32 @@ class DataInfo(object):
         self._data_size = None
 
     def store_old_info(self):
-        if (self.sparse_unique_vals is not None
-                or self.multi_sparse_unique_vals is not None):
+        if (
+            self.sparse_unique_vals is not None
+                or self.multi_sparse_unique_vals is not None
+        ):
             self.old_sparse_len = list()
             self.old_sparse_oov = list()
             self.old_sparse_offset = list()
             for i, col in enumerate(self.sparse_col.name):
-                if (self.sparse_unique_vals is not None
-                        and col in self.sparse_unique_vals):
+                if (
+                    self.sparse_unique_vals is not None
+                        and col in self.sparse_unique_vals
+                ):
                     self.old_sparse_len.append(len(self.sparse_unique_vals[col]))
                     self.old_sparse_oov.append(self.sparse_oov[i])
                     self.old_sparse_offset.append(self.sparse_offset[i])
-                elif (self.multi_sparse_unique_vals is not None
-                      and col in self.multi_sparse_unique_vals):
+                elif (
+                    self.multi_sparse_unique_vals is not None
+                        and col in self.multi_sparse_unique_vals
+                ):
                     self.old_sparse_len.append(len(self.multi_sparse_unique_vals[col]))
                     self.old_sparse_oov.append(self.sparse_oov[i])
                     self.old_sparse_offset.append(self.sparse_offset[i])
-                elif (self.multi_sparse_unique_vals is not None
-                      and col in self.col_name_mapping["multi_sparse"]):
+                elif (
+                    self.multi_sparse_unique_vals is not None
+                        and col in self.col_name_mapping["multi_sparse"]
+                ):
                     main_name = self.col_name_mapping["multi_sparse"][col]
                     pos = self.sparse_col.name.index(main_name)
                     # multi_sparse case, second to last is redundant.
@@ -296,22 +309,21 @@ class DataInfo(object):
         def update_sparse_unique(unique_dicts, unique_idxs):
             for sparse_col in unique_dicts:
                 unique_vals = list(unique_dicts[sparse_col])
-                sparse_diff = np.setdiff1d(data[sparse_col].to_numpy(),
-                                           unique_vals)
+                sparse_diff = np.setdiff1d(data[sparse_col].to_numpy(), unique_vals)
                 if len(sparse_diff) > 0:
                     unique_vals = np.append(unique_vals, sparse_diff)
                     unique_dicts[sparse_col] = unique_vals
                     size = len(unique_vals)
-                    unique_idxs[sparse_col] = dict(
-                        zip(unique_vals, range(size))
-                    )
+                    unique_idxs[sparse_col] = dict(zip(unique_vals, range(size)))
 
         if self.sparse_unique_vals is not None:
-            update_sparse_unique(self.sparse_unique_vals,
-                                 self.sparse_unique_idxs)
+            update_sparse_unique(
+                self.sparse_unique_vals, self.sparse_unique_idxs
+            )
         if self.multi_sparse_unique_vals is not None:
-            update_sparse_unique(self.multi_sparse_unique_vals,
-                                 self.multi_sparse_unique_idxs)
+            update_sparse_unique(
+                self.multi_sparse_unique_vals, self.multi_sparse_unique_idxs
+            )
 
     def extend_unique_matrix(self, mode, diff_num):
         if mode == "user":
@@ -366,7 +378,7 @@ class DataInfo(object):
 
     # todo: ignore feature oov value
     def assign_sparse_features(self, data, mode):
-        data = _check_oov(self, data, mode)
+        data = check_oov(self, data, mode)
         if mode == "user":
             row_idx = data["user"].to_numpy()
             col_info = self.user_sparse_col
@@ -376,7 +388,8 @@ class DataInfo(object):
                         continue
                     self.user_sparse_unique[row_idx, feat_idx] = (
                         compute_sparse_feat_indices(
-                            self, data, col_info.index[feat_idx], col)
+                            self, data, col_info.index[feat_idx], col
+                        )
                     )
         elif mode == "item":
             row_idx = data["item"].to_numpy()
@@ -387,13 +400,14 @@ class DataInfo(object):
                         continue
                     self.item_sparse_unique[row_idx, feat_idx] = (
                         compute_sparse_feat_indices(
-                            self, data, col_info.index[feat_idx], col)
+                            self, data, col_info.index[feat_idx], col
+                        )
                     )
         else:
             raise ValueError("mode must be user or item.")
 
     def assign_dense_features(self, data, mode):
-        data = _check_oov(self, data, mode)
+        data = check_oov(self, data, mode)
         if mode == "user":
             row_idx = data["user"].to_numpy()
             col_info = self.user_dense_col
@@ -422,26 +436,34 @@ class DataInfo(object):
         self.assign_dense_features(item_data, "item")
 
     def add_oov(self):
-        if (self.user_sparse_unique is not None and
-                len(self.user_sparse_unique) == self.n_users):
+        if (
+            self.user_sparse_unique is not None
+                and len(self.user_sparse_unique) == self.n_users
+        ):
             user_sparse_oov = self.sparse_oov[self.user_sparse_col.index]
             self.user_sparse_unique = np.vstack(
                 [self.user_sparse_unique, user_sparse_oov]
             )
-        if (self.item_sparse_unique is not None and
-                len(self.item_sparse_unique) == self.n_items):
+        if (
+            self.item_sparse_unique is not None
+                and len(self.item_sparse_unique) == self.n_items
+        ):
             item_sparse_oov = self.sparse_oov[self.item_sparse_col.index]
             self.item_sparse_unique = np.vstack(
                 [self.item_sparse_unique, item_sparse_oov]
             )
-        if (self.user_dense_unique is not None and
-                len(self.user_dense_unique) == self.n_users):
+        if (
+            self.user_dense_unique is not None
+                and len(self.user_dense_unique) == self.n_users
+        ):
             user_dense_oov = np.mean(self.user_dense_unique, axis=0)
             self.user_dense_unique = np.vstack(
                 [self.user_dense_unique, user_dense_oov]
             )
-        if (self.item_dense_unique is not None and
-                len(self.item_dense_unique) == self.n_items):
+        if (
+            self.item_dense_unique is not None
+                and len(self.item_dense_unique) == self.n_items
+        ):
             item_dense_oov = np.mean(self.item_dense_unique, axis=0)
             self.item_dense_unique = np.vstack(
                 [self.item_dense_unique, item_dense_oov]
@@ -451,8 +473,7 @@ class DataInfo(object):
         count_items = self.interaction_data.drop_duplicates(
             subset=["user", "item"]
         ).groupby("item")["user"].count()
-        selected_items = count_items.sort_values(
-            ascending=False).index.tolist()[:num]
+        selected_items = count_items.sort_values(ascending=False).index.tolist()[:num]
         # if not enough items, add old populars
         if len(selected_items) < num and self.popular_items is not None:
             diff = num - len(selected_items)
@@ -493,8 +514,12 @@ class DataInfo(object):
                 path, "data_info_name_mapping.json"
             )
             with open(name_mapping_path, 'w') as f:
-                json.dump(self.all_args["col_name_mapping"],
-                          f, separators=(',', ':'), indent=4)
+                json.dump(
+                    self.all_args["col_name_mapping"],
+                    f,
+                    separators=(',', ':'),
+                    indent=4
+                )
 
         other_path = os.path.join(path, "data_info")
         hparams = dict()
@@ -538,7 +563,8 @@ class DataInfo(object):
         for arg in info:
             if arg == "interaction_data":
                 hparams[arg] = pd.DataFrame(
-                    info[arg], columns=["user", "item", "label"])
+                    info[arg], columns=["user", "item", "label"]
+                )
             elif arg == "multi_sparse_combine_info":
                 hparams[arg] = MultiSparseInfo(*info[arg])
             elif arg.startswith("unique_"):
