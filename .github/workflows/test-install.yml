@@ -30,3 +30,6 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install nmslib
           python -m pip install -e .
+
+      - name: Test install
+        run: python -c "import nmslib; import libreco; print(libreco.__version__)"
