@@ -1,8 +1,9 @@
 import os
 import random
-from operator import itemgetter
-from itertools import islice, takewhile
 from collections import defaultdict
+from itertools import islice, takewhile
+from operator import itemgetter
+
 import numpy as np
 from scipy.sparse import (
     issparse,
@@ -10,31 +11,38 @@ from scipy.sparse import (
     load_npz as load_sparse
 )
 from tqdm import tqdm
-from .base import Base
-from ..utils.similarities import cosine_sim, pearson_sim, jaccard_sim
+
+from ..bases import Base
+from ..evaluation import print_metrics
+from ..recommendation import popular_recommendations
 from ..utils.misc import time_block, colorize
-from ..evaluation.evaluate import EvalMixin
+from ..utils.save_load import load_params, save_params
+from ..utils.similarities import cosine_sim, pearson_sim, jaccard_sim
+from ..utils.validate import check_unknown, check_unknown_user, convert_id
 
 
-class ItemCF(Base, EvalMixin):
+class ItemCF(Base):
     def __init__(
-            self,
-            task,
-            data_info,
-            sim_type="cosine",
-            k=20,
-            lower_upper_bound=None
+        self,
+        task,
+        data_info,
+        sim_type="cosine",
+        k_sim=20,
+        seed=42,
+        k=10,
+        eval_batch_size=8192,
+        eval_user_num=None,
+        lower_upper_bound=None
     ):
-        Base.__init__(self, task, data_info, lower_upper_bound)
-        EvalMixin.__init__(self, task, data_info)
+        super().__init__(task, data_info, lower_upper_bound)
 
-        self.task = task
-        self.data_info = data_info
-        self.k = k
-        self.n_users = data_info.n_users
-        self.n_items = data_info.n_items
+        self.all_args = locals()
+        self.k_sim = k_sim
         self.sim_type = sim_type
-        self.user_consumed = data_info.user_consumed
+        self.seed = seed
+        self.k = k
+        self.eval_batch_size = eval_batch_size
+        self.eval_user_num = eval_user_num
         # sparse matrix, user as row and item as column
         self.user_interaction = None
         # sparse matrix, item as row and user as column
@@ -44,11 +52,19 @@ class ItemCF(Base, EvalMixin):
         self.topk_sim = None
         self.print_count = 0
         self._caution_sim_type()
-        self.all_args = locals()
 
-    def fit(self, train_data, block_size=None, num_threads=1, min_common=1,
-            mode="invert", verbose=1, eval_data=None, metrics=None,
-            store_top_k=True):
+    def fit(
+        self,
+        train_data,
+        block_size=None,
+        num_threads=1,
+        min_common=1,
+        mode="invert",
+        verbose=1,
+        eval_data=None,
+        metrics=None,
+        store_top_k=True
+    ):
         self.show_start_time()
         self.user_interaction = train_data.sparse_interaction
         self.item_interaction = self.user_interaction.T.tocsr()
@@ -66,8 +82,14 @@ class ItemCF(Base, EvalMixin):
                 )
 
             self.sim_matrix = sim_func(
-                self.item_interaction, self.user_interaction, self.n_items,
-                self.n_users, block_size, num_threads, min_common, mode
+                self.item_interaction,
+                self.user_interaction,
+                self.n_items,
+                self.n_users,
+                block_size,
+                num_threads,
+                min_common,
+                mode
             )
 
         assert self.sim_matrix.has_sorted_indices
@@ -81,12 +103,20 @@ class ItemCF(Base, EvalMixin):
             self.compute_top_k()
 
         if verbose > 1:
-            self.print_metrics(eval_data=eval_data, metrics=metrics)
+            print_metrics(
+                model=self,
+                eval_data=eval_data,
+                metrics=metrics,
+                eval_batch_size=self.eval_batch_size,
+                k=self.k,
+                sample_user_num=self.eval_user_num,
+                seed=self.seed
+            )
             print("=" * 30)
 
     def predict(self, user, item, cold="popular", inner_id=False):
-        user, item = self.convert_id(user, item, inner_id)
-        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
+        user, item = convert_id(self, user, item, inner_id)
+        unknown_num, unknown_index, user, item = check_unknown(self, user, item)
         if unknown_num > 0 and cold != "popular":
             raise ValueError("ItemCF only supports popular strategy")
 
@@ -106,8 +136,11 @@ class ItemCF(Base, EvalMixin):
             user_interacted_i = interaction.indices[user_slice]
             user_interacted_values = interaction.data[user_slice]
             common_items, indices_in_i, indices_in_u = np.intersect1d(
-                sim_items, user_interacted_i,
-                assume_unique=True, return_indices=True)
+                sim_items,
+                user_interacted_i,
+                assume_unique=True,
+                return_indices=True
+            )
 
             common_sims = sim_values[indices_in_i]
             common_labels = user_interacted_values[indices_in_u]
@@ -124,43 +157,51 @@ class ItemCF(Base, EvalMixin):
                     *islice(
                         takewhile(
                             lambda x: x[1] > 0,
-                            sorted(zip(common_labels, common_sims),
-                                   key=itemgetter(1), reverse=True),
+                            sorted(
+                                zip(common_labels, common_sims),
+                                key=itemgetter(1),
+                                reverse=True
+                            ),
                         ),
-                        self.k,
+                        self.k_sim,
                     )
                 )
 
                 if self.task == "rating":
-                    sims_distribution = (
-                        k_neighbor_sims / np.sum(k_neighbor_sims)
-                    )
+                    sims_distribution = k_neighbor_sims / np.sum(k_neighbor_sims)
                     weighted_pred = np.average(
                         k_neighbor_labels, weights=sims_distribution
                     )
                     preds.append(
-                        np.clip(weighted_pred, self.lower_bound,
-                                self.upper_bound)
+                        np.clip(weighted_pred, self.lower_bound, self.upper_bound)
                     )
                 elif self.task == "ranking":
                     preds.append(np.mean(k_neighbor_sims))
 
         return preds[0] if len(user) == 1 else preds
 
-    def recommend_user(self, user, n_rec, random_rec=False,
-                       cold_start="popular", inner_id=False):
-        user_id = self._check_unknown_user(user, inner_id)
+    def recommend_user(
+        self,
+        user,
+        n_rec,
+        random_rec=False,
+        cold_start="popular",
+        inner_id=False
+    ):
+        user_id = check_unknown_user(self, user, inner_id)
         if user_id is None:
             if cold_start == "popular":
-                return self.popular_recommends(inner_id, n_rec)
+                return popular_recommendations(self.data_info, inner_id, n_rec)
             elif cold_start != "popular":
                 raise ValueError("ItemCF only supports popular strategy")
             else:
                 raise ValueError(user)
 
         u_consumed = set(self.user_consumed[user])
-        user_slice = slice(self.user_interaction.indptr[user],
-                           self.user_interaction.indptr[user + 1])
+        user_slice = slice(
+            self.user_interaction.indptr[user],
+            self.user_interaction.indptr[user + 1]
+        )
         user_interacted_i = self.user_interaction.indices[user_slice]
         user_interacted_labels = self.user_interaction.data[user_slice]
 
@@ -169,15 +210,17 @@ class ItemCF(Base, EvalMixin):
             if self.topk_sim is not None:
                 item_sim_topk = self.topk_sim[i]
             else:
-                item_slice = slice(self.sim_matrix.indptr[i],
-                                   self.sim_matrix.indptr[i + 1])
+                item_slice = slice(
+                    self.sim_matrix.indptr[i],
+                    self.sim_matrix.indptr[i + 1]
+                )
                 sim_items = self.sim_matrix.indices[item_slice]
                 sim_values = self.sim_matrix.data[item_slice]
                 item_sim_topk = sorted(
                     zip(sim_items, sim_values),
                     key=itemgetter(1),
                     reverse=True
-                )[:self.k]
+                )[:self.k_sim]
 
             for j, sim in item_sim_topk:
                 if j in u_consumed:
@@ -216,22 +259,24 @@ class ItemCF(Base, EvalMixin):
     def compute_top_k(self):
         top_k = dict()
         for i in tqdm(range(self.n_items), desc="top_k"):
-            item_slice = slice(self.sim_matrix.indptr[i],
-                               self.sim_matrix.indptr[i + 1])
+            item_slice = slice(
+                self.sim_matrix.indptr[i],
+                self.sim_matrix.indptr[i + 1]
+            )
             sim_items = self.sim_matrix.indices[item_slice].tolist()
             sim_values = self.sim_matrix.data[item_slice].tolist()
             top_k[i] = sorted(
                 zip(sim_items, sim_values),
                 key=itemgetter(1),
                 reverse=True
-            )[:self.k]
+            )[:self.k_sim]
         self.topk_sim = top_k
 
     def save(self, path, model_name, **kwargs):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        self.save_params(path)
+        save_params(self, path)
         model_path = os.path.join(path, model_name)
         save_sparse(f"{model_path}_sim_matrix", self.sim_matrix)
         save_sparse(f"{model_path}_user_inter", self.user_interaction)
@@ -239,7 +284,7 @@ class ItemCF(Base, EvalMixin):
 
     @classmethod
     def load(cls, path, model_name, data_info, **kwargs):
-        hparams = cls.load_params(path, data_info)
+        hparams = load_params(path, data_info)
         model = cls(**hparams)
         model_path = os.path.join(path, model_name)
         model.sim_matrix = load_sparse(f"{model_path}_sim_matrix.npz")
@@ -247,5 +292,5 @@ class ItemCF(Base, EvalMixin):
         model.item_interaction = load_sparse(f"{model_path}_item_inter.npz")
         return model
 
-    def rebuild_graph(self, path, model_name, full_assign=False):
+    def rebuild_model(self, path, model_name, full_assign=False):
         raise NotImplementedError("ItemCF doesn't support model retraining")

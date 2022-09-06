@@ -5,7 +5,7 @@ from .svdpp import SVDpp
 from .als import ALS
 from .bpr import BPR
 from .ncf import NCF
-from .youtube_retrieval import YouTuBeRetrieval
+from .youtube_retrieval import YouTubeRetrieval
 from .youtube_ranking import YouTubeRanking
 from .fm import FM
 from .wide_deep import WideDeep
@@ -28,7 +28,7 @@ __all__ = [
     "ALS",
     "BPR",
     "NCF",
-    "YouTuBeRetrieval",
+    "YouTubeRetrieval",
     "YouTubeRanking",
     "FM",
     "WideDeep",

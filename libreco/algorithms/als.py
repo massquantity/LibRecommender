@@ -13,164 +13,136 @@ References:
 author: massquantity
 
 """
+import numbers
 import os
 import logging
-from itertools import islice
 from functools import partial
+
 import numpy as np
-from .base import Base
-from ..evaluation.evaluate import EvalMixin
-from ..utils.misc import time_block, assign_oov_vector
+
+from ..bases import EmbedBase
+from ..evaluation import print_metrics
 from ..utils.initializers import truncated_normal
+from ..utils.misc import time_block
+from ..utils.save_load import save_params
+from ..utils.validate import check_has_sampled
+
 try:
     from ._als import als_update
 except ImportError:
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
     logging.basicConfig(format=LOG_FORMAT)
     logging.warn("Als cython version is not available")
-    pass
+    raise
 
 
-class ALS(Base, EvalMixin):
-    user_variables_np = ["user_embed"]
-    item_variables_np = ["item_embed"]
-
+class ALS(EmbedBase):
     def __init__(
-            self,
-            task,
-            data_info=None,
-            embed_size=16,
-            n_epochs=20,
-            reg=None,
-            alpha=10,
-            seed=42,
-            lower_upper_bound=None
+        self,
+        task,
+        data_info=None,
+        embed_size=16,
+        n_epochs=20,
+        reg=None,
+        alpha=10,
+        use_cg=True,
+        n_threads=1,
+        seed=42,
+        k=10,
+        eval_batch_size=8192,
+        eval_user_num=None,
+        lower_upper_bound=None,
+        with_training=True
     ):
-        Base.__init__(self, task, data_info, lower_upper_bound)
-        EvalMixin.__init__(self, task, data_info)
+        super().__init__(task, data_info, embed_size, lower_upper_bound)
 
-        self.task = task
-        self.data_info = data_info
-        self.embed_size = embed_size
+        self.all_args = locals()
         self.n_epochs = n_epochs
         self.reg = reg
         self.alpha = alpha
+        self.use_cg = use_cg
+        self.n_threads = n_threads
         self.seed = seed
-        self.n_users = data_info.n_users
-        self.n_items = data_info.n_items
-        self.user_consumed = data_info.user_consumed
-        self.user_embed = None
-        self.item_embed = None
-        self.all_args = locals()
+        self.k = k
+        self.eval_batch_size = eval_batch_size
+        self.eval_user_num = eval_user_num
+        if with_training:
+            self._build_model()
 
     def _build_model(self):
         np.random.seed(self.seed)
         self.user_embed = truncated_normal(
-            shape=[self.n_users, self.embed_size], mean=0.0, scale=0.03)
+            shape=[self.n_users, self.embed_size], mean=0.0, scale=0.03
+        )
         self.item_embed = truncated_normal(
-            shape=[self.n_items, self.embed_size], mean=0.0, scale=0.03)
+            shape=[self.n_items, self.embed_size], mean=0.0, scale=0.03
+        )
 
-    def fit(self, train_data, verbose=1, shuffle=True, use_cg=True,
-            n_threads=1, eval_data=None, metrics=None, **kwargs):
+    def fit(
+        self,
+        train_data,
+        verbose=1,
+        shuffle=True,
+        eval_data=None,
+        metrics=None,
+        **kwargs
+    ):
         self.show_start_time()
-        if not self.model_built:
-            self._build_model()
-
+        assert isinstance(self.reg, numbers.Real), "`reg` must be float"
         user_interaction = train_data.sparse_interaction  # sparse.csr_matrix
         item_interaction = user_interaction.T.tocsr()
         if self.task == "ranking":
-            self._check_has_sampled(train_data, verbose)
+            check_has_sampled(train_data, verbose)
             user_interaction.data = user_interaction.data * self.alpha + 1
             item_interaction.data = item_interaction.data * self.alpha + 1
-        trainer = self._choose_algo(use_cg)
 
+        trainer = partial(als_update, task=self.task, use_cg=self.use_cg)
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
-                trainer(interaction=user_interaction,
-                        X=self.user_embed,
-                        Y=self.item_embed,
-                        reg=self.reg,
-                        num_threads=n_threads)
-                trainer(interaction=item_interaction,
-                        X=self.item_embed,
-                        Y=self.user_embed,
-                        reg=self.reg,
-                        num_threads=n_threads)
+                trainer(
+                    interaction=user_interaction,
+                    X=self.user_embed,
+                    Y=self.item_embed,
+                    reg=self.reg,
+                    num_threads=self.n_threads
+                )
+                trainer(
+                    interaction=item_interaction,
+                    X=self.item_embed,
+                    Y=self.user_embed,
+                    reg=self.reg,
+                    num_threads=self.n_threads
+                )
 
             if verbose > 1:
-                self.print_metrics(eval_data=eval_data, metrics=metrics,
-                                   **kwargs)
+                print_metrics(
+                    model=self,
+                    eval_data=eval_data,
+                    metrics=metrics,
+                    eval_batch_size=self.eval_batch_size,
+                    k=self.k,
+                    sample_user_num=self.eval_user_num,
+                    seed=self.seed
+                )
                 print("=" * 30)
-        assign_oov_vector(self)
-
-    def _choose_algo(self, use_cg):
-        trainer = partial(als_update, task=self.task, use_cg=use_cg)
-        return trainer
-
-    def predict(self, user, item, cold_start="average", inner_id=False):
-        user, item = self.convert_id(user, item, inner_id)
-        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
-
-        preds = np.sum(
-            np.multiply(self.user_embed[user], self.item_embed[item]),
-            axis=1
-        )
-
-        if self.task == "rating":
-            preds = np.clip(preds, self.lower_bound, self.upper_bound)
-        elif self.task == "ranking":
-            preds = 1 / (1 + np.exp(-preds))
-
-        if unknown_num > 0 and cold_start == "popular":
-            preds[unknown_index] = self.default_prediction
-        return preds
-
-    def recommend_user(self, user, n_rec, cold_start="average", inner_id=False):
-        user_id = self._check_unknown_user(user, inner_id)
-        if user_id is None:
-            if cold_start == "average":
-                user_id = self.n_users
-            elif cold_start == "popular":
-                return self.popular_recommends(inner_id, n_rec)
-            else:
-                raise ValueError(user)
-
-        consumed = set(self.user_consumed[user_id])
-        count = n_rec + len(consumed)
-        recos = self.user_embed[user_id] @ self.item_embed.T
-        if self.task == "ranking":
-            recos = 1 / (1 + np.exp(-recos))
-        ids = np.argpartition(recos, -count)[-count:]
-        rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
-        recs_and_scores = islice(
-            (rec if inner_id else (self.data_info.id2item[rec[0]], rec[1])
-             for rec in rank if rec[0] not in consumed),
-            n_rec
-        )
-        return list(recs_and_scores)
+        self.assign_embedding_oov()
 
     def save(self, path, model_name, manual=True, inference_only=False):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        self.save_params(path)
+        save_params(self, path)
         variable_path = os.path.join(path, model_name)
-        np.savez_compressed(variable_path,
-                            user_embed=self.user_embed,
-                            item_embed=self.item_embed)
+        np.savez_compressed(
+            variable_path,
+            user_embed=self.user_embed,
+            item_embed=self.item_embed
+        )
 
-    @classmethod
-    def load(cls, path, model_name, data_info, manual=True):
-        variable_path = os.path.join(path, f"{model_name}.npz")
-        variables = np.load(variable_path)
-        hparams = cls.load_params(path, data_info)
-        model = cls(**hparams)
-        model.user_embed = variables["user_embed"]
-        model.item_embed = variables["item_embed"]
-        return model
+    def set_embeddings(self):
+        pass
 
-    def rebuild_graph(self, path, model_name, full_assign=False):
-        self._build_model()
+    def rebuild_model(self, path, model_name, full_assign=False):
         variable_path = os.path.join(path, f"{model_name}.npz")
         variables = np.load(variable_path)
         # remove oov values

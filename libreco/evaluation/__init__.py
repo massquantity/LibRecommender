@@ -1,3 +1,3 @@
-from .evaluate import evaluate
+from .evaluate import evaluate, print_metrics
 
-__all__ = ["evaluate"]
+__all__ = ["evaluate", "print_metrics"]
