@@ -1,5 +1,7 @@
 # LibRecommender
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/bd2e6af39c504ce7aeb82919709ea89b)](https://app.codacy.com/gh/massquantity/LibRecommender?utm_source=github.com&utm_medium=referral&utm_content=massquantity/LibRecommender&utm_campaign=Badge_Grade_Settings)
+
 ## Overview
 
 **LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation. The main features are:
