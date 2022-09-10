@@ -24,10 +24,6 @@ def lr_decay_config(initial_lr, default_decay_steps, **kwargs):
     decay_rate = kwargs.get("decay_rate", 0.96)
     global_steps = tf.Variable(0, trainable=False, name="global_steps")
     learning_rate = tf.train.exponential_decay(
-        initial_lr,
-        global_steps,
-        decay_steps,
-        decay_rate,
-        staircase=True
+        initial_lr, global_steps, decay_steps, decay_rate, staircase=True
     )
     return learning_rate, global_steps

@@ -5,11 +5,7 @@ from itertools import islice, takewhile
 from operator import itemgetter
 
 import numpy as np
-from scipy.sparse import (
-    issparse,
-    save_npz as save_sparse,
-    load_npz as load_sparse
-)
+from scipy.sparse import issparse, save_npz as save_sparse, load_npz as load_sparse
 from tqdm import tqdm
 
 from ..bases import Base
@@ -32,7 +28,7 @@ class UserCF(Base):
         k=10,
         eval_batch_size=8192,
         eval_user_num=None,
-        lower_upper_bound=None
+        lower_upper_bound=None,
     ):
         super().__init__(task, data_info, lower_upper_bound)
 
@@ -63,7 +59,7 @@ class UserCF(Base):
         verbose=1,
         eval_data=None,
         metrics=None,
-        store_top_k=True
+        store_top_k=True,
     ):
         self.show_start_time()
         self.user_interaction = train_data.sparse_interaction
@@ -89,16 +85,18 @@ class UserCF(Base):
                 block_size,
                 num_threads,
                 min_common,
-                mode
+                mode,
             )
 
         assert self.sim_matrix.has_sorted_indices
         if issparse(self.sim_matrix):
             n_elements = self.sim_matrix.getnnz()
             sparsity_ratio = 100 * n_elements / (self.n_users * self.n_users)
-            print(f"sim_matrix, shape: {self.sim_matrix.shape}, "
-                  f"num_elements: {n_elements}, "
-                  f"sparsity: {sparsity_ratio:5.4f} %")
+            print(
+                f"sim_matrix, shape: {self.sim_matrix.shape}, "
+                f"num_elements: {n_elements}, "
+                f"sparsity: {sparsity_ratio:5.4f} %"
+            )
         if store_top_k:
             self.compute_top_k()
 
@@ -110,14 +108,14 @@ class UserCF(Base):
                 eval_batch_size=self.eval_batch_size,
                 k=self.k,
                 sample_user_num=self.eval_user_num,
-                seed=self.seed
+                seed=self.seed,
             )
             print("=" * 30)
 
-    def predict(self, user, item, cold="popular", inner_id=False):
+    def predict(self, user, item, cold_start="popular", inner_id=False):
         user, item = convert_id(self, user, item, inner_id)
         unknown_num, unknown_index, user, item = check_unknown(self, user, item)
-        if unknown_num > 0 and cold != "popular":
+        if unknown_num > 0 and cold_start != "popular":
             raise ValueError("UserCF only supports popular strategy")
 
         preds = []
@@ -136,19 +134,18 @@ class UserCF(Base):
             item_interacted_u = interaction.indices[item_slice]
             item_interacted_values = interaction.data[item_slice]
             common_users, indices_in_u, indices_in_i = np.intersect1d(
-                sim_users,
-                item_interacted_u,
-                assume_unique=True,
-                return_indices=True
+                sim_users, item_interacted_u, assume_unique=True, return_indices=True
             )
 
             common_sims = sim_values[indices_in_u]
             common_labels = item_interacted_values[indices_in_i]
             if common_users.size == 0 or np.all(common_sims <= 0.0):
                 self.print_count += 1
-                no_str = (f"No common interaction or similar neighbor "
-                          f"for user {u} and item {i}, "
-                          f"proceed with default prediction")
+                no_str = (
+                    f"No common interaction or similar neighbor "
+                    f"for user {u} and item {i}, "
+                    f"proceed with default prediction"
+                )
                 if self.print_count < 7:
                     print(f"{colorize(no_str, 'red')}")
                 preds.append(self.default_prediction)
@@ -160,7 +157,7 @@ class UserCF(Base):
                             sorted(
                                 zip(common_labels, common_sims),
                                 key=itemgetter(1),
-                                reverse=True
+                                reverse=True,
                             ),
                         ),
                         self.k_sim,
@@ -181,12 +178,7 @@ class UserCF(Base):
         return preds[0] if len(user) == 1 else preds
 
     def recommend_user(
-        self,
-        user,
-        n_rec,
-        random_rec=False,
-        cold_start="popular",
-        inner_id=False
+        self, user, n_rec, random_rec=False, cold_start="popular", inner_id=False
     ):
         user_id = check_unknown_user(self, user, inner_id)
         if user_id is None:
@@ -198,16 +190,17 @@ class UserCF(Base):
                 raise ValueError(user)
 
         user_slice = slice(
-            self.sim_matrix.indptr[user],
-            self.sim_matrix.indptr[user + 1]
+            self.sim_matrix.indptr[user], self.sim_matrix.indptr[user + 1]
         )
         sim_users = self.sim_matrix.indices[user_slice]
         sim_values = self.sim_matrix.data[user_slice]
 
         if sim_users.size == 0 or np.all(sim_values <= 0):
             self.print_count += 1
-            no_str = (f"no similar neighbor for user {user}, "
-                      f"return default recommendation")
+            no_str = (
+                f"no similar neighbor for user {user}, "
+                f"return default recommendation"
+            )
             if self.print_count < 11:
                 print(f"{colorize(no_str, 'red')}")
             return self.data_info.popular_items[:n_rec]
@@ -216,12 +209,8 @@ class UserCF(Base):
             k_nbs_and_sims = self.topk_sim[user]
         else:
             k_nbs_and_sims = islice(
-                sorted(
-                    zip(sim_users, sim_values),
-                    key=itemgetter(1),
-                    reverse=True
-                ),
-                self.k_sim
+                sorted(zip(sim_users, sim_values), key=itemgetter(1), reverse=True),
+                self.k_sim,
             )
         u_consumed = set(self.user_consumed[user])
 
@@ -252,10 +241,8 @@ class UserCF(Base):
             return rank_items[:n_rec]
 
     def _caution_sim_type(self):
-        caution_str = (f"Warning: {self.sim_type} is not suitable "
-                       f"for implicit data")
-        caution_str2 = (f"Warning: {self.sim_type} is not suitable "
-                        f"for explicit data")
+        caution_str = f"Warning: {self.sim_type} is not suitable " f"for implicit data"
+        caution_str2 = f"Warning: {self.sim_type} is not suitable " f"for explicit data"
         if self.task == "ranking" and self.sim_type == "pearson":
             print(f"{colorize(caution_str, 'red')}")
         if self.task == "rating" and self.sim_type == "jaccard":
@@ -264,25 +251,20 @@ class UserCF(Base):
     def compute_top_k(self):
         top_k = dict()
         for u in tqdm(range(self.n_users), desc="top_k"):
-            user_slice = slice(
-                self.sim_matrix.indptr[u],
-                self.sim_matrix.indptr[u + 1]
-            )
+            user_slice = slice(self.sim_matrix.indptr[u], self.sim_matrix.indptr[u + 1])
             sim_users = self.sim_matrix.indices[user_slice].tolist()
             sim_values = self.sim_matrix.data[user_slice].tolist()
 
             top_k[u] = sorted(
-                zip(sim_users, sim_values),
-                key=itemgetter(1),
-                reverse=True
-            )[:self.k_sim]
+                zip(sim_users, sim_values), key=itemgetter(1), reverse=True
+            )[: self.k_sim]
         self.topk_sim = top_k
 
     def save(self, path, model_name, **kwargs):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        save_params(self, path)
+        save_params(self, path, model_name)
         model_path = os.path.join(path, model_name)
         save_sparse(f"{model_path}_sim_matrix", self.sim_matrix)
         save_sparse(f"{model_path}_user_inter", self.user_interaction)
@@ -290,7 +272,7 @@ class UserCF(Base):
 
     @classmethod
     def load(cls, path, model_name, data_info, **kwargs):
-        hparams = load_params(path, data_info)
+        hparams = load_params(cls, path, data_info, model_name)
         model = cls(**hparams)
         model_path = os.path.join(path, model_name)
         model.sim_matrix = load_sparse(f"{model_path}_sim_matrix.npz")

@@ -8,23 +8,21 @@ def choose_tf_loss(model, task, loss_type):
         )
     elif task == "ranking":
         if loss_type == "cross_entropy":
-            assert hasattr(model, "output"), (
-                f"can't use cross entropy loss in {model.model_name}"
-            )
+            assert hasattr(
+                model, "output"
+            ), f"can't use cross entropy loss in {model.model_name}"
             loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(
                     labels=model.labels, logits=model.output
                 )
             )
         elif loss_type == "bpr":
-            assert hasattr(model, "bpr_loss"), (
-                f"can't use bpr loss in {model.model_name}"
-            )
+            assert hasattr(
+                model, "bpr_loss"
+            ), f"can't use bpr loss in {model.model_name}"
             loss = -tf.reduce_mean(model.bpr_loss)
         elif loss_type == "focal":
-            loss = tf.reduce_mean(
-                focal_loss(labels=model.labels, logits=model.output)
-            )
+            loss = tf.reduce_mean(focal_loss(labels=model.labels, logits=model.output))
         else:
             raise ValueError(f"unknown loss_type for ranking: {loss_type}")
     else:

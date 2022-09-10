@@ -5,11 +5,7 @@ from itertools import islice, takewhile
 from operator import itemgetter
 
 import numpy as np
-from scipy.sparse import (
-    issparse,
-    save_npz as save_sparse,
-    load_npz as load_sparse
-)
+from scipy.sparse import issparse, save_npz as save_sparse, load_npz as load_sparse
 from tqdm import tqdm
 
 from ..bases import Base
@@ -32,7 +28,7 @@ class ItemCF(Base):
         k=10,
         eval_batch_size=8192,
         eval_user_num=None,
-        lower_upper_bound=None
+        lower_upper_bound=None,
     ):
         super().__init__(task, data_info, lower_upper_bound)
 
@@ -63,7 +59,7 @@ class ItemCF(Base):
         verbose=1,
         eval_data=None,
         metrics=None,
-        store_top_k=True
+        store_top_k=True,
     ):
         self.show_start_time()
         self.user_interaction = train_data.sparse_interaction
@@ -89,16 +85,18 @@ class ItemCF(Base):
                 block_size,
                 num_threads,
                 min_common,
-                mode
+                mode,
             )
 
         assert self.sim_matrix.has_sorted_indices
         if issparse(self.sim_matrix):
             n_elements = self.sim_matrix.getnnz()
             sparsity_ratio = 100 * n_elements / (self.n_users * self.n_users)
-            print(f"sim_matrix, shape: {self.sim_matrix.shape}, "
-                  f"num_elements: {n_elements}, "
-                  f"sparsity: {sparsity_ratio:5.4f} %")
+            print(
+                f"sim_matrix, shape: {self.sim_matrix.shape}, "
+                f"num_elements: {n_elements}, "
+                f"sparsity: {sparsity_ratio:5.4f} %"
+            )
         if store_top_k:
             self.compute_top_k()
 
@@ -110,14 +108,14 @@ class ItemCF(Base):
                 eval_batch_size=self.eval_batch_size,
                 k=self.k,
                 sample_user_num=self.eval_user_num,
-                seed=self.seed
+                seed=self.seed,
             )
             print("=" * 30)
 
-    def predict(self, user, item, cold="popular", inner_id=False):
+    def predict(self, user, item, cold_start="popular", inner_id=False):
         user, item = convert_id(self, user, item, inner_id)
         unknown_num, unknown_index, user, item = check_unknown(self, user, item)
-        if unknown_num > 0 and cold != "popular":
+        if unknown_num > 0 and cold_start != "popular":
             raise ValueError("ItemCF only supports popular strategy")
 
         preds = []
@@ -136,19 +134,18 @@ class ItemCF(Base):
             user_interacted_i = interaction.indices[user_slice]
             user_interacted_values = interaction.data[user_slice]
             common_items, indices_in_i, indices_in_u = np.intersect1d(
-                sim_items,
-                user_interacted_i,
-                assume_unique=True,
-                return_indices=True
+                sim_items, user_interacted_i, assume_unique=True, return_indices=True
             )
 
             common_sims = sim_values[indices_in_i]
             common_labels = user_interacted_values[indices_in_u]
-            if common_items.size == 0 or np.all(common_sims <= 0.):
+            if common_items.size == 0 or np.all(common_sims <= 0.0):
                 self.print_count += 1
-                no_str = (f"No common interaction or similar neighbor "
-                          f"for user {u} and item {i}, "
-                          f"proceed with default prediction")
+                no_str = (
+                    f"No common interaction or similar neighbor "
+                    f"for user {u} and item {i}, "
+                    f"proceed with default prediction"
+                )
                 if self.print_count < 7:
                     print(f"{colorize(no_str, 'red')}")
                 preds.append(self.default_prediction)
@@ -160,7 +157,7 @@ class ItemCF(Base):
                             sorted(
                                 zip(common_labels, common_sims),
                                 key=itemgetter(1),
-                                reverse=True
+                                reverse=True,
                             ),
                         ),
                         self.k_sim,
@@ -181,12 +178,7 @@ class ItemCF(Base):
         return preds[0] if len(user) == 1 else preds
 
     def recommend_user(
-        self,
-        user,
-        n_rec,
-        random_rec=False,
-        cold_start="popular",
-        inner_id=False
+        self, user, n_rec, random_rec=False, cold_start="popular", inner_id=False
     ):
         user_id = check_unknown_user(self, user, inner_id)
         if user_id is None:
@@ -199,8 +191,7 @@ class ItemCF(Base):
 
         u_consumed = set(self.user_consumed[user])
         user_slice = slice(
-            self.user_interaction.indptr[user],
-            self.user_interaction.indptr[user + 1]
+            self.user_interaction.indptr[user], self.user_interaction.indptr[user + 1]
         )
         user_interacted_i = self.user_interaction.indices[user_slice]
         user_interacted_labels = self.user_interaction.data[user_slice]
@@ -211,16 +202,13 @@ class ItemCF(Base):
                 item_sim_topk = self.topk_sim[i]
             else:
                 item_slice = slice(
-                    self.sim_matrix.indptr[i],
-                    self.sim_matrix.indptr[i + 1]
+                    self.sim_matrix.indptr[i], self.sim_matrix.indptr[i + 1]
                 )
                 sim_items = self.sim_matrix.indices[item_slice]
                 sim_values = self.sim_matrix.data[item_slice]
                 item_sim_topk = sorted(
-                    zip(sim_items, sim_values),
-                    key=itemgetter(1),
-                    reverse=True
-                )[:self.k_sim]
+                    zip(sim_items, sim_values), key=itemgetter(1), reverse=True
+                )[: self.k_sim]
 
             for j, sim in item_sim_topk:
                 if j in u_consumed:
@@ -229,8 +217,10 @@ class ItemCF(Base):
 
         if len(result) == 0:
             self.print_count += 1
-            no_str = (f"no suitable recommendation for user {user}, "
-                      f"return default recommendation")
+            no_str = (
+                f"no suitable recommendation for user {user}, "
+                f"return default recommendation"
+            )
             if self.print_count < 7:
                 print(f"{colorize(no_str, 'red')}")
             return self.data_info.popular_items[:n_rec]
@@ -248,35 +238,32 @@ class ItemCF(Base):
 
     def _caution_sim_type(self):
         if self.task == "ranking" and self.sim_type == "pearson":
-            caution_str = (f"Warning: {self.sim_type} is not suitable "
-                           f"for implicit data")
+            caution_str = (
+                f"Warning: {self.sim_type} is not suitable " f"for implicit data"
+            )
             print(f"{colorize(caution_str, 'red')}")
         if self.task == "rating" and self.sim_type == "jaccard":
-            caution_str = (f"Warning: {self.sim_type} is not suitable "
-                           f"for explicit data")
+            caution_str = (
+                f"Warning: {self.sim_type} is not suitable " f"for explicit data"
+            )
             print(f"{colorize(caution_str, 'red')}")
 
     def compute_top_k(self):
         top_k = dict()
         for i in tqdm(range(self.n_items), desc="top_k"):
-            item_slice = slice(
-                self.sim_matrix.indptr[i],
-                self.sim_matrix.indptr[i + 1]
-            )
+            item_slice = slice(self.sim_matrix.indptr[i], self.sim_matrix.indptr[i + 1])
             sim_items = self.sim_matrix.indices[item_slice].tolist()
             sim_values = self.sim_matrix.data[item_slice].tolist()
             top_k[i] = sorted(
-                zip(sim_items, sim_values),
-                key=itemgetter(1),
-                reverse=True
-            )[:self.k_sim]
+                zip(sim_items, sim_values), key=itemgetter(1), reverse=True
+            )[: self.k_sim]
         self.topk_sim = top_k
 
     def save(self, path, model_name, **kwargs):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        save_params(self, path)
+        save_params(self, path, model_name)
         model_path = os.path.join(path, model_name)
         save_sparse(f"{model_path}_sim_matrix", self.sim_matrix)
         save_sparse(f"{model_path}_user_inter", self.user_interaction)
@@ -284,7 +271,7 @@ class ItemCF(Base):
 
     @classmethod
     def load(cls, path, model_name, data_info, **kwargs):
-        hparams = load_params(path, data_info)
+        hparams = load_params(cls, path, data_info, model_name)
         model = cls(**hparams)
         model_path = os.path.join(path, model_name)
         model.sim_matrix = load_sparse(f"{model_path}_sim_matrix.npz")

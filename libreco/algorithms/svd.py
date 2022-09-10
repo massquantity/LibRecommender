@@ -9,7 +9,7 @@ author: massquantity
 import numpy as np
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
-    truncated_normal as tf_truncated_normal
+    truncated_normal as tf_truncated_normal,
 )
 
 from ..bases import EmbedBase, TfMixin
@@ -39,7 +39,7 @@ class SVD(EmbedBase, TfMixin):
         eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True
+        with_training=True,
     ):
         EmbedBase.__init__(self, task, data_info, embed_size, lower_upper_bound)
         TfMixin.__init__(self, data_info, tf_sess_config)
@@ -60,7 +60,7 @@ class SVD(EmbedBase, TfMixin):
                 num_neg,
                 k,
                 eval_batch_size,
-                eval_user_num
+                eval_user_num,
             )
 
     def _build_model(self):
@@ -72,33 +72,35 @@ class SVD(EmbedBase, TfMixin):
             name="bu_var",
             shape=[self.n_users],
             initializer=tf_zeros,
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         self.bi_var = tf.get_variable(
             name="bi_var",
             shape=[self.n_items],
             initializer=tf_zeros,
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         self.pu_var = tf.get_variable(
             name="pu_var",
             shape=[self.n_users, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.05),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         self.qi_var = tf.get_variable(
             name="qi_var",
             shape=[self.n_items, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.05),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         bias_user = tf.nn.embedding_lookup(self.bu_var, self.user_indices)
         bias_item = tf.nn.embedding_lookup(self.bi_var, self.item_indices)
         embed_user = tf.nn.embedding_lookup(self.pu_var, self.user_indices)
         embed_item = tf.nn.embedding_lookup(self.qi_var, self.item_indices)
-        self.output = bias_user + bias_item + tf.reduce_sum(
-            tf.multiply(embed_user, embed_item), axis=1
+        self.output = (
+            bias_user
+            + bias_item
+            + tf.reduce_sum(tf.multiply(embed_user, embed_item), axis=1)
         )
 
     def set_embeddings(self):

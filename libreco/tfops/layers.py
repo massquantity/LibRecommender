@@ -17,7 +17,7 @@ def dense_nn(
     bn_after_activation=True,
     dropout_rate=None,
     is_training=True,
-    name="mlp"
+    name="mlp",
 ):
     if activation is None:
         activation = tf.identity
@@ -48,7 +48,7 @@ def tf_dense(
     activation=None,
     kernel_initializer="glorot_uniform",
     use_bias=True,
-    name=None
+    name=None,
 ):
     if TF_VERSION >= "2.0.0":
         net = tf.keras.layers.Dense(
@@ -56,7 +56,7 @@ def tf_dense(
             activation=activation,
             kernel_initializer=kernel_initializer,
             use_bias=use_bias,
-            name=name
+            name=name,
         )
     else:
         net = partial(
@@ -65,19 +65,12 @@ def tf_dense(
             activation=activation,
             kernel_initializer=kernel_initializer,
             use_bias=use_bias,
-            name=name
+            name=name,
         )
     return net
 
 
-def conv_nn(
-    filters,
-    kernel_size,
-    strides,
-    padding,
-    activation,
-    dilation_rate=1
-):
+def conv_nn(filters, kernel_size, strides, padding, activation, dilation_rate=1):
     if TF_VERSION >= "2.0.0":
         net = tf.keras.layers.Conv1D(
             filters=filters,
@@ -85,7 +78,7 @@ def conv_nn(
             strides=strides,
             padding=padding,
             activation=activation,
-            dilation_rate=dilation_rate
+            dilation_rate=dilation_rate,
         )
     else:
         net = partial(
@@ -94,7 +87,7 @@ def conv_nn(
             kernel_size=kernel_size,
             strides=strides,
             padding=padding,
-            activation=activation
+            activation=activation,
         )
     return net
 
@@ -102,15 +95,13 @@ def conv_nn(
 def max_pool(pool_size, strides, padding):
     if TF_VERSION >= "2.0.0":
         net = tf.keras.layers.MaxPool1D(
-            pool_size=pool_size,
-            strides=strides,
-            padding=padding
+            pool_size=pool_size, strides=strides, padding=padding
         )
     else:
         net = partial(
             tf.layers.max_pooling1d,
             pool_size=pool_size,
             strides=strides,
-            padding=padding
+            padding=padding,
         )
     return net

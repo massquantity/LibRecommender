@@ -5,10 +5,7 @@ def var_list_by_name(names):
     assert isinstance(names, (list, tuple)), "names must be list or tuple"
     var_dict = dict()
     for name in names:
-        matched_vars = [
-            var for var in tf.trainable_variables()
-            if name in var.name
-        ]
+        matched_vars = [var for var in tf.trainable_variables() if name in var.name]
         var_dict[name] = matched_vars
     return var_dict
 
@@ -70,7 +67,6 @@ def modify_variable_names(model, trainable):
 
 
 def match_adam(v_tf, v_model):
-    return (
-        v_tf.name.startswith(v_model + "/Adam:0")
-        or v_tf.name.startswith(v_model + "/Adam_1:0")
+    return v_tf.name.startswith(v_model + "/Adam:0") or v_tf.name.startswith(
+        v_model + "/Adam_1:0"
     )

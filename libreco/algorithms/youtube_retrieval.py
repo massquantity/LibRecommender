@@ -9,7 +9,7 @@ author: massquantity
 import numpy as np
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
-    truncated_normal as tf_truncated_normal
+    truncated_normal as tf_truncated_normal,
 )
 
 from ..bases import EmbedBase, TfMixin
@@ -25,12 +25,13 @@ from ..training import YoutubeRetrievalTrainer
 from ..utils.misc import count_params
 from ..utils.validate import (
     check_dense_values,
-    check_interaction_mode, check_multi_sparse,
+    check_interaction_mode,
+    check_multi_sparse,
     check_sparse_indices,
     dense_field_size,
     sparse_feat_size,
     sparse_field_size,
-    true_sparse_field_size
+    true_sparse_field_size,
 )
 
 
@@ -39,6 +40,7 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
     The model implemented mainly corresponds to the candidate generation
     phase based on the original paper.
     """
+
     item_variables = ["item_interaction_features", "nce_weights", "nce_biases"]
     sparse_variables = ["sparse_features"]
     dense_variables = ["dense_features"]
@@ -68,7 +70,7 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
         eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True
+        with_training=True,
     ):
         EmbedBase.__init__(self, task, data_info, embed_size, lower_upper_bound)
         TfMixin.__init__(self, data_info, tf_sess_config)
@@ -82,10 +84,9 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
         self.dropout_rate = dropout_config(dropout_rate)
         self.hidden_units = list(map(int, hidden_units.split(","))) + [self.embed_size]
         self.seed = seed
-        (
-            self.interaction_mode,
-            self.max_seq_len
-        ) = check_interaction_mode(recent_num, random_num)
+        self.interaction_mode, self.max_seq_len = check_interaction_mode(
+            recent_num, random_num
+        )
         self.sparse = check_sparse_indices(data_info)
         self.dense = check_dense_values(data_info)
         if self.sparse:
@@ -101,7 +102,7 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
             self.dense_field_size = dense_field_size(data_info)
         (
             self.last_interacted_indices,
-            self.last_interacted_values
+            self.last_interacted_values,
         ) = sparse_user_last_interacted(
             self.n_users, self.user_consumed, self.max_seq_len
         )
@@ -119,7 +120,7 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
                 k,
                 eval_batch_size,
                 eval_user_num,
-                sampler
+                sampler,
             )
 
     def _build_model(self):
@@ -142,7 +143,7 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
             self.hidden_units,
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
-            is_training=self.is_training
+            is_training=self.is_training,
         )
         count_params()
 
@@ -155,19 +156,19 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
             name="item_interaction_features",
             shape=[self.n_items, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         sparse_item_interaction = tf.SparseTensor(
             self.item_interaction_indices,
             self.item_interaction_values,
-            [self.modified_batch_size, self.n_items]
+            [self.modified_batch_size, self.n_items],
         )
         pooled_embed = tf.nn.safe_embedding_lookup_sparse(
             item_interaction_features,
             sparse_item_interaction,
             sparse_weights=None,
             combiner="sqrtn",
-            default_id=None
+            default_id=None,
         )  # unknown user will return 0-vector
         self.concat_embed.append(pooled_embed)
 
@@ -179,23 +180,23 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
             name="sparse_features",
             shape=[self.sparse_feature_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
-        if (self.data_info.multi_sparse_combine_info
-                and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")):
+        if self.data_info.multi_sparse_combine_info and self.multi_sparse_combiner in (
+            "sum",
+            "mean",
+            "sqrtn",
+        ):
             sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
                 sparse_features,
                 self.sparse_indices,
                 self.multi_sparse_combiner,
-                self.embed_size
+                self.embed_size,
             )
         else:
-            sparse_embed = tf.nn.embedding_lookup(
-                sparse_features,
-                self.sparse_indices
-            )
+            sparse_embed = tf.nn.embedding_lookup(sparse_features, self.sparse_indices)
 
         sparse_embed = tf.reshape(
             sparse_embed, [-1, self.true_sparse_field_size * self.embed_size]
@@ -215,7 +216,7 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
             name="dense_features",
             shape=[self.dense_field_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         dense_embed = tf.expand_dims(dense_features, axis=0)
@@ -233,14 +234,14 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
             # n_classes, embed_size
             shape=[self.n_items, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         self.nce_biases = tf.get_variable(
             name="nce_biases",
             shape=[self.n_items],
             initializer=tf_zeros,
             regularizer=self.reg,
-            trainable=True
+            trainable=True,
         )
 
     def set_embeddings(self):
@@ -248,7 +249,7 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
             self.item_interaction_indices: self.last_interacted_indices,
             self.item_interaction_values: self.last_interacted_values,
             self.modified_batch_size: self.n_users,
-            self.is_training: False
+            self.is_training: False,
         }
         if self.sparse:
             # remove oov

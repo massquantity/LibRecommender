@@ -20,5 +20,5 @@ __all__ = [
     "modify_variable_names",
     "var_list_by_name",
     "tf",
-    "TF_VERSION"
+    "TF_VERSION",
 ]

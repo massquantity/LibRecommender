@@ -7,9 +7,7 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import (
-    truncated_normal as tf_truncated_normal
-)
+from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
 from ..bases import TfBase
 from ..data.sequence import get_user_last_interacted
@@ -19,7 +17,7 @@ from ..tfops import (
     multi_sparse_combine_embedding,
     reg_config,
     tf,
-    tf_dense
+    tf_dense,
 )
 from ..training import TensorFlowTrainer
 from ..utils.misc import count_params
@@ -31,7 +29,7 @@ from ..utils.validate import (
     dense_field_size,
     sparse_feat_size,
     sparse_field_size,
-    true_sparse_field_size
+    true_sparse_field_size,
 )
 
 
@@ -66,7 +64,7 @@ class DIN(TfBase):
         eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True
+        with_training=True,
     ):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
@@ -77,10 +75,9 @@ class DIN(TfBase):
         self.dropout_rate = dropout_config(dropout_rate)
         self.hidden_units = list(map(int, hidden_units.split(",")))
         self.use_tf_attention = use_tf_attention
-        (
-            self.interaction_mode,
-            self.max_seq_len
-        ) = check_interaction_mode(recent_num, random_num)
+        (self.interaction_mode, self.max_seq_len) = check_interaction_mode(
+            recent_num, random_num
+        )
         self.seed = seed
         self.sparse = check_sparse_indices(data_info)
         self.dense = check_dense_values(data_info)
@@ -95,16 +92,8 @@ class DIN(TfBase):
             )
         if self.dense:
             self.dense_field_size = dense_field_size(data_info)
-        self.item_sparse = (
-            True
-            if data_info.item_sparse_unique is not None
-            else False
-        )
-        self.item_dense = (
-            True
-            if data_info.item_dense_unique is not None
-            else False
-        )
+        self.item_sparse = True if data_info.item_sparse_unique is not None else False
+        self.item_dense = True if data_info.item_dense_unique is not None else False
         if self.item_sparse:
             # item sparse col indices in all sparse cols
             self.item_sparse_col_indices = data_info.item_sparse_col.index
@@ -113,7 +102,7 @@ class DIN(TfBase):
             self.item_dense_col_indices = data_info.item_dense_col.index
         (
             self.user_last_interacted,
-            self.last_interacted_len
+            self.last_interacted_len,
         ) = self._set_last_interacted()
         self._build_model()
         if with_training:
@@ -128,7 +117,7 @@ class DIN(TfBase):
                 num_neg,
                 k,
                 eval_batch_size,
-                eval_user_num
+                eval_user_num,
             )
 
     def _build_model(self):
@@ -151,11 +140,9 @@ class DIN(TfBase):
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
             is_training=self.is_training,
-            name="mlp"
+            name="mlp",
         )
-        self.output = tf.reshape(
-            tf_dense(units=1)(mlp_layer), [-1]
-        )
+        self.output = tf.reshape(tf_dense(units=1)(mlp_layer), [-1])
         count_params()
 
     def _build_placeholders(self):
@@ -163,7 +150,7 @@ class DIN(TfBase):
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.user_interacted_seq = tf.placeholder(
             tf.int32, shape=[None, self.max_seq_len]
-        )   # B * seq
+        )  # B * seq
         self.user_interacted_len = tf.placeholder(tf.float32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
@@ -182,27 +169,27 @@ class DIN(TfBase):
             name="user_feat",
             shape=[self.n_users + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         self.item_feat = tf.get_variable(
             name="item_feat",
             shape=[self.n_items + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         if self.sparse:
             self.sparse_feat = tf.get_variable(
                 name="sparse_feat",
                 shape=[self.sparse_feature_size, self.embed_size],
                 initializer=tf_truncated_normal(0.0, 0.01),
-                regularizer=self.reg
+                regularizer=self.reg,
             )
         if self.dense:
             self.dense_feat = tf.get_variable(
                 name="dense_feat",
                 shape=[self.dense_field_size, self.embed_size],
                 initializer=tf_truncated_normal(0.0, 0.01),
-                regularizer=self.reg
+                regularizer=self.reg,
             )
 
     def _build_user_item(self):
@@ -214,26 +201,27 @@ class DIN(TfBase):
     def _build_sparse(self):
         sparse_embed = tf.nn.embedding_lookup(self.sparse_feat, self.sparse_indices)
 
-        if (
-            self.data_info.multi_sparse_combine_info
-                and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")
+        if self.data_info.multi_sparse_combine_info and self.multi_sparse_combiner in (
+            "sum",
+            "mean",
+            "sqrtn",
         ):
             multi_sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
                 self.sparse_feat,
                 self.sparse_indices,
                 self.multi_sparse_combiner,
-                self.embed_size
+                self.embed_size,
             )
             self.concat_embed.append(
                 tf.reshape(
                     multi_sparse_embed,
-                    [-1, self.true_sparse_field_size * self.embed_size]
+                    [-1, self.true_sparse_field_size * self.embed_size],
                 )
             )
         else:
-            self.concat_embed.append(tf.reshape(
-                sparse_embed, [-1, self.sparse_field_size * self.embed_size])
+            self.concat_embed.append(
+                tf.reshape(sparse_embed, [-1, self.sparse_field_size * self.embed_size])
             )
 
         if self.item_sparse:
@@ -260,12 +248,11 @@ class DIN(TfBase):
         # B * F_dense * K
         dense_embed = tf.tile(dense_embed, [batch_size, 1, 1])
         dense_values_reshape = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1])
+            self.dense_values, [-1, self.dense_field_size, 1]
+        )
         dense_embed = tf.multiply(dense_embed, dense_values_reshape)
         self.concat_embed.append(
-            tf.reshape(
-                dense_embed, [-1, self.dense_field_size * self.embed_size]
-            )
+            tf.reshape(dense_embed, [-1, self.dense_field_size * self.embed_size])
         )
 
         if self.item_dense:
@@ -289,9 +276,7 @@ class DIN(TfBase):
             item_sparse_fields_num = tf.shape(item_sparse_fields)[1]
 
             # B * seq * F_sparse
-            seq_sparse_fields = tf.gather(
-                item_sparse_fields, self.user_interacted_seq
-            )
+            seq_sparse_fields = tf.gather(item_sparse_fields, self.user_interacted_seq)
             # B * seq * F_sparse * K
             seq_sparse_embed = tf.nn.embedding_lookup(
                 self.sparse_feat, seq_sparse_fields
@@ -299,7 +284,7 @@ class DIN(TfBase):
             # B * seq * FK
             seq_sparse_embed = tf.reshape(
                 seq_sparse_embed,
-                [-1, self.max_seq_len, item_sparse_fields_num * self.embed_size]
+                [-1, self.max_seq_len, item_sparse_fields_num * self.embed_size],
             )
             self.seq_embed.append(seq_sparse_embed)
 
@@ -310,9 +295,7 @@ class DIN(TfBase):
             )
             item_dense_fields_num = tf.shape(item_dense_values)[1]
             # B * seq * F_dense
-            seq_dense_values = tf.gather(
-                item_dense_values, self.user_interacted_seq
-            )
+            seq_dense_values = tf.gather(item_dense_values, self.user_interacted_seq)
             # B * seq * F_dense * 1
             seq_dense_values = tf.expand_dims(seq_dense_values, axis=-1)
 
@@ -323,14 +306,12 @@ class DIN(TfBase):
             # B * seq * F_dense * K
             # Since dense_embeddings are same for all items,
             # we can simply repeat it (batch * seq) times
-            seq_dense_embed = tf.tile(
-                dense_embed, [batch_size, self.max_seq_len, 1, 1]
-            )
+            seq_dense_embed = tf.tile(dense_embed, [batch_size, self.max_seq_len, 1, 1])
             seq_dense_embed = tf.multiply(seq_dense_embed, seq_dense_values)
             # B * seq * FK
             seq_dense_embed = tf.reshape(
                 seq_dense_embed,
-                [-1, self.max_seq_len, item_dense_fields_num * self.embed_size]
+                [-1, self.max_seq_len, item_dense_fields_num * self.embed_size],
             )
             self.seq_embed.append(seq_dense_embed)
 
@@ -340,9 +321,7 @@ class DIN(TfBase):
         seq_total_embed = tf.concat(self.seq_embed, axis=2)
 
         attention_layer = self._attention_unit(
-            item_total_embed,
-            seq_total_embed,
-            self.user_interacted_len
+            item_total_embed, seq_total_embed, self.user_interacted_len
         )
         self.concat_embed.append(tf.layers.flatten(attention_layer))
 
@@ -350,11 +329,9 @@ class DIN(TfBase):
         if self.use_tf_attention:
             query_masks = tf.cast(
                 tf.ones_like(tf.reshape(self.user_interacted_len, [-1, 1])),
-                dtype=tf.bool
+                dtype=tf.bool,
             )
-            key_masks = tf.sequence_mask(
-                self.user_interacted_len, self.max_seq_len
-            )
+            key_masks = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
             queries = tf.expand_dims(queries, axis=1)
             attention = tf.keras.layers.Attention(use_scale=False)
             pooled_outputs = attention(
@@ -374,7 +351,7 @@ class DIN(TfBase):
                 (16,),
                 use_bn=False,
                 activation=tf.nn.sigmoid,
-                name="attention"
+                name="attention",
             )
             # B * seq * 1
             mlp_layer = tf_dense(units=1, activation=None)(mlp_layer)
@@ -382,13 +359,11 @@ class DIN(TfBase):
             attention_weights = tf.layers.flatten(mlp_layer)
 
             key_masks = tf.sequence_mask(keys_len, self.max_seq_len)
-            paddings = tf.ones_like(attention_weights) * (-2**32 + 1)
+            paddings = tf.ones_like(attention_weights) * (-(2**32) + 1)
             attention_scores = tf.where(key_masks, attention_weights, paddings)
             attention_scores = tf.div_no_nan(
                 attention_scores,
-                tf.sqrt(
-                    tf.cast(keys.get_shape().as_list()[-1], tf.float32)
-                )
+                tf.sqrt(tf.cast(keys.get_shape().as_list()[-1], tf.float32)),
             )
             # B * 1 * seq
             attention_scores = tf.expand_dims(tf.nn.softmax(attention_scores), 1)
@@ -398,10 +373,7 @@ class DIN(TfBase):
 
     def _set_last_interacted(self):
         user_last_interacted, last_interacted_len = get_user_last_interacted(
-            self.n_users,
-            self.user_consumed,
-            self.n_items,
-            self.max_seq_len
+            self.n_users, self.user_consumed, self.n_items, self.max_seq_len
         )
         oov = np.full(self.max_seq_len, self.n_items, dtype=np.int32)
         user_last_interacted = np.vstack([user_last_interacted, oov])

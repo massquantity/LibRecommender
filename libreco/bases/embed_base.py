@@ -33,11 +33,11 @@ class EmbedBase(Base):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs
+        **kwargs,
     ):
-        assert self.trainer is not None, (
-            "loaded model doesn't support retraining, use `rebuild_model` instead."
-        )
+        assert (
+            self.trainer is not None
+        ), "loaded model doesn't support retraining, use `rebuild_model` instead."
         self.show_start_time()
         # self._check_has_sampled(train_data, verbose)
         self.trainer.run(train_data, verbose, shuffle, eval_data, metrics)
@@ -64,17 +64,17 @@ class EmbedBase(Base):
                 new_embed = np.vstack([embed, np.mean(embed, axis=0)])
                 setattr(self, v_name, new_embed)
 
-    def save(self, path, model_name, manual=True, inference_only=False):
+    def save(self, path, model_name, inference_only=False, **kwargs):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        save_params(self, path)
+        save_params(self, path, model_name)
         if inference_only:
             variable_path = os.path.join(path, model_name)
             np.savez_compressed(
                 file=variable_path,
                 user_embed=self.user_embed,
-                item_embed=self.item_embed
+                item_embed=self.item_embed,
             )
         elif hasattr(self, "sess"):
             save_tf_variables(self.sess, path, model_name, inference_only=False)
@@ -82,10 +82,10 @@ class EmbedBase(Base):
             pass  # todo: torch
 
     @classmethod
-    def load(cls, path, model_name, data_info, manual=True):
+    def load(cls, path, model_name, data_info, **kwargs):
         variable_path = os.path.join(path, f"{model_name}.npz")
         variables = np.load(variable_path)
-        hparams = load_params(path, data_info)
+        hparams = load_params(cls, path, data_info, model_name)
         model = cls(**hparams)
         setattr(model, "user_embed", variables["user_embed"])
         setattr(model, "item_embed", variables["item_embed"])
@@ -106,55 +106,52 @@ class EmbedBase(Base):
     def get_user_embedding(self, user=None):
         assert self.user_embed is not None, "call `model.fit()` first"
         if user is None:
-            return self.user_embed[:-1, :self.embed_size]  # remove oov
+            return self.user_embed[:-1, : self.embed_size]  # remove oov
         user_id = self.get_user_id(user)
-        return self.user_embed[user_id, :self.embed_size]
+        return self.user_embed[user_id, : self.embed_size]
 
     def get_item_embedding(self, item=None):
         assert self.item_embed is not None, "call `model.fit()` first"
         if item is None:
-            return self.item_embed[:-1, :self.embed_size]
+            return self.item_embed[:-1, : self.embed_size]
         item_id = self.get_item_id(item)
-        return self.item_embed[item_id, :self.embed_size]
+        return self.item_embed[item_id, : self.embed_size]
 
-    def init_knn(
-        self,
-        approximate,
-        sim_type,
-        M=32,
-        ef_construction=200,
-        ef_search=100
-    ):
+    def init_knn(self, approximate, sim_type, M=32, ef_construction=200, ef_search=100):
         if sim_type == "cosine":
             space = "cosinesimil"
         elif sim_type == "inner-product":
             space = "negdotprod"
         else:
-            raise ValueError(f"unknown sim_type: {sim_type}, "
-                             f"only `cosine` and `inner-product` are supported")
+            raise ValueError(
+                f"unknown sim_type: {sim_type}, "
+                f"only `cosine` and `inner-product` are supported"
+            )
 
         def _create_index(data):
             index = nmslib.init(
-                method="hnsw",
-                space=space,
-                data_type=nmslib.DataType.DENSE_VECTOR
+                method="hnsw", space=space, data_type=nmslib.DataType.DENSE_VECTOR
             )
             index.addDataPointBatch(data)
-            index.createIndex({
-                "M": M,
-                "indexThreadQty": self.num_threads,
-                "efConstruction": ef_construction
-            })
+            index.createIndex(
+                {
+                    "M": M,
+                    "indexThreadQty": self.num_threads,
+                    "efConstruction": ef_construction,
+                }
+            )
             index.setQueryTimeParams({"efSearch": ef_search})
             return index
 
         if approximate:
             try:
                 import nmslib
-            except ModuleNotFoundError:
-                print_str = "nmslib is needed when using approximate_search..."
+            except (ImportError, ModuleNotFoundError):
+                print_str = "`nmslib` is needed when using approximate_search..."
                 print(f"{colorize(print_str, 'red')}")
                 raise
+            else:
+                print("using approximate searching mode...")
             self.user_index = _create_index(self.get_user_embedding())
             self.item_index = _create_index(self.get_item_embedding())
         elif sim_type == "cosine":

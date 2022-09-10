@@ -25,8 +25,7 @@ def build_transformed_data(model, data, negative_sample, update_features, seed):
         )
     # todo: merge user_consumed
     transformed_data = TransformedSet(
-        user_indices, item_indices, labels, sparse_indices,
-        dense_values, train=False
+        user_indices, item_indices, labels, sparse_indices, dense_values, train=False
     )
     if update_features:
         # if a user or item has duplicate features, will only update the last one.
@@ -102,7 +101,7 @@ def predict_tf_feat(model, transformed_data, batch_slice):
         item_indices,
         labels,
         sparse_indices,
-        dense_values
+        dense_values,
     ) = transformed_data[batch_slice]
 
     if model.model_category == "sequence":
@@ -114,7 +113,7 @@ def predict_tf_feat(model, transformed_data, batch_slice):
             dense_values=dense_values,
             user_interacted_seq=model.user_last_interacted[user_indices],
             user_interacted_len=model.last_interacted_len[user_indices],
-            is_training=False
+            is_training=False,
         )
     else:
         feed_dict = get_feed_dict(
@@ -123,7 +122,7 @@ def predict_tf_feat(model, transformed_data, batch_slice):
             item_indices=item_indices,
             sparse_indices=sparse_indices,
             dense_values=dense_values,
-            is_training=False
+            is_training=False,
         )
 
     preds = model.sess.run(model.output, feed_dict)

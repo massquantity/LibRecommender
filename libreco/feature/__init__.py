@@ -19,7 +19,7 @@ from .unique_features import (
     features_from_batch_data,
     add_item_features,
     compute_sparse_feat_indices,
-    check_oov
+    check_oov,
 )
 
 __all__ = [
@@ -41,5 +41,5 @@ __all__ = [
     "features_from_batch_data",
     "add_item_features",
     "compute_sparse_feat_indices",
-    "check_oov"
+    "check_oov",
 ]

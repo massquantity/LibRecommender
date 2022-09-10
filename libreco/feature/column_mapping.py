@@ -3,12 +3,7 @@ from collections import defaultdict, OrderedDict
 import numpy as np
 
 
-def col_name2index(
-    user_col=None,
-    item_col=None,
-    sparse_col=None,
-    dense_col=None
-):
+def col_name2index(user_col=None, item_col=None, sparse_col=None, dense_col=None):
     # format: {column_family_name: {column_name: index}}
     # if no such family, default format would be: {column_family_name: {[]: []}
     name_mapping = defaultdict(OrderedDict)
@@ -28,9 +23,7 @@ def col_name2index(
     if user_col and dense_col:
         user_dense_col = _extract_common_col(dense_col, user_col)
         for col in user_dense_col:
-            name_mapping["user_dense_col"].update(
-                {col: name_mapping["dense_col"][col]}
-            )
+            name_mapping["user_dense_col"].update({col: name_mapping["dense_col"][col]})
 
     if item_col and sparse_col:
         item_sparse_col = _extract_common_col(sparse_col, item_col)
@@ -41,9 +34,7 @@ def col_name2index(
     if item_col and dense_col:
         item_dense_col = _extract_common_col(dense_col, item_col)
         for col in item_dense_col:
-            name_mapping["item_dense_col"].update(
-                {col: name_mapping["dense_col"][col]}
-            )
+            name_mapping["item_dense_col"].update({col: name_mapping["dense_col"][col]})
 
     return name_mapping
 

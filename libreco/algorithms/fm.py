@@ -9,9 +9,7 @@ References:
 author: massquantity
 
 """
-from tensorflow.keras.initializers import (
-    truncated_normal as tf_truncated_normal
-)
+from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
 from ..bases import TfBase
 from ..tfops import (
@@ -19,7 +17,7 @@ from ..tfops import (
     multi_sparse_combine_embedding,
     reg_config,
     tf,
-    tf_dense
+    tf_dense,
 )
 from ..training import TensorFlowTrainer
 from ..utils.misc import count_params
@@ -30,7 +28,7 @@ from ..utils.validate import (
     dense_field_size,
     sparse_feat_size,
     sparse_field_size,
-    true_sparse_field_size
+    true_sparse_field_size,
 )
 
 
@@ -39,6 +37,7 @@ class FM(TfBase):
     Note this implementation is actually a mixture of FM and NFM,
     since it uses one dense layer in the final output
     """
+
     user_variables = ["linear_user_feat", "pairwise_user_feat"]
     item_variables = ["linear_item_feat", "pairwise_item_feat"]
     sparse_variables = ["linear_sparse_feat", "pairwise_sparse_feat"]
@@ -65,7 +64,7 @@ class FM(TfBase):
         eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True
+        with_training=True,
     ):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
@@ -102,7 +101,7 @@ class FM(TfBase):
                 num_neg,
                 k,
                 eval_batch_size,
-                eval_user_num
+                eval_user_num,
             )
 
     def _build_model(self):
@@ -125,7 +124,7 @@ class FM(TfBase):
         # B * K
         pairwise_term = 0.5 * tf.subtract(
             tf.square(tf.reduce_sum(pairwise_embed, axis=1)),
-            tf.reduce_sum(tf.square(pairwise_embed), axis=1)
+            tf.reduce_sum(tf.square(pairwise_embed), axis=1),
         )
 
         # For original FM, just add K dim together:
@@ -146,25 +145,25 @@ class FM(TfBase):
             name="linear_user_feat",
             shape=[self.n_users + 1, 1],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         linear_item_feat = tf.get_variable(
             name="linear_item_feat",
             shape=[self.n_items + 1, 1],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         pairwise_user_feat = tf.get_variable(
             name="pairwise_user_feat",
             shape=[self.n_users + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         pairwise_item_feat = tf.get_variable(
             name="pairwise_item_feat",
             shape=[self.n_items + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         # print(linear_embed.get_shape().as_list())
@@ -189,35 +188,36 @@ class FM(TfBase):
             name="linear_sparse_feat",
             shape=[self.sparse_feature_size],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         pairwise_sparse_feat = tf.get_variable(
             name="pairwise_sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
-        if (
-            self.data_info.multi_sparse_combine_info
-                and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")
+        if self.data_info.multi_sparse_combine_info and self.multi_sparse_combiner in (
+            "sum",
+            "mean",
+            "sqrtn",
         ):
             linear_sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
                 linear_sparse_feat,
                 self.sparse_indices,
                 self.multi_sparse_combiner,
-                embed_size=1
+                embed_size=1,
             )
             pairwise_sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
                 pairwise_sparse_feat,
                 self.sparse_indices,
                 self.multi_sparse_combiner,
-                self.embed_size
+                self.embed_size,
             )
         else:
-            linear_sparse_embed = tf.nn.embedding_lookup(    # B * F1
+            linear_sparse_embed = tf.nn.embedding_lookup(  # B * F1
                 linear_sparse_feat, self.sparse_indices
             )
             pairwise_sparse_embed = tf.nn.embedding_lookup(  # B * F1 * K
@@ -240,13 +240,13 @@ class FM(TfBase):
             name="linear_dense_feat",
             shape=[self.dense_field_size],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         pairwise_dense_feat = tf.get_variable(
             name="pairwise_dense_feat",
             shape=[self.dense_field_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         # B * F2

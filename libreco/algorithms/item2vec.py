@@ -55,8 +55,10 @@ class Item2Vec(EmbedBase):
             result = max(len(seq) for seq in user_consumed.values()) + 5
         else:
             result = window_size
-        print_str = (f"window size: {result}, "
-                     f"using too large window size may slow down training.")
+        print_str = (
+            f"window size: {result}, "
+            f"using too large window size may slow down training."
+        )
         print(f"{colorize(print_str, 'red')}")
         return result
 
@@ -76,7 +78,7 @@ class Item2Vec(EmbedBase):
                 epochs=self.n_epochs,
                 min_count=1,
                 workers=workers,
-                sorted_vocab=0
+                sorted_vocab=0,
             )
 
         self.set_embeddings(model)
@@ -89,7 +91,7 @@ class Item2Vec(EmbedBase):
                 eval_batch_size=self.eval_batch_size,
                 k=self.k,
                 sample_user_num=self.eval_user_num,
-                seed=self.seed
+                seed=self.seed,
             )
             print("=" * 30)
 
@@ -115,12 +117,10 @@ class Item2Vec(EmbedBase):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        save_params(self, path)
+        save_params(self, path, model_name)
         variable_path = os.path.join(path, model_name)
         np.savez_compressed(
-            variable_path,
-            user_embed=self.user_embed,
-            item_embed=self.item_embed
+            variable_path, user_embed=self.user_embed, item_embed=self.item_embed
         )
 
 

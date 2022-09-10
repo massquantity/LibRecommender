@@ -8,7 +8,7 @@ PURE_MODELS = (
     "BPR",
     "DeepWalk",
     "NGCF",
-    "LightGCN"
+    "LightGCN",
 )
 
 FEAT_MODELS = ("WideDeep", "FM", "DeepFM", "AutoInt")
@@ -20,7 +20,7 @@ SEQUENCE_MODELS = (
     "Item2Vec",
     "RNN4Rec",
     "Caser",
-    "WaveNet"
+    "WaveNet",
 )
 
 GRAPH_MODELS = ("DeepWalk", "NGCF", "LightGCN")
@@ -39,5 +39,5 @@ EMBEDDING_MODELS = (
     "WaveNet",
     "DeepWalk",
     "NGCF",
-    "LightGCN"
+    "LightGCN",
 )

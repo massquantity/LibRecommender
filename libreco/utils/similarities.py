@@ -12,7 +12,7 @@ try:
         forward_pearson,
         invert_pearson,
         forward_jaccard,
-        invert_jaccard
+        invert_jaccard,
     )
 except (ImportError, ModuleNotFoundError):
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -49,7 +49,7 @@ def cosine_sim(
     block_size=None,
     num_threads=1,
     min_common=1,
-    mode="invert"
+    mode="invert",
 ):
     block_size, block_num = _choose_blocks(num_x, block_size)
     n_x, n_y = num_x, num_y
@@ -61,12 +61,7 @@ def cosine_sim(
         x_norm = compute_sparse_norm(sparse_data_x)
 
         res_indices, res_indptr, res_data = forward_cosine(
-            indices,
-            indptr,
-            data,
-            x_norm,
-            min_common,
-            n_x
+            indices, indptr, data, x_norm, min_common, n_x
         )
 
     elif mode == "invert":
@@ -85,16 +80,14 @@ def cosine_sim(
             n_y,
             block_size,
             block_num,
-            num_threads
+            num_threads,
         )
 
     else:
         raise ValueError("mode must either be 'forward' or 'invert'")
 
     sim_upper_triangular = csr_matrix(
-        (res_data, res_indices, res_indptr),
-        shape=(n_x, n_x),
-        dtype=np.float32
+        (res_data, res_indices, res_indptr), shape=(n_x, n_x), dtype=np.float32
     )
     return sim_upper_triangular + sim_upper_triangular.transpose()
 
@@ -107,7 +100,7 @@ def pearson_sim(
     block_size=None,
     num_threads=1,
     min_common=1,
-    mode="invert"
+    mode="invert",
 ):
     block_size, block_num = _choose_blocks(num_x, block_size)
     n_x, n_y = num_x, num_y
@@ -120,13 +113,7 @@ def pearson_sim(
         x_mean_centered_norm = compute_sparse_mean_centered_norm(sparse_data_x)
 
         res_indices, res_indptr, res_data = forward_pearson(
-            indices,
-            indptr,
-            data,
-            x_mean,
-            x_mean_centered_norm,
-            min_common,
-            n_x
+            indices, indptr, data, x_mean, x_mean_centered_norm, min_common, n_x
         )
 
     elif mode == "invert":
@@ -147,16 +134,14 @@ def pearson_sim(
             n_y,
             block_size,
             block_num,
-            num_threads
+            num_threads,
         )
 
     else:
         raise ValueError("mode must either be 'forward' or 'invert'")
 
     sim_upper_triangular = csr_matrix(
-        (res_data, res_indices, res_indptr),
-        shape=(n_x, n_x),
-        dtype=np.float32
+        (res_data, res_indices, res_indptr), shape=(n_x, n_x), dtype=np.float32
     )
     return sim_upper_triangular + sim_upper_triangular.transpose()
 
@@ -169,7 +154,7 @@ def jaccard_sim(
     block_size=None,
     num_threads=1,
     min_common=1,
-    mode="invert"
+    mode="invert",
 ):
     block_size, block_num = _choose_blocks(num_x, block_size)
     n_x, n_y = num_x, num_y
@@ -181,12 +166,7 @@ def jaccard_sim(
         x_count = compute_sparse_count(sparse_data_x)
 
         res_indices, res_indptr, res_data = forward_jaccard(
-            indices,
-            indptr,
-            data,
-            x_count,
-            min_common,
-            n_x
+            indices, indptr, data, x_count, min_common, n_x
         )
 
     elif mode == "invert":
@@ -205,16 +185,14 @@ def jaccard_sim(
             n_y,
             block_size,
             block_num,
-            num_threads
+            num_threads,
         )
 
     else:
         raise ValueError("mode must either be 'forward' or 'invert'")
 
     sim_upper_triangular = csr_matrix(
-        (res_data, res_indices, res_indptr),
-        shape=(n_x, n_x),
-        dtype=np.float32
+        (res_data, res_indices, res_indptr), shape=(n_x, n_x), dtype=np.float32
     )
     return sim_upper_triangular + sim_upper_triangular.transpose()
 
@@ -235,9 +213,9 @@ def compute_sparse_mean(sparse_data):
 def compute_sparse_mean_centered_norm(sparse_data):
     # mainly for denominator of pearson correlation formula
     # only consider interacted data
-    assert np.issubdtype(sparse_data.dtype, np.floating), (
-        "sparse_data type must be float..."
-    )
+    assert np.issubdtype(
+        sparse_data.dtype, np.floating
+    ), "sparse_data type must be float..."
     indices = sparse_data.indices.copy()
     indptr = sparse_data.indptr.copy()
     data = sparse_data.data.copy()

@@ -36,7 +36,8 @@ class DeepWalk(EmbedBase):
         k=10,
         eval_batch_size=8192,
         eval_user_num=None,
-        lower_upper_bound=None
+        lower_upper_bound=None,
+        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
@@ -52,7 +53,8 @@ class DeepWalk(EmbedBase):
         self.k = k
         self.eval_batch_size = eval_batch_size
         self.eval_user_num = eval_user_num
-        self.graph = None
+        if with_training:
+            self.graph = self._build_graph()
 
     def _build_graph(self):
         graph = defaultdict(list)
@@ -63,7 +65,6 @@ class DeepWalk(EmbedBase):
 
     def fit(self, train_data, verbose=1, eval_data=None, metrics=None, **kwargs):
         self.show_start_time()
-        self.graph = self._build_graph()
         data = ItemCorpus(self.graph, self.n_items, self.n_walks, self.walk_length)
         with time_block("gensim word2vec training", verbose):
             workers = os.cpu_count() if not self.n_threads else self.n_threads
@@ -77,7 +78,7 @@ class DeepWalk(EmbedBase):
                 epochs=self.n_epochs,
                 min_count=1,
                 workers=workers,
-                sorted_vocab=0
+                sorted_vocab=0,
             )
 
         self.set_embeddings(model)
@@ -90,7 +91,7 @@ class DeepWalk(EmbedBase):
                 eval_batch_size=self.eval_batch_size,
                 k=self.k,
                 sample_user_num=self.eval_user_num,
-                seed=self.seed
+                seed=self.seed,
             )
             print("=" * 30)
 
@@ -116,12 +117,10 @@ class DeepWalk(EmbedBase):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        save_params(self, path)
+        save_params(self, path, model_name)
         variable_path = os.path.join(path, model_name)
         np.savez_compressed(
-            variable_path,
-            user_embed=self.user_embed,
-            item_embed=self.item_embed
+            variable_path, user_embed=self.user_embed, item_embed=self.item_embed
         )
 
 

@@ -1,11 +1,7 @@
 import abc
 import time
 
-from ..utils.constants import (
-    PURE_MODELS,
-    FEAT_MODELS,
-    SEQUENCE_MODELS
-)
+from ..utils.constants import PURE_MODELS, FEAT_MODELS, SEQUENCE_MODELS
 from ..utils.misc import colorize
 
 
@@ -33,8 +29,9 @@ class Base(abc.ABC):
         if task == "rating":
             self.global_mean = data_info.global_mean
             if lower_upper_bound is not None:
-                assert isinstance(lower_upper_bound, (list, tuple)), (
-                    "must contain both lower and upper bound if provided")
+                assert isinstance(
+                    lower_upper_bound, (list, tuple)
+                ), "must contain both lower and upper bound if provided"
                 self.lower_bound = lower_upper_bound[0]
                 self.upper_bound = lower_upper_bound[1]
             else:
@@ -43,11 +40,7 @@ class Base(abc.ABC):
         elif task != "ranking":
             raise ValueError("task must either be rating or ranking")
 
-        self.default_prediction = (
-            data_info.global_mean
-            if task == "rating"
-            else 0.0
-        )
+        self.default_prediction = data_info.global_mean if task == "rating" else 0.0
 
     @abc.abstractmethod
     def fit(self, train_data, **kwargs):
@@ -128,7 +121,7 @@ class Base(abc.ABC):
 
     @staticmethod
     def show_start_time():
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+        start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         print(f"Training start time: {colorize(start_time, 'magenta')}")
 
     def get_model_category(self):

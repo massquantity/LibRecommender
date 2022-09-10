@@ -22,17 +22,16 @@ def check_unknown(model, user, item):
     unknown_index = list(set(unknown_user_indices) | set(unknown_item_indices))
     unknown_num = len(unknown_index)
     if unknown_num > 0:
-        unknown_str = (f"Detect {unknown_num} unknown interaction(s), "
-                       f"position: {unknown_index}")
+        unknown_str = (
+            f"Detect {unknown_num} unknown interaction(s), "
+            f"position: {unknown_index}"
+        )
         print(f"{colorize(unknown_str, 'red')}")
     return unknown_num, unknown_index, user, item
 
 
 def check_unknown_user(model, user, inner_id=False):
-    user_id = (
-        model.data_info.user2id.get(user, -1)
-        if not inner_id else user
-    )
+    user_id = model.data_info.user2id.get(user, -1) if not inner_id else user
     if 0 <= user_id < model.n_users:
         return user_id
     else:
@@ -44,9 +43,11 @@ def check_unknown_user(model, user, inner_id=False):
 
 def check_has_sampled(data, verbose):
     if not data.has_sampled and verbose > 1:
-        exception_str = ("During training, "
-                         "one must do whole data sampling "
-                         "before evaluating on epochs.")
+        exception_str = (
+            "During training, "
+            "one must do whole data sampling "
+            "before evaluating on epochs."
+        )
         raise NotSamplingError(f"{colorize(exception_str, 'red')}")
 
 
@@ -74,10 +75,17 @@ def check_dense_values(data_info):
 
 
 def sparse_feat_size(data_info):
-    if (data_info.user_sparse_unique is not None
-            and data_info.item_sparse_unique is not None):
-        return max(np.max(data_info.user_sparse_unique),
-                   np.max(data_info.item_sparse_unique)) + 1
+    if (
+        data_info.user_sparse_unique is not None
+        and data_info.item_sparse_unique is not None
+    ):
+        return (
+            max(
+                np.max(data_info.user_sparse_unique),
+                np.max(data_info.item_sparse_unique),
+            )
+            + 1
+        )
     elif data_info.user_sparse_unique is not None:
         return np.max(data_info.user_sparse_unique) + 1
     elif data_info.item_sparse_unique is not None:
@@ -95,8 +103,9 @@ def dense_field_size(data_info):
 def check_multi_sparse(data_info, multi_sparse_combiner):
     if data_info.multi_sparse_combine_info and multi_sparse_combiner is not None:
         if multi_sparse_combiner not in ("normal", "sum", "mean", "sqrtn"):
-            raise ValueError(f"unsupported multi_sparse_combiner type: "
-                             f"{multi_sparse_combiner}")
+            raise ValueError(
+                f"unsupported multi_sparse_combiner type: " f"{multi_sparse_combiner}"
+            )
         else:
             combiner = multi_sparse_combiner
     else:

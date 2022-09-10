@@ -10,7 +10,7 @@ import numpy as np
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
     truncated_normal as tf_truncated_normal,
-    glorot_normal as tf_glorot_normal
+    glorot_normal as tf_glorot_normal,
 )
 
 from ..bases import EmbedBase, TfMixin
@@ -49,7 +49,7 @@ class Caser(EmbedBase, TfMixin):
         eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True
+        with_training=True,
     ):
         EmbedBase.__init__(self, task, data_info, embed_size, lower_upper_bound)
         TfMixin.__init__(self, data_info, tf_sess_config)
@@ -61,13 +61,12 @@ class Caser(EmbedBase, TfMixin):
         self.nh_filters = nh_filters
         self.nv_filters = nv_filters
         self.seed = seed
-        (
-            self.interaction_mode,
-            self.max_seq_len
-        ) = check_interaction_mode(recent_num, random_num)
+        (self.interaction_mode, self.max_seq_len) = check_interaction_mode(
+            recent_num, random_num
+        )
         (
             self.user_last_interacted,
-            self.last_interacted_len
+            self.last_interacted_len,
         ) = self._set_last_interacted()
         if with_training:
             self._build_model()
@@ -82,7 +81,7 @@ class Caser(EmbedBase, TfMixin):
                 num_neg,
                 k,
                 eval_batch_size,
-                eval_user_num
+                eval_user_num,
             )
 
     def _build_model(self):
@@ -93,9 +92,10 @@ class Caser(EmbedBase, TfMixin):
 
         item_vector = tf.nn.embedding_lookup(self.item_weights, self.item_indices)
         item_bias = tf.nn.embedding_lookup(self.item_biases, self.item_indices)
-        self.output = tf.reduce_sum(
-            tf.multiply(self.user_vector, item_vector), axis=1
-        ) + item_bias
+        self.output = (
+            tf.reduce_sum(tf.multiply(self.user_vector, item_vector), axis=1)
+            + item_bias
+        )
         count_params()
 
     def _build_placeholders(self):
@@ -113,7 +113,7 @@ class Caser(EmbedBase, TfMixin):
             name="user_feat",
             shape=[self.n_users, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         # weight and bias parameters for last fc_layer
@@ -126,7 +126,7 @@ class Caser(EmbedBase, TfMixin):
             name="item_weights",
             shape=[self.n_items, self.embed_size * 2],
             initializer=tf_truncated_normal(0.0, 0.02),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         # input_embed for cnn_layer, include padding value
@@ -134,7 +134,7 @@ class Caser(EmbedBase, TfMixin):
             name="input_embed",
             shape=[self.n_items + 1, self.embed_size],
             initializer=tf_glorot_normal,
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
     def _build_user_embeddings(self):
@@ -160,16 +160,14 @@ class Caser(EmbedBase, TfMixin):
                 kernel_size=i,
                 strides=1,
                 padding="valid",
-                activation="relu"
+                activation="relu",
             )(inputs=seq_item_embed)
 
             # h_conv = tf.reduce_max(h_conv, axis=1)
             h_size = h_conv.get_shape().as_list()[1]
-            h_conv = max_pool(
-                pool_size=h_size,
-                strides=1,
-                padding="valid"
-            )(inputs=h_conv)
+            h_conv = max_pool(pool_size=h_size, strides=1, padding="valid")(
+                inputs=h_conv
+            )
             h_conv = tf.squeeze(h_conv, axis=1)
             convs_out.append(h_conv)
 
@@ -178,7 +176,7 @@ class Caser(EmbedBase, TfMixin):
             kernel_size=1,
             strides=1,
             padding="valid",
-            activation="relu"
+            activation="relu",
         )(inputs=tf.transpose(seq_item_embed, [0, 2, 1]))
         convs_out.append(tf.layers.flatten(v_conv))
 
@@ -188,10 +186,7 @@ class Caser(EmbedBase, TfMixin):
 
     def _set_last_interacted(self):
         user_last_interacted, last_interacted_len = get_user_last_interacted(
-            self.n_users,
-            self.user_consumed,
-            self.n_items,
-            self.max_seq_len
+            self.n_users, self.user_consumed, self.n_items, self.max_seq_len
         )
         return user_last_interacted, last_interacted_len.astype(np.int64)
 
@@ -199,7 +194,7 @@ class Caser(EmbedBase, TfMixin):
         feed_dict = {
             self.user_indices: np.arange(self.n_users),
             self.user_interacted_seq: self.user_last_interacted,
-            self.user_interacted_len: self.last_interacted_len
+            self.user_interacted_len: self.last_interacted_len,
         }
         user_vector = self.sess.run(self.user_vector, feed_dict)
         item_weights = self.sess.run(self.item_weights)

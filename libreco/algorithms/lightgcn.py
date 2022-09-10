@@ -42,7 +42,7 @@ class LightGCN(EmbedBase):
         eval_user_num=None,
         device=torch.device("cpu"),
         lower_upper_bound=None,
-        with_training=True
+        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
@@ -72,7 +72,7 @@ class LightGCN(EmbedBase):
             self.n_layers,
             self.dropout,
             self.user_consumed,
-            self.device
+            self.device,
         )
 
     def fit(
@@ -82,7 +82,7 @@ class LightGCN(EmbedBase):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs
+        **kwargs,
     ):
         self.show_start_time()
         optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
@@ -91,11 +91,9 @@ class LightGCN(EmbedBase):
             with time_block(f"Epoch {epoch}", verbose):
                 self.model.train()
                 train_total_loss = []
-                for (
-                    user,
-                    item_pos,
-                    item_neg
-                ) in data_generator(shuffle, self.batch_size):
+                for (user, item_pos, item_neg) in data_generator(
+                    shuffle, self.batch_size
+                ):
                     user_embeds, pos_item_embeds, neg_item_embeds = self.model(
                         user, item_pos, item_neg, use_dropout=True
                     )
@@ -105,7 +103,7 @@ class LightGCN(EmbedBase):
                         neg_item_embeds,
                         user,
                         item_pos,
-                        item_neg
+                        item_neg,
                     )
                     optimizer.zero_grad()
                     loss.backward()
@@ -126,7 +124,7 @@ class LightGCN(EmbedBase):
                     eval_batch_size=self.eval_batch_size,
                     k=self.k,
                     sample_user_num=self.eval_user_num,
-                    seed=self.seed
+                    seed=self.seed,
                 )
                 print("=" * 30)
 
@@ -135,13 +133,7 @@ class LightGCN(EmbedBase):
         self.assign_embedding_oov()
 
     def bpr_loss(
-        self,
-        user_embeds,
-        pos_item_embeds,
-        neg_item_embeds,
-        user,
-        item_pos,
-        item_neg
+        self, user_embeds, pos_item_embeds, neg_item_embeds, user, item_pos, item_neg
     ):
         pos_scores = torch.sum(torch.mul(user_embeds, pos_item_embeds), axis=1)
         neg_scores = torch.sum(torch.mul(user_embeds, neg_item_embeds), axis=1)
@@ -151,10 +143,12 @@ class LightGCN(EmbedBase):
             user_reg = self.model.get_embed(user, "user")
             item_pos_reg = self.model.get_embed(item_pos, "item")
             item_neg_reg = self.model.get_embed(item_neg, "item")
-            embed_reg = (torch.linalg.norm(user_reg).pow(2)
-                         + torch.linalg.norm(item_pos_reg).pow(2)
-                         + torch.linalg.norm(item_neg_reg).pow(2)) / 2
-            loss += ((self.reg * embed_reg) / float(len(user_embeds)))
+            embed_reg = (
+                torch.linalg.norm(user_reg).pow(2)
+                + torch.linalg.norm(item_pos_reg).pow(2)
+                + torch.linalg.norm(item_neg_reg).pow(2)
+            ) / 2
+            loss += (self.reg * embed_reg) / float(len(user_embeds))
         return loss
 
     @torch.no_grad()
@@ -168,12 +162,10 @@ class LightGCN(EmbedBase):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        save_params(self, path)
+        save_params(self, path, model_name)
         variable_path = os.path.join(path, model_name)
         np.savez_compressed(
-            variable_path,
-            user_embed=self.user_embed,
-            item_embed=self.item_embed
+            variable_path, user_embed=self.user_embed, item_embed=self.item_embed
         )
 
 
@@ -186,7 +178,7 @@ class LightGCNModel(nn.Module):
         n_layers,
         dropout,
         user_consumed,
-        device=torch.device("cpu")
+        device=torch.device("cpu"),
     ):
         super(LightGCNModel, self).__init__()
         self.n_users = n_users
@@ -210,20 +202,19 @@ class LightGCNModel(nn.Module):
     def _build_laplacian_matrix(self):
         R = scipy.sparse.dok_matrix((self.n_users, self.n_items), dtype=np.float32)
         for u, items in self.user_consumed.items():
-            R[u, items] = 1.
+            R[u, items] = 1.0
         R = R.tolil()
 
         adj_matrix = scipy.sparse.lil_matrix(
-            (self.n_users + self.n_items, self.n_items + self.n_users),
-            dtype=np.float32
+            (self.n_users + self.n_items, self.n_items + self.n_users), dtype=np.float32
         )
-        adj_matrix[:self.n_users, self.n_users:] = R
-        adj_matrix[self.n_users:, :self.n_users] = R.T
+        adj_matrix[: self.n_users, self.n_users :] = R
+        adj_matrix[self.n_users :, : self.n_users] = R.T
         adj_matrix = adj_matrix.tocsr()
 
         row_sum = np.array(adj_matrix.sum(axis=1))
         diag_inv = np.power(row_sum, -0.5).flatten()
-        diag_inv[np.isinf(diag_inv)] = 0.
+        diag_inv[np.isinf(diag_inv)] = 0.0
         diag_matrix_inv = scipy.sparse.diags(diag_inv)
 
         coo = diag_matrix_inv.dot(adj_matrix).dot(diag_matrix_inv).tocoo()
@@ -247,8 +238,9 @@ class LightGCNModel(nn.Module):
             laplacian_norm = self.laplacian_matrix
 
         all_embeddings = [
-            torch.cat([self.user_init_embeds.weight,
-                       self.item_init_embeds.weight], dim=0)
+            torch.cat(
+                [self.user_init_embeds.weight, self.item_init_embeds.weight], dim=0
+            )
         ]
         for _ in range(self.n_layers):
             layer_embed = torch.sparse.mm(laplacian_norm, all_embeddings[-1])

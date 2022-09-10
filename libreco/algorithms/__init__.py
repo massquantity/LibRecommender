@@ -41,5 +41,5 @@ __all__ = [
     "Item2Vec",
     "DeepWalk",
     "NGCF",
-    "LightGCN"
+    "LightGCN",
 ]

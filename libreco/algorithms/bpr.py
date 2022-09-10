@@ -12,7 +12,7 @@ from functools import partial
 import numpy as np
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
-    truncated_normal as tf_truncated_normal
+    truncated_normal as tf_truncated_normal,
 )
 
 from ..bases import EmbedBase, TfMixin
@@ -36,6 +36,7 @@ class BPR(EmbedBase, TfMixin):
     """
     BPR is only suitable for ranking task
     """
+
     user_variables = ["user_embed_var"]
     item_variables = ["item_embed_var", "item_bias_var"]
 
@@ -60,15 +61,16 @@ class BPR(EmbedBase, TfMixin):
         tf_sess_config=None,
         optimizer="adam",
         num_threads=1,
-        with_training=True
+        with_training=True,
     ):
         EmbedBase.__init__(self, task, data_info, embed_size)
         if use_tf:
             TfMixin.__init__(self, data_info, tf_sess_config)
 
         assert task == "ranking", "BPR is only suitable for ranking"
+        assert loss_type == "bpr", "BPR should use bpr loss"
         self.all_args = locals()
-        self.reg = reg_config(reg)
+        self.reg = reg_config(reg) if use_tf else reg
         self.n_epochs = n_epochs
         self.lr = lr
         self.use_tf = use_tf
@@ -92,7 +94,7 @@ class BPR(EmbedBase, TfMixin):
                     num_neg,
                     k,
                     eval_batch_size,
-                    eval_user_num
+                    eval_user_num,
                 )
 
     def _build_model(self):
@@ -122,24 +124,22 @@ class BPR(EmbedBase, TfMixin):
             name="user_embed_var",
             shape=[self.n_users, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         self.item_embed_var = tf.get_variable(
             name="item_embed_var",
             shape=[self.n_items, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         self.item_bias_var = tf.get_variable(
             name="item_bias_var",
             shape=[self.n_items],
             initializer=tf_zeros,
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
-        embed_user = tf.nn.embedding_lookup(
-            self.user_embed_var, self.user_indices
-        )
+        embed_user = tf.nn.embedding_lookup(self.user_embed_var, self.user_indices)
         embed_item_pos = tf.nn.embedding_lookup(
             self.item_embed_var, self.item_indices_pos
         )
@@ -154,9 +154,7 @@ class BPR(EmbedBase, TfMixin):
         )
 
         item_diff = tf.subtract(bias_item_pos, bias_item_neg) + tf.reduce_sum(
-            tf.multiply(
-                embed_user, tf.subtract(embed_item_pos, embed_item_neg)
-            ), axis=1
+            tf.multiply(embed_user, tf.subtract(embed_item_pos, embed_item_neg)), axis=1
         )
         self.bpr_loss = tf.log_sigmoid(item_diff)
 
@@ -167,7 +165,7 @@ class BPR(EmbedBase, TfMixin):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs
+        **kwargs,
     ):
         self.show_start_time()
         check_has_sampled(train_data, verbose)
@@ -203,7 +201,7 @@ class BPR(EmbedBase, TfMixin):
                 bpr_update,
                 u_velocity=user_velocity,
                 i_velocity=item_velocity,
-                momentum=momentum
+                momentum=momentum,
             )
 
         elif self.optimizer == "adam":
@@ -221,7 +219,7 @@ class BPR(EmbedBase, TfMixin):
                 u_2nd_mom=user_2nd_moment,
                 i_2nd_mom=item_2nd_moment,
                 rho1=rho1,
-                rho2=rho2
+                rho2=rho2,
             )
 
         else:
@@ -243,7 +241,7 @@ class BPR(EmbedBase, TfMixin):
                     shuffle=shuffle,
                     num_threads=self.num_threads,
                     seed=self.seed,
-                    epoch=epoch
+                    epoch=epoch,
                 )
 
             if verbose > 1:
@@ -254,7 +252,7 @@ class BPR(EmbedBase, TfMixin):
                     eval_batch_size=self.eval_batch_size,
                     k=self.k,
                     sample_user_num=self.eval_user_num,
-                    seed=self.seed
+                    seed=self.seed,
                 )
                 print("=" * 30)
 

@@ -14,20 +14,17 @@ def shuffle_data(length, *args):
 
 def count_params():
     total_params = np.sum(
-        [
-            np.prod(v.get_shape().as_list())
-            for v in tf.trainable_variables()
-        ]
+        [np.prod(v.get_shape().as_list()) for v in tf.trainable_variables()]
     )
     embedding_params = np.sum(
         [
             np.prod(v.get_shape().as_list())
             for v in tf.trainable_variables()
             if (
-                'feat' in v.name
-                or 'weight' in v.name
-                or 'bias' in v.name
-                or 'embed' in v.name
+                "feat" in v.name
+                or "weight" in v.name
+                or "bias" in v.name
+                or "embed" in v.name
             )
         ]
     )
@@ -35,12 +32,14 @@ def count_params():
     total_params = f"{total_params:,}"
     embedding_params = f"{embedding_params:,}"
     network_params = f"{network_params:,}"
-    print_params = ("total params: "
-                    f"{colorize(total_params, 'yellow')} | "
-                    "embedding params: "
-                    f"{colorize(embedding_params, 'yellow')} | "
-                    "network params: "
-                    f"{colorize(network_params, 'yellow')}")
+    print_params = (
+        "total params: "
+        f"{colorize(total_params, 'yellow')} | "
+        "embedding params: "
+        f"{colorize(embedding_params, 'yellow')} | "
+        "network params: "
+        f"{colorize(network_params, 'yellow')}"
+    )
     print(print_params)
 
 
@@ -52,6 +51,7 @@ def time_func(func):
         end = time.perf_counter()
         print(f"{func.__name__} elapsed: {(end - start):3.3f}s")
         return result
+
     return wrapper
 
 
@@ -89,9 +89,9 @@ def colorize(string, color, bold=False, highlight=False):
         num += 10
     attr.append(str(num))
     if bold:
-        attr.append('1')
-    attrs = ';'.join(attr)
-    return '\x1b[%sm%s\x1b[0m' % (attrs, string)
+        attr.append("1")
+    attrs = ";".join(attr)
+    return "\x1b[%sm%s\x1b[0m" % (attrs, string)
 
 
 color2num = dict(
@@ -103,5 +103,5 @@ color2num = dict(
     magenta=35,
     cyan=36,
     white=37,
-    crimson=38
+    crimson=38,
 )

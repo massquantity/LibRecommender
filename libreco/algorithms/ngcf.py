@@ -43,7 +43,7 @@ class NGCF(EmbedBase):
         eval_user_num=None,
         device=torch.device("cpu"),
         lower_upper_bound=None,
-        with_training=True
+        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
@@ -75,7 +75,7 @@ class NGCF(EmbedBase):
             self.node_dropout,
             self.message_dropout,
             self.user_consumed,
-            self.device
+            self.device,
         )
 
     def fit(
@@ -85,7 +85,7 @@ class NGCF(EmbedBase):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs
+        **kwargs,
     ):
         self.show_start_time()
         optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
@@ -94,17 +94,13 @@ class NGCF(EmbedBase):
             with time_block(f"Epoch {epoch}", verbose):
                 self.model.train()
                 train_total_loss = []
-                for (
-                    user,
-                    item_pos,
-                    item_neg
-                ) in data_generator(shuffle, self.batch_size):
+                for (user, item_pos, item_neg) in data_generator(
+                    shuffle, self.batch_size
+                ):
                     user_embeds, pos_item_embeds, neg_item_embeds = self.model(
                         user, item_pos, item_neg, use_dropout=True
                     )
-                    loss = self.bpr_loss(
-                        user_embeds, pos_item_embeds, neg_item_embeds
-                    )
+                    loss = self.bpr_loss(user_embeds, pos_item_embeds, neg_item_embeds)
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
@@ -124,7 +120,7 @@ class NGCF(EmbedBase):
                     eval_batch_size=self.eval_batch_size,
                     k=self.k,
                     sample_user_num=self.eval_user_num,
-                    seed=self.seed
+                    seed=self.seed,
                 )
                 print("=" * 30)
 
@@ -138,10 +134,12 @@ class NGCF(EmbedBase):
         log_sigmoid = F.logsigmoid(pos_scores - neg_scores)
         loss = torch.negative(torch.mean(log_sigmoid))
         if self.reg:
-            embed_reg = (torch.linalg.norm(user_embeds).pow(2)
-                         + torch.linalg.norm(pos_item_embeds).pow(2)
-                         + torch.linalg.norm(neg_item_embeds).pow(2)) / 2
-            loss += ((self.reg * embed_reg) / float(len(user_embeds)))
+            embed_reg = (
+                torch.linalg.norm(user_embeds).pow(2)
+                + torch.linalg.norm(pos_item_embeds).pow(2)
+                + torch.linalg.norm(neg_item_embeds).pow(2)
+            ) / 2
+            loss += (self.reg * embed_reg) / float(len(user_embeds))
         return loss
 
     @torch.no_grad()
@@ -155,12 +153,10 @@ class NGCF(EmbedBase):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        save_params(self, path)
+        save_params(self, path, model_name)
         variable_path = os.path.join(path, model_name)
         np.savez_compressed(
-            variable_path,
-            user_embed=self.user_embed,
-            item_embed=self.item_embed
+            variable_path, user_embed=self.user_embed, item_embed=self.item_embed
         )
 
 
@@ -174,7 +170,7 @@ class NGCFModel(nn.Module):
         node_dropout,
         message_dropout,
         user_consumed,
-        device=torch.device("cpu")
+        device=torch.device("cpu"),
     ):
         super(NGCFModel, self).__init__()
         self.n_users = n_users
@@ -196,7 +192,7 @@ class NGCFModel(nn.Module):
                 ),
                 "item_embed": nn.Parameter(
                     nn.init.xavier_uniform_(torch.empty(self.n_items, self.embed_size))
-                )
+                ),
             }
         )
 
@@ -221,20 +217,19 @@ class NGCFModel(nn.Module):
     def _build_laplacian_matrix(self):
         R = scipy.sparse.dok_matrix((self.n_users, self.n_items), dtype=np.float32)
         for u, items in self.user_consumed.items():
-            R[u, items] = 1.
+            R[u, items] = 1.0
         R = R.tolil()
 
         adj_matrix = scipy.sparse.lil_matrix(
-            (self.n_users + self.n_items, self.n_items + self.n_users),
-            dtype=np.float32
+            (self.n_users + self.n_items, self.n_items + self.n_users), dtype=np.float32
         )
-        adj_matrix[:self.n_users, self.n_users:] = R
-        adj_matrix[self.n_users:, :self.n_users] = R.T
+        adj_matrix[: self.n_users, self.n_users :] = R
+        adj_matrix[self.n_users :, : self.n_users] = R.T
         adj_matrix = adj_matrix.tocsr() + scipy.sparse.eye(adj_matrix.shape[0])
 
         row_sum = np.array(adj_matrix.sum(axis=1))
         diag_inv = np.power(row_sum, -1).flatten()
-        diag_inv[np.isinf(diag_inv)] = 0.
+        diag_inv[np.isinf(diag_inv)] = 0.0
         diag_matrix_inv = scipy.sparse.diags(diag_inv)
 
         coo = diag_matrix_inv.dot(adj_matrix).tocoo()
@@ -258,21 +253,26 @@ class NGCFModel(nn.Module):
             laplacian_norm = self.laplacian_matrix
 
         all_embeddings = [
-            torch.cat([self.embedding_dict["user_embed"],
-                       self.embedding_dict["item_embed"]], dim=0)
+            torch.cat(
+                [self.embedding_dict["user_embed"], self.embedding_dict["item_embed"]],
+                dim=0,
+            )
         ]
         for k in range(len(self.layers)):
             side_embeddings = torch.sparse.mm(laplacian_norm, all_embeddings[-1])
-            self_embeddings = torch.matmul(
-                side_embeddings, self.weight_dict[f"W_self_{k}"]
-            ) + self.weight_dict[f"b_self_{k}"]
-            pair_embeddings = torch.matmul(
-                torch.mul(side_embeddings, all_embeddings[-1]),
-                self.weight_dict[f"W_pair_{k}"]
-            ) + self.weight_dict[f"b_pair_{k}"]
+            self_embeddings = (
+                torch.matmul(side_embeddings, self.weight_dict[f"W_self_{k}"])
+                + self.weight_dict[f"b_self_{k}"]
+            )
+            pair_embeddings = (
+                torch.matmul(
+                    torch.mul(side_embeddings, all_embeddings[-1]),
+                    self.weight_dict[f"W_pair_{k}"],
+                )
+                + self.weight_dict[f"b_pair_{k}"]
+            )
             embed_messages = F.leaky_relu(
-                self_embeddings + pair_embeddings,
-                negative_slope=0.2
+                self_embeddings + pair_embeddings, negative_slope=0.2
             )
             if use_dropout and self.message_dropout > 0:
                 embed_messages = F.dropout(embed_messages, p=self.message_dropout)
@@ -280,8 +280,8 @@ class NGCFModel(nn.Module):
             all_embeddings.append(norm_embeddings)
 
         all_embeddings = torch.cat(all_embeddings, dim=1)
-        user_embeds = all_embeddings[:self.n_users]
-        item_embeds = all_embeddings[self.n_users:]
+        user_embeds = all_embeddings[: self.n_users]
+        item_embeds = all_embeddings[self.n_users :]
         return user_embeds, item_embeds
 
     def sparse_dropout(self, x, noise_shape):

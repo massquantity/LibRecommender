@@ -10,14 +10,14 @@ from sklearn.metrics import (
     balanced_accuracy_score,
     roc_auc_score,
     precision_recall_curve,
-    auc
+    auc,
 )
 
 from .computation import (
     compute_preds,
     compute_probs,
     compute_recommends,
-    build_transformed_data
+    build_transformed_data,
 )
 from ..data import TransformedSet
 from .metrics import precision_at_k, recall_at_k, map_at_k, ndcg_at_k
@@ -32,7 +32,7 @@ def print_metrics(
     eval_batch_size=8192,
     k=10,
     sample_user_num=2048,
-    seed=42
+    seed=42,
 ):
     if not metrics:
         metrics = ["loss"]
@@ -83,15 +83,11 @@ def _check_metrics(task, metrics, k):
     if task == "rating":
         for m in metrics:
             if m not in ALLOWED_METRICS["rating_metrics"]:
-                raise ValueError(
-                    f"metrics {m} is not suitable for rating task..."
-                )
+                raise ValueError(f"metrics {m} is not suitable for rating task...")
     elif task == "ranking":
         for m in metrics:
             if m not in ALLOWED_METRICS["ranking_metrics"]:
-                raise ValueError(
-                    f"metrics {m} is not suitable for ranking task..."
-                )
+                raise ValueError(f"metrics {m} is not suitable for ranking task...")
 
     if not isinstance(k, numbers.Integral):
         raise TypeError("k must be integer")
@@ -122,21 +118,25 @@ def evaluate(
     sample_user_num=2048,
     neg_sample=False,
     update_features=False,
-    **kwargs
+    **kwargs,
 ):
     seed = kwargs.get("seed", 42)
     if isinstance(data, pd.DataFrame):
         data = build_transformed_data(model, data, neg_sample, update_features, seed)
-    assert isinstance(data, TransformedSet), (
-        "The data from evaluation must be TransformedSet object."
-    )
+    assert isinstance(
+        data, TransformedSet
+    ), "The data from evaluation must be TransformedSet object."
     if not metrics:
         metrics = ["loss"]
     metrics = _check_metrics(model.task, metrics, k)
     eval_result = dict()
 
     if model.task == "rating":
-        y_pred, y_true = compute_preds(model, data, eval_batch_size,)
+        y_pred, y_true = compute_preds(
+            model,
+            data,
+            eval_batch_size,
+        )
         for m in metrics:
             if m in ["rmse", "loss"]:
                 eval_result[m] = np.sqrt(mean_squared_error(y_true, y_pred))
@@ -147,7 +147,11 @@ def evaluate(
 
     elif model.task == "ranking":
         if POINTWISE_METRICS.intersection(metrics):
-            y_prob, y_true = compute_probs(model, data, eval_batch_size,)
+            y_prob, y_true = compute_probs(
+                model,
+                data,
+                eval_batch_size,
+            )
         if LISTWISE_METRICS.intersection(metrics):
             chosen_users = sample_user(data, seed, sample_user_num)
             y_reco_list, users = compute_recommends(model, chosen_users, k)
@@ -171,7 +175,7 @@ def evaluate(
             elif m == "map":
                 eval_result[m] = map_at_k(y_true_list, y_reco_list, users, k)
             elif m == "ndcg":
-                eval_result[m] = ndcg_at_k(y_true_list,y_reco_list, users, k)
+                eval_result[m] = ndcg_at_k(y_true_list, y_reco_list, users, k)
 
     return eval_result
 
@@ -179,7 +183,8 @@ def evaluate(
 def print_metrics_rating(metrics, y_true, y_pred, train=True, **kwargs):
     if kwargs.get("lower_bound") and kwargs.get("upper_bound"):
         lower_bound, upper_bound = (
-            kwargs.get("lower_bound"), kwargs.get("upper_bound")
+            kwargs.get("lower_bound"),
+            kwargs.get("upper_bound"),
         )
         y_pred = np.clip(y_pred, lower_bound, upper_bound)
     if train:
@@ -208,7 +213,7 @@ def print_metrics_ranking(
     y_true_list=None,
     users=None,
     k=10,
-    train=True
+    train=True,
 ):
     if train:
         for m in metrics:

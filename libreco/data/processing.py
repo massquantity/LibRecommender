@@ -3,20 +3,13 @@ from sklearn.preprocessing import (
     MinMaxScaler,
     StandardScaler,
     RobustScaler,
-    PowerTransformer
+    PowerTransformer,
 )
 
 
 def process_data(
-    data,
-    dense_col=None,
-    normalizer="min_max",
-    transformer=("log", "sqrt", "square")
+    data, dense_col=None, normalizer="min_max", transformer=("log", "sqrt", "square")
 ):
-    if not dense_col:
-        print("nothing to preprocessing...")
-        return data
-
     if not isinstance(dense_col, list):
         raise ValueError("dense_col must be a list...")
 
@@ -90,19 +83,18 @@ def split_multi_value(
     max_len=None,
     pad_val="missing",
     user_col=None,
-    item_col=None
+    item_col=None,
 ):
     if max_len is not None:
-        assert (
-            isinstance(max_len, (list, tuple))
-            and len(max_len) == len(multi_value_col)
+        assert isinstance(max_len, (list, tuple)) and len(max_len) == len(
+            multi_value_col
         ), "`max_len` must be list or tuple and have same length as `multi_value_col`"
 
     if not isinstance(pad_val, (list, tuple)):
         pad_val = [pad_val] * len(multi_value_col)
-    assert len(multi_value_col) == len(pad_val), (
-        "length of multi_sparse_col and pad_val doesn't match"
-    )
+    assert len(multi_value_col) == len(
+        pad_val
+    ), "length of multi_sparse_col and pad_val doesn't match"
 
     user_sparse_col, item_sparse_col, multi_sparse_col = [], [], []
     for j, col in enumerate(multi_value_col):
@@ -115,11 +107,7 @@ def split_multi_value(
         )
         data.loc[data[col] == "", col] = pad_val
         split_col = data[col].str.split(sep)
-        col_len = (
-            int(split_col.str.len().max())
-            if max_len is None
-            else max_len[j]
-        )
+        col_len = int(split_col.str.len().max()) if max_len is None else max_len[j]
         for i in range(col_len):
             new_col_name = col + f"_{i+1}"
             sparse_col.append(new_col_name)

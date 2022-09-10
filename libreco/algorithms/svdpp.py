@@ -11,14 +11,14 @@ import os
 import numpy as np
 from tensorflow.keras.initializers import (
     zeros as tf_zeros,
-    truncated_normal as tf_truncated_normal
+    truncated_normal as tf_truncated_normal,
 )
 
 from ..bases import EmbedBase, TfMixin
 from ..data.sequence import sparse_tensor_interaction
 from ..tfops import modify_variable_names, reg_config, tf
 from ..training import TensorFlowTrainer
-from ..utils.validate import check_has_sampled
+from ..utils.save_load import load_params
 
 
 class SVDpp(EmbedBase, TfMixin):
@@ -45,7 +45,7 @@ class SVDpp(EmbedBase, TfMixin):
         random_sample_rate=None,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True
+        with_training=True,
     ):
         EmbedBase.__init__(self, task, data_info, embed_size, lower_upper_bound)
         TfMixin.__init__(self, data_info, tf_sess_config)
@@ -76,48 +76,50 @@ class SVDpp(EmbedBase, TfMixin):
             name="bu_var",
             shape=[self.n_users],
             initializer=tf_zeros,
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         self.bi_var = tf.get_variable(
             name="bi_var",
             shape=[self.n_items],
             initializer=tf_zeros,
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         self.pu_var = tf.get_variable(
             name="pu_var",
             shape=[self.n_users, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         self.qi_var = tf.get_variable(
             name="qi_var",
             shape=[self.n_items, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         yj_var = tf.get_variable(
             name="yj_var",
             shape=[self.n_items, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.03),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         uj = tf.nn.safe_embedding_lookup_sparse(
             yj_var,
             sparse_implicit_interaction,
             sparse_weights=None,
             combiner="sqrtn",
-            default_id=None
-        )   # unknown user will return 0-vector
+            default_id=None,
+        )  # unknown user will return 0-vector
         self.puj_var = self.pu_var + uj
 
         bias_user = tf.nn.embedding_lookup(self.bu_var, self.user_indices)
         bias_item = tf.nn.embedding_lookup(self.bi_var, self.item_indices)
         embed_user = tf.nn.embedding_lookup(self.puj_var, self.user_indices)
         embed_item = tf.nn.embedding_lookup(self.qi_var, self.item_indices)
-        self.output = bias_user + bias_item + tf.reduce_sum(
-            tf.multiply(embed_user, embed_item), axis=1
+        self.output = (
+            bias_user
+            + bias_item
+            + tf.reduce_sum(tf.multiply(embed_user, embed_item), axis=1)
         )
 
     def fit(
@@ -127,15 +129,15 @@ class SVDpp(EmbedBase, TfMixin):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs
+        **kwargs,
     ):
         self.show_start_time()
-        check_has_sampled(train_data, verbose)
+        # check_has_sampled(train_data, verbose)
         if self.with_training:
             sparse_implicit_interaction = sparse_tensor_interaction(
                 data=train_data,
                 random_sample_rate=self.random_sample_rate,
-                recent_num=self.recent_num
+                recent_num=self.recent_num,
             )
             self._build_model(sparse_implicit_interaction)
             self.trainer = TensorFlowTrainer(
@@ -149,7 +151,7 @@ class SVDpp(EmbedBase, TfMixin):
                 self.num_neg,
                 self.k,
                 self.eval_batch_size,
-                self.eval_user_num
+                self.eval_user_num,
             )
             self.with_training = False
         self.trainer.run(train_data, verbose, shuffle, eval_data, metrics)
@@ -167,7 +169,7 @@ class SVDpp(EmbedBase, TfMixin):
         self.user_embed = np.hstack([puj, user_bias])
         self.item_embed = np.hstack([qi, item_bias])
 
-    def rebuild_graph(self, path, model_name, full_assign=False, train_data=None):
+    def rebuild_model(self, path, model_name, full_assign=False, train_data=None):
         if train_data is None:
             raise ValueError(
                 "SVDpp model must provide train_data when rebuilding graph"
@@ -176,14 +178,28 @@ class SVDpp(EmbedBase, TfMixin):
         sparse_implicit_interaction = sparse_tensor_interaction(
             data=train_data,
             recent_num=self.recent_num,
-            random_sample_rate=self.random_sample_rate
+            random_sample_rate=self.random_sample_rate,
         )
         self._build_model(sparse_implicit_interaction)
-        self.trainer = TensorFlowTrainer(self)
+
+        hparams = load_params(SVDpp, path, self.data_info, model_name)
+        self.trainer = TensorFlowTrainer(
+            self,
+            hparams["task"],
+            hparams["loss_type"],
+            hparams["n_epochs"],
+            hparams["lr"],
+            hparams["lr_decay"],
+            hparams["batch_size"],
+            hparams["num_neg"],
+            hparams["k"],
+            hparams["eval_batch_size"],
+            hparams["eval_user_num"],
+        )
         # self.trainer._build_train_ops()
         self.with_training = False
 
-        variable_path = os.path.join(path, f"{model_name}_variables.npz")
+        variable_path = os.path.join(path, f"{model_name}_tf_variables.npz")
         variables = np.load(variable_path)
         variables = dict(variables.items())
         (
@@ -191,7 +207,7 @@ class SVDpp(EmbedBase, TfMixin):
             item_variables,
             sparse_variables,
             dense_variables,
-            manual_variables
+            manual_variables,
         ) = modify_variable_names(self, trainable=True)
 
         update_ops = []
@@ -213,19 +229,24 @@ class SVDpp(EmbedBase, TfMixin):
                 optimizer_item_variables,
                 optimizer_sparse_variables,
                 optimizer_dense_variables,
-                _
+                _,
             ) = modify_variable_names(self, trainable=False)
 
-            other_variables = [v for v in tf.global_variables()
-                               if v.name not in manual_variables]
+            other_variables = [
+                v for v in tf.global_variables() if v.name not in manual_variables
+            ]
             for v in other_variables:
-                if (optimizer_user_variables is not None
-                        and v.name in optimizer_user_variables):
+                if (
+                    optimizer_user_variables is not None
+                    and v.name in optimizer_user_variables
+                ):
                     old_var = variables[v.name]
                     user_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
                     update_ops.append(v.scatter_update(user_op))
-                elif (optimizer_item_variables is not None
-                        and v.name in optimizer_item_variables):
+                elif (
+                    optimizer_item_variables is not None
+                    and v.name in optimizer_item_variables
+                ):
                     old_var = variables[v.name]
                     item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
                     update_ops.append(v.scatter_update(item_op))

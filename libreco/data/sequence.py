@@ -7,11 +7,7 @@ from ..tfops import tf
 
 
 def sparse_user_interacted(
-    user_indices,
-    item_indices,
-    user_consumed,
-    mode=None,
-    num=None
+    user_indices, item_indices, user_consumed, mode=None, num=None
 ):
     interacted_indices = []
     interacted_items = []
@@ -26,18 +22,19 @@ def sparse_user_interacted(
         elif position >= num and mode == "recent":
             start_index = position - num
             interacted_indices.extend([j] * num)
-            interacted_items.extend(consumed_items[start_index: position])
+            interacted_items.extend(consumed_items[start_index:position])
         elif position >= num and mode == "random":
             interacted_indices.extend([j] * num)
             chosen_items = np.random.choice(consumed_items, num, replace=False)
             interacted_items.extend(chosen_items.tolist())
 
-    assert len(interacted_indices) == len(interacted_items), (
-        "length of indices and values doesn't match")
+    assert len(interacted_indices) == len(
+        interacted_items
+    ), "length of indices and values doesn't match"
     interacted_indices = np.asarray(interacted_indices).reshape(-1, 1)
     indices = np.concatenate(
-        [interacted_indices, np.zeros_like(interacted_indices)],
-        axis=1)
+        [interacted_indices, np.zeros_like(interacted_indices)], axis=1
+    )
     return indices, interacted_items, len(user_indices)
 
 
@@ -56,13 +53,12 @@ def sparse_user_last_interacted(n_users, user_consumed, recent_num=10):
             interacted_indices.extend([u] * recent_num)
             interacted_items.extend(u_consumed_items[-recent_num:])
 
-    assert len(interacted_indices) == len(interacted_items), (
-        "length of indices and values doesn't match"
-    )
+    assert len(interacted_indices) == len(
+        interacted_items
+    ), "length of indices and values doesn't match"
     interacted_indices = np.asarray(interacted_indices).reshape(-1, 1)
     indices = np.concatenate(
-        [interacted_indices, np.zeros_like(interacted_indices)],
-        axis=1
+        [interacted_indices, np.zeros_like(interacted_indices)], axis=1
     )
     return indices, interacted_items
 
@@ -88,7 +84,7 @@ def user_interacted_seq(
     pad_index,
     mode=None,
     num=None,
-    user_consumed_set=None
+    user_consumed_set=None,
 ):
     batch_size = len(user_indices)
     batch_interacted = np.full((batch_size, num), pad_index, dtype=np.int32)
@@ -106,7 +102,8 @@ def user_interacted_seq(
                 # so here we use a custom sample function with
                 # some tolerance of duplicate items
                 chosen_items = sample_item_with_tolerance(
-                    num, consumed_items, consumed_len, 5)
+                    num, consumed_items, consumed_len, 5
+                )
                 batch_interacted[j] = chosen_items
                 batch_interacted_len.append(float(num))
             else:
@@ -123,7 +120,7 @@ def user_interacted_seq(
                 batch_interacted_len.append(float(position))
             elif position >= num and mode == "recent":
                 start_index = position - num
-                batch_interacted[j] = consumed_items[start_index: position]
+                batch_interacted[j] = consumed_items[start_index:position]
                 batch_interacted_len.append(float(num))
             elif position >= num and mode == "random":
                 chosen_items = np.random.choice(consumed_items, num, replace=False)
@@ -187,8 +184,7 @@ def user_recent_interact(num, indices, values):
         indices[:, 0], return_inverse=True, return_counts=True
     )
     user_split_indices = np.split(
-        np.argsort(user_position, kind="mergesort"),
-        np.cumsum(user_counts)[:-1]
+        np.argsort(user_position, kind="mergesort"), np.cumsum(user_counts)[:-1]
     )
 
     n_users = len(users)

@@ -2,11 +2,7 @@ from .version import tf
 
 
 def multi_sparse_combine_embedding(
-    data_info,
-    variables,
-    all_sparse_indices,
-    combiner,
-    embed_size
+    data_info, variables, all_sparse_indices, combiner, embed_size
 ):
     field_offsets = data_info.multi_sparse_combine_info.field_offset
     field_lens = data_info.multi_sparse_combine_info.field_len
@@ -22,7 +18,7 @@ def multi_sparse_combine_embedding(
             embed_size,
             field_offsets[0],
             field_lens[0],
-            feat_oovs[0]
+            feat_oovs[0],
         )
     else:
         if sparse_end > 0:
@@ -41,7 +37,7 @@ def multi_sparse_combine_embedding(
                     embed_size,
                     offset,
                     length,
-                    oov
+                    oov,
                 )
             )
         result = tf.concat(result, axis=1)
@@ -49,13 +45,7 @@ def multi_sparse_combine_embedding(
 
 
 def multi_sparse_alone(
-    variables,
-    all_sparse_indices,
-    combiner,
-    embed_size,
-    offset,
-    length,
-    oov
+    variables, all_sparse_indices, combiner, embed_size, offset, length, oov
 ):
     variable_dim = len(variables.get_shape().as_list())
     # oov feats are padded to 0-vector
@@ -63,7 +53,7 @@ def multi_sparse_alone(
     zero_padding_op = tf.scatter_update(
         variables, oov_indices, tf.zeros([embed_size], dtype=tf.float32)
     )
-    multi_sparse_indices = all_sparse_indices[:, offset: offset + length]
+    multi_sparse_indices = all_sparse_indices[:, offset : offset + length]
 
     with tf.control_dependencies([zero_padding_op]):
         multi_sparse_embed = tf.nn.embedding_lookup(variables, multi_sparse_indices)
@@ -71,9 +61,9 @@ def multi_sparse_alone(
     res_embed = tf.reduce_sum(multi_sparse_embed, axis=1, keepdims=True)
     if combiner in ("mean", "sqrtn"):
         multi_sparse_lens = tf.reduce_sum(
-            tf.cast(
-                tf.not_equal(multi_sparse_indices, oov), tf.float32
-            ), axis=1, keepdims=True
+            tf.cast(tf.not_equal(multi_sparse_indices, oov), tf.float32),
+            axis=1,
+            keepdims=True,
         )
         if combiner == "sqrtn":
             multi_sparse_lens = tf.sqrt(multi_sparse_lens)
@@ -96,10 +86,7 @@ def get_feed_dict(
     user_interacted_len=None,
     is_training=False,
 ):
-    feed_dict = {
-        model.user_indices: user_indices,
-        model.item_indices: item_indices
-    }
+    feed_dict = {model.user_indices: user_indices, model.item_indices: item_indices}
     if labels is not None:
         feed_dict.update({model.labels: labels})
     if hasattr(model, "is_training"):
@@ -109,8 +96,10 @@ def get_feed_dict(
     if hasattr(model, "dense") and model.dense:
         feed_dict.update({model.dense_values: dense_values})
     if model.model_category == "sequence":
-        feed_dict.update({
-            model.user_interacted_seq: user_interacted_seq,
-            model.user_interacted_len: user_interacted_len
-        })
+        feed_dict.update(
+            {
+                model.user_interacted_seq: user_interacted_seq,
+                model.user_interacted_len: user_interacted_len,
+            }
+        )
     return feed_dict

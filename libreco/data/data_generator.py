@@ -18,7 +18,7 @@ class DataGenPure(object):
                 self.item_indices[batch_slice],
                 self.labels[batch_slice],
                 None,
-                None
+                None,
             )
 
     def __call__(self, shuffle=True, batch_size=None):
@@ -48,18 +48,12 @@ class DataGenFeat(object):
             pure_part = (
                 self.user_indices[batch_slice],
                 self.item_indices[batch_slice],
-                self.labels[batch_slice]
+                self.labels[batch_slice],
             )
             sparse_part = (
-                (self.sparse_indices[batch_slice],)
-                if self.sparse
-                else (None,)
+                (self.sparse_indices[batch_slice],) if self.sparse else (None,)
             )
-            dense_part = (
-                (self.dense_values[batch_slice],)
-                if self.dense
-                else (None,)
-            )
+            dense_part = (self.dense_values[batch_slice],) if self.dense else (None,)
             yield pure_part + sparse_part + dense_part
 
     def __call__(self, shuffle=True, batch_size=None):
@@ -96,37 +90,25 @@ class DataGenSequence(object):
     def __iter__(self, batch_size):
         for i in tqdm.trange(0, self.data_size, batch_size, desc="train"):
             batch_slice = slice(i, i + batch_size)
-            (
-                batch_interacted,
-                batch_interacted_len
-            ) = user_interacted_seq(
+            (batch_interacted, batch_interacted_len) = user_interacted_seq(
                 self.user_indices[batch_slice],
                 self.item_indices[batch_slice],
                 self.user_consumed,
                 self.padding_idx,
                 self.mode,
                 self.num,
-                self.user_consumed_set
+                self.user_consumed_set,
             )
             pure_part = (
                 self.user_indices[batch_slice],
                 self.item_indices[batch_slice],
-                self.labels[batch_slice]
+                self.labels[batch_slice],
             )
-            seq_part = (
-                batch_interacted,
-                batch_interacted_len
-            )
+            seq_part = (batch_interacted, batch_interacted_len)
             sparse_part = (
-                (self.sparse_indices[batch_slice],)
-                if self.sparse
-                else (None,)
+                (self.sparse_indices[batch_slice],) if self.sparse else (None,)
             )
-            dense_part = (
-                (self.dense_values[batch_slice],)
-                if self.dense
-                else (None,)
-            )
+            dense_part = (self.dense_values[batch_slice],) if self.dense else (None,)
             yield pure_part + sparse_part + dense_part + seq_part
 
     def __call__(self, shuffle=True, batch_size=None):
@@ -159,13 +141,13 @@ class SparseTensorSequence(DataGenSequence):
             (
                 interacted_indices,
                 interacted_values,
-                modified_batch_size
+                modified_batch_size,
             ) = sparse_user_interacted(
                 self.user_indices[batch_slice],
                 self.item_indices[batch_slice],
                 self.user_consumed,
                 self.mode,
-                self.num
+                self.num,
             )
             pure_part = (
                 modified_batch_size,
@@ -176,13 +158,7 @@ class SparseTensorSequence(DataGenSequence):
                 # self.labels[batch_slice]
             )
             sparse_part = (
-                (self.sparse_indices[batch_slice],)
-                if self.sparse
-                else (None,)
+                (self.sparse_indices[batch_slice],) if self.sparse else (None,)
             )
-            dense_part = (
-                (self.dense_values[batch_slice],)
-                if self.dense
-                else (None,)
-            )
+            dense_part = (self.dense_values[batch_slice],) if self.dense else (None,)
             yield pure_part + sparse_part + dense_part

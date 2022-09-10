@@ -7,9 +7,7 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import (
-    truncated_normal as tf_truncated_normal
-)
+from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
 from ..bases import TfBase
 from ..prediction import normalize_prediction
@@ -45,7 +43,7 @@ class NCF(TfBase):
         eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True
+        with_training=True,
     ):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
@@ -73,7 +71,19 @@ class NCF(TfBase):
         self.user_consumed = data_info.user_consumed
         self._build_model()
         if with_training:
-            self.trainer = TensorFlowTrainer(self)
+            self.trainer = TensorFlowTrainer(
+                self,
+                task,
+                loss_type,
+                n_epochs,
+                lr,
+                lr_decay,
+                batch_size,
+                num_neg,
+                k,
+                eval_batch_size,
+                eval_user_num,
+            )
 
     def _build_model(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
@@ -85,25 +95,25 @@ class NCF(TfBase):
             name="user_gmf",
             shape=[self.n_users + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         item_gmf = tf.get_variable(
             name="item_gmf",
             shape=[self.n_items + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         user_mlp = tf.get_variable(
             name="user_mlp",
             shape=[self.n_users + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         item_mlp = tf.get_variable(
             name="item_mlp",
             shape=[self.n_items + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         user_gmf_embed = tf.nn.embedding_lookup(user_gmf, self.user_indices)
@@ -118,12 +128,10 @@ class NCF(TfBase):
             self.hidden_units,
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
-            is_training=self.is_training
+            is_training=self.is_training,
         )
         concat_layer = tf.concat([gmf_layer, mlp_layer], axis=1)
-        self.output = tf.reshape(
-            tf_dense(units=1)(concat_layer), [-1]
-        )
+        self.output = tf.reshape(tf_dense(units=1)(concat_layer), [-1])
 
     def predict(self, user, item, feats=None, cold_start="average", inner_id=False):
         assert feats is None, "NCF doesn't have features."
@@ -134,16 +142,10 @@ class NCF(TfBase):
             feed_dict={
                 self.user_indices: user,
                 self.item_indices: item,
-                self.is_training: False
-            }
+                self.is_training: False,
+            },
         )
-        return normalize_prediction(
-            preds,
-            self,
-            cold_start,
-            unknown_num,
-            unknown_index
-        )
+        return normalize_prediction(preds, self, cold_start, unknown_num, unknown_index)
 
     def recommend_user(
         self,
@@ -152,7 +154,7 @@ class NCF(TfBase):
         user_feats=None,
         item_data=None,
         cold_start="average",
-        inner_id=False
+        inner_id=False,
     ):
         assert user_feats is None and item_data is None, "NCF doesn't have features."
         user_id = check_unknown_user(self, user, inner_id)
@@ -171,7 +173,7 @@ class NCF(TfBase):
             feed_dict={
                 self.user_indices: user_indices,
                 self.item_indices: item_indices,
-                self.is_training: False
-            }
+                self.is_training: False,
+            },
         )
         return rank_recommendations(recos, self, user_id, n_rec, inner_id)

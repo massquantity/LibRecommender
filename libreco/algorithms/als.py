@@ -52,7 +52,7 @@ class ALS(EmbedBase):
         eval_batch_size=8192,
         eval_user_num=None,
         lower_upper_bound=None,
-        with_training=True
+        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
@@ -85,7 +85,7 @@ class ALS(EmbedBase):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs
+        **kwargs,
     ):
         self.show_start_time()
         assert isinstance(self.reg, numbers.Real), "`reg` must be float"
@@ -104,55 +104,55 @@ class ALS(EmbedBase):
                     X=self.user_embed,
                     Y=self.item_embed,
                     reg=self.reg,
-                    num_threads=self.n_threads
+                    num_threads=self.n_threads,
                 )
                 trainer(
                     interaction=item_interaction,
                     X=self.item_embed,
                     Y=self.user_embed,
                     reg=self.reg,
-                    num_threads=self.n_threads
+                    num_threads=self.n_threads,
                 )
 
             if verbose > 1:
                 print_metrics(
                     model=self,
+                    train_data=train_data,
                     eval_data=eval_data,
                     metrics=metrics,
                     eval_batch_size=self.eval_batch_size,
                     k=self.k,
                     sample_user_num=self.eval_user_num,
-                    seed=self.seed
+                    seed=self.seed,
                 )
                 print("=" * 30)
+        self.set_embeddings()
         self.assign_embedding_oov()
 
-    def save(self, path, model_name, manual=True, inference_only=False):
+    def save(self, path, model_name, **kwargs):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        save_params(self, path)
+        save_params(self, path, model_name)
         variable_path = os.path.join(path, model_name)
         np.savez_compressed(
-            variable_path,
-            user_embed=self.user_embed,
-            item_embed=self.item_embed
+            variable_path, user_embed=self.user_embed, item_embed=self.item_embed
         )
 
     def set_embeddings(self):
         pass
 
-    def rebuild_model(self, path, model_name, full_assign=False):
+    def rebuild_model(self, path, model_name):
         variable_path = os.path.join(path, f"{model_name}.npz")
         variables = np.load(variable_path)
         # remove oov values
         old_var = variables["user_embed"][:-1]
-        self.user_embed[:len(old_var)] = old_var
+        self.user_embed[: len(old_var)] = old_var
         old_var = variables["item_embed"][:-1]
-        self.item_embed[:len(old_var)] = old_var
+        self.item_embed[: len(old_var)] = old_var
 
 
-def _least_squares(sparse_interaction, X, Y, reg, embed_size, num, mode):
+def least_squares(sparse_interaction, X, Y, reg, embed_size, num, mode):
     indices = sparse_interaction.indices
     indptr = sparse_interaction.indptr
     data = sparse_interaction.data
@@ -181,8 +181,7 @@ def _least_squares(sparse_interaction, X, Y, reg, embed_size, num, mode):
 
 
 # O(f^3) * m
-def _least_squares_cg(sparse_interaction, X, Y, reg, embed_size, num,
-                      mode, cg_steps=3):
+def least_squares_cg(sparse_interaction, X, Y, reg, embed_size, num, mode, cg_steps=3):
     indices = sparse_interaction.indices
     indptr = sparse_interaction.indptr
     data = sparse_interaction.data

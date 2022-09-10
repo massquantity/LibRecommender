@@ -7,9 +7,7 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import (
-    truncated_normal as tf_truncated_normal
-)
+from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
 from ..bases import TfBase
 from ..data.sequence import get_user_last_interacted
@@ -19,7 +17,7 @@ from ..tfops import (
     multi_sparse_combine_embedding,
     reg_config,
     tf,
-    tf_dense
+    tf_dense,
 )
 from ..training import TensorFlowTrainer
 from ..utils.misc import count_params
@@ -31,7 +29,7 @@ from ..utils.validate import (
     dense_field_size,
     sparse_feat_size,
     sparse_field_size,
-    true_sparse_field_size
+    true_sparse_field_size,
 )
 
 
@@ -40,6 +38,7 @@ class YouTubeRanking(TfBase):
     The model implemented mainly corresponds to the ranking phase
     based on the original paper.
     """
+
     user_variables = ["user_features"]
     item_variables = ["item_features"]
     sparse_variables = ["sparse_features"]
@@ -69,7 +68,7 @@ class YouTubeRanking(TfBase):
         eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True
+        with_training=True,
     ):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
@@ -80,10 +79,9 @@ class YouTubeRanking(TfBase):
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
         self.hidden_units = list(map(int, hidden_units.split(",")))
-        (
-            self.interaction_mode,
-            self.max_seq_len
-        ) = check_interaction_mode(recent_num, random_num)
+        self.interaction_mode, self.max_seq_len = check_interaction_mode(
+            recent_num, random_num
+        )
         self.seed = seed
         self.sparse = check_sparse_indices(data_info)
         self.dense = check_dense_values(data_info)
@@ -100,7 +98,7 @@ class YouTubeRanking(TfBase):
             self.dense_field_size = dense_field_size(data_info)
         (
             self.user_last_interacted,
-            self.last_interacted_len
+            self.last_interacted_len,
         ) = self._set_last_interacted()
         self._build_model()
         if with_training:
@@ -115,7 +113,7 @@ class YouTubeRanking(TfBase):
                 num_neg,
                 k,
                 eval_batch_size,
-                eval_user_num
+                eval_user_num,
             )
 
     def _build_model(self):
@@ -134,21 +132,20 @@ class YouTubeRanking(TfBase):
             name="user_features",
             shape=[self.n_users + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         item_features = tf.get_variable(
             name="item_features",
             shape=[self.n_items + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         user_embed = tf.nn.embedding_lookup(user_features, self.user_indices)
         item_embed = tf.nn.embedding_lookup(item_features, self.item_indices)
 
         # unknown items are padded to 0-vector
         zero_padding_op = tf.scatter_update(
-            item_features, self.n_items,
-            tf.zeros([self.embed_size], dtype=tf.float32)
+            item_features, self.n_items, tf.zeros([self.embed_size], dtype=tf.float32)
         )
         with tf.control_dependencies([zero_padding_op]):
             # B * seq * K
@@ -157,7 +154,7 @@ class YouTubeRanking(TfBase):
             )
         pooled_embed = tf.div_no_nan(
             tf.reduce_sum(multi_item_embed, axis=1),
-            tf.expand_dims(tf.sqrt(self.user_interacted_len), axis=1)
+            tf.expand_dims(tf.sqrt(self.user_interacted_len), axis=1),
         )
         self.concat_embed.extend([user_embed, item_embed, pooled_embed])
 
@@ -172,11 +169,9 @@ class YouTubeRanking(TfBase):
             self.hidden_units,
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
-            is_training=self.is_training
+            is_training=self.is_training,
         )
-        self.output = tf.reshape(
-            tf_dense(units=1)(mlp_layer), [-1]
-        )
+        self.output = tf.reshape(tf_dense(units=1)(mlp_layer), [-1])
         count_params()
 
     def _build_sparse(self):
@@ -187,19 +182,20 @@ class YouTubeRanking(TfBase):
             name="sparse_features",
             shape=[self.sparse_feature_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
-        if (
-            self.data_info.multi_sparse_combine_info
-                and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")
+        if self.data_info.multi_sparse_combine_info and self.multi_sparse_combiner in (
+            "sum",
+            "mean",
+            "sqrtn",
         ):
             sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
                 sparse_features,
                 self.sparse_indices,
                 self.multi_sparse_combiner,
-                self.embed_size
+                self.embed_size,
             )
         else:
             sparse_embed = tf.nn.embedding_lookup(sparse_features, self.sparse_indices)
@@ -222,7 +218,7 @@ class YouTubeRanking(TfBase):
             name="dense_features",
             shape=[self.dense_field_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         dense_embed = tf.tile(dense_features, [batch_size, 1])
@@ -237,10 +233,7 @@ class YouTubeRanking(TfBase):
 
     def _set_last_interacted(self):
         user_last_interacted, last_interacted_len = get_user_last_interacted(
-            self.n_users,
-            self.user_consumed,
-            self.n_items,
-            self.max_seq_len
+            self.n_users, self.user_consumed, self.n_items, self.max_seq_len
         )
         oov = np.full(self.max_seq_len, self.n_items, dtype=np.int32)
         user_last_interacted = np.vstack([user_last_interacted, oov])

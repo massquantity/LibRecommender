@@ -10,7 +10,7 @@ from ..utils.save_load import (
     load_tf_variables,
     save_params,
     save_tf_model,
-    save_tf_variables
+    save_tf_variables,
 )
 
 
@@ -27,7 +27,7 @@ class TfBase(Base, TfMixin):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs
+        **kwargs,
     ):
         self.show_start_time()
         self.trainer.run(train_data, verbose, shuffle, eval_data, metrics)
@@ -43,16 +43,10 @@ class TfBase(Base, TfMixin):
         user_feats=None,
         item_data=None,
         cold_start="average",
-        inner_id=False
+        inner_id=False,
     ):
         return recommend_tf_feat(
-            self,
-            user,
-            n_rec,
-            user_feats,
-            item_data,
-            cold_start,
-            inner_id
+            self, user, n_rec, user_feats, item_data, cold_start, inner_id
         )
 
     def assign_tf_variables_oov(self):
@@ -61,7 +55,7 @@ class TfBase(Base, TfMixin):
             item_variables,
             sparse_variables,
             dense_variables,
-            _
+            _,
         ) = modify_variable_names(self, trainable=True)
 
         update_ops = []
@@ -70,20 +64,18 @@ class TfBase(Base, TfMixin):
                 # size = v.get_shape().as_list()[1]
                 mean_op = tf.IndexedSlices(
                     tf.reduce_mean(
-                        tf.gather(v, tf.range(self.n_users)),
-                        axis=0,
-                        keepdims=True
-                    ), [self.n_users]
+                        tf.gather(v, tf.range(self.n_users)), axis=0, keepdims=True
+                    ),
+                    [self.n_users],
                 )
                 update_ops.append(v.scatter_update(mean_op))
 
             if item_variables is not None and v.name in item_variables:
                 mean_op = tf.IndexedSlices(
                     tf.reduce_mean(
-                        tf.gather(v, tf.range(self.n_items)),
-                        axis=0,
-                        keepdims=True
-                    ), [self.n_items]
+                        tf.gather(v, tf.range(self.n_items)), axis=0, keepdims=True
+                    ),
+                    [self.n_items],
                 )
                 update_ops.append(v.scatter_update(mean_op))
 
@@ -95,13 +87,9 @@ class TfBase(Base, TfMixin):
                     if start >= oov:
                         continue
                     mean_tensor = tf.reduce_mean(
-                        tf.gather(v, tf.range(start, oov)),
-                        axis=0,
-                        keepdims=True
+                        tf.gather(v, tf.range(start, oov)), axis=0, keepdims=True
                     )
-                    update_ops.append(
-                        v.scatter_nd_update([[oov]], mean_tensor)
-                    )
+                    update_ops.append(v.scatter_nd_update([[oov]], mean_tensor))
                     start = oov + 1
 
         self.sess.run(update_ops)
@@ -110,7 +98,7 @@ class TfBase(Base, TfMixin):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        save_params(self, path)
+        save_params(self, path, model_name)
         if manual:
             save_tf_variables(self.sess, path, model_name, inference_only)
         else:

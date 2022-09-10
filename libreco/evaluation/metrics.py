@@ -1,14 +1,21 @@
 import numpy as np
 
 # pairwise_metrics = bpr ??
-POINTWISE_METRICS = {"loss", "log_loss", "balanced_accuracy",
-                     "roc_auc", "pr_auc"}
+POINTWISE_METRICS = {"loss", "log_loss", "balanced_accuracy", "roc_auc", "pr_auc"}
 LISTWISE_METRICS = {"precision", "recall", "map", "ndcg"}
 ALLOWED_METRICS = {
     "rating_metrics": ["loss", "rmse", "mae", "r2"],
-    "ranking_metrics": ["loss", "log_loss", "balanced_accuracy",
-                        "roc_auc", "pr_auc", "precision", "recall",
-                        "map", "ndcg"]
+    "ranking_metrics": [
+        "loss",
+        "log_loss",
+        "balanced_accuracy",
+        "roc_auc",
+        "pr_auc",
+        "precision",
+        "recall",
+        "map",
+        "ndcg",
+    ],
 }
 
 
@@ -36,12 +43,13 @@ def recall_at_k(y_true_list, y_reco_list, users, k):
 
 def average_precision_at_k(y_true, y_reco, k):
     common_items, indices_in_true, indices_in_reco = np.intersect1d(
-        y_true, y_reco, assume_unique=True, return_indices=True)
+        y_true, y_reco, assume_unique=True, return_indices=True
+    )
 
     rank_list = np.zeros(k)
     if common_items.size > 0:
         rank_list[indices_in_reco] = 1
-        ap = [np.mean(rank_list[:i + 1]) for i in range(k) if rank_list[i]]
+        ap = [np.mean(rank_list[: i + 1]) for i in range(k) if rank_list[i]]
         assert len(ap) == common_items.size, "common size doesn't match..."
         return np.mean(ap)
     else:
@@ -64,7 +72,8 @@ def ndcg_at_k(y_true_list, y_reco_list, users, k):
         y_true = list(set(y_true_list[u]))
         y_reco = y_reco_list[u]
         common_items, indices_in_true, indices_in_reco = np.intersect1d(
-            y_true, y_reco, assume_unique=True, return_indices=True)
+            y_true, y_reco, assume_unique=True, return_indices=True
+        )
 
         if common_items.size > 0:
             rank_list[indices_in_reco] = 1

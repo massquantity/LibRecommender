@@ -5,9 +5,7 @@ Reference: Heng-Tze Cheng et al. "Wide & Deep Learning for Recommender Systems" 
 author: massquantity
 
 """
-from tensorflow.keras.initializers import (
-    truncated_normal as tf_truncated_normal
-)
+from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
 from ..bases import TfBase
 from ..tfops import (
@@ -16,7 +14,7 @@ from ..tfops import (
     multi_sparse_combine_embedding,
     reg_config,
     tf,
-    tf_dense
+    tf_dense,
 )
 from ..training import WideDeepTrainer
 from ..utils.misc import count_params
@@ -27,7 +25,7 @@ from ..utils.validate import (
     dense_field_size,
     sparse_feat_size,
     sparse_field_size,
-    true_sparse_field_size
+    true_sparse_field_size,
 )
 
 
@@ -37,6 +35,7 @@ class WideDeep(TfBase):
     FTRL with L1 regularization as the optimizer, so we'll also adopt it here.
     Note this may not be suitable for your specific task.
     """
+
     user_variables = ["wide_user_feat", "deep_user_feat"]
     item_variables = ["wide_item_feat", "deep_item_feat"]
     sparse_variables = ["wide_sparse_feat", "deep_sparse_feat"]
@@ -64,7 +63,7 @@ class WideDeep(TfBase):
         eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True
+        with_training=True,
     ):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
@@ -101,7 +100,7 @@ class WideDeep(TfBase):
                 num_neg,
                 k,
                 eval_batch_size,
-                eval_user_num
+                eval_user_num,
             )
 
     def _build_model(self):
@@ -126,7 +125,7 @@ class WideDeep(TfBase):
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
             is_training=self.is_training,
-            name="deep"
+            name="deep",
         )
         deep_term = tf_dense(units=1, name="deep_term")(deep_layer)
         self.output = tf.squeeze(tf.add(wide_term, deep_term))
@@ -140,25 +139,25 @@ class WideDeep(TfBase):
             name="wide_user_feat",
             shape=[self.n_users + 1, 1],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         wide_item_feat = tf.get_variable(
             name="wide_item_feat",
             shape=[self.n_items + 1, 1],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         deep_user_feat = tf.get_variable(
             name="deep_user_feat",
             shape=[self.n_users + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         deep_item_feat = tf.get_variable(
             name="deep_item_feat",
             shape=[self.n_items + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         wide_user_embed = tf.nn.embedding_lookup(wide_user_feat, self.user_indices)
@@ -178,32 +177,33 @@ class WideDeep(TfBase):
             name="wide_sparse_feat",
             shape=[self.sparse_feature_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         deep_sparse_feat = tf.get_variable(
             name="deep_sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         if (
             self.data_info.multi_sparse_combine_info
-                and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")
+            and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")
         ):
             wide_sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
                 wide_sparse_feat,
                 self.sparse_indices,
                 self.multi_sparse_combiner,
-                embed_size=1
+                embed_size=1,
             )
             deep_sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
                 deep_sparse_feat,
                 self.sparse_indices,
                 self.multi_sparse_combiner,
-                self.embed_size)
+                self.embed_size,
+            )
         else:
             wide_sparse_embed = tf.nn.embedding_lookup(
                 wide_sparse_feat, self.sparse_indices
@@ -231,13 +231,13 @@ class WideDeep(TfBase):
             name="wide_dense_feat",
             shape=[self.dense_field_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         deep_dense_feat = tf.get_variable(
             name="deep_dense_feat",
             shape=[self.dense_field_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         wide_dense_embed = tf.tile(wide_dense_feat, [batch_size])

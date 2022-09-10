@@ -3,7 +3,7 @@ from .tf_trainer import (
     RNN4RecTrainer,
     TensorFlowTrainer,
     WideDeepTrainer,
-    YoutubeRetrievalTrainer
+    YoutubeRetrievalTrainer,
 )
 
 __all__ = [
@@ -11,5 +11,5 @@ __all__ = [
     "RNN4RecTrainer",
     "TensorFlowTrainer",
     "WideDeepTrainer",
-    "YoutubeRetrievalTrainer"
+    "YoutubeRetrievalTrainer",
 ]

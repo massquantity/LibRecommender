@@ -16,7 +16,7 @@ class BaseTrainer(abc.ABC):
         num_neg,
         k,
         eval_batch_size,
-        eval_user_num
+        eval_user_num,
     ):
         self.model = model
         self.task = task
@@ -35,9 +35,7 @@ class BaseTrainer(abc.ABC):
             data_generator = DataGenPure(train_data)
         elif self.model.model_category == "feat":
             data_generator = DataGenFeat(
-                train_data,
-                self.model.sparse,
-                self.model.dense
+                train_data, self.model.sparse, self.model.dense
             )
         else:
             data_generator = DataGenSequence(
@@ -47,7 +45,7 @@ class BaseTrainer(abc.ABC):
                 self.model.dense if hasattr(self.model, "dense") else False,
                 self.model.interaction_mode,
                 self.model.max_seq_len,
-                self.model.n_items
+                self.model.n_items,
             )
         return data_generator
 

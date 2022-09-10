@@ -6,9 +6,7 @@ Reference: Huifeng Guo et al. "DeepFM: A Factorization-Machine based Neural Netw
 author: massquantity
 
 """
-from tensorflow.keras.initializers import (
-    truncated_normal as tf_truncated_normal
-)
+from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
 from ..bases import TfBase
 from ..tfops import (
@@ -17,7 +15,7 @@ from ..tfops import (
     multi_sparse_combine_embedding,
     reg_config,
     tf,
-    tf_dense
+    tf_dense,
 )
 from ..training import TensorFlowTrainer
 from ..utils.misc import count_params
@@ -28,7 +26,7 @@ from ..utils.validate import (
     dense_field_size,
     sparse_feat_size,
     sparse_field_size,
-    true_sparse_field_size
+    true_sparse_field_size,
 )
 
 
@@ -60,7 +58,7 @@ class DeepFM(TfBase):
         eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True
+        with_training=True,
     ):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
@@ -97,7 +95,7 @@ class DeepFM(TfBase):
                 num_neg,
                 k,
                 eval_batch_size,
-                eval_user_num
+                eval_user_num,
             )
 
     def _build_model(self):
@@ -119,22 +117,18 @@ class DeepFM(TfBase):
         linear_term = tf_dense(units=1, activation=None)(linear_embed)
         pairwise_term = 0.5 * tf.subtract(
             tf.square(tf.reduce_sum(pairwise_embed, axis=1)),
-            tf.reduce_sum(tf.square(pairwise_embed), axis=1)
+            tf.reduce_sum(tf.square(pairwise_embed), axis=1),
         )
         deep_term = dense_nn(
             deep_embed,
             self.hidden_units,
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
-            is_training=self.is_training
+            is_training=self.is_training,
         )
 
-        concat_layer = tf.concat(
-            [linear_term, pairwise_term, deep_term], axis=1
-        )
-        self.output = tf.squeeze(
-            tf_dense(units=1, activation=None)(concat_layer)
-        )
+        concat_layer = tf.concat([linear_term, pairwise_term, deep_term], axis=1)
+        self.output = tf.squeeze(tf_dense(units=1, activation=None)(concat_layer))
         count_params()
 
     def _build_user_item(self):
@@ -145,25 +139,25 @@ class DeepFM(TfBase):
             name="linear_user_feat",
             shape=[self.n_users + 1, 1],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         linear_item_feat = tf.get_variable(
             name="linear_item_feat",
             shape=[self.n_items + 1, 1],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         embed_user_feat = tf.get_variable(
             name="embed_user_feat",
             shape=[self.n_users + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         embed_item_feat = tf.get_variable(
             name="embed_item_feat",
             shape=[self.n_items + 1, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         linear_user_embed = tf.nn.embedding_lookup(linear_user_feat, self.user_indices)
@@ -190,35 +184,36 @@ class DeepFM(TfBase):
             name="linear_sparse_feat",
             shape=[self.sparse_feature_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         embed_sparse_feat = tf.get_variable(
             name="embed_sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
-        if (
-            self.data_info.multi_sparse_combine_info
-                and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")
+        if self.data_info.multi_sparse_combine_info and self.multi_sparse_combiner in (
+            "sum",
+            "mean",
+            "sqrtn",
         ):
             linear_sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
                 linear_sparse_feat,
                 self.sparse_indices,
                 self.multi_sparse_combiner,
-                embed_size=1
+                embed_size=1,
             )
             pairwise_sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
                 embed_sparse_feat,
                 self.sparse_indices,
                 self.multi_sparse_combiner,
-                self.embed_size
+                self.embed_size,
             )
         else:
-            linear_sparse_embed = tf.nn.embedding_lookup(    # B * F1
+            linear_sparse_embed = tf.nn.embedding_lookup(  # B * F1
                 linear_sparse_feat, self.sparse_indices
             )
             pairwise_sparse_embed = tf.nn.embedding_lookup(  # B * F1 * K
@@ -226,8 +221,7 @@ class DeepFM(TfBase):
             )
 
         deep_sparse_embed = tf.reshape(
-            pairwise_sparse_embed,
-            [-1, self.true_sparse_field_size * self.embed_size]
+            pairwise_sparse_embed, [-1, self.true_sparse_field_size * self.embed_size]
         )
         self.linear_embed.append(linear_sparse_embed)
         self.pairwise_embed.append(pairwise_sparse_embed)
@@ -246,13 +240,13 @@ class DeepFM(TfBase):
             name="linear_dense_feat",
             shape=[self.dense_field_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
         embed_dense_feat = tf.get_variable(
             name="embed_dense_feat",
             shape=[self.dense_field_size, self.embed_size],
             initializer=tf_truncated_normal(0.0, 0.01),
-            regularizer=self.reg
+            regularizer=self.reg,
         )
 
         # B * F2
@@ -266,8 +260,7 @@ class DeepFM(TfBase):
         pairwise_dense_embed = tf.multiply(pairwise_dense_embed, dense_values_reshape)
 
         deep_dense_embed = tf.reshape(
-            pairwise_dense_embed,
-            [-1, self.dense_field_size * self.embed_size]
+            pairwise_dense_embed, [-1, self.dense_field_size * self.embed_size]
         )
         self.linear_embed.append(linear_dense_embed)
         self.pairwise_embed.append(pairwise_dense_embed)
