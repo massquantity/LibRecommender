@@ -165,7 +165,7 @@ class EmbedBase(Base):
     def search_knn_users(self, user, k):
         query = self.get_user_embedding(user)
         if self.approximate:
-            ids, sims = self.user_index.knnQuery(query, k)
+            ids, _ = self.user_index.knnQuery(query, k)
             return [self.data_info.id2user[i] for i in ids]
 
         embeds = self.get_user_embedding()
@@ -181,7 +181,7 @@ class EmbedBase(Base):
     def search_knn_items(self, item, k):
         query = self.get_item_embedding(item)
         if self.approximate:
-            ids, sims = self.item_index.knnQuery(query, k)
+            ids, _ = self.item_index.knnQuery(query, k)
             return [self.data_info.id2item[i] for i in ids]
 
         embeds = self.get_item_embedding()

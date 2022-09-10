@@ -114,7 +114,7 @@ class UserCF(Base):
 
     def predict(self, user, item, cold_start="popular", inner_id=False):
         user, item = convert_id(self, user, item, inner_id)
-        unknown_num, unknown_index, user, item = check_unknown(self, user, item)
+        unknown_num, _, user, item = check_unknown(self, user, item)
         if unknown_num > 0 and cold_start != "popular":
             raise ValueError("UserCF only supports popular strategy")
 

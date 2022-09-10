@@ -194,7 +194,7 @@ def split_by_num_chrono(data, order=True, shuffle=False, test_size=1, seed=42):
 
 def _groupby_user(user_indices, order):
     sort_kind = "mergesort" if order else "quicksort"
-    users, user_position, user_counts = np.unique(
+    _, user_position, user_counts = np.unique(
         user_indices, return_inverse=True, return_counts=True
     )
     user_split_indices = np.split(

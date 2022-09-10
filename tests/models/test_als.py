@@ -1,8 +1,4 @@
-import os
-import shutil
-
 import pytest
-import tensorflow as tf
 
 from libreco.algorithms import ALS
 from libreco.algorithms.als import least_squares, least_squares_cg
