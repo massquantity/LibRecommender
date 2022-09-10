@@ -1,26 +1,34 @@
+import os
+import shutil
+
 import pytest
 import tensorflow as tf
 
 from libreco.algorithms import ALS
+from libreco.algorithms.als import least_squares, least_squares_cg
+
+from libreco.evaluation import evaluate
+# noinspection PyUnresolvedReferences
 from tests.utils_data import prepare_pure_data
-from tests.utils_reco import recommend_in_former_consumed
+from tests.utils_metrics import get_metrics
+from tests.utils_path import SAVE_PATH
+from tests.utils_pred import ptest_preds
+from tests.utils_reco import ptest_recommends
+from tests.utils_save_load import save_load_model
 
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize("reg, alpha", [(None, 5), (0.001, 10), (0.1, 100)])
 def test_als(prepare_pure_data, task, reg, alpha):
-    tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
-        train_data.build_negative_samples(data_info, item_gen_mode="random",
-                                          num_neg=1, seed=2022)
-        eval_data.build_negative_samples(data_info, item_gen_mode="random",
-                                         num_neg=1, seed=2222)
-    metrics = (
-        ["rmse", "mae", "r2"]
-        if task == "rating"
-        else ["roc_auc", "precision", "ndcg"]
-    )
+        train_data.build_negative_samples(
+            data_info, item_gen_mode="random", num_neg=1, seed=2022
+        )
+        eval_data.build_negative_samples(
+            data_info, item_gen_mode="random", num_neg=1, seed=2222
+        )
+
     model = ALS(
         task=task,
         data_info=data_info,
@@ -31,43 +39,84 @@ def test_als(prepare_pure_data, task, reg, alpha):
     )
 
     if not reg:
-        with pytest.raises(TypeError):
-            model.fit(
-                train_data,
-                verbose=2,
-                shuffle=True,
-                eval_data=eval_data,
-                metrics=metrics
-            )
+        with pytest.raises(AssertionError):
+            _ = model.fit(train_data)
     else:
         model.fit(
             train_data,
             verbose=2,
             shuffle=True,
             eval_data=eval_data,
-            metrics=metrics
+            metrics=get_metrics(task),
         )
-        pred = model.predict(user=1, item=2333)
-        # prediction in range
-        if task == "rating":
-            assert 1 <= pred <= 5
-        else:
-            assert 0 <= pred <= 1
+        ptest_preds(model, task, pd_data, with_feats=False)
+        ptest_recommends(model, data_info, pd_data, with_feats=False)
 
-        cold_pred1 = model.predict(user="cold user1", item="cold item2")
-        cold_pred2 = model.predict(user="cold user2", item="cold item2")
-        assert cold_pred1 == cold_pred2
+        evaluate(
+            model,
+            eval_data,
+            eval_batch_size=8192,
+            k=10,
+            metrics=get_metrics(task),
+        )
 
-        # cold start strategy
+        # test save and load model
+        if task == "ranking" and reg == 0.1:
+            loaded_model, loaded_data_info = save_load_model(ALS, model, data_info)
+            ptest_preds(loaded_model, task, pd_data, with_feats=False)
+            ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
+            loaded_model.rebuild_model(SAVE_PATH, "als_model")
+
+        # test optimize functions
         with pytest.raises(ValueError):
-            model.recommend_user(user=-99999, n_rec=7, cold_start="sss")
-        # different recommendation for different users
-        reco_take_one = [i[0] for i in model.recommend_user(user=1, n_rec=7)]
-        reco_take_two = [i[0] for i in model.recommend_user(user=2, n_rec=7)]
-        assert len(reco_take_one) == len(reco_take_two) == 7
-        assert reco_take_one != reco_take_two
-        assert not recommend_in_former_consumed(data_info, reco_take_one, 1)
-        assert not recommend_in_former_consumed(data_info, reco_take_two, 2)
-        cold_reco1 = model.recommend_user(user=-99999, n_rec=3)
-        cold_reco2 = model.recommend_user(user=-1, n_rec=3)
-        assert cold_reco1 == cold_reco2
+            least_squares(
+                train_data.sparse_interaction,
+                X=model.user_embed,
+                Y=model.item_embed,
+                reg=5.0,
+                embed_size=16,
+                num=model.n_users,
+                mode="whatever",
+            )
+
+        if task == "rating":
+            least_squares(
+                train_data.sparse_interaction,
+                X=model.user_embed,
+                Y=model.item_embed,
+                reg=5.0,
+                embed_size=16,
+                num=model.n_users,
+                mode="explicit",
+            )
+            least_squares_cg(
+                train_data.sparse_interaction,
+                X=model.user_embed,
+                Y=model.item_embed,
+                reg=5.0,
+                embed_size=16,
+                num=model.n_users,
+                mode="explicit",
+                cg_steps=3,
+            )
+
+        if task == "ranking":
+            least_squares(
+                train_data.sparse_interaction.T.tocsr(),
+                X=model.item_embed,
+                Y=model.user_embed,
+                reg=5.0,
+                embed_size=16,
+                num=model.n_items,
+                mode="implicit",
+            )
+            least_squares_cg(
+                train_data.sparse_interaction.T.tocsr(),
+                X=model.item_embed,
+                Y=model.user_embed,
+                reg=5.0,
+                embed_size=16,
+                num=model.n_items,
+                mode="implicit",
+                cg_steps=3,
+            )
