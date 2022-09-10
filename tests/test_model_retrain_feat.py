@@ -59,6 +59,7 @@ def test_model_retrain_feat():
         hidden_units="32,16",
         recent_num=10,
         use_tf_attention=True,
+        eval_user_num=200,
     )
     model.fit(
         train_data,
@@ -79,6 +80,7 @@ def test_model_retrain_feat():
     eval_result = evaluate(
         model,
         eval_data,
+        sample_user_num=200,
         eval_batch_size=8192,
         k=10,
         metrics=[
@@ -136,6 +138,7 @@ def test_model_retrain_feat():
         hidden_units="32,16",
         recent_num=10,
         use_tf_attention=True,
+        eval_user_num=200,
     )
     new_model.rebuild_model(
         path=SAVE_PATH, model_name="din_model", full_assign=True
@@ -162,6 +165,7 @@ def test_model_retrain_feat():
     new_eval_result = evaluate(
         new_model,
         eval_data_orig,
+        sample_user_num=200,
         eval_batch_size=8192,
         k=10,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],

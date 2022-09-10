@@ -95,7 +95,7 @@ def test_youtube_retrieval(
             lr=1e-4,
             lr_decay=lr_decay,
             reg=reg,
-            batch_size=2048,
+            batch_size=8192,
             use_bn=use_bn,
             dropout_rate=dropout_rate,
             num_sampled_per_batch=num_sampled_per_batch,
@@ -103,6 +103,7 @@ def test_youtube_retrieval(
             recent_num=recent_num,
             random_num=random_num,
             tf_sess_config=None,
+            eval_user_num=200,
         )
         model.fit(
             train_data,
@@ -145,12 +146,13 @@ def test_youtube_retrieval_multi_sparse():
         lr=1e-4,
         lr_decay=True,
         reg=None,
-        batch_size=2048,
+        batch_size=8192,
         use_bn=True,
         dropout_rate=None,
         num_sampled_per_batch=None,
         loss_type="sampled_softmax",
         tf_sess_config=None,
+        eval_user_num=200,
     )
     model.fit(
         train_data,

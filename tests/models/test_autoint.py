@@ -59,13 +59,13 @@ def test_autoint(
             lr=1e-4,
             lr_decay=lr_decay,
             reg=reg,
-            batch_size=2048,
+            batch_size=8192,
             use_bn=True,
             dropout_rate=None,
             use_residual=use_residual,
             att_embed_size=att_embed_size,
             num_heads=num_heads,
-            eval_user_num=200,
+            eval_user_num=40,
             tf_sess_config=None,
         )
         model.fit(

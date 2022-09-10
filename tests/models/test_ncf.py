@@ -64,6 +64,7 @@ def test_ncf(
             dropout_rate=dropout_rate,
             hidden_units=hidden_units,
             tf_sess_config=None,
+            eval_user_num=200,
         )
         model.fit(
             train_data,

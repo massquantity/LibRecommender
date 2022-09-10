@@ -69,7 +69,7 @@ def test_din(
             lr=1e-4,
             lr_decay=lr_decay,
             reg=reg,
-            batch_size=1024,
+            batch_size=8192,
             num_neg=num_neg,
             use_bn=use_bn,
             dropout_rate=dropout_rate,
@@ -77,6 +77,7 @@ def test_din(
             recent_num=recent_num,
             use_tf_attention=use_tf_attention,
             tf_sess_config=None,
+            eval_user_num=40,
         )
         model.fit(
             train_data,
@@ -120,7 +121,15 @@ def test_item_dense_feature():
         reset_state=True,
     )
     eval_data = DatasetFeat.build_testset(eval_data)
-    model = DIN("rating", data_info, embed_size=16, lr=3e-4, n_epochs=3)
+    model = DIN(
+        "rating",
+        data_info,
+        embed_size=4,
+        lr=3e-4,
+        n_epochs=1,
+        batch_size=8192,
+        eval_user_num=40
+    )
     model.fit(
         train_data,
         verbose=2,

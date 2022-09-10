@@ -66,7 +66,7 @@ def test_rnn4rec(
             lr=1e-4,
             lr_decay=lr_decay,
             reg=reg,
-            batch_size=1024,
+            batch_size=8192,
             num_neg=num_neg,
             dropout_rate=dropout_rate,
             hidden_units=hidden_units,

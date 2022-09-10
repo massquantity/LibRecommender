@@ -53,10 +53,11 @@ def test_bpr(prepare_pure_data, task, loss_type, reg, num_neg, use_tf, optimizer
             n_epochs=2,
             lr=1e-4,
             reg=reg,
-            batch_size=1024,
+            batch_size=2048,
             num_neg=num_neg,
             use_tf=use_tf,
             optimizer=optimizer,
+            eval_user_num=200,
         )
         if optimizer == "unknown":
             with pytest.raises(ValueError):

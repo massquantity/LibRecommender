@@ -52,7 +52,7 @@ def test_svdpp(
         n_epochs=1,
         lr=1e-4,
         reg=reg,
-        batch_size=1024,
+        batch_size=2048,
         num_neg=num_neg,
         recent_num=recent_num,
         random_sample_rate=random_sample_rate,
@@ -87,7 +87,7 @@ def test_svdpp(
             n_epochs=1,
             lr=1e-4,
             reg=reg,
-            batch_size=1024,
+            batch_size=2048,
             num_neg=num_neg,
             tf_sess_config=None,
         )

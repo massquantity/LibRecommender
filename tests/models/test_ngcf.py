@@ -34,10 +34,10 @@ def test_ngcf(prepare_pure_data, task, reg, node_dropout, message_dropout, num_n
         model = NGCF(
             task=task,
             data_info=data_info,
-            embed_size=16,
+            embed_size=4,
             n_epochs=1,
             lr=1e-4,
-            batch_size=1024,
+            batch_size=8192,
             reg=reg,
             node_dropout=node_dropout,
             message_dropout=message_dropout,

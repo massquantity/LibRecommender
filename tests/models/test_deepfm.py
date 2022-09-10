@@ -58,11 +58,12 @@ def test_deepfm(
             lr=1e-4,
             lr_decay=lr_decay,
             reg=reg,
-            batch_size=1024,
+            batch_size=8192,
             num_neg=num_neg,
             use_bn=use_bn,
             dropout_rate=dropout_rate,
             tf_sess_config=None,
+            eval_user_num=200,
         )
         model.fit(
             train_data,

@@ -64,6 +64,7 @@ def test_fm(
             use_bn=use_bn,
             dropout_rate=dropout_rate,
             tf_sess_config=None,
+            eval_user_num=200,
         )
         model.fit(
             train_data,
