@@ -1,18 +1,11 @@
 import pandas as pd
+
 from libreco.data import split_by_ratio_chrono, DatasetFeat
 from libreco.algorithms import YouTubeRanking
 
-# remove unnecessary tensorflow logging
-import os
-import tensorflow as tf
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ["KMP_WARNINGS"] = "FALSE"
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-
 
 if __name__ == "__main__":
-    data = pd.read_csv("sample_data/sample_movielens_merged.csv",
-                       sep=",", header=0)
+    data = pd.read_csv("sample_data/sample_movielens_merged.csv", sep=",", header=0)
     # convert to implicit data and do negative sampling afterwards
     data["label"] = 1
 
@@ -35,14 +28,23 @@ if __name__ == "__main__":
     test_data.build_negative_samples(data_info)
     print(data_info)  # n_users: 5962, n_items: 3226, data sparsity: 0.4185 %
 
-    ytb_ranking = YouTubeRanking(task="ranking", data_info=data_info,
-                                 embed_size=16, n_epochs=3, lr=1e-4,
-                                 batch_size=512, use_bn=True,
-                                 hidden_units="128,64,32")
-    ytb_ranking.fit(train_data, verbose=2, shuffle=True,
-                    eval_data=test_data,
-                    metrics=["loss", "roc_auc", "precision",
-                             "recall", "map", "ndcg"])
+    ytb_ranking = YouTubeRanking(
+        task="ranking",
+        data_info=data_info,
+        embed_size=16,
+        n_epochs=3,
+        lr=1e-4,
+        batch_size=512,
+        use_bn=True,
+        hidden_units="128,64,32",
+    )
+    ytb_ranking.fit(
+        train_data,
+        verbose=2,
+        shuffle=True,
+        eval_data=test_data,
+        metrics=["loss", "roc_auc", "precision", "recall", "map", "ndcg"],
+    )
 
     # predict preference of user 1 to item 2333
     print("prediction: ", ytb_ranking.predict(user=2211, item=110))
@@ -50,9 +52,12 @@ if __name__ == "__main__":
     print("recommendation: ", ytb_ranking.recommend_user(user=2211, n_rec=7))
 
     # cold-start prediction
-    print("cold prediction: ", ytb_ranking.predict(user="ccc", item="not item",
-                                                   cold_start="average"))
+    print(
+        "cold prediction: ",
+        ytb_ranking.predict(user="ccc", item="not item", cold_start="average"),
+    )
     # cold-start recommendation
-    print("cold recommendation: ", ytb_ranking.recommend_user(user="are we good?",
-                                                              n_rec=7,
-                                                              cold_start="popular"))
+    print(
+        "cold recommendation: ",
+        ytb_ranking.recommend_user(user="are we good?", n_rec=7, cold_start="popular"),
+    )

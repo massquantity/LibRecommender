@@ -13,8 +13,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: [3.7, 3.8, 3.9]
-        tensorflow-version: [2.5.0, 2.8.0]
-        numpy-version: [1.19.5, 1.20.3, 1.21.5, 1.22.2]
+        tensorflow-version: [2.5.0, 2.8.0, 2.10.0]
+        numpy-version: [1.19.5, 1.20.3, 1.21.6, 1.22.4, 1.23.2]
         include:
           # Python 3.6 only supports Numpy 1.19.5
           - os: ubuntu-latest
@@ -34,15 +34,42 @@ jobs:
           - os: ubuntu-latest
             python-version: '3.10'
             tensorflow-version: 2.8.0
-            numpy-version: 1.22.2
+            numpy-version: 1.22.4
           - os: windows-latest
             python-version: '3.10'
             tensorflow-version: 2.8.0
-            numpy-version: 1.22.2
+            numpy-version: 1.22.4
           - os: macos-latest
             python-version: '3.10'
             tensorflow-version: 2.8.0
-            numpy-version: 1.22.2
+            numpy-version: 1.22.4
+
+          # TensorFlow 2.10 with python 3.10 and different numpy versions
+          - os: ubuntu-latest
+            python-version: '3.10'
+            tensorflow-version: 2.10.0
+            numpy-version: 1.22.4
+          - os: windows-latest
+            python-version: '3.10'
+            tensorflow-version: 2.10.0
+            numpy-version: 1.22.4
+          - os: macos-latest
+            python-version: '3.10'
+            tensorflow-version: 2.10.0
+            numpy-version: 1.22.4
+
+          - os: ubuntu-latest
+            python-version: '3.10'
+            tensorflow-version: 2.10.0
+            numpy-version: 1.23.2
+          - os: windows-latest
+            python-version: '3.10'
+            tensorflow-version: 2.10.0
+            numpy-version: 1.23.2
+          - os: macos-latest
+            python-version: '3.10'
+            tensorflow-version: 2.10.0
+            numpy-version: 1.23.2
 
     steps:
       - uses: actions/checkout@v2
