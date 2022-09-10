@@ -5,4 +5,5 @@ class NotSamplingError(Exception):
     but forgot to do whole data sampling beforehand, this exception will be
     raised. Because in this case, unsampled data can't be evaluated.
     """
+
     pass

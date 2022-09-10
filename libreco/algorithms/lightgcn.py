@@ -7,7 +7,6 @@ author: massquantity
 
 """
 import os
-from itertools import islice
 
 import numpy as np
 import scipy
@@ -16,39 +15,39 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 
-from .base import Base
-from ..evaluation.evaluate import EvalMixin
-from ..utils.misc import time_block, colorize, assign_oov_vector
+from ..bases import EmbedBase
+from ..evaluation import print_metrics
+from ..utils.misc import time_block, colorize
 from ..utils.sampling import PairwiseSampling
+from ..utils.save_load import save_params
 
 
-class LightGCN(Base, EvalMixin):
-    user_variables_np = ["user_embed"]
-    item_variables_np = ["item_embed"]
-
+class LightGCN(EmbedBase):
     def __init__(
-            self,
-            task,
-            data_info,
-            embed_size=16,
-            n_epochs=20,
-            lr=0.01,
-            lr_decay=False,
-            reg=None,
-            batch_size=256,
-            num_neg=1,
-            dropout=None,
-            n_layers=3,
-            seed=42,
-            device=torch.device("cpu"),
-            lower_upper_bound=None,
+        self,
+        task,
+        data_info,
+        embed_size=16,
+        n_epochs=20,
+        lr=0.01,
+        lr_decay=False,
+        reg=None,
+        batch_size=256,
+        num_neg=1,
+        dropout=None,
+        n_layers=3,
+        seed=42,
+        k=10,
+        eval_batch_size=8192,
+        eval_user_num=None,
+        device=torch.device("cpu"),
+        lower_upper_bound=None,
+        with_training=True,
     ):
-        Base.__init__(self, task, data_info, lower_upper_bound)
-        EvalMixin.__init__(self, task, data_info)
+        super().__init__(task, data_info, embed_size, lower_upper_bound)
 
-        self.task = task
-        self.data_info = data_info
-        self.embed_size = embed_size
+        assert self.task == "ranking", "LightGCN is only suitable for ranking"
+        self.all_args = locals()
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
@@ -57,50 +56,44 @@ class LightGCN(Base, EvalMixin):
         self.num_neg = num_neg
         self.dropout = dropout
         self.n_layers = n_layers
-        self.n_users = data_info.n_users
-        self.n_items = data_info.n_items
         self.seed = seed
-        self.user_consumed = data_info.user_consumed
+        self.k = k
+        self.eval_batch_size = eval_batch_size
+        self.eval_user_num = eval_user_num
         self.device = device
-        self.model = None
-        self.user_embed = None
-        self.item_embed = None
-        self.all_args = locals()
+        if with_training:
+            self.model = self._build_model()
 
     def _build_model(self):
-        self.model = LightGCNModel(
+        return LightGCNModel(
             self.n_users,
             self.n_items,
             self.embed_size,
             self.n_layers,
             self.dropout,
             self.user_consumed,
-            self.device
+            self.device,
         )
 
     def fit(
-            self,
-            train_data,
-            verbose=1,
-            shuffle=True,
-            eval_data=None,
-            metrics=None,
-            **kwargs
+        self,
+        train_data,
+        verbose=1,
+        shuffle=True,
+        eval_data=None,
+        metrics=None,
+        **kwargs,
     ):
-        assert self.task == "ranking", "LightGCN is only suitable for ranking"
         self.show_start_time()
-        self._build_model()
         optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         data_generator = PairwiseSampling(train_data, self.data_info, self.num_neg)
         for epoch in range(1, self.n_epochs + 1):
             with time_block(f"Epoch {epoch}", verbose):
                 self.model.train()
                 train_total_loss = []
-                for (
-                        user,
-                        item_pos,
-                        item_neg
-                ) in data_generator(shuffle, self.batch_size):
+                for (user, item_pos, item_neg) in data_generator(
+                    shuffle, self.batch_size
+                ):
                     user_embeds, pos_item_embeds, neg_item_embeds = self.model(
                         user, item_pos, item_neg, use_dropout=True
                     )
@@ -110,7 +103,7 @@ class LightGCN(Base, EvalMixin):
                         neg_item_embeds,
                         user,
                         item_pos,
-                        item_neg
+                        item_neg,
                     )
                     optimizer.zero_grad()
                     loss.backward()
@@ -123,22 +116,24 @@ class LightGCN(Base, EvalMixin):
                 )
                 print(f"\t {colorize(train_loss_str, 'green')}")
                 # for evaluation
-                self._set_latent_vectors()
-                self.print_metrics(eval_data=eval_data, metrics=metrics, **kwargs)
+                self.set_embeddings()
+                print_metrics(
+                    model=self,
+                    eval_data=eval_data,
+                    metrics=metrics,
+                    eval_batch_size=self.eval_batch_size,
+                    k=self.k,
+                    sample_user_num=self.eval_user_num,
+                    seed=self.seed,
+                )
                 print("=" * 30)
 
         # for prediction and recommendation
-        self._set_latent_vectors()
-        assign_oov_vector(self)
+        self.set_embeddings()
+        self.assign_embedding_oov()
 
     def bpr_loss(
-            self,
-            user_embeds,
-            pos_item_embeds,
-            neg_item_embeds,
-            user,
-            item_pos,
-            item_neg
+        self, user_embeds, pos_item_embeds, neg_item_embeds, user, item_pos, item_neg
     ):
         pos_scores = torch.sum(torch.mul(user_embeds, pos_item_embeds), axis=1)
         neg_scores = torch.sum(torch.mul(user_embeds, neg_item_embeds), axis=1)
@@ -148,51 +143,16 @@ class LightGCN(Base, EvalMixin):
             user_reg = self.model.get_embed(user, "user")
             item_pos_reg = self.model.get_embed(item_pos, "item")
             item_neg_reg = self.model.get_embed(item_neg, "item")
-            embed_reg = (torch.linalg.norm(user_reg).pow(2)
-                         + torch.linalg.norm(item_pos_reg).pow(2)
-                         + torch.linalg.norm(item_neg_reg).pow(2)) / 2
-            loss += ((self.reg * embed_reg) / float(len(user_embeds)))
+            embed_reg = (
+                torch.linalg.norm(user_reg).pow(2)
+                + torch.linalg.norm(item_pos_reg).pow(2)
+                + torch.linalg.norm(item_neg_reg).pow(2)
+            ) / 2
+            loss += (self.reg * embed_reg) / float(len(user_embeds))
         return loss
 
-    def predict(self, user, item, cold_start="average", inner_id=False):
-        user, item = self.convert_id(user, item, inner_id)
-        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
-        preds = np.sum(
-            np.multiply(self.user_embed[user], self.item_embed[item]),
-            axis=1
-        )
-        preds = 1 / (1 + np.exp(-preds))
-
-        if unknown_num > 0 and cold_start == "popular":
-            preds[unknown_index] = self.default_prediction
-        return preds
-
-    def recommend_user(self, user, n_rec, cold_start="average", inner_id=False):
-        user_id = self._check_unknown_user(user, inner_id)
-        if user_id is None:
-            if cold_start == "average":
-                user_id = self.n_users
-            elif cold_start == "popular":
-                return self.popular_recommends(inner_id, n_rec)
-            else:
-                raise ValueError(user)
-
-        consumed = set(self.user_consumed[user_id])
-        count = n_rec + len(consumed)
-        recos = self.user_embed[user_id] @ self.item_embed.T
-        recos = 1 / (1 + np.exp(-recos))
-
-        ids = np.argpartition(recos, -count)[-count:]
-        rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
-        recs_and_scores = islice(
-            (rec if inner_id else (self.data_info.id2item[rec[0]], rec[1])
-             for rec in rank if rec[0] not in consumed),
-            n_rec
-        )
-        return list(recs_and_scores)
-
     @torch.no_grad()
-    def _set_latent_vectors(self):
+    def set_embeddings(self):
         self.model.eval()
         embeddings = self.model.embedding_propagation(use_dropout=False)
         self.user_embed = embeddings[0].numpy()
@@ -202,33 +162,23 @@ class LightGCN(Base, EvalMixin):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        self.save_params(path)
+        save_params(self, path, model_name)
         variable_path = os.path.join(path, model_name)
-        np.savez_compressed(variable_path,
-                            user_embed=self.user_embed,
-                            item_embed=self.item_embed)
-
-    @classmethod
-    def load(cls, path, model_name, data_info, manual=True):
-        variable_path = os.path.join(path, f"{model_name}.npz")
-        variables = np.load(variable_path)
-        hparams = cls.load_params(path, data_info)
-        model = cls(**hparams)
-        model.user_embed = variables["user_embed"]
-        model.item_embed = variables["item_embed"]
-        return model
+        np.savez_compressed(
+            variable_path, user_embed=self.user_embed, item_embed=self.item_embed
+        )
 
 
 class LightGCNModel(nn.Module):
     def __init__(
-            self,
-            n_users,
-            n_items,
-            embed_size,
-            n_layers,
-            dropout,
-            user_consumed,
-            device=torch.device("cpu")
+        self,
+        n_users,
+        n_items,
+        embed_size,
+        n_layers,
+        dropout,
+        user_consumed,
+        device=torch.device("cpu"),
     ):
         super(LightGCNModel, self).__init__()
         self.n_users = n_users
@@ -252,20 +202,19 @@ class LightGCNModel(nn.Module):
     def _build_laplacian_matrix(self):
         R = scipy.sparse.dok_matrix((self.n_users, self.n_items), dtype=np.float32)
         for u, items in self.user_consumed.items():
-            R[u, items] = 1.
+            R[u, items] = 1.0
         R = R.tolil()
 
         adj_matrix = scipy.sparse.lil_matrix(
-            (self.n_users + self.n_items, self.n_items + self.n_users),
-            dtype=np.float32
+            (self.n_users + self.n_items, self.n_items + self.n_users), dtype=np.float32
         )
-        adj_matrix[:self.n_users, self.n_users:] = R
-        adj_matrix[self.n_users:, :self.n_users] = R.T
+        adj_matrix[: self.n_users, self.n_users :] = R
+        adj_matrix[self.n_users :, : self.n_users] = R.T
         adj_matrix = adj_matrix.tocsr()
 
         row_sum = np.array(adj_matrix.sum(axis=1))
         diag_inv = np.power(row_sum, -0.5).flatten()
-        diag_inv[np.isinf(diag_inv)] = 0.
+        diag_inv[np.isinf(diag_inv)] = 0.0
         diag_matrix_inv = scipy.sparse.diags(diag_inv)
 
         coo = diag_matrix_inv.dot(adj_matrix).dot(diag_matrix_inv).tocoo()
@@ -289,8 +238,9 @@ class LightGCNModel(nn.Module):
             laplacian_norm = self.laplacian_matrix
 
         all_embeddings = [
-            torch.cat([self.user_init_embeds.weight,
-                       self.item_init_embeds.weight], dim=0)
+            torch.cat(
+                [self.user_init_embeds.weight, self.item_init_embeds.weight], dim=0
+            )
         ]
         for _ in range(self.n_layers):
             layer_embed = torch.sparse.mm(laplacian_norm, all_embeddings[-1])

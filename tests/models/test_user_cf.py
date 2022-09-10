@@ -1,57 +1,58 @@
 import pytest
 
 from libreco.algorithms import UserCF
+
+# noinspection PyUnresolvedReferences
 from tests.utils_data import prepare_pure_data
-from tests.utils_reco import recommend_in_former_consumed
+from tests.utils_metrics import get_metrics
+from tests.utils_pred import ptest_preds
+from tests.utils_reco import ptest_recommends
+from tests.utils_save_load import save_load_model
 
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
-@pytest.mark.parametrize("sim_type", ["cosine", "pearson", "jaccard"])
-def test_user_cf(prepare_pure_data, task, sim_type):
+@pytest.mark.parametrize("sim_type", ["cosine", "pearson", "jaccard", "unknown"])
+@pytest.mark.parametrize("store_top_k", [True, False])
+def test_user_cf(prepare_pure_data, task, sim_type, store_top_k):
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
-        train_data.build_negative_samples(data_info, item_gen_mode="random",
-                                          num_neg=1, seed=2022)
-        eval_data.build_negative_samples(data_info, item_gen_mode="random",
-                                         num_neg=1, seed=2222)
-    metrics = (
-        ["rmse", "mae", "r2"]
-        if task == "rating"
-        else ["roc_auc", "precision", "ndcg"]
-    )
+        train_data.build_negative_samples(
+            data_info, item_gen_mode="random", num_neg=1, seed=2022
+        )
+        eval_data.build_negative_samples(
+            data_info, item_gen_mode="random", num_neg=1, seed=2222
+        )
+
     model = UserCF(
         task=task,
         data_info=data_info,
         sim_type=sim_type,
-        k=10
+        k_sim=20,
+        k=10,
+        eval_user_num=200,
     )
-    model.fit(
-        train_data,
-        verbose=2,
-        eval_data=eval_data,
-        metrics=metrics
-    )
-    pred = model.predict(user=1, item=2333)
-    # prediction in range
-    if task == "rating":
-        assert 1 <= pred <= 5
+
+    if sim_type == "unknown":
+        with pytest.raises(ValueError):
+            model.fit(train_data)
     else:
-        assert 0 <= pred <= 1
+        model.fit(
+            train_data,
+            verbose=2,
+            eval_data=eval_data,
+            metrics=get_metrics(task),
+            store_top_k=store_top_k,
+        )
+        ptest_preds(model, task, pd_data, with_feats=False)
+        ptest_recommends(model, data_info, pd_data, with_feats=False)
+        model.recommend_user(1, 10, random_rec=True)
+        with pytest.raises(ValueError):
+            model.predict(user="cold user1", item="cold item2", cold_start="other")
 
-    cold_pred1 = model.predict(user="cold user1", item="cold item2")
-    cold_pred2 = model.predict(user="cold user2", item="cold item2")
-    assert cold_pred1 == cold_pred2
+        # test save and load model
+        loaded_model, loaded_data_info = save_load_model(UserCF, model, data_info)
+        ptest_preds(loaded_model, task, pd_data, with_feats=False)
+        ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
 
-    # cold start strategy
-    with pytest.raises(ValueError):
-        model.recommend_user(user=-99999, n_rec=7, cold_start="sss")
-    # different recommendation for different users
-    reco_take_one = [i[0] for i in model.recommend_user(user=1, n_rec=7)]
-    reco_take_two = [i[0] for i in model.recommend_user(user=2, n_rec=7)]
-    assert len(reco_take_one) == len(reco_take_two) == 7
-    assert reco_take_one != reco_take_two
-    assert not recommend_in_former_consumed(data_info, reco_take_one, 1)
-    assert not recommend_in_former_consumed(data_info, reco_take_two, 2)
-    cold_reco1 = model.recommend_user(user=-99999, n_rec=3)
-    cold_reco2 = model.recommend_user(user=-1, n_rec=3)
-    assert cold_reco1 == cold_reco2
+        with pytest.raises(NotImplementedError):
+            model.rebuild_model("model_path", "user_cf")

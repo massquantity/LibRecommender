@@ -1,89 +1,132 @@
+import os
+from pathlib import Path
+
+import pandas as pd
 import pytest
 import tensorflow as tf
 
 from libreco.algorithms import DIN
-from tests.utils_data import prepare_feat_data
-from tests.utils_reco import recommend_in_former_consumed
+from libreco.data import DatasetFeat, split_by_ratio_chrono
+# noinspection PyUnresolvedReferences
+from tests.utils_data import prepare_feat_data, prepare_multi_sparse_data
+from tests.utils_metrics import get_metrics
+from tests.utils_multi_sparse_models import fit_multi_sparse
+from tests.utils_pred import ptest_preds
+from tests.utils_reco import ptest_recommends
+from tests.utils_save_load import save_load_model
 
 
-@pytest.mark.parametrize("task", ["rating", "ranking"])
+@pytest.mark.parametrize(
+    "task, loss_type",
+    [
+        ("rating", "whatever"),
+        ("ranking", "cross_entropy"),
+        ("ranking", "focal"),
+        ("ranking", "unknown"),
+    ],
+)
 @pytest.mark.parametrize(
     "lr_decay, reg, num_neg, use_bn, dropout_rate, hidden_units, "
-    "recent_num, use_tf_attention", [
+    "recent_num, use_tf_attention",
+    [
         (False, None, 1, False, None, "128,64,32", 10, False),
-        (True, 0.001, 3, True, 0.5, "1,1,1", 6, True)
-    ]
+        (True, 0.001, 3, True, 0.5, "1,1,1", 6, True),
+    ],
 )
 def test_din(
-        prepare_feat_data,
-        task,
-        lr_decay,
-        reg,
-        num_neg,
-        use_bn,
-        dropout_rate,
-        hidden_units,
-        recent_num,
-        use_tf_attention
+    prepare_feat_data,
+    task,
+    loss_type,
+    lr_decay,
+    reg,
+    num_neg,
+    use_bn,
+    dropout_rate,
+    hidden_units,
+    recent_num,
+    use_tf_attention,
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_feat_data
     if task == "ranking":
-        train_data.build_negative_samples(data_info, item_gen_mode="random",
-                                          num_neg=1, seed=2022)
-        eval_data.build_negative_samples(data_info, item_gen_mode="random",
-                                         num_neg=1, seed=2222)
-    metrics = (
-        ["rmse", "mae", "r2"]
-        if task == "rating"
-        else ["roc_auc", "precision", "ndcg"]
+        train_data.build_negative_samples(
+            data_info, item_gen_mode="random", num_neg=1, seed=2022
+        )
+        eval_data.build_negative_samples(
+            data_info, item_gen_mode="random", num_neg=1, seed=2222
+        )
+
+    if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
+        with pytest.raises(ValueError):
+            _ = DIN(task, data_info, loss_type)
+    else:
+        model = DIN(
+            task=task,
+            data_info=data_info,
+            loss_type=loss_type,
+            embed_size=4,
+            n_epochs=1,
+            lr=1e-4,
+            lr_decay=lr_decay,
+            reg=reg,
+            batch_size=1024,
+            num_neg=num_neg,
+            use_bn=use_bn,
+            dropout_rate=dropout_rate,
+            hidden_units=hidden_units,
+            recent_num=recent_num,
+            use_tf_attention=use_tf_attention,
+            tf_sess_config=None,
+        )
+        model.fit(
+            train_data,
+            verbose=2,
+            shuffle=True,
+            eval_data=eval_data,
+            metrics=get_metrics(task),
+        )
+        ptest_preds(model, task, pd_data, with_feats=True)
+        ptest_recommends(model, data_info, pd_data, with_feats=True)
+
+
+def test_din_multi_sparse(prepare_multi_sparse_data):
+    task = "ranking"
+    pd_data, train_data, eval_data, data_info = prepare_multi_sparse_data
+    model = fit_multi_sparse(DIN, train_data, eval_data, data_info)
+    ptest_preds(model, task, pd_data, with_feats=True)
+    ptest_recommends(model, data_info, pd_data, with_feats=True)
+
+    # test save and load model
+    loaded_model, loaded_data_info = save_load_model(DIN, model, data_info)
+    ptest_preds(loaded_model, task, pd_data, with_feats=True)
+    ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=True)
+
+
+def test_item_dense_feature():
+    tf.compat.v1.reset_default_graph()
+    data_path = os.path.join(
+        str(Path(os.path.realpath(__file__)).parent.parent),
+        "sample_data",
+        "sample_movielens_merged.csv",
     )
-    model = DIN(
-        task=task,
-        data_info=data_info,
-        embed_size=16,
-        n_epochs=2,
-        lr=1e-4,
-        lr_decay=lr_decay,
-        reg=reg,
-        batch_size=256,
-        num_neg=num_neg,
-        use_bn=use_bn,
-        dropout_rate=dropout_rate,
-        hidden_units=hidden_units,
-        recent_num=recent_num,
-        use_tf_attention=use_tf_attention,
-        tf_sess_config=None
+    pd_data = pd.read_csv(data_path, sep=",", header=0)
+    train_data, eval_data = split_by_ratio_chrono(pd_data, test_size=0.2)
+    train_data, data_info = DatasetFeat.build_trainset(
+        train_data=train_data,
+        sparse_col=["sex", "occupation", "genre1", "genre2", "genre3"],
+        dense_col=["age"],
+        user_col=["sex", "occupation"],
+        item_col=["genre1", "genre2", "genre3", "age"],  # assign `age` to item feature
+        reset_state=True,
     )
+    eval_data = DatasetFeat.build_testset(eval_data)
+    model = DIN("rating", data_info, embed_size=16, lr=3e-4, n_epochs=3)
     model.fit(
         train_data,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
-        metrics=metrics
+        metrics=get_metrics("rating"),
     )
-    pred = model.predict(user=1, item=2333)
-    # prediction in range
-    if task == "rating":
-        assert 1 <= pred <= 5
-    else:
-        assert 0 <= pred <= 1
-
-    cold_pred1 = model.predict(user="cold user1", item="cold item2")
-    cold_pred2 = model.predict(user="cold user2", item="cold item2")
-    assert cold_pred1 == cold_pred2
-    assert len(model.predict_data_with_feats(pd_data[:5])) == 5
-
-    # cold start strategy
-    with pytest.raises(ValueError):
-        model.recommend_user(user=-99999, n_rec=7, cold_start="sss")
-    # different recommendation for different users
-    reco_take_one = [i[0] for i in model.recommend_user(user=1, n_rec=7)]
-    reco_take_two = [i[0] for i in model.recommend_user(user=2, n_rec=7)]
-    assert len(reco_take_one) == len(reco_take_two) == 7
-    # assert reco_take_one != reco_take_two
-    assert not recommend_in_former_consumed(data_info, reco_take_one, 1)
-    assert not recommend_in_former_consumed(data_info, reco_take_two, 2)
-    cold_reco1 = model.recommend_user(user=-99999, n_rec=3)
-    cold_reco2 = model.recommend_user(user=-1, n_rec=3)
-    assert cold_reco1 == cold_reco2
+    ptest_preds(model, "rating", pd_data, with_feats=True)
+    ptest_recommends(model, data_info, pd_data, with_feats=True)

@@ -1,8 +1,12 @@
 import numbers
+
 import numpy as np
 from tqdm import tqdm
+
 from ..data import TransformedSet
 from ..feature import features_from_batch_data
+from ..tfops import get_feed_dict
+from ..utils.constants import TF_FEAT_MODELS
 
 
 def build_transformed_data(model, data, negative_sample, update_features, seed):
@@ -21,8 +25,7 @@ def build_transformed_data(model, data, negative_sample, update_features, seed):
         )
     # todo: merge user_consumed
     transformed_data = TransformedSet(
-        user_indices, item_indices, labels, sparse_indices,
-        dense_values, train=False
+        user_indices, item_indices, labels, sparse_indices, dense_values, train=False
     )
     if update_features:
         # if a user or item has duplicate features, will only update the last one.
@@ -37,29 +40,6 @@ def build_transformed_data(model, data, negative_sample, update_features, seed):
     return transformed_data
 
 
-# def compute_preds(model, data, batch_size, mode, n_users=None, n_items=None):
-#    y_pred = list()
-#    y_label = list()
-#    for batch_data in tqdm(range(0, len(data), batch_size), desc="eval_pred"):
-#        batch_slice = slice(batch_data, batch_data + batch_size)
-#        users = data.user_indices[batch_slice]
-#        items = data.item_indices[batch_slice]
-#        labels = data.labels[batch_slice]
-#        if mode == "eval":
-#            user_allowed = np.where(
-#                np.logical_and(users >= 0, users < n_users))[0]
-#            item_allowed = np.where(
-#                np.logical_and(items >= 0, items < n_items))[0]
-#            indices = np.intersect1d(user_allowed, item_allowed)
-#            users = users[indices]
-#            items = items[indices]
-#            labels = labels[indices]
-#        preds = list(model.predict(users, items, inner_id=True))
-#        y_pred.extend(preds)
-#        y_label.extend(labels)
-#    return y_pred, y_label
-
-
 def compute_preds(model, data, batch_size):
     y_pred = list()
     y_label = list()
@@ -71,10 +51,6 @@ def compute_preds(model, data, batch_size):
         y_pred.extend(preds)
         y_label.extend(labels)
     return y_pred, y_label
-
-
-# def compute_probs(model, data, batch_size, mode, n_users=None, n_items=None):
-#    return compute_preds11(model, data, batch_size, mode, n_users, n_items)
 
 
 def compute_probs(model, data, batch_size):
@@ -102,10 +78,7 @@ def compute_recommends(model, users, k):
 
 
 def choose_pred_func(model):
-    pure_models = ["SVD", "SVDpp", "ALS", "BPR", "NCF", "YouTuBeRetrieval",
-                   "Caser", "RNN4Rec", "WaveNet", "UserCF", "ItemCF", "Item2Vec",
-                   "DeepWalk", "NGCF", "LightGCN"]
-    if model.__class__.__name__ in pure_models:
+    if model.__class__.__name__ not in TF_FEAT_MODELS:
         pred_func = predict_pure
     else:
         pred_func = predict_tf_feat
@@ -128,20 +101,28 @@ def predict_tf_feat(model, transformed_data, batch_slice):
         item_indices,
         labels,
         sparse_indices,
-        dense_values
+        dense_values,
     ) = transformed_data[batch_slice]
 
-    if hasattr(model, "user_last_interacted"):
-        feed_dict = model._get_seq_feed_dict(
-            model.user_last_interacted[user_indices],
-            model.last_interacted_len[user_indices],
-            user_indices, item_indices, None,
-            sparse_indices, dense_values, False
+    if model.model_category == "sequence":
+        feed_dict = get_feed_dict(
+            model=model,
+            user_indices=user_indices,
+            item_indices=item_indices,
+            sparse_indices=sparse_indices,
+            dense_values=dense_values,
+            user_interacted_seq=model.user_last_interacted[user_indices],
+            user_interacted_len=model.last_interacted_len[user_indices],
+            is_training=False,
         )
     else:
-        feed_dict = model._get_feed_dict(
-            user_indices, item_indices, sparse_indices,
-            dense_values, None, False
+        feed_dict = get_feed_dict(
+            model=model,
+            user_indices=user_indices,
+            item_indices=item_indices,
+            sparse_indices=sparse_indices,
+            dense_values=dense_values,
+            is_training=False,
         )
 
     preds = model.sess.run(model.output, feed_dict)

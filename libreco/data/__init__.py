@@ -6,7 +6,7 @@ from .split import (
     split_by_ratio,
     split_by_num_chrono,
     split_by_ratio_chrono,
-    random_split
+    random_split,
 )
 from .transformed import TransformedSet
 
@@ -22,5 +22,5 @@ __all__ = [
     "split_by_num_chrono",
     "split_by_ratio_chrono",
     "random_split",
-    "TransformedSet"
+    "TransformedSet",
 ]

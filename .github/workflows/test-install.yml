@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9, '3.10.4', '3.10.5', '3.10']
+        python-version: [3.6, 3.7, 3.8, 3.9, '3.10.4', '3.10.5', '3.10.6', '3.10']
 
     steps:
       - uses: actions/checkout@v2
@@ -30,3 +30,6 @@ jobs:
           python -m pip install -r requirements.txt
           python -m pip install nmslib
           python -m pip install -e .
+
+      - name: Test install
+        run: python -c "import nmslib; import libreco; print(libreco.__version__)"

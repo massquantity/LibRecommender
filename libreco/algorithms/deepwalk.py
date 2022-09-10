@@ -9,40 +9,40 @@ author: massquantity
 import os
 import random
 from collections import defaultdict
-from itertools import islice
 
 import numpy as np
 from gensim.models import Word2Vec
 from tqdm import tqdm
 
-from .base import Base
-from ..evaluation.evaluate import EvalMixin
-from ..utils.misc import assign_oov_vector, time_block
+from ..bases import EmbedBase
+from ..evaluation import print_metrics
+from ..utils.misc import time_block
+from ..utils.save_load import save_params
 
 
-class DeepWalk(Base, EvalMixin):
-    user_variables_np = ["user_embed"]
-    item_variables_np = ["item_embed"]
-
+class DeepWalk(EmbedBase):
     def __init__(
-            self,
-            task,
-            data_info,
-            embed_size=16,
-            norm_embed=False,
-            n_walks=10,
-            walk_length=10,
-            window_size=5,
-            n_epochs=5,
-            n_threads=0,
-            seed=42,
+        self,
+        task,
+        data_info,
+        embed_size=16,
+        norm_embed=False,
+        n_walks=10,
+        walk_length=10,
+        window_size=5,
+        n_epochs=5,
+        n_threads=0,
+        seed=42,
+        k=10,
+        eval_batch_size=8192,
+        eval_user_num=None,
+        lower_upper_bound=None,
+        with_training=True,
     ):
-        Base.__init__(self, task, data_info)
-        EvalMixin.__init__(self, task, data_info)
+        super().__init__(task, data_info, embed_size, lower_upper_bound)
 
-        self.task = task
-        self.data_info = data_info
-        self.embed_size = embed_size
+        assert self.task == "ranking", "DeepWalk is only suitable for ranking"
+        self.all_args = locals()
         self.norm_embed = norm_embed
         self.n_walks = n_walks
         self.walk_length = walk_length
@@ -50,13 +50,11 @@ class DeepWalk(Base, EvalMixin):
         self.n_epochs = n_epochs
         self.n_threads = n_threads
         self.seed = seed
-        self.n_users = data_info.n_users
-        self.n_items = data_info.n_items
-        self.user_consumed = data_info.user_consumed
-        self.user_embed = None
-        self.item_embed = None
-        self.graph = None
-        self.all_args = locals()
+        self.k = k
+        self.eval_batch_size = eval_batch_size
+        self.eval_user_num = eval_user_num
+        if with_training:
+            self.graph = self._build_graph()
 
     def _build_graph(self):
         graph = defaultdict(list)
@@ -66,9 +64,7 @@ class DeepWalk(Base, EvalMixin):
         return graph
 
     def fit(self, train_data, verbose=1, eval_data=None, metrics=None, **kwargs):
-        assert self.task == "ranking", "DeepWalk is only suitable for ranking"
         self.show_start_time()
-        self.graph = self._build_graph()
         data = ItemCorpus(self.graph, self.n_items, self.n_walks, self.walk_length)
         with time_block("gensim word2vec training", verbose):
             workers = os.cpu_count() if not self.n_threads else self.n_threads
@@ -82,51 +78,24 @@ class DeepWalk(Base, EvalMixin):
                 epochs=self.n_epochs,
                 min_count=1,
                 workers=workers,
-                sorted_vocab=0
+                sorted_vocab=0,
             )
-        self._set_latent_vectors(model)
-        assign_oov_vector(self)
+
+        self.set_embeddings(model)
+        self.assign_embedding_oov()
         if verbose > 1:
-            self.print_metrics(eval_data=eval_data, metrics=metrics, **kwargs)
+            print_metrics(
+                model=self,
+                eval_data=eval_data,
+                metrics=metrics,
+                eval_batch_size=self.eval_batch_size,
+                k=self.k,
+                sample_user_num=self.eval_user_num,
+                seed=self.seed,
+            )
             print("=" * 30)
 
-    def predict(self, user, item, cold_start="average", inner_id=False):
-        user, item = self.convert_id(user, item, inner_id)
-        unknown_num, unknown_index, user, item = self._check_unknown(user, item)
-        preds = np.sum(
-            np.multiply(self.user_embed[user], self.item_embed[item]),
-            axis=1
-        )
-        preds = 1 / (1 + np.exp(-preds))
-        if unknown_num > 0 and cold_start == "popular":
-            preds[unknown_index] = self.default_prediction
-        return preds
-
-    def recommend_user(self, user, n_rec, cold_start="average", inner_id=False):
-        user_id = self._check_unknown_user(user, inner_id)
-        if user_id is None:
-            if cold_start == "average":
-                user_id = self.n_users
-            elif cold_start == "popular":
-                return self.popular_recommends(inner_id, n_rec)
-            else:
-                raise ValueError(user)
-
-        consumed = set(self.user_consumed[user_id])
-        count = n_rec + len(consumed)
-        recos = self.user_embed[user_id] @ self.item_embed.T
-        recos = 1 / (1 + np.exp(-recos))
-
-        ids = np.argpartition(recos, -count)[-count:]
-        rank = sorted(zip(ids, recos[ids]), key=lambda x: -x[1])
-        recs_and_scores = islice(
-            (rec if inner_id else (self.data_info.id2item[rec[0]], rec[1])
-             for rec in rank if rec[0] not in consumed),
-            n_rec
-        )
-        return list(recs_and_scores)
-
-    def _set_latent_vectors(self, model):
+    def set_embeddings(self, model):
         self.item_embed = np.array(
             [model.wv.get_vector(str(i)) for i in range(self.n_items)]
         )
@@ -148,21 +117,11 @@ class DeepWalk(Base, EvalMixin):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
-        self.save_params(path)
+        save_params(self, path, model_name)
         variable_path = os.path.join(path, model_name)
-        np.savez_compressed(variable_path,
-                            user_embed=self.user_embed,
-                            item_embed=self.item_embed)
-
-    @classmethod
-    def load(cls, path, model_name, data_info, manual=True):
-        variable_path = os.path.join(path, f"{model_name}.npz")
-        variables = np.load(variable_path)
-        hparams = cls.load_params(path, data_info)
-        model = cls(**hparams)
-        model.user_embed = variables["user_embed"]
-        model.item_embed = variables["item_embed"]
-        return model
+        np.savez_compressed(
+            variable_path, user_embed=self.user_embed, item_embed=self.item_embed
+        )
 
 
 class ItemCorpus(object):
