@@ -1,8 +1,6 @@
 import pytest
 
 from libreco.bases import Base
-# noinspection PyUnresolvedReferences
-from tests.utils_data import prepare_pure_data
 
 
 class NCF(Base):
@@ -27,7 +25,7 @@ class NCF(Base):
 
 
 def test_base(prepare_pure_data):
-    pd_data, train_data, eval_data, data_info = prepare_pure_data
+    _, train_data, _, data_info = prepare_pure_data
     with pytest.raises(ValueError):
         _ = NCF(task="unknown", data_info=data_info)
     with pytest.raises(AssertionError):

@@ -205,8 +205,8 @@ class SVDpp(EmbedBase, TfMixin):
         (
             user_variables,
             item_variables,
-            sparse_variables,
-            dense_variables,
+            _,
+            _,
             manual_variables,
         ) = modify_variable_names(self, trainable=True)
 
@@ -227,8 +227,8 @@ class SVDpp(EmbedBase, TfMixin):
             (
                 optimizer_user_variables,
                 optimizer_item_variables,
-                optimizer_sparse_variables,
-                optimizer_dense_variables,
+                _,
+                _,
                 _,
             ) = modify_variable_names(self, trainable=False)
 

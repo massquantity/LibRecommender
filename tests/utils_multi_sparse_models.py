@@ -6,12 +6,8 @@ from libreco.bases import TfBase
 def fit_multi_sparse(cls, train_data, eval_data, data_info, lr=None):
     if issubclass(cls, TfBase):
         tf.compat.v1.reset_default_graph()
-    train_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2022
-    )
-    eval_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
+    train_data.build_negative_samples(data_info, seed=2022)
+    eval_data.build_negative_samples(data_info, seed=2222)
     model = cls(
         task="ranking",
         data_info=data_info,

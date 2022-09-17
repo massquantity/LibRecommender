@@ -89,8 +89,6 @@ class EmbedBase(Base):
         model = cls(**hparams)
         setattr(model, "user_embed", variables["user_embed"])
         setattr(model, "item_embed", variables["item_embed"])
-        # model.user_embed = variables["user_embed"]
-        # model.item_embed = variables["item_embed"]
         return model
 
     def get_user_id(self, user):
@@ -104,20 +102,31 @@ class EmbedBase(Base):
         return self.data_info.item2id[item]
 
     def get_user_embedding(self, user=None):
-        assert self.user_embed is not None, "call `model.fit()` first"
+        assert (
+            self.user_embed is not None
+        ), "call `model.fit()` before getting user embeddings"
         if user is None:
             return self.user_embed[:-1, : self.embed_size]  # remove oov
         user_id = self.get_user_id(user)
         return self.user_embed[user_id, : self.embed_size]
 
     def get_item_embedding(self, item=None):
-        assert self.item_embed is not None, "call `model.fit()` first"
+        assert (
+            self.item_embed is not None
+        ), "call `model.fit()` before getting item embeddings"
         if item is None:
             return self.item_embed[:-1, : self.embed_size]
         item_id = self.get_item_id(item)
         return self.item_embed[item_id, : self.embed_size]
 
-    def init_knn(self, approximate, sim_type, M=32, ef_construction=200, ef_search=100):
+    def init_knn(
+        self,
+        approximate,
+        sim_type,
+        M=100,
+        ef_construction=200,
+        ef_search=200
+    ):
         if sim_type == "cosine":
             space = "cosinesimil"
         elif sim_type == "inner-product":

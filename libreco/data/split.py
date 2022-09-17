@@ -21,7 +21,7 @@ def random_split(
     # then iteratively split data based on modified ratios
     train_data = data.copy()
     split_data_all = []
-    for i in range(n_splits - 1):
+    for _ in range(n_splits - 1):
         size = ratios.pop(-1)
         ratios = [r / math.fsum(ratios) for r in ratios]
         train_data, split_data = train_test_split(
@@ -44,7 +44,7 @@ def _filter_unknown_user_item(data_list):
     )
 
     split_data_all = [train_data]
-    for i, test_data in enumerate(data_list[1:], start=1):
+    for test_data in data_list[1:]:
         # print(f"Non_train_data {i} size before filtering: {len(test_data)}")
         out_of_bounds_row_indices = set()
         for col in ["user", "item"]:

@@ -1,5 +1,4 @@
 import os
-import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -10,7 +9,7 @@ from libreco.algorithms import YouTubeRetrieval
 from libreco.data import DatasetFeat, split_by_ratio_chrono
 
 from tests.utils_metrics import get_metrics
-from tests.utils_path import SAVE_PATH
+from tests.utils_path import SAVE_PATH, remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model
@@ -73,12 +72,8 @@ def test_youtube_retrieval(
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_youtube_retrieval_data()
     if task == "ranking":
-        train_data.build_negative_samples(
-            data_info, item_gen_mode="random", num_neg=1, seed=2022
-        )
-        eval_data.build_negative_samples(
-            data_info, item_gen_mode="random", num_neg=1, seed=2222
-        )
+        train_data.build_negative_samples(data_info, seed=2022)
+        eval_data.build_negative_samples(data_info, seed=2222)
 
     if task == "rating" or (
         task == "ranking" and loss_type not in ("nce", "sampled_softmax")
@@ -122,8 +117,7 @@ def test_youtube_retrieval(
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
         ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
 
-        if os.path.exists(SAVE_PATH) and os.path.isdir(SAVE_PATH):
-            shutil.rmtree(SAVE_PATH)
+        remove_path(SAVE_PATH)
 
 
 def test_youtube_retrieval_multi_sparse():
@@ -171,5 +165,4 @@ def test_youtube_retrieval_multi_sparse():
     ptest_preds(loaded_model, task, pd_data, with_feats=False)
     ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
 
-    if os.path.exists(SAVE_PATH) and os.path.isdir(SAVE_PATH):
-        shutil.rmtree(SAVE_PATH)
+    remove_path(SAVE_PATH)

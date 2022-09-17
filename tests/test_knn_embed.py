@@ -2,18 +2,11 @@ import pytest
 
 from libreco.algorithms import ALS, RNN4Rec
 
-# noinspection PyUnresolvedReferences
-from tests.utils_data import prepare_pure_data
-
 
 def test_knn_embed(prepare_pure_data):
     pd_data, train_data, eval_data, data_info = prepare_pure_data
-    train_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2022
-    )
-    eval_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
+    train_data.build_negative_samples(data_info, seed=2022)
+    eval_data.build_negative_samples(data_info, seed=2222)
 
     als = ALS("ranking", data_info, embed_size=16, n_epochs=2, reg=5.0)
     als.fit(train_data, verbose=2, shuffle=True)

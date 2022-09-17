@@ -9,8 +9,6 @@ from scipy.sparse import csr_matrix
 from libreco.data import DatasetPure
 from libreco.utils.similarities import cosine_sim, pearson_sim, jaccard_sim
 
-# noinspection PyUnresolvedReferences
-from tests.utils_data import prepare_pure_data
 
 raw_data = """
 user,item,label

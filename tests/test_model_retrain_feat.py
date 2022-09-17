@@ -1,5 +1,4 @@
 import os
-import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -8,7 +7,7 @@ import tensorflow as tf
 from libreco.algorithms import DIN
 from libreco.data import DataInfo, DatasetFeat, split_by_ratio_chrono
 from libreco.evaluation import evaluate
-from tests.utils_path import SAVE_PATH
+from tests.utils_path import SAVE_PATH, remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 
@@ -39,12 +38,8 @@ def test_model_retrain_feat():
         reset_state=True,
     )
     eval_data = DatasetFeat.build_evalset(eval_data)
-    train_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2022
-    )
-    eval_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
+    train_data.build_negative_samples(data_info, seed=2022)
+    eval_data.build_negative_samples(data_info, seed=2222)
 
     model = DIN(
         "ranking",
@@ -118,12 +113,8 @@ def test_model_retrain_feat():
     eval_data = DatasetFeat.build_evalset(
         eval_data_orig, revolution=True, data_info=new_data_info
     )
-    train_data.build_negative_samples(
-        new_data_info, item_gen_mode="random", num_neg=1, seed=2022
-    )
-    eval_data.build_negative_samples(
-        new_data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
+    train_data.build_negative_samples(new_data_info, seed=2022)
+    eval_data.build_negative_samples(new_data_info, seed=2222)
 
     new_model = DIN(
         "ranking",
@@ -176,5 +167,4 @@ def test_model_retrain_feat():
 
     assert new_eval_result["roc_auc"] != eval_result["roc_auc"]
 
-    if os.path.exists(SAVE_PATH) and os.path.isdir(SAVE_PATH):
-        shutil.rmtree(SAVE_PATH)
+    remove_path(SAVE_PATH)
