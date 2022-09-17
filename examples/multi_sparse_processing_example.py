@@ -1,14 +1,9 @@
 import pandas as pd
+
 from libreco.data import split_by_ratio_chrono, split_multi_value, DatasetFeat
 from libreco.algorithms import DeepFM
 
-# remove unnecessary tensorflow logging
-import os
-import tensorflow as tf
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ["KMP_WARNINGS"] = "FALSE"
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-pd.set_option('display.max_columns', 20)
+pd.set_option("display.max_columns", 20)
 
 
 if __name__ == "__main__":
@@ -19,7 +14,7 @@ if __name__ == "__main__":
 
     sparse_col = ["sex", "occupation"]
     dense_col = ["age"]
-    multi_value_col = ["genre"]   # specify multi-value feature
+    multi_value_col = ["genre"]  # specify multi-value feature
     user_col = ["sex", "age", "occupation"]
     item_col = ["genre"]
 
@@ -29,8 +24,13 @@ if __name__ == "__main__":
     # Note if it is not None, it should also be a list,
     # because there are possibly many multi_value features.
     multi_sparse_col, multi_user_col, multi_item_col = split_multi_value(
-        data, multi_value_col, sep="|", max_len=[3], pad_val="missing",
-        user_col=user_col, item_col=item_col
+        data,
+        multi_value_col,
+        sep="|",
+        max_len=[3],
+        pad_val="missing",
+        user_col=user_col,
+        item_col=item_col,
     )
 
     print("multi_sparse_col: ", multi_sparse_col)
@@ -56,25 +56,50 @@ if __name__ == "__main__":
         sparse_col=sparse_col,
         dense_col=dense_col,
         multi_sparse_col=multi_sparse_col,
-        pad_val=["missing"]   # specify padding value
+        pad_val=["missing"],  # specify padding value
     )
     eval_data = DatasetFeat.build_testset(eval_data)
     print(data_info)
     # do negative sampling, assume the data only contains positive feedback
-    train_data.build_negative_samples(data_info, item_gen_mode="random",
-                                      num_neg=1, seed=2020)
-    eval_data.build_negative_samples(data_info, item_gen_mode="random",
-                                     num_neg=1, seed=2222)
+    train_data.build_negative_samples(
+        data_info, item_gen_mode="random", num_neg=1, seed=2020
+    )
+    eval_data.build_negative_samples(
+        data_info, item_gen_mode="random", num_neg=1, seed=2222
+    )
 
-    deepfm = DeepFM("ranking", data_info, embed_size=16, n_epochs=2,
-                    lr=1e-4, lr_decay=False, reg=None, batch_size=2048,
-                    num_neg=1, use_bn=False, dropout_rate=None,
-                    hidden_units="128,64,32", tf_sess_config=None,
-                    multi_sparse_combiner="normal")  # specify multi_sparse combiner
-
-    deepfm.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data,
-               metrics=["loss", "balanced_accuracy", "roc_auc", "pr_auc",
-                        "precision", "recall", "map", "ndcg"])
-
+    deepfm = DeepFM(
+        "ranking",
+        data_info,
+        loss_type="cross_entropy",
+        embed_size=16,
+        n_epochs=2,
+        lr=1e-4,
+        lr_decay=False,
+        reg=None,
+        batch_size=2048,
+        num_neg=1,
+        use_bn=False,
+        dropout_rate=None,
+        hidden_units="128,64,32",
+        tf_sess_config=None,
+        multi_sparse_combiner="normal",  # specify multi_sparse combiner
+    )
+    deepfm.fit(
+        train_data,
+        verbose=2,
+        shuffle=True,
+        eval_data=eval_data,
+        metrics=[
+            "loss",
+            "balanced_accuracy",
+            "roc_auc",
+            "pr_auc",
+            "precision",
+            "recall",
+            "map",
+            "ndcg",
+        ],
+    )
     print("prediction: ", deepfm.predict(user=1, item=2333))
     print("recommendation: ", deepfm.recommend_user(user=1, n_rec=7))

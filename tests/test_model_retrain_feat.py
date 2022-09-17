@@ -1,5 +1,4 @@
 import os
-import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -8,7 +7,7 @@ import tensorflow as tf
 from libreco.algorithms import DIN
 from libreco.data import DataInfo, DatasetFeat, split_by_ratio_chrono
 from libreco.evaluation import evaluate
-from tests.utils_path import SAVE_PATH
+from tests.utils_path import SAVE_PATH, remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 
@@ -39,12 +38,8 @@ def test_model_retrain_feat():
         reset_state=True,
     )
     eval_data = DatasetFeat.build_evalset(eval_data)
-    train_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2022
-    )
-    eval_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
+    train_data.build_negative_samples(data_info, seed=2022)
+    eval_data.build_negative_samples(data_info, seed=2222)
 
     model = DIN(
         "ranking",
@@ -59,6 +54,7 @@ def test_model_retrain_feat():
         hidden_units="32,16",
         recent_num=10,
         use_tf_attention=True,
+        eval_user_num=200,
     )
     model.fit(
         train_data,
@@ -79,6 +75,7 @@ def test_model_retrain_feat():
     eval_result = evaluate(
         model,
         eval_data,
+        sample_user_num=200,
         eval_batch_size=8192,
         k=10,
         metrics=[
@@ -116,12 +113,8 @@ def test_model_retrain_feat():
     eval_data = DatasetFeat.build_evalset(
         eval_data_orig, revolution=True, data_info=new_data_info
     )
-    train_data.build_negative_samples(
-        new_data_info, item_gen_mode="random", num_neg=1, seed=2022
-    )
-    eval_data.build_negative_samples(
-        new_data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
+    train_data.build_negative_samples(new_data_info, seed=2022)
+    eval_data.build_negative_samples(new_data_info, seed=2222)
 
     new_model = DIN(
         "ranking",
@@ -136,6 +129,7 @@ def test_model_retrain_feat():
         hidden_units="32,16",
         recent_num=10,
         use_tf_attention=True,
+        eval_user_num=200,
     )
     new_model.rebuild_model(
         path=SAVE_PATH, model_name="din_model", full_assign=True
@@ -162,6 +156,7 @@ def test_model_retrain_feat():
     new_eval_result = evaluate(
         new_model,
         eval_data_orig,
+        sample_user_num=200,
         eval_batch_size=8192,
         k=10,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
@@ -172,5 +167,4 @@ def test_model_retrain_feat():
 
     assert new_eval_result["roc_auc"] != eval_result["roc_auc"]
 
-    if os.path.exists(SAVE_PATH) and os.path.isdir(SAVE_PATH):
-        shutil.rmtree(SAVE_PATH)
+    remove_path(SAVE_PATH)

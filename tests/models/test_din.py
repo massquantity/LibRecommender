@@ -7,8 +7,6 @@ import tensorflow as tf
 
 from libreco.algorithms import DIN
 from libreco.data import DatasetFeat, split_by_ratio_chrono
-# noinspection PyUnresolvedReferences
-from tests.utils_data import prepare_feat_data, prepare_multi_sparse_data
 from tests.utils_metrics import get_metrics
 from tests.utils_multi_sparse_models import fit_multi_sparse
 from tests.utils_pred import ptest_preds
@@ -49,12 +47,8 @@ def test_din(
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_feat_data
     if task == "ranking":
-        train_data.build_negative_samples(
-            data_info, item_gen_mode="random", num_neg=1, seed=2022
-        )
-        eval_data.build_negative_samples(
-            data_info, item_gen_mode="random", num_neg=1, seed=2222
-        )
+        train_data.build_negative_samples(data_info, seed=2022)
+        eval_data.build_negative_samples(data_info, seed=2222)
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
@@ -69,7 +63,7 @@ def test_din(
             lr=1e-4,
             lr_decay=lr_decay,
             reg=reg,
-            batch_size=1024,
+            batch_size=8192,
             num_neg=num_neg,
             use_bn=use_bn,
             dropout_rate=dropout_rate,
@@ -77,6 +71,7 @@ def test_din(
             recent_num=recent_num,
             use_tf_attention=use_tf_attention,
             tf_sess_config=None,
+            eval_user_num=40,
         )
         model.fit(
             train_data,
@@ -120,7 +115,15 @@ def test_item_dense_feature():
         reset_state=True,
     )
     eval_data = DatasetFeat.build_testset(eval_data)
-    model = DIN("rating", data_info, embed_size=16, lr=3e-4, n_epochs=3)
+    model = DIN(
+        "rating",
+        data_info,
+        embed_size=4,
+        lr=3e-4,
+        n_epochs=1,
+        batch_size=8192,
+        eval_user_num=40
+    )
     model.fit(
         train_data,
         verbose=2,

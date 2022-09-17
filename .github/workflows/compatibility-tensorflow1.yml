@@ -14,7 +14,7 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: [3.7]
         tensorflow-version: [1.15.5]
-        numpy-version: [1.20.3, 1.21.5, 1.22.2]
+        numpy-version: [1.20.3, 1.21.6, 1.22.4, 1.23.2]
         include:
           # Python 3.6 only supports Numpy 1.19.5
           - os: ubuntu-latest

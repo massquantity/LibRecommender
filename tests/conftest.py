@@ -1,11 +1,10 @@
-import os.path
-import shutil
+import os
 
 import pytest
 import pandas as pd
 
 from libreco.data import split_by_ratio_chrono, DatasetPure, DatasetFeat
-from tests.utils_path import SAVE_PATH
+from tests.utils_path import SAVE_PATH, remove_path
 
 
 @pytest.fixture
@@ -20,13 +19,23 @@ def prepare_pure_data():
     train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)
     yield pd_data, train_data, eval_data, data_info
-    if os.path.exists(SAVE_PATH) and os.path.isdir(SAVE_PATH):
-        shutil.rmtree(SAVE_PATH)
+    remove_path(SAVE_PATH)
 
 
 @pytest.fixture
-def prepare_feat_data():
-    pd_data, (train_data, eval_data) = read_feat_data()
+def read_feat_data():
+    data_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "sample_data",
+        "sample_movielens_merged.csv",
+    )
+    pd_data = pd.read_csv(data_path, sep=",", header=0)
+    return pd_data, split_by_ratio_chrono(pd_data, test_size=0.2)
+
+
+@pytest.fixture
+def prepare_feat_data(read_feat_data):
+    pd_data, (train_data, eval_data) = read_feat_data
     train_data, data_info = DatasetFeat.build_trainset(
         train_data=train_data,
         sparse_col=["sex", "occupation", "genre1", "genre2", "genre3"],
@@ -37,13 +46,12 @@ def prepare_feat_data():
     )
     eval_data = DatasetFeat.build_testset(eval_data)
     yield pd_data, train_data, eval_data, data_info
-    if os.path.exists(SAVE_PATH) and os.path.isdir(SAVE_PATH):
-        shutil.rmtree(SAVE_PATH)
+    remove_path(SAVE_PATH)
 
 
 @pytest.fixture
-def prepare_multi_sparse_data():
-    pd_data, (train_data, eval_data) = read_feat_data()
+def prepare_multi_sparse_data(read_feat_data):
+    pd_data, (train_data, eval_data) = read_feat_data
     train_data, data_info = DatasetFeat.build_trainset(
         train_data=train_data,
         sparse_col=["sex", "occupation"],
@@ -56,15 +64,4 @@ def prepare_multi_sparse_data():
     )
     eval_data = DatasetFeat.build_testset(eval_data)
     yield pd_data, train_data, eval_data, data_info
-    if os.path.exists(SAVE_PATH) and os.path.isdir(SAVE_PATH):
-        shutil.rmtree(SAVE_PATH)
-
-
-def read_feat_data():
-    data_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "sample_data",
-        "sample_movielens_merged.csv",
-    )
-    pd_data = pd.read_csv(data_path, sep=",", header=0)
-    return pd_data, split_by_ratio_chrono(pd_data, test_size=0.2)
+    remove_path(SAVE_PATH)

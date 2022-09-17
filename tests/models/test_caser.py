@@ -3,8 +3,6 @@ import tensorflow as tf
 
 from libreco.algorithms import Caser
 
-# noinspection PyUnresolvedReferences
-from tests.utils_data import prepare_pure_data
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
@@ -41,12 +39,8 @@ def test_caser(
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
-        train_data.build_negative_samples(
-            data_info, item_gen_mode="random", num_neg=1, seed=2022
-        )
-        eval_data.build_negative_samples(
-            data_info, item_gen_mode="random", num_neg=1, seed=2222
-        )
+        train_data.build_negative_samples(data_info, seed=2022)
+        eval_data.build_negative_samples(data_info, seed=2222)
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
@@ -56,7 +50,7 @@ def test_caser(
             task=task,
             data_info=data_info,
             loss_type=loss_type,
-            embed_size=16,
+            embed_size=4,
             n_epochs=1,
             lr=1e-4,
             lr_decay=lr_decay,

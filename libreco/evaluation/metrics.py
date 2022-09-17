@@ -42,7 +42,7 @@ def recall_at_k(y_true_list, y_reco_list, users, k):
 
 
 def average_precision_at_k(y_true, y_reco, k):
-    common_items, indices_in_true, indices_in_reco = np.intersect1d(
+    common_items, _, indices_in_reco = np.intersect1d(
         y_true, y_reco, assume_unique=True, return_indices=True
     )
 

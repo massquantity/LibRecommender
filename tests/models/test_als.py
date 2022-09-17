@@ -4,8 +4,6 @@ from libreco.algorithms import ALS
 from libreco.algorithms.als import least_squares, least_squares_cg
 
 from libreco.evaluation import evaluate
-# noinspection PyUnresolvedReferences
-from tests.utils_data import prepare_pure_data
 from tests.utils_metrics import get_metrics
 from tests.utils_path import SAVE_PATH
 from tests.utils_pred import ptest_preds
@@ -18,12 +16,8 @@ from tests.utils_save_load import save_load_model
 def test_als(prepare_pure_data, task, reg, alpha):
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
-        train_data.build_negative_samples(
-            data_info, item_gen_mode="random", num_neg=1, seed=2022
-        )
-        eval_data.build_negative_samples(
-            data_info, item_gen_mode="random", num_neg=1, seed=2222
-        )
+        train_data.build_negative_samples(data_info, seed=2022)
+        eval_data.build_negative_samples(data_info, seed=2222)
 
     model = ALS(
         task=task,

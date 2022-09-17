@@ -3,8 +3,6 @@ import tensorflow as tf
 
 from libreco.algorithms import WideDeep
 
-# noinspection PyUnresolvedReferences
-from tests.utils_data import prepare_feat_data, prepare_multi_sparse_data
 from tests.utils_metrics import get_metrics
 from tests.utils_multi_sparse_models import fit_multi_sparse
 from tests.utils_pred import ptest_preds
@@ -35,12 +33,8 @@ def test_wide_deep(
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_feat_data
     if task == "ranking":
-        train_data.build_negative_samples(
-            data_info, item_gen_mode="random", num_neg=1, seed=2022
-        )
-        eval_data.build_negative_samples(
-            data_info, item_gen_mode="random", num_neg=1, seed=2222
-        )
+        train_data.build_negative_samples(data_info, seed=2022)
+        eval_data.build_negative_samples(data_info, seed=2222)
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
@@ -58,11 +52,12 @@ def test_wide_deep(
             lr=lr,
             lr_decay=lr_decay,
             reg=reg,
-            batch_size=2048,
+            batch_size=8192,
             num_neg=num_neg,
             use_bn=use_bn,
             dropout_rate=dropout_rate,
             tf_sess_config=None,
+            eval_user_num=200,
         )
         model.fit(
             train_data,

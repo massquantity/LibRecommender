@@ -29,7 +29,6 @@ except (ImportError, ModuleNotFoundError):
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
     logging.basicConfig(format=LOG_FORMAT)
     logging.warning("BPR cython version is not available")
-    pass  # may use tf version, then raise error will fail
 
 
 class BPR(EmbedBase, TfMixin):

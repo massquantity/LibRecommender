@@ -86,7 +86,7 @@ def choose_pred_func(model):
 
 
 def predict_pure(model, transformed_data, batch_slice):
-    user_indices, item_indices, labels, _, _ = transformed_data[batch_slice]
+    user_indices, item_indices, _, _, _ = transformed_data[batch_slice]
     preds = model.predict(user_indices, item_indices, inner_id=True)
     if isinstance(preds, np.ndarray):
         preds = preds.tolist()
@@ -99,7 +99,7 @@ def predict_tf_feat(model, transformed_data, batch_slice):
     (
         user_indices,
         item_indices,
-        labels,
+        _,
         sparse_indices,
         dense_values,
     ) = transformed_data[batch_slice]
