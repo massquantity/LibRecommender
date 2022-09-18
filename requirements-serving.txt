@@ -1,6 +1,9 @@
-flask>=1.0.0
-requests>=2.22.0
-redis==3.0.6
-redis-py>=3.3.5
-faiss==1.5.2
-Tensorflow Serving
+sanic>=22.3
+ujson
+requests
+pydantic
+aiohttp
+redis
+redis-py>=4.2.0
+faiss>=1.5.2
+TensorFlow Serving==2.8.2
