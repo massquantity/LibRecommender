@@ -28,7 +28,7 @@ def test_feature():
     dense_col = ["age", "item_dense_col"]
     user_col = ["age"]
     item_col = ["genre1", "genre2", "genre3", "item_dense_col"]
-    train_data, data_info = DatasetFeat.build_trainset(
+    _, data_info = DatasetFeat.build_trainset(
         train_data=pd_data,
         user_col=user_col,
         item_col=item_col,
