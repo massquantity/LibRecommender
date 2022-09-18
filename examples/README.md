@@ -1,17 +1,17 @@
 # User Guide
 
-The purpose of this guide is to illustrate some of the main features that `LibRecommender` provides. Example usages are all listed in this `examples/` folder. 
+The purpose of this guide is to illustrate some of the main features that LibRecommender provides. Example usages are all listed in this `examples/` folder. 
 
-This guide only demonstrates the data processing, feature engineering and model training parts. For how to serve a trained model in `LibRecommender`, see [Serving Guide](https://github.com/massquantity/LibRecommender/tree/master/serving) .
+This guide only demonstrates the data processing, feature engineering and model training parts. For how to serve a trained model in LibRecommender, see [Serving Guide](https://github.com/massquantity/LibRecommender/tree/master/libserving) .
 
 
 
 ## Task
 
-There are generally two kinds of tasks in `LibRecommender` , i.e. `rating` and `ranking` task. The `rating` task deals with explicit data such as `MovieLens` or `Netflix` dataset, whereas the `ranking` task deals with implicit data such as [`Last.FM`](https://grouplens.org/datasets/hetrec-2011/) dataset. The main difference on usage between these two tasks are:
+There are generally two kinds of tasks in LibRecommender , i.e. `rating` and `ranking` task. The `rating` task deals with explicit data such as `MovieLens` or `Netflix` dataset, whereas the `ranking` task deals with implicit data such as [`Last.FM`](https://grouplens.org/datasets/hetrec-2011/) dataset. The main difference on usage between these two tasks are:
 
 1. The `task` parameter must be specified when building a model.
-2. Obviously the metrics used for evaluating should be different. For `rating` task, the available metrics are `["rmse", "mae", "r2"]` , and for `ranking` task the available metrics are `["loss", "balanced_accuracy", "roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"]` .
+2. Obviously the metrics used for evaluating should be different. For `rating` task, the available metrics are [`rmse`, `mae`, `r2`] , and for `ranking` task the available metrics are [`loss`, `balanced_accuracy`, `roc_auc`, `pr_auc`, `precision`, `recall`, `map`, `ndcg`] .
 
 For example, using the `SVD` model with `rating` task:
 
@@ -22,29 +22,31 @@ For example, using the `SVD` model with `rating` task:
 
 The implicit data typically may only contains positive feedback, i.e. only has samples that labeled as 1. In this case negative sampling is needed to effectively train a model. We'll cover negative sampling issue in the [section below](#negative-sampling).
 
-By the way, some models such as `BPR` , `YouTuBeRetrieval`, `YouTuBeRanking`, `Item2Vec`, `DeepWalk`, `LightGCN` etc. , can only be used for `ranking` tasks since they are specially designed for that. 
+By the way, some models such as `BPR` , `YouTubeRetrieval`, `YouTubeRanking`, `Item2Vec`, `DeepWalk`, `LightGCN` etc. , can only be used for `ranking` tasks since they are specially designed for that. 
 
 
 
 ## `Pure` and `Feat` model
 
-`LibRecommender` is a hybrid recommender system, which means you can choose whether to use features other than user behaviors or not. For models only use user behaviors, we classify them as  `pure` models. This category includes `userCF, itemCF, SVD, SVD++, ALS, NCF, BPR, RNN4Rec, Item2Vec, Caser, WaveNet, DeepWalk, NGCF, LightGCN`. 
+LibRecommender is a hybrid recommender system, which means you can choose whether to use features other than user behaviors or not. For models only use user behaviors, we classify them as  `pure` models. This category includes `UserCF`, `ItemCF`, `SVD`, `SVD++`, `ALS`, `NCF`, `BPR`, `RNN4Rec`, `Item2Vec`, `Caser`, `WaveNet`, `DeepWalk`, `NGCF`, `LightGCN`. 
 
-Then for models that can include other features (e.g., age, sex, name etc.), we call them `feat` models. This category includes `Wide & Deep, FM, DeepFM, YouTuBeRetrieval, YouTubeRanking, AutoInt, DIN`.
+Then for models that can include other features (e.g., age, sex, name etc.), we call them `feat` models. This category includes `WideDeep`, `FM`, `DeepFM`, `YouTubeRetrieval`, `YouTubeRanking`, `AutoInt`, `DIN`.
 
  The main difference on usage between these two kinds of models are:
 
-1.  `pure` models should use `DatasetPure` to process the data, and `feat` models should use `DatasetFeat` to process the data.
-2. When using `feat` models, four parameters should be provided, i.e. `[sparse_col, dense_col, user_col, item_col]`, as otherwise the model will have no idea how to deal with all kinds of features. We'll discuss more details about features in next section.
+1.  `pure` models should use `DatasetPure` to process data, and `feat` models should use `DatasetFeat` to process data.
+2. When using `feat` models, four parameters should be provided, i.e. [`sparse_col`, `dense_col`, `user_col`, `item_col`], as otherwise the model will have no idea how to deal with all kinds of features. We'll discuss more about features in next section.
 
 You can find some typical usages in these files: 
 
 + [`pure_rating_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/pure_rating_example.py)
-+ [` pure_ranking_example.py ` ](https://github.com/massquantity/LibRecommender/blob/master/examples/pure_ranking_example.py)
-+ [`feat_rating_example.py `](https://github.com/massquantity/LibRecommender/blob/master/examples/feat_rating_example.py)
++ [`pure_ranking_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/pure_ranking_example.py)
++ [`feat_rating_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/feat_rating_example.py)
 + [`feat_ranking_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/feat_ranking_example.py)
 
-Actually, there exists two other kinds of model categories in `LibRecommender`, which we call them `sequence` and `graph` models. Sequence models leverage information of user behavior sequence, whereas Graph models leverage information from graph. Sequence models include `RNN4Rec, YouTuBeRetrieval, YouTuBeRanking, DIN, Item2Vec, Caser, WaveNet ` and Graph models include `DeepWalk, NGCF, LightGCN`. As you can see, these models overlap with `pure` and `feat` models. But no need to worry, the APIs remain the same, and you can just use the examples above.
+In fact, there exists two other kinds of model categories in LibRecommender, and we call them `sequence` and `graph` models. You can find them in the [algorithm list](https://github.com/massquantity/LibRecommender#references).
+
+Sequence models leverage information of user behavior sequence, whereas Graph models leverage information from graph. As you can see, these models overlap with `pure` and `feat` models. But no need to worry, the APIs remain the same, and you can just refer to the examples above.
 
 
 
@@ -54,7 +56,7 @@ Actually, there exists two other kinds of model categories in `LibRecommender`, 
 
 Sparse features are typically categorical features such as sex, location, year, etc. These features are projected into low dimension vectors by using an embedding layer, and this is by far the most common way of handling these kinds of features.
 
-Dense features are typically numerical features such as age, price, length, etc. Unfortunately, there is no common way of handling these features, so in `LibRecommender` we mainly use the method described in the [AutoInt](https://arxiv.org/pdf/1810.11921.pdf) paper. Specifically, every dense feature are also projected into low dimension vectors through an embedding layer, then the vectors are multiplied by the dense feature value itself. In this way, the authors of the paper argued that sparse and dense features can have interactions in models such as FM, DeepFM and of course, AutoInt.  
+Dense features are typically numerical features such as age, price, length, etc. Unfortunately, there is no common way of handling these features, so in LibRecommender we mainly use the method described in the [AutoInt](https://arxiv.org/pdf/1810.11921.pdf) paper. Specifically, every dense feature are also projected into low dimension vectors through an embedding layer, then the vectors are multiplied by the dense feature value itself. In this way, the authors of the paper argued that sparse and dense features can have interactions in models such as FM, DeepFM and of course, AutoInt.  
 
 <br>
 
@@ -66,7 +68,7 @@ Dense features are typically numerical features such as age, price, length, etc.
 
 So to be clear, for one dense feature, all samples of this feature will be projected into a same embedding vector. This is different from a sparse feature, where all samples of it will have different embedding vectors based on its concrete category.
 
-Apart from `sparse` and `dense` features, `user` and `item` features should also be provided. Since in order to make predictions and recommendations, the model needs to know a feature belongs to user or item. So, in short, these parameters are `[sparse_col, dense_col, user_col, item_col]`  in `LibRecommender`.
+Apart from `sparse` and `dense` features, `user` and `item` features should also be provided. Since in order to make predictions and recommendations, the model needs to know whether a feature belongs to user or item. So, in short, these parameters are [`sparse_col`, `dense_col`, `user_col`, `item_col`].
 
 ### `multi_sparse` features
 
@@ -80,7 +82,7 @@ Often times categorical features can be multi-valued. For example, a movie may h
 5::Father of the Bride Part II (1995)::Comedy
 ```
 
-Usually we can handle this kind of feature by using multi-hot encoding, so in `LibRecommender` they are called `multi_sparse` features. After some transformation, the data can become (just for illustration purpose):
+Usually we can handle this kind of feature by using multi-hot encoding, so in LibRecommender they are called `multi_sparse` features. After some transformation, the data can become (just for illustration purpose):
 
 | item_id | movie_name                         | genre1    | genre2     | genre3  |
 | ------- | ---------------------------------- | --------- | ---------- | ------- |
@@ -100,7 +102,7 @@ Note it's a list of list, because there are possibly many multi_sparse features,
 
 When you specify a feature as `multi_sparse` feature like this, each sub-feature, i.e. `genre1`, `genre2`, `genre3` in the table above, will share the same embedding of the original feature `genre`. Whether the embedding sharing would improve the model performance is data-dependent. But one thing is certain, it will reduce the total number of model parameters.
 
-`LibRecommender` provides multiple ways of dealing with `multi_sparse` features, i.e. `normal`, `sum` , `mean` and `sqrtn`. `normal` means treating each sub-feature's embedding separately, where in most cases they will be concatenated at last. `sum` and `mean` means computing the sum or mean of each sub-feature's embedding, in this case they are combined as one feature. `sqrtn` means the result of `sum` divided by the square root of sub-feature number, e.g. sqrt(3) in `genre` feature. I'm not sure about this, but I think this `sqrtn` idea originally came from [SVD++](https://people.engr.tamu.edu/huangrh/Spring16/papers_course/matrix_factorization.pdf). Generally the four methods described here have similar functionality as in [tf.nn.embedding_lookup_sparse](https://www.tensorflow.org/versions/r1.15/api_docs/python/tf/nn/embedding_lookup_sparse), but we didn't use it directly in out implementation since it has no `normal` choice.
+LibRecommender provides multiple ways of dealing with `multi_sparse` features, i.e. `normal`, `sum` , `mean` and `sqrtn`. `normal` means treating each sub-feature's embedding separately, and in most cases they will be concatenated at last. `sum` and `mean` means computing the sum or mean of each sub-feature's embedding, in this case they are combined as one feature. `sqrtn` means the result of `sum` divided by the square root of sub-feature number, e.g. sqrt(3) in `genre` feature. I'm not sure about this, but I think this `sqrtn` idea originally came from [SVD++](https://people.engr.tamu.edu/huangrh/Spring16/papers_course/matrix_factorization.pdf). Generally the four methods described here have similar functionality as in [tf.nn.embedding_lookup_sparse](https://www.tensorflow.org/versions/r1.15/api_docs/python/tf/nn/embedding_lookup_sparse), but we didn't use it directly in our implementation since it has no `normal` choice.
 
 So in general you should choose a strategy in parameter `multi_sparse_combiner` when building models with `multi_sparse` features:
 
@@ -118,7 +120,7 @@ Although here we use "missing" as the padding value, this is not always true. It
 
 
 
-`LibRecommender` also provides a convenient function (`split_multi_value`) to transform the original `multi_sparse` features to the divided sub-features illustrated above. See [`multi_sparse_processing_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/multi_sparse_processing_example.py)
+LibRecommender also provides a convenient function (`split_multi_value`) to transform the original `multi_sparse` features to the divided sub-features illustrated above. See [`multi_sparse_processing_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/multi_sparse_processing_example.py)
 
 ```python
 multi_value_col = ["genre"]
@@ -150,12 +152,56 @@ See [`split_data_example.py`](https://github.com/massquantity/LibRecommender/blo
 
 ## Negative Sampling
 
-For implicit data with only positive labels, negative sampling is typically needed for model training. There are some special cases, such as `user_cf, item_cf, BPR, YouTuBeRetrieval, RNN4Rec with bpr loss`, because these models do not need negative sampling during training. However, when evaluating these models using some metrics such as `cross_entropy loss, roc_auc, pr_auc`, negative labels are indeed needed. So we recommend doing negative sampling as long as the data is implicit and only contains positive labels, no matter which model you choose. Also note that train_data and test_data should use different sampling seed.
+For implicit data with only positive labels, negative sampling is typically needed for model training. There are some special cases, such as `UserCF`, `ItemCF`, `BPR`, `YouTubeRetrieval`, `RNN4Rec with bpr loss`, because these models do not need negative sampling during training. However, when evaluating these models using some metrics such as `cross_entropy loss`, `roc_auc`, `pr_auc`, negative labels are indeed needed. So we recommend doing negative sampling as long as the data is implicit and only contains positive labels, no matter which model you choose. Also note that train_data and test_data should use different sampling seed.
 
 ```python
 >>> train_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2020)
 >>> test_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2222)
 ```
+
+
+
+## Loss
+
+LibRecommender provides some options on loss type for `ranking` task. The default loss type for `ranking` is cross entropy loss. Since version `0.10.0`, focal loss was added into the library. First introduced in [Lin et al., 2018](https://arxiv.org/pdf/1708.02002.pdf), focal loss down-weights well-classified examples and focuses on hard examples to get better training performance, and here is the [implementation](https://github.com/massquantity/LibRecommender/blob/master/libreco/tfops/loss.py#L34). In order to choose which loss to use, simply set the `loss_type` parameter:
+
+```python
+>>> model = Caser(task="ranking", loss_type="cross_entropy", ...)
+>>> model = Caser(task="ranking", loss_type="focal", ...)
+```
+
+There are some special cases. Some algorithms are hard to assign explicit loss type, including `UserCF`, `ItemCF`, `ALS`, `Item2Vec`, `DeepWalk`, so they don't have `loss_type` parameter. Some algorithms can only use bpr loss, including `BPR`, `NGCF`, `LightGCN`, so don't bother to choose loss for them too.
+
+The `YouTubeRetrieval` algorithm is also different, its `loss_type` is either `sampled_softmax` or `nce`. Finally, with `RNN4Rec` algorithm, one can choose three `loss_type`, i.e. `cross_entropy`, `focal`, `bpr`.
+
+We are aware that these loss restrictions are hard to remember at once, so this leaves room for further improvement.
+
+
+
+## Embedding
+
+According to the [algorithm list](https://github.com/massquantity/LibRecommender#references), there are some algorithms that can generate final user and item embeddings. So LibRecommender provides public APIs to get them:
+
+```python
+>>> model = RNN4Rec(task="ranking", ...)
+>>> model.fit(train_data, ...)
+>>> model.get_user_embedding(user=1)  # get user embedding for user 1
+>>> model.get_item_embedding(item=2)  # get item embedding for item 2
+```
+
+One can also search for similar users/items based on embeddings. By default we use [nmslib](https://github.com/nmslib/nmslib) to do approximate similarity searching since it's generally fast, but some people may find it difficult to build and install the library, especially on Windows platform or Python >= 3.10. So one can fall back to numpy similarity calculation if nmslib is not available. 
+
+```python
+>>> model = RNN4Rec(task="ranking", ...)
+>>> model.fit(train_data, ...)
+>>> model.init_knn(approximate=True, sim_type="cosine")
+>>> model.search_knn_users(user=1, k=3)
+>>> model.search_knn_items(item=2, k=3)
+```
+
+Before searching, one should call `init_knn` to initialize index. Set `approximate=True` if you can use nmslib, otherwise set `approximate=False`. The `sim_type` parameter should either be `cosine` or `inner-product`. 
+
+Also see [`knn_embedding_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/knn_embedding_example.py).
 
 
 
@@ -174,23 +220,23 @@ After loading the model, one can also evaluate the model directly, see [save_loa
 
 ## Practical Issues in Recommendation System
 
-Since the open source of `LibRecommender` , a lot of people have raised questions to us, either through Email or Github Issue. From our view, these questions can mainly be divided into three categories:
+Since the open source of LibRecommender, a lot of people have raised questions to us, either through Email or Github Issues. From our view, these questions can mainly be divided into three categories:
 
-+ **Cold-Start problem**:  It is very common to encounter new user or item that doesn't exist in training data, so how can we make recommendations for them?
++ **Cold-Start problem**:  It is very common to encounter new users or items that doesn't exist in training data, so how can we make recommendations for them?
 
-+ **Changing-Feature problem**:  In real-world scenarios, users' features are very likely to change every time we make recommendations for them. For example, a user's location may change many times a day, and we may need to take this into account. This feature problem can actually be combined with the cold-start problem. For example, a user has appeared in training data, but his/her location doesn't exist in training data's `location` feature, so what do we do ?
++ **Changing-Feature problem**:  In real-world scenarios, users' features are very likely to change every time we make recommendations for them. For example, a user's location may change many times a day, and we may need to take this into account. This feature problem can actually be combined with the cold-start problem. For example, a user has appeared in training data, but his/her location doesn't exist in training data's `location` feature, so what do we do?
 
 + **Model-retrain problem**:  When we get some new data, we definitely want to retrain the old model with these new data, but this is actually not easy for some deep learning models. The reason lies in the new users/items that may appear in the new data. In deep learning models, embedding variables are usually used, and their shape are preassigned and fixed during and after training. The same problem also goes with new features. If we load the old model and want to train it with new users/items/features, these embedding shape must be expanded, which is not allowed in TensorFlow (at least to my knowledge). One workaround is to combine the new data with the old data, then retrain the model with all of the data. But it would be a waste of time and resources to retrain the whole data every time we get some new data, so what do we do?
 
-The next few sections will try to explain how we can handle these problems in `LibRecomender`. But first let us introduce the inner data structure inside the library, namely, the `DataInfo` object.
+The next few sections will try to explain how we can handle these problems in LibRecommender. But first let us introduce the inner data structure inside the library, namely, the `DataInfo` object.
 
 ### Data Info
 
 The `DataInfo` object saves almost all the useful information in the data. We admit there may be too much information in this object, but for ease of use of the library, we decided not to split it. So almost every model contains a `data_info` property to make recommendations. And when you save and load a model, you should also save/load the corresponding `DataInfo` .
 
-When we are using a `Feat` model, the `DataInfo` object will store the unique features of all the users/items in training data. If a user/item has different categories or values in training data (which may be unlikely if the data is clean :)), only the last one will be stored. For example, if in one sample a user's age is 20, and in another sample this user's age becomes 25, then only 25 will be kept. So here we basically assume the data is always sorted by time, and you should do so if it doesn't. 
+When we are using a `feat` model, the `DataInfo` object will store the unique features of all the users/items in training data. If a user/item has different categories or values in training data (which may be unlikely if the data is clean :)), only the last one will be stored. For example, if in one sample a user's age is 20, and in another sample this user's age becomes 25, then only 25 will be kept. So here we basically assume the data is always sorted by time, and you should do so if it doesn't. 
 
-Therefore when you call `model.predict(user=..., item=...)` or `model.recommend_user(user=...)` for a `Feat` model, the model will use the stored feature information in `DataInfo`. It is also possible to change the feature values when making predictions and recommendations. See [Changing Feature](#changing-feature) section.
+Therefore when you call `model.predict(user=..., item=...)` or `model.recommend_user(user=...)` for a `feat` model, the model will use the stored feature information in `DataInfo`. It is also possible to change the feature values when making predictions and recommendations. See [Changing Feature](#changing-feature) section.
 
 
 
@@ -217,7 +263,8 @@ There is no need to specify a feature belongs to user or item, because these inf
 If you want to predict on a whole dataset with features, you can use the `predict_data_with_feats` function. By setting `batch_size` to `None`, the model will treat all the data as one batch, which may cause memory issues: 
 
 ```python
- >>> model.predict_data_with_feats(data=dataset, batch_size=1024, cold_start="average")
+ >>> from libreco.prediction import predict_data_with_feats
+ >>> predict_data_with_feats(model, data=dataset, batch_size=1024, cold_start="average")
 ```
 
 To make recommendation for one user, we can pass the user features to `user_feats` argument. It actually doesn't make much sense to change the item features when making recommendation for only one user, but we provide an `item_data` argument anyway, which can change the item features. The type of `item_data` must be `pandas.DataFrame` . We assume one may want to change the features of multiple items, since it nearly makes no difference to the recommendation result if only one item's features have been changed.
@@ -227,8 +274,6 @@ To make recommendation for one user, we can pass the user features to `user_feat
     user_feats=pd.Series({"sex": "F", "occupation": 2, "age": 23}),
     item_data=item_features)
 ```
-
-
 
 Note the three functions described above doesn't change the unique user/item features inside the `DataInfo` object. So the next time you call `model.predict(user=1, item=110)` , it will still use the features stored in `DataInfo`. However, if you do want to change the features in `DataInfo`, then you can use `assign_user_features` and `assign_item_features` :
 
@@ -276,6 +321,7 @@ See [model_retrain_example.py](https://github.com/massquantity/LibRecommender/bl
 
 + `task` : choose rating or ranking task.
 + `data_info` : an object which contains useful data information.
++ `loss_type`: type of loss function.
 + `embed_size` : vector size used in embedding layer.
 + `n_epochs` : number of total training epochs.
 + `lr` : learning rate.
