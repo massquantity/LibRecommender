@@ -4,11 +4,10 @@
 
 **LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation. The main features are:
 
-+ Implemented a number of popular recommendation algorithms such as SVD++, DeepFM, BPR etc, [see full algorithm list](#references).
-+ A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features or both. New features can be added on the fly.
++ Implemented a number of popular recommendation algorithms such as FM, DIN, LightGCN etc, [see full algorithm list](#references).
++ A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features. New features can be added on the fly.
 + Low memory usage, automatically convert categorical and multi-value categorical features to sparse representation.
 + Support training for both explicit and implicit datasets, and negative sampling can be used for implicit dataset.
-+ Making use of Cython or Tensorflow for high-speed model training.
 + Provide end-to-end workflow, i.e. data handling / preprocessing -> model training -> evaluate -> serving.
 + Support cold-start prediction and recommendation.
 + Provide unified and friendly API for all algorithms. Easy to retrain model with new users/items.
@@ -120,7 +119,7 @@ JUST normal data format, each line represents a sample. One thing is important, 
 > 1::914::3::978301968<br>
 > 1::3408::4::978300275
 
-Besides, if you want to use some other meta features (e.g., age, sex, category etc.),  you need to tell the model which columns are [`sparse_col, dense_col, user_col, item_col`], which means all features must be in a same table. See above `YouTubeRanking` for example.
+Besides, if you want to use some other meta features (e.g., age, sex, category etc.),  you need to tell the model which columns are [`sparse_col`, `dense_col`, `user_col`, `item_col`], which means all features must be in a same table. See above `YouTubeRanking` for example.
 
 **Also note that your data should not contain missing values.**
 
@@ -128,7 +127,7 @@ Besides, if you want to use some other meta features (e.g., age, sex, category e
 
 ## Serving
 
-For how to serve a trained model in LibRecommender, see [Serving Guide](<https://github.com/massquantity/LibRecommender/tree/master/serving>) .
+For how to serve a trained model in LibRecommender, see [Serving Guide](https://github.com/massquantity/LibRecommender/tree/master/libserving) .
 
 
 
@@ -137,7 +136,7 @@ For how to serve a trained model in LibRecommender, see [Serving Guide](<https:/
 From pypi : &nbsp;
 
 ```shell
-$ pip install LibRecommender==0.8.4
+$ pip install LibRecommender==0.10.0
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
@@ -151,7 +150,7 @@ $ python setup.py install
 
 
 
-#### Basic Dependencies in `libreco`:
+#### Basic Dependencies for [`libreco`](https://github.com/massquantity/LibRecommender/tree/master/libreco):
 
 - Python >= 3.6
 - TensorFlow >= 1.15
@@ -162,10 +161,10 @@ $ python setup.py install
 - Scipy >= 1.2.1
 - scikit-learn >= 0.20.0
 - gensim >= 4.0.0
-- tqdm >= 4.46.0
-- [hnswlib](https://github.com/nmslib/hnswlib)
+- tqdm
+- [nmslib](https://github.com/nmslib/nmslib) (optional)
 
-`LibRecommender` is tested under TensorFlow 1.15, 2.5 and 2.8. If you encounter any problem during running, feel free to open an issue.
+LibRecommender is tested under TensorFlow 1.15, 2.5 and 2.8. If you encounter any problem during running, feel free to open an issue.
 
 **Known issue**: Sometimes one may encounter errors like `ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject`. In this case try upgrading numpy, and version 1.22.0 or higher is probably a safe option.
 
@@ -180,21 +179,25 @@ The table below shows some compatible version combinations:
 |  3.10  |     1.22.2     |      2.8       | linux, windows, macos |
 
 
-#### Optional Serving Dependencies:
+#### Optional Dependencies for [`libserving`](https://github.com/massquantity/LibRecommender/tree/master/libserving):
 
-+ flask >= 1.0.0
-+ requests >= 2.22.0
-+ [redis](<https://redis.io/>) == 3.0.6
-+ [redis-py](https://github.com/andymccurdy/redis-py) >= 3.3.5
-+ [faiss](https://github.com/facebookresearch/faiss) == 1.5.2
-+ [Tensorflow Serving](<https://github.com/tensorflow/serving>)
++ Python >= 3.7 (Many of the below libraries require at least 3.7)
++ sanic >= 22.3
++ requests
++ aiohttp
++ pydantic
++ [ujson](https://github.com/ultrajson/ultrajson)
++ [redis](<https://redis.io/>)
++ [redis-py](https://github.com/andymccurdy/redis-py) >= 4.2.0
++ [faiss](https://github.com/facebookresearch/faiss) >= 1.5.2
++ [TensorFlow Serving](<https://github.com/tensorflow/serving>) == 2.8.2
 
 ## Docker
 One can also use the library in a docker container without installing dependencies, see [Docker](https://github.com/massquantity/LibRecommender/tree/master/docker).
 
 ## References
 
-|     Algorithm     | Category | Backend | Sequence | Graph | Embedding | Paper                                                        |
+|     Algorithm     | Category<sup><a href="#fn1" id="ref1">1</a></sup> | Backend | Sequence<sup><a href="#fn2" id="ref2">2</a></sup> | Graph<sup><a href="#fn3" id="ref3">3</a></sup> | Embedding<sup><a href="#fn4" id="ref4">4</a></sup> | Paper                                                        |
 |:-----------------:| :------: | :----------------------------------------------------------: |:---------------------------------:|:---------------------------------:|:---------------------------------:|-----------------------------------|
 |  userCF / itemCF  |   pure   |   Cython   |      |      |      | [Item-Based Collaborative Filtering Recommendation Algorithms](http://www.ra.ethz.ch/cdstore/www10/papers/pdf/p519.pdf) |
 |        SVD        |   pure   |   TensorFlow1   |      |      |   :heavy_check_mark:   | [Matrix Factorization Techniques for Recommender Systems](https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf) |
@@ -205,25 +208,25 @@ One can also use the library in a docker container without installing dependenci
 |    Wide & Deep    |   feat   |   TensorFlow1   |      |      |      | [Wide & Deep Learning for Recommender Systems](https://arxiv.org/pdf/1606.07792.pdf) |
 |        FM         |   feat   |   TensorFlow1   |      |      |      | [Factorization Machines](https://www.csie.ntu.edu.tw/~b97053/paper/Rendle2010FM.pdf) |
 |      DeepFM       |   feat   |   TensorFlow1   |      |      |      | [DeepFM: A Factorization-Machine based Neural Network for CTR Prediction](https://arxiv.org/pdf/1703.04247.pdf) |
-| YouTuBeRetrieval  |   feat   |   TensorFlow1   |   :heavy_check_mark:   |      |   :heavy_check_mark:   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
-|  YouTuBeRanking   | feat | TensorFlow1 | :heavy_check_mark: |  |  | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
+| YouTubeRetrieval  |   feat   |   TensorFlow1   |   :heavy_check_mark:   |      |   :heavy_check_mark:   | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
+|  YouTubeRanking   | feat | TensorFlow1 | :heavy_check_mark: |  |  | [Deep Neural Networks for YouTube Recommendations](<https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>) |
 |      AutoInt      | feat | TensorFlow1 |  |  |  | [AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks](https://arxiv.org/pdf/1810.11921.pdf) |
 |        DIN        |   feat   |   TensorFlow1   |   :heavy_check_mark:   |      |      | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978.pdf) |
-|     Item2Vec      | pure | Gensim | :heavy_check_mark: |  | :heavy_check_mark: | [Item2Vec: Neural Item Embedding for Collaborative Filtering](https://arxiv.org/pdf/1603.04259.pdf) |
+|     Item2Vec      | pure | / | :heavy_check_mark: |  | :heavy_check_mark: | [Item2Vec: Neural Item Embedding for Collaborative Filtering](https://arxiv.org/pdf/1603.04259.pdf) |
 | RNN4Rec / GRU4Rec | pure | TensorFlow1 | :heavy_check_mark: |  | :heavy_check_mark: | [Session-based Recommendations with Recurrent Neural Networks](https://arxiv.org/pdf/1511.06939.pdf) |
 |       Caser       | pure | TensorFlow1 | :heavy_check_mark: |  | :heavy_check_mark: | [Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding](https://arxiv.org/pdf/1809.07426.pdf) |
 |      WaveNet      | pure | TensorFlow1 | :heavy_check_mark: |  | :heavy_check_mark: | [WaveNet: A Generative Model for Raw Audio](https://arxiv.org/pdf/1609.03499.pdf) |
-|     DeepWalk      | pure | Gensim |  | :heavy_check_mark: | :heavy_check_mark: | [DeepWalk: Online Learning of Social Representations](https://arxiv.org/pdf/1403.6652.pdf) |
+|     DeepWalk      | pure | / |  | :heavy_check_mark: | :heavy_check_mark: | [DeepWalk: Online Learning of Social Representations](https://arxiv.org/pdf/1403.6652.pdf) |
 |       NGCF        | pure | PyTorch |  | :heavy_check_mark: | :heavy_check_mark: | [Neural Graph Collaborative Filtering](https://arxiv.org/pdf/1905.08108.pdf) |
 |     LightGCN      | pure | PyTorch |  | :heavy_check_mark: | :heavy_check_mark: | [LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation](https://arxiv.org/pdf/2002.02126.pdf) |
 
-> **Category**: `pure` means collaborative-filtering algorithms which only use behavior data,  `feat` means other side-features can be included.
->
-> **Sequence**: Algorithms that leverage user behavior sequence.
->
-> **Graph**: Algorithms that leverage graph information, including Graph Embedding (GE) and Graph Neural Network (GNN) .
->
-> **Embedding**: Algorithms that can generate final user and item embeddings.
+> <sup id="fn1">[1] **Category**: `pure` means collaborative-filtering algorithms which only use behavior data,  `feat` means other side-features can be included. <a href="#ref1" title="Jump back to footnote 1 in the text.">↩</a></sup>
+> 
+> <sup id="fn2">[2] **Sequence**: Algorithms that leverage user behavior sequence. <a href="#ref2" title="Jump back to footnote 2 in the text.">↩</a></sup>
+> 
+> <sup id="fn3">[3] **Graph**: Algorithms that leverage graph information, including Graph Embedding (GE) and Graph Neural Network (GNN) . <a href="#ref3" title="Jump back to footnote 3 in the text.">↩</a></sup>
+> 
+> <sup id="fn4">[4] **Embedding**: Algorithms that can generate final user and item embeddings. <a href="#ref4" title="Jump back to footnote 4 in the text.">↩</a></sup>
 
 
 

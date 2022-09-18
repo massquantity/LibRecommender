@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This guide mainly describes how to serve a trained model using `libserving` module in LibRecommender. Prior to 0.10.0, [Flask](<https://flask.palletsprojects.com/en/1.1.x/>) was used to construct the serving web server. However, to take full advantage of the asynchronous feature and modern `async/await` syntax in Python, we've decided to switch to [Sanic](https://github.com/sanic-org/sanic) framework. Unlike flask, a sanic server can run in production directly, and the typical command is like this:
+This guide mainly describes how to serve a trained model using the `libserving` module in LibRecommender. Prior to 0.10.0, [Flask](<https://flask.palletsprojects.com/en/1.1.x/>) was used to construct the serving web server. However, to take full advantage of the asynchronous feature and modern `async/await` syntax in Python, we've decided to switch to [Sanic](https://github.com/sanic-org/sanic) framework. Unlike flask, a sanic server can run in production directly, and the typical command is like this:
 
 ```bash
 $ sanic server:app --host=127.0.0.1 --port=8000 --dev --access-logs -v --workers 1  # develop mode
@@ -62,7 +62,7 @@ $ sudo docker pull tensorflow/serving:2.8.2
 
 ## Saving Format
 
-In LibRecommender, the primary data serialization format is [`JSON`](<https://www.json.org/json-en.html>) rather than pickle, because pickle is relatively slow and it is declared in the official [pickle](<https://docs.python.org/3.6/library/pickle.html>) documentation:
+In `libserving`, the primary data serialization format is [`JSON`](<https://www.json.org/json-en.html>) rather than pickle, because pickle is relatively slow and it is declared in the official [pickle](<https://docs.python.org/3.6/library/pickle.html>) documentation:
 
 > Warning: The `pickle` module is not secure against erroneous or maliciously constructed data. Never unpickle data received from an untrusted or unauthenticated source.
 
@@ -95,16 +95,16 @@ $ sanic sanic_serving.knn_deploy:app --dev --access-logs -v --workers 1  # run s
 # make requests
 $ python request.py --user 1 --n_rec 10 --algo knn
 $ curl -d '{"user": 1, "n_rec": 10}' -X POST http://127.0.0.1:8000/knn/recommend
-# {'recommend result for user 1': ['1196', '480', '260', '2028', '1198', '1214', '780', '1387', '1291', '1197']}
+# {'Recommend result for user 1': ['480', '589', '2571', '260', '2028', '1198', '1387', '1214', '1291', '1197']}
 ```
 
 
 
 ## Embed-based model
 
-Embed-based models perform similarity searching on embeddings to make recommendation, so we only need to save a bunch of embeddings. This kind of model includes `SVD`, `SVD++`, `ALS`, `BPR`, `YouTuBeRetrieval`, `Item2Vec`, `DeepWalk`, `RNN4Rec`, `Caser`, `WaveNet`, `NGCF`, `LightGCN`.
+Embed-based models perform similarity searching on embeddings to make recommendation, so we only need to save a bunch of embeddings. This kind of model includes `SVD`, `SVD++`, `ALS`, `BPR`, `YouTubeRetrieval`, `Item2Vec`, `DeepWalk`, `RNN4Rec`, `Caser`, `WaveNet`, `NGCF`, `LightGCN`.
 
-In practice, to speed up serving, some ANN(Approximate Nearest Neighbors) libraries are often used to find similar embeddings. Here in LibRecommender, we use [faiss](<https://github.com/facebookresearch/faiss>) to do such thing.
+In practice, to speed up serving, some ANN(Approximate Nearest Neighbors) libraries are often used to find similar embeddings. Here in `libserving`, we use [faiss](<https://github.com/facebookresearch/faiss>) to do such thing.
 
 Below is an example usage which uses `ALS`. One should also specify model-saving `path` : 
 
@@ -121,7 +121,7 @@ Below is an example usage which uses `ALS`. One should also specify model-saving
 >>> embed2redis(path, host="localhost", port=6379, db=0)  # load json from path and save model to redis
 ```
 
-The below code will train faiss index on model's item embeddings and save to disk as file name `faiss_index.bin`. The saved index will be loaded in sanic server.
+The following code will train faiss index on model's item embeddings and save to disk as file name `faiss_index.bin`. The saved index will be loaded in sanic server.
 
 ```python
 >>> from libserving.serialization import save_faiss_index
@@ -134,7 +134,7 @@ $ sanic sanic_serving.embed_deploy:app --dev --access-logs -v --workers 1  # run
 # make requests
 $ python request.py --user 1 --n_rec 10 --algo embed
 $ curl -d '{"user": 1, "n_rec": 10}' -X POST http://127.0.0.1:8000/embed/recommend
-# {'recommend result for user 1': ['1196', '480', '260', '2028', '1198', '1214', '780', '1387', '1291', '1197']}
+# {'Recommend result for user 1': ['593', '1270', '318', '2858', '1196', '2571', '1617', '260', '1200', '457']}
 ```
 
 
@@ -293,6 +293,6 @@ $ sanic sanic_serving.tf_deploy:app --dev --access-logs -v --workers 1  # run sa
 # make requests
 $ python request.py --user 1 --n_rec 10 --algo tf
 $ curl -d '{"user": 1, "n_rec": 10}' -X POST http://127.0.0.1:8000/tf/recommend
-# {'recommend result for user 1': ['1196', '480', '260', '2028', '1198', '1214', '780', '1387', '1291', '1197']}
+# {'Recommend result for user 1': ['1196', '480', '260', '2028', '1198', '1214', '780', '1387', '1291', '1197']}
 ```
 
