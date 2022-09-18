@@ -23,17 +23,6 @@ def prepare_pure_data():
 
 
 @pytest.fixture
-def read_feat_data():
-    data_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "sample_data",
-        "sample_movielens_merged.csv",
-    )
-    pd_data = pd.read_csv(data_path, sep=",", header=0)
-    return pd_data, split_by_ratio_chrono(pd_data, test_size=0.2)
-
-
-@pytest.fixture
 def prepare_feat_data(read_feat_data):
     pd_data, (train_data, eval_data) = read_feat_data
     train_data, data_info = DatasetFeat.build_trainset(
@@ -65,3 +54,14 @@ def prepare_multi_sparse_data(read_feat_data):
     eval_data = DatasetFeat.build_testset(eval_data)
     yield pd_data, train_data, eval_data, data_info
     remove_path(SAVE_PATH)
+
+
+@pytest.fixture
+def read_feat_data():
+    data_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "sample_data",
+        "sample_movielens_merged.csv",
+    )
+    pd_data = pd.read_csv(data_path, sep=",", header=0)
+    return pd_data, split_by_ratio_chrono(pd_data, test_size=0.2)

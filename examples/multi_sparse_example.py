@@ -48,8 +48,8 @@ if __name__ == "__main__":
         dropout_rate=None,
         hidden_units="128,64,32",
         tf_sess_config=None,
-        multi_sparse_combiner="sqrtn",
-    )  # specify multi_sparse combiner
+        multi_sparse_combiner="sqrtn",  # specify multi_sparse combiner
+    )
 
     deepfm.fit(
         train_data,

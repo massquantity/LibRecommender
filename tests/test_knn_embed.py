@@ -4,7 +4,7 @@ from libreco.algorithms import ALS, RNN4Rec
 
 
 def test_knn_embed(prepare_pure_data):
-    pd_data, train_data, eval_data, data_info = prepare_pure_data
+    _, train_data, eval_data, data_info = prepare_pure_data
     train_data.build_negative_samples(data_info, seed=2022)
     eval_data.build_negative_samples(data_info, seed=2222)
 

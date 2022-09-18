@@ -7,36 +7,46 @@ from libreco.data import DataInfo
 from libreco.data.data_info import EmptyFeature
 from libreco.tfops import tf
 from libreco.utils.misc import colorize
-from .common import check_path_exists, save_id_mapping, save_to_json, save_user_consumed
+from .common import (
+    check_path_exists,
+    save_id_mapping,
+    save_model_name,
+    save_to_json,
+    save_user_consumed,
+)
 
 
 def save_tf(path: str, model: TfBase, version: int = 1):
     check_path_exists(path)
+    save_model_name(path, model)
     save_id_mapping(path, model.data_info)
     save_user_consumed(path, model.data_info)
-    save_features(path, model.data_info)
+    save_features(path, model.data_info, model)
     save_tf_serving_model(path, model, version)
 
 
-def save_features(path: str, data_info: DataInfo):
+def save_features(path: str, data_info: DataInfo, model: TfBase):
     feats = {"n_items": data_info.n_items}
     if data_info.col_name_mapping:
         if data_info.user_sparse_col != EmptyFeature:
             _check_num_match(data_info.user_sparse_unique, data_info.n_users)
             feats["user_sparse_col_index"] = data_info.user_sparse_col.index
-            feats["user_sparse_values"] = data_info.user_sparse_unique.tolist()
+            feats["user_sparse_values"] = data_info.user_sparse_unique[:-1].tolist()
         if data_info.item_sparse_col != EmptyFeature:
             _check_num_match(data_info.item_sparse_unique, data_info.n_items)
             feats["item_sparse_col_index"] = data_info.item_sparse_col.index
-            feats["item_sparse_values"] = data_info.item_sparse_unique.tolist()
+            feats["item_sparse_values"] = data_info.item_sparse_unique[:-1].tolist()
         if data_info.user_dense_col != EmptyFeature:
             _check_num_match(data_info.user_dense_unique, data_info.n_users)
             feats["user_dense_col_index"] = data_info.user_dense_col.index
-            feats["user_dense_values"] = data_info.user_dense_unique.tolist()
+            feats["user_dense_values"] = data_info.user_dense_unique[:-1].tolist()
         if data_info.item_dense_col != EmptyFeature:
             _check_num_match(data_info.item_dense_unique, data_info.n_items)
             feats["item_dense_col_index"] = data_info.item_dense_col.index
-            feats["item_dense_values"] = data_info.item_dense_unique.tolist()
+            feats["item_dense_values"] = data_info.item_dense_unique[:-1].tolist()
+
+    if hasattr(model, "max_seq_len"):
+        feats["max_seq_len"] = model.max_seq_len
     feature_path = os.path.join(path, "features.json")
     save_to_json(feature_path, feats)
 

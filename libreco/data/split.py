@@ -70,7 +70,7 @@ def _pad_unknown_user_item(data_list, pad_val):
     unique_items = set(train_data.item.tolist())
 
     split_data_all = [train_data]
-    for i, test_data in enumerate(data_list[1:], start=1):
+    for test_data in data_list[1:]:
         test_data.loc[~test_data.user.isin(unique_users), "user"] = user_pad_val
         test_data.loc[~test_data.item.isin(unique_items), "item"] = item_pad_val
         split_data_all.append(test_data)

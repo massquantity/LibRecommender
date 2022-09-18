@@ -4,11 +4,18 @@ from typing import Union
 from scipy import sparse
 
 from libreco.algorithms import ItemCF, UserCF
-from .common import check_path_exists, save_id_mapping, save_to_json, save_user_consumed
+from .common import (
+    check_path_exists,
+    save_id_mapping,
+    save_model_name,
+    save_to_json,
+    save_user_consumed,
+)
 
 
 def save_knn(path: str, model: Union[UserCF, ItemCF], k: int):
     check_path_exists(path)
+    save_model_name(path, model)
     save_id_mapping(path, model.data_info)
     save_user_consumed(path, model.data_info)
     save_sim_matrix(path, model.sim_matrix, k)
