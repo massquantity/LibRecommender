@@ -110,7 +110,7 @@ def features2redis(path: str, r: redis.Redis):
         r.hset("feature", "item_sparse", 1)
         r.set("item_sparse_col_index", ujson.dumps(feats["item_sparse_col_index"]))
         pipe = r.pipeline()
-        for i, vals in enumerate(feats["item_sparse_values"]):
+        for vals in feats["item_sparse_values"]:
             pipe.rpush("item_sparse_values", ujson.dumps(vals))
         pipe.execute()
 
@@ -126,6 +126,6 @@ def features2redis(path: str, r: redis.Redis):
         r.hset("feature", "item_dense", 1)
         r.set("item_dense_col_index", ujson.dumps(feats["item_dense_col_index"]))
         pipe = r.pipeline()
-        for i, vals in enumerate(feats["item_dense_values"]):
+        for vals in feats["item_dense_values"]:
             pipe.rpush("item_dense_values", ujson.dumps(vals))
         pipe.execute()
