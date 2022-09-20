@@ -45,7 +45,6 @@ async def recommend_on_features(user_id: str, n_rec: int, r: redis.Redis) -> Lis
     item_sparse_col_index, item_sparse_values = await get_all_from_redis(
         "item_sparse_col_index", "item_sparse_values", r
     )
-
     if user_sparse_col_index or item_sparse_col_index:
         features.update(
             await build_features(

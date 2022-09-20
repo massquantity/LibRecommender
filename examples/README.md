@@ -170,7 +170,7 @@ LibRecommender provides some options on loss type for `ranking` task. The defaul
 >>> model = Caser(task="ranking", loss_type="focal", ...)
 ```
 
-There are some special cases. Some algorithms are hard to assign explicit loss type, including `UserCF`, `ItemCF`, `ALS`, `Item2Vec`, `DeepWalk`, so they don't have `loss_type` parameter. Some algorithms can only use bpr loss, including `BPR`, `NGCF`, `LightGCN`, so don't bother to choose loss for them too.
+There are some special cases. Some algorithms are hard to assign explicit loss type, including `UserCF`, `ItemCF`, `ALS`, `Item2Vec`, `DeepWalk`, so they don't have `loss_type` parameter. Some algorithms can only use bpr loss, including `BPR`, `NGCF`, `LightGCN`, so don't bother to choose loss for them either.
 
 The `YouTubeRetrieval` algorithm is also different, its `loss_type` is either `sampled_softmax` or `nce`. Finally, with `RNN4Rec` algorithm, one can choose three `loss_type`, i.e. `cross_entropy`, `focal`, `bpr`.
 
