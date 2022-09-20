@@ -25,7 +25,6 @@ async def get_reco(session: aiohttp.ClientSession, url: str, data: dict):
 
 
 async def main_async(args):
-    # noinspection HttpUrlsUsage
     url = f"http://{args.host}:{args.port}/{args.algo}/recommend"
     data = {"user": args.user, "n_rec": args.n_rec}
     async with aiohttp.ClientSession() as session:
@@ -34,7 +33,6 @@ async def main_async(args):
 
 
 def main_sync(args):
-    # noinspection HttpUrlsUsage
     url = f"http://{args.host}:{args.port}/{args.algo}/recommend"
     data = {"user": args.user, "n_rec": args.n_rec}
     for _ in range(args.n_times):

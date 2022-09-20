@@ -18,7 +18,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-    # noinspection HttpUrlsUsage
     url = f"http://{args.host}:{args.port}/{args.algo}/recommend"
     data = {"user": args.user, "n_rec": args.n_rec}
     response = requests.post(url, json=data)

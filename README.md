@@ -1,5 +1,16 @@
 # LibRecommender
 
+[![Build](https://img.shields.io/github/workflow/status/massquantity/LibRecommender/Build%20wheels)](https://github.com/massquantity/LibRecommender/actions/workflows/wheels.yml)
+[![CI](https://github.com/massquantity/LibRecommender/actions/workflows/ci.yml/badge.svg)](https://github.com/massquantity/LibRecommender/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/massquantity/LibRecommender/branch/master/graph/badge.svg?token=BYOYFBUJRL)](https://codecov.io/gh/massquantity/LibRecommender)
+[![pypi](https://img.shields.io/pypi/v/LibRecommender?color=blue)](https://pypi.org/project/LibRecommender/)
+[![Downloads](https://static.pepy.tech/personalized-badge/librecommender?period=total&units=international_system&left_color=grey&right_color=lightgrey&left_text=Downloads)](https://pepy.tech/project/librecommender)
+[![python versions](https://img.shields.io/pypi/pyversions/LibRecommender)](https://pypi.org/project/LibRecommender/)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/860f0cb5339c41fba9bee5770d09be47)](https://www.codacy.com/gh/massquantity/LibRecommender/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=massquantity/LibRecommender&amp;utm_campaign=Badge_Grade)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![License](https://img.shields.io/github/license/massquantity/LibRecommender)](https://github.com/massquantity/LibRecommender/blob/master/LICENSE)
+
+
 ## Overview
 
 **LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation. The main features are:
@@ -164,19 +175,19 @@ $ python setup.py install
 - tqdm
 - [nmslib](https://github.com/nmslib/nmslib) (optional)
 
-LibRecommender is tested under TensorFlow 1.15, 2.5 and 2.8. If you encounter any problem during running, feel free to open an issue.
+LibRecommender is tested under TensorFlow 1.15, 2.5, 2.8 and 2.10. If you encounter any problem during running, feel free to open an issue.
 
 **Known issue**: Sometimes one may encounter errors like `ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject`. In this case try upgrading numpy, and version 1.22.0 or higher is probably a safe option.
 
 The table below shows some compatible version combinations: 
 
-| Python |     Numpy      |   TensorFlow   |          OS           |
-|:------:|:--------------:|:--------------:|:---------------------:|
-|  3.6   |     1.19.5     |   1.15, 2.5    | linux, windows, macos |
-|  3.7   | 1.20.3, 1.21.5 | 1.15, 2.5, 2.8 | linux, windows, macos |
-|  3.8   |     1.22.2     |    2.5, 2.8    | linux, windows, macos |
-|  3.9   |     1.22.2     |    2.5, 2.8    | linux, windows, macos |
-|  3.10  |     1.22.2     |      2.8       | linux, windows, macos |
+| Python |     Numpy      |      TensorFlow      |          OS           |
+| :----: | :------------: | :------------------: | :-------------------: |
+|  3.6   |     1.19.5     |      1.15, 2.5       | linux, windows, macos |
+|  3.7   | 1.20.3, 1.21.6 | 1.15, 2.5, 2.8, 2.10 | linux, windows, macos |
+|  3.8   | 1.22.4, 1.23.2 |    2.5, 2.8, 2.10    | linux, windows, macos |
+|  3.9   | 1.22.4, 1.23.2 |    2.5, 2.8, 2.10    | linux, windows, macos |
+|  3.10  | 1.22.4, 1.23.2 |      2.8, 2.10       | linux, windows, macos |
 
 
 #### Optional Dependencies for [`libserving`](https://github.com/massquantity/LibRecommender/tree/master/libserving):

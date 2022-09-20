@@ -9,7 +9,7 @@ $ sanic server:app --host=127.0.0.1 --port=8000 --dev --access-logs -v --workers
 $ sanic server:app --no-access-logs --workers 10  # production mode
 ```
 
-Refer to [Running Sanic](https://sanic.dev/en/guide/deployment/running.html#http-3) for more details.
+Refer to [Running Sanic](https://sanic.dev/en/guide/deployment/running.html) for more details.
 
 <br>
 
@@ -46,7 +46,7 @@ $ cd LibRecommender/libserving
 
 ## Note about dependencies
 
-The serving related dependencies are listed in [main README](https://github.com/massquantity/LibRecommender#optional-serving-dependencies). 
+The serving related dependencies are listed in [main README](https://github.com/massquantity/LibRecommender#optional-dependencies-for-libserving). 
 
 + [redis-py](https://github.com/redis/redis-py) introduced async support since 4.2.0.
 
@@ -214,11 +214,11 @@ signature_def['predict']:
   Method name is: tensorflow/serving/predict
 ```
 
-The above result shows this `DIN` model needs 6 inputs, i.e. `user_indices`, `item_indices`, `sparse_indices`, `dense_values`, `user_interacted_seq`, `user_interacted_len`. But this only applies to `DIN` and other models needs different inputs. 
+The above result shows this `DIN` model needs 6 inputs, i.e. `user_indices`, `item_indices`, `sparse_indices`, `dense_values`, `user_interacted_seq`, `user_interacted_len`. But this only applies to `DIN` and other models may have different inputs. 
 
 For `NCF` model, only `user_indices` and `item_indices` are needed since it's a collaborative-filtering algorithm.
 
-For `WideDeep`,  `FM`,  `DeepFM` , `AutoInt`, since they don't use behavior sequence information, four inputs are needed: `user_indices`, `item_indices`, `sparse_indices`, `dense_values`.
+For `WideDeep`,  `FM`,  `DeepFM` , `AutoInt`, since they don't use behavior sequence information, 4 inputs are needed: `user_indices`, `item_indices`, `sparse_indices`, `dense_values`.
 
 Finally, `YouTubeRanking` has same inputs as `DIN`. They both use behavior sequence information.
 
