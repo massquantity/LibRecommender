@@ -8,7 +8,7 @@
 [![python versions](https://img.shields.io/pypi/pyversions/LibRecommender)](https://pypi.org/project/LibRecommender/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/860f0cb5339c41fba9bee5770d09be47)](https://www.codacy.com/gh/massquantity/LibRecommender/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=massquantity/LibRecommender&amp;utm_campaign=Badge_Grade)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![License](https://img.shields.io/github/license/massquantity/LibRecommender)](https://github.com/massquantity/LibRecommender/blob/master/LICENSE)
+[![License](https://img.shields.io/github/license/massquantity/LibRecommender?color=ff69b4)](https://github.com/massquantity/LibRecommender/blob/master/LICENSE)
 
 
 ## Overview
@@ -147,7 +147,7 @@ For how to serve a trained model in LibRecommender, see [Serving Guide](https://
 From pypi : &nbsp;
 
 ```shell
-$ pip install LibRecommender==0.10.0
+$ pip install LibRecommender
 ```
 
 To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
