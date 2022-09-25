@@ -1,6 +1,5 @@
 import argparse
 import json
-import sys
 
 import requests
 
@@ -24,7 +23,7 @@ def main():
     if response.status_code != 200:
         print(f"Failed to get recommendation: {url}")
         print(response.text)
-        sys.exit(1)
+        response.raise_for_status()
     try:
         print(response.json())
     except json.JSONDecodeError:

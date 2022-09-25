@@ -68,7 +68,8 @@ async def redis_close(app: Sanic):
 
 
 def find_index_path():
-    par_dir = str(Path(os.path.realpath(__file__)).parent.parent)
+    # par_dir = str(Path(os.path.realpath(__file__)).parent.parent)
+    par_dir = str(Path(__file__).absolute().parent.parent)
     for dir_path, _, files in os.walk(par_dir):
         for file in files:
             if file.startswith("faiss_index"):
