@@ -112,7 +112,6 @@ def test_item_dense_feature():
         dense_col=["age"],
         user_col=["sex", "occupation"],
         item_col=["genre1", "genre2", "genre3", "age"],  # assign `age` to item feature
-        reset_state=True,
     )
     eval_data = DatasetFeat.build_testset(eval_data)
     model = DIN(

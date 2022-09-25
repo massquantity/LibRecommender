@@ -31,7 +31,6 @@ def prepare_feat_data(read_feat_data):
         dense_col=["age"],
         user_col=["sex", "age", "occupation"],
         item_col=["genre1", "genre2", "genre3"],
-        reset_state=True,
     )
     eval_data = DatasetFeat.build_testset(eval_data)
     yield pd_data, train_data, eval_data, data_info
@@ -49,7 +48,6 @@ def prepare_multi_sparse_data(read_feat_data):
         user_col=["sex", "age", "occupation"],
         item_col=["genre1", "genre2", "genre3"],
         pad_val=["missing"],
-        reset_state=True,
     )
     eval_data = DatasetFeat.build_testset(eval_data)
     yield pd_data, train_data, eval_data, data_info

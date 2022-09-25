@@ -36,7 +36,6 @@ def test_feature():
         dense_col=dense_col,
         multi_sparse_col=multi_sparse_col,
         shuffle=False,
-        reset_state=True,
     )
 
     assert data_info.user_sparse_col == EmptyFeature

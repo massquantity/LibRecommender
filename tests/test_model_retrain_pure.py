@@ -23,7 +23,7 @@ def test_model_retrain_pure():
     # use first half data as first training part
     first_half_data = all_data[: (len(all_data) // 2)]
     train_data, eval_data = split_by_ratio_chrono(first_half_data, test_size=0.2)
-    train_data, data_info = DatasetPure.build_trainset(train_data, reset_state=True)
+    train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)
     train_data.build_negative_samples(data_info, seed=2022)
     eval_data.build_negative_samples(data_info, seed=2222)

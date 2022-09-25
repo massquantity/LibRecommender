@@ -32,7 +32,6 @@ def prepare_youtube_retrieval_data(multi_sparse=False):
             dense_col=["age"],
             user_col=["sex", "age", "occupation", "genre1", "genre2", "genre3"],
             item_col=[],
-            reset_state=True,
         )
     else:
         train_data, data_info = DatasetFeat.build_trainset(
@@ -41,7 +40,6 @@ def prepare_youtube_retrieval_data(multi_sparse=False):
             dense_col=["age"],
             user_col=["sex", "age", "occupation"],
             item_col=[],
-            reset_state=True,
         )
     eval_data = DatasetFeat.build_testset(eval_data)
     return pd_data, train_data, eval_data, data_info
