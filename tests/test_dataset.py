@@ -75,7 +75,6 @@ def test_dataset_pure(pure_train_data):
         _ = data[11]
     with pytest.raises(AssertionError):
         _ = DatasetPure.build_trainset(pd_data[["user", "item"]])
-    DatasetPure.build_train_test(pd_data.iloc[:10], pd_data.iloc[10:20])
 
 
 def test_negative_samples(pure_train_data):
@@ -120,7 +119,6 @@ def test_dataset_feat(feat_train_data):
     os.remove(os.path.join(os.path.curdir, "test_data_info_name_mapping.json"))
     assert data_info2.data_size == 10
     assert data_info.col_name_mapping == data_info2.col_name_mapping
-    DatasetFeat.build_train_test(pd_data.iloc[:10], pd_data.iloc[10:20])
 
 
 def test_processing(feat_train_data):

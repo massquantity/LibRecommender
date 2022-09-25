@@ -35,7 +35,6 @@ def test_model_retrain_feat():
         sparse_col,
         dense_col,
         shuffle=False,
-        reset_state=True,
     )
     eval_data = DatasetFeat.build_evalset(eval_data)
     train_data.build_negative_samples(data_info, seed=2022)

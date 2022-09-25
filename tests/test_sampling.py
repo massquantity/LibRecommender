@@ -33,7 +33,6 @@ def test_sampling():
         dense_col=dense_col,
         multi_sparse_col=multi_sparse_col,
         shuffle=False,
-        reset_state=True,
     )
 
     with pytest.raises(NotSamplingError):

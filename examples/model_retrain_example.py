@@ -25,7 +25,6 @@ if __name__ == "__main__":
         sparse_col,
         dense_col,
         shuffle=False,
-        reset_state=True
     )
     test_data = DatasetFeat.build_testset(test, shuffle=False)
     print(data_info)
