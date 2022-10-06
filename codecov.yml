@@ -1,0 +1,21 @@
+codecov:
+  notify:
+    after_n_builds: 5
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: '50'
+        informational: true
+
+comment:
+  after_n_builds: 5
+
+ignore:
+  - "README.md"
+  - "libserving/README.md"
