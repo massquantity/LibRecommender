@@ -22,7 +22,7 @@ from tests.utils_save_load import save_load_model
 @pytest.mark.parametrize(
     "lr, lr_decay, reg, num_neg, use_bn, dropout_rate",
     [
-        ({"wide": 0.1, "deep": 0.1}, False, None, 1, False, None),
+        ({"wide": 0.01, "deep": 3e-4}, False, None, 1, False, None),
         (None, True, 0.001, 3, True, 0.5),
         (0.01, True, 0.001, 3, True, 0.5),
     ],

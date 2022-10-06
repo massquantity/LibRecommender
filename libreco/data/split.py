@@ -71,8 +71,10 @@ def _pad_unknown_user_item(data_list, pad_val):
 
     split_data_all = [train_data]
     for test_data in data_list[1:]:
-        test_data.loc[~test_data.user.isin(unique_users), "user"] = user_pad_val
-        test_data.loc[~test_data.item.isin(unique_items), "item"] = item_pad_val
+        test_data_copy = test_data.copy()
+        test_data_copy.loc[~test_data.user.isin(unique_users), "user"] = user_pad_val
+        test_data_copy.loc[~test_data.item.isin(unique_items), "item"] = item_pad_val
+        test_data = test_data_copy
         split_data_all.append(test_data)
     return split_data_all
 
@@ -177,7 +179,7 @@ def split_by_ratio_chrono(
         ["user" in data.columns, "time" in data.columns]
     ), "data must contains user and time column"
 
-    data.sort_values(by=["time"], inplace=True)
+    data = data.sort_values(by=["time"])
     data.reset_index(drop=True, inplace=True)
     return split_by_ratio(**locals())
 
@@ -187,7 +189,7 @@ def split_by_num_chrono(data, order=True, shuffle=False, test_size=1, seed=42):
         ["user" in data.columns, "time" in data.columns]
     ), "data must contains user and time column"
 
-    data.sort_values(by=["time"], inplace=True)
+    data = data.sort_values(by=["time"])
     data.reset_index(drop=True, inplace=True)
     return split_by_num(**locals())
 

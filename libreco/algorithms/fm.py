@@ -130,9 +130,8 @@ class FM(TfBase):
         # For original FM, just add K dim together:
         # pairwise_term = 0.5 * tf.reduce_sum(pairwise_term, axis=1)
         if self.use_bn:
-            pairwise_term = tf.layers.batch_normalization(
-                pairwise_term, training=self.is_training
-            )
+            batch_norm = tf.keras.layers.BatchNormalization()
+            pairwise_term = batch_norm(pairwise_term, training=self.is_training)
         pairwise_term = tf_dense(units=1, activation=tf.nn.elu)(pairwise_term)
         self.output = tf.squeeze(tf.add(linear_term, pairwise_term))
         count_params()

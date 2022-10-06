@@ -14,7 +14,9 @@ def prepare_pure_data():
         "sample_data",
         "sample_movielens_rating.dat",
     )
-    pd_data = pd.read_csv(data_path, sep="::", names=["user", "item", "label", "time"])
+    pd_data = pd.read_csv(
+        data_path, sep="::", names=["user", "item", "label", "time"], engine='python'
+    )
     train_data, eval_data = split_by_ratio_chrono(pd_data, test_size=0.2)
     train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)

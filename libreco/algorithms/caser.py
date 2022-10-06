@@ -178,7 +178,7 @@ class Caser(EmbedBase, TfMixin):
             padding="valid",
             activation="relu",
         )(inputs=tf.transpose(seq_item_embed, [0, 2, 1]))
-        convs_out.append(tf.layers.flatten(v_conv))
+        convs_out.append(tf.keras.layers.Flatten()(v_conv))
 
         convs_out = tf.concat(convs_out, axis=1)
         convs_out = tf_dense(units=self.embed_size, activation=tf.nn.relu)(convs_out)
