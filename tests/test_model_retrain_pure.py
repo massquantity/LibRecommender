@@ -19,7 +19,9 @@ def test_model_retrain_pure():
         "sample_data",
         "sample_movielens_rating.dat",
     )
-    all_data = pd.read_csv(data_path, sep="::", names=["user", "item", "label", "time"])
+    all_data = pd.read_csv(
+        data_path, sep="::", names=["user", "item", "label", "time"], engine="python"
+    )
     # use first half data as first training part
     first_half_data = all_data[: (len(all_data) // 2)]
     train_data, eval_data = split_by_ratio_chrono(first_half_data, test_size=0.2)

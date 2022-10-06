@@ -15,7 +15,7 @@ from tensorflow.keras.initializers import (
 
 from ..bases import EmbedBase, TfMixin
 from ..data.sequence import get_user_last_interacted
-from ..tfops import dropout_config, reg_config, tf, tf_dense, TF_VERSION
+from ..tfops import dropout_config, reg_config, tf_rnn, tf, tf_dense
 from ..training import RNN4RecTrainer
 from ..utils.misc import count_params
 from ..utils.validate import check_interaction_mode
@@ -158,64 +158,17 @@ class RNN4Rec(EmbedBase, TfMixin):
         seq_item_embed = tf.nn.embedding_lookup(
             self.input_embed, self.user_interacted_seq
         )
-
-        if TF_VERSION >= "2.0.0":
-            # cell_type = (
-            #    tf.keras.layers.LSTMCell
-            #    if self.rnn_type.endswith("lstm")
-            #    else tf.keras.layers.GRUCell
-            # )
-            # cells = [cell_type(size) for size in self.hidden_units]
-            # masks = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
-            # tf2_rnn = tf.keras.layers.RNN(cells, return_state=True)
-            # output, *state = tf2_rnn(seq_item_embed, mask=masks)
-
-            rnn = (
-                tf.keras.layers.LSTM
-                if self.rnn_type.endswith("lstm")
-                else tf.keras.layers.GRU
-            )
-            out = seq_item_embed
-            masks = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
-            for units in self.hidden_units:
-                out = rnn(
-                    units,
-                    return_sequences=True,
-                    dropout=self.dropout_rate,
-                    recurrent_dropout=self.dropout_rate,
-                    activation=None if self.use_ln else "tanh",
-                )(out, mask=masks, training=self.is_training)
-
-                if self.use_ln:
-                    out = tf.keras.layers.LayerNormalization()(out)
-                    out = tf.keras.activations.get("tanh")(out)
-
-            out = out[:, -1, :]
-            self.user_vector = tf.keras.layers.Dense(
-                units=self.embed_size, activation=None
-            )(out)
-
-        else:
-            cell_type = (
-                tf.nn.rnn_cell.LSTMCell
-                if self.rnn_type.endswith("lstm")
-                else tf.nn.rnn_cell.GRUCell
-            )
-            cells = [cell_type(size) for size in self.hidden_units]
-            stacked_cells = tf.nn.rnn_cell.MultiRNNCell(cells)
-            zero_state = stacked_cells.zero_state(
-                tf.shape(seq_item_embed)[0], dtype=tf.float32
-            )
-
-            output, state = tf.nn.dynamic_rnn(
-                cell=stacked_cells,
-                inputs=seq_item_embed,
-                sequence_length=self.user_interacted_len,
-                initial_state=zero_state,
-                time_major=False,
-            )
-            out = state[-1][1] if self.rnn_type == "lstm" else state[-1]
-            self.user_vector = tf_dense(units=self.embed_size, activation=None)(out)
+        rnn_output = tf_rnn(
+            inputs=seq_item_embed,
+            rnn_type=self.rnn_type,
+            lengths=self.user_interacted_len,
+            maxlen=self.max_seq_len,
+            hidden_units=self.hidden_units,
+            dropout_rate=self.dropout_rate,
+            use_ln=self.use_ln,
+            is_training=self.is_training,
+        )
+        self.user_vector = tf_dense(units=self.embed_size, activation=None)(rnn_output)
 
     def _set_last_interacted(self):
         user_last_interacted, last_interacted_len = get_user_last_interacted(

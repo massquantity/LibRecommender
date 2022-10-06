@@ -120,7 +120,7 @@ class AutoInt(TfBase):
             attention_layer = self.multi_head_attention(
                 attention_layer, self.att_embed_size[i]
             )
-        attention_layer = tf.layers.flatten(attention_layer)
+        attention_layer = tf.keras.layers.Flatten()(attention_layer)
         self.output = tf.squeeze(tf_dense(units=1)(attention_layer))
 
     def _build_user_item(self):

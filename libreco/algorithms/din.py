@@ -225,7 +225,7 @@ class DIN(TfBase):
             )
 
         if self.item_sparse:
-            item_sparse_embed = tf.layers.flatten(
+            item_sparse_embed = tf.keras.layers.Flatten()(
                 tf.gather(sparse_embed, self.item_sparse_col_indices, axis=1)
             )
             self.item_embed.append(item_sparse_embed)
@@ -256,7 +256,7 @@ class DIN(TfBase):
         )
 
         if self.item_dense:
-            item_dense_embed = tf.layers.flatten(
+            item_dense_embed = tf.keras.layers.Flatten()(
                 tf.gather(dense_embed, self.item_dense_col_indices, axis=1)
             )
             self.item_embed.append(item_dense_embed)
@@ -323,7 +323,7 @@ class DIN(TfBase):
         attention_layer = self._attention_unit(
             item_total_embed, seq_total_embed, self.user_interacted_len
         )
-        self.concat_embed.append(tf.layers.flatten(attention_layer))
+        self.concat_embed.append(tf.keras.layers.Flatten()(attention_layer))
 
     def _attention_unit(self, queries, keys, keys_len):
         if self.use_tf_attention:
@@ -356,7 +356,7 @@ class DIN(TfBase):
             # B * seq * 1
             mlp_layer = tf_dense(units=1, activation=None)(mlp_layer)
             # attention_weights = tf.transpose(mlp_layer, [0, 2, 1])
-            attention_weights = tf.layers.flatten(mlp_layer)
+            attention_weights = tf.keras.layers.Flatten()(mlp_layer)
 
             key_masks = tf.sequence_mask(keys_len, self.max_seq_len)
             paddings = tf.ones_like(attention_weights) * (-(2**32) + 1)

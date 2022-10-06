@@ -60,7 +60,7 @@ def _compress_unique_values(orig_val, col, indices, pos):
     values = values.reshape(-1, 1) if orig_val.ndim == 1 else values
     indices = indices[pos]
     # https://stackoverflow.com/questions/46390376/drop-duplicates-from-structured-numpy-array-python3-x
-    mask = np.empty(len(indices), dtype=np.bool)
+    mask = np.empty(len(indices), dtype=bool)
     mask[:-1] = indices[:-1] != indices[1:]
     mask[-1] = True
     mask = pos[mask]
