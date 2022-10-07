@@ -86,7 +86,10 @@ def test_feature():
     assert sparse_cols is None
     assert multi_sparse_cols == [["genre1", "genre2", "genre3"]]
 
-    data_info.interaction_data = data_info.interaction_data.replace(1, pd.NA)
+    interaction_data = data_info.interaction_data.copy()
+    interaction_data.loc[interaction_data.user == 1, "user"] = pd.NA
+    interaction_data.loc[interaction_data.item == 2, "item"] = pd.NA
+    data_info.interaction_data = interaction_data
     assert data_info.interaction_data.user.isnull().any()
     assert data_info.interaction_data.item.isnull().any()
     new_data = data_info.get_indexed_interaction()
