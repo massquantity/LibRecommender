@@ -32,7 +32,7 @@ try:
 except ImportError:
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
     logging.basicConfig(format=LOG_FORMAT)
-    logging.warn("Als cython version is not available")
+    logging.warning("Als cython version is not available")
     raise
 
 

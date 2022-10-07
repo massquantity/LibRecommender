@@ -5,7 +5,7 @@ from libreco.algorithms import FM
 
 from tests.utils_metrics import get_metrics
 from tests.utils_multi_sparse_models import fit_multi_sparse
-from tests.utils_path import SAVE_PATH
+from tests.utils_path import SAVE_PATH, remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model
@@ -77,6 +77,8 @@ def test_fm_multi_sparse(prepare_multi_sparse_data):
     model = fit_multi_sparse(FM, train_data, eval_data, data_info)
     ptest_preds(model, task, pd_data, with_feats=True)
     ptest_recommends(model, data_info, pd_data, with_feats=True)
+    model.save("not_existed_path", "fm2", manual=True, inference_only=True)
+    remove_path("not_existed_path")
 
     # test save and load model
     loaded_model, loaded_data_info = save_load_model(FM, model, data_info)

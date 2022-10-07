@@ -184,10 +184,8 @@ class ItemCF(Base):
         if user_id is None:
             if cold_start == "popular":
                 return popular_recommendations(self.data_info, inner_id, n_rec)
-            elif cold_start != "popular":
-                raise ValueError("ItemCF only supports popular strategy")
             else:
-                raise ValueError(user)
+                raise ValueError("ItemCF only supports popular strategy")
 
         u_consumed = set(self.user_consumed[user])
         user_slice = slice(

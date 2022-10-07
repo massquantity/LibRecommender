@@ -14,6 +14,7 @@ from libreco.data import (
     DataInfo,
     process_data,
 )
+from libreco.data.dataset import Dataset
 
 sparse_col = ["sex", "occupation", "genre1", "genre2", "genre3"]
 dense_col = ["age"]
@@ -76,6 +77,15 @@ def test_dataset_pure(pure_train_data):
     with pytest.raises(AssertionError):
         _ = DatasetPure.build_trainset(pd_data[["user", "item"]])
 
+    with pytest.raises(ValueError):
+        data_without_item = pd_data.drop(columns="item")
+        Dataset._check_col_names(data_without_item, "train")
+
+    with pytest.raises(RuntimeError):
+        DatasetPure.train_called = False
+        DatasetPure.build_testset(pd_data, shuffle=True)
+    DatasetPure.build_trainset(pd_data, shuffle=True)
+
 
 def test_negative_samples(pure_train_data):
     data, data_info = pure_train_data
@@ -119,6 +129,13 @@ def test_dataset_feat(feat_train_data):
     os.remove(os.path.join(os.path.curdir, "test_data_info_name_mapping.json"))
     assert data_info2.data_size == 10
     assert data_info.col_name_mapping == data_info2.col_name_mapping
+
+    with pytest.raises(RuntimeError):
+        DatasetFeat.train_called = False
+        DatasetFeat.build_testset(pd_data, shuffle=True)
+    DatasetFeat.build_trainset(
+        pd_data, user_col, item_col, sparse_col, dense_col, shuffle=True
+    )
 
 
 def test_processing(feat_train_data):
