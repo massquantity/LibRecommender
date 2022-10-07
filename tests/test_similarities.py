@@ -8,7 +8,12 @@ import pytest
 from scipy.sparse import csr_matrix
 
 from libreco.data import DatasetPure
-from libreco.utils.similarities import cosine_sim, pearson_sim, jaccard_sim
+from libreco.utils.similarities import (
+    cosine_sim,
+    pearson_sim,
+    jaccard_sim,
+    _choose_blocks,
+)
 
 
 raw_data = """
@@ -59,7 +64,6 @@ def test_similarities(pure_data, func, num_threads, min_common):
     assert isinstance(invert_sim, csr_matrix)
     assert forward_sim.shape == invert_sim.shape
     np.testing.assert_array_equal(forward_sim.toarray(), invert_sim.toarray())
-    from libreco.utils.similarities import _choose_blocks
     _choose_blocks(10, b_size=100)
 
 

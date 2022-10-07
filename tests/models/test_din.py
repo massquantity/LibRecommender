@@ -121,7 +121,7 @@ def test_item_dense_feature():
         lr=3e-4,
         n_epochs=1,
         batch_size=8192,
-        eval_user_num=40
+        eval_user_num=40,
     )
     model.fit(
         train_data,

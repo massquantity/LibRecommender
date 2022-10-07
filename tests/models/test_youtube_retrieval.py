@@ -157,9 +157,7 @@ def test_youtube_retrieval_multi_sparse():
     ptest_recommends(model, data_info, pd_data, with_feats=False)
 
     # test save and load model
-    loaded_model, loaded_data_info = save_load_model(
-        YouTubeRetrieval, model, data_info
-    )
+    loaded_model, loaded_data_info = save_load_model(YouTubeRetrieval, model, data_info)
     ptest_preds(loaded_model, task, pd_data, with_feats=False)
     ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
 

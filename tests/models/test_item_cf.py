@@ -58,7 +58,7 @@ def test_all_consumed_recommend(prepare_pure_data, monkeypatch):
     train_data.build_negative_samples(data_info, seed=2022)
     eval_data.build_negative_samples(data_info, seed=2222)
 
-    model = ItemCF(task="ranking", data_info=data_info,)
+    model = ItemCF(task="ranking", data_info=data_info)
     model.fit(train_data, verbose=0)
     model.save("not_existed_path", "item_cf2")
     remove_path("not_existed_path")

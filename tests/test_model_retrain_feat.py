@@ -130,9 +130,7 @@ def test_model_retrain_feat():
         use_tf_attention=True,
         eval_user_num=200,
     )
-    new_model.rebuild_model(
-        path=SAVE_PATH, model_name="din_model", full_assign=True
-    )
+    new_model.rebuild_model(path=SAVE_PATH, model_name="din_model", full_assign=True)
     new_model.fit(
         train_data,
         verbose=2,

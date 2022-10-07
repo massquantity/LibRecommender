@@ -74,7 +74,7 @@ def test_wide_deep_multi_sparse(prepare_multi_sparse_data):
     task = "ranking"
     pd_data, train_data, eval_data, data_info = prepare_multi_sparse_data
     model = fit_multi_sparse(
-        WideDeep, train_data, eval_data, data_info, lr={"wide": 0.1, "deep": 0.1}
+        WideDeep, train_data, eval_data, data_info, lr={"wide": 0.01, "deep": 3e-4}
     )
     ptest_preds(model, task, pd_data, with_feats=True)
     ptest_recommends(model, data_info, pd_data, with_feats=True)
