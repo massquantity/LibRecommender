@@ -24,13 +24,7 @@ from tests.utils_save_load import save_load_model
     "recent_num, random_sample_rate", [(None, None), (10, None), (None, 0.5)]
 )
 def test_svdpp(
-    prepare_pure_data,
-    task,
-    loss_type,
-    reg,
-    num_neg,
-    recent_num,
-    random_sample_rate
+    prepare_pure_data, task, loss_type, reg, num_neg, recent_num, random_sample_rate
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data

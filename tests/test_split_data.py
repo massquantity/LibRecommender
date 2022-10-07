@@ -75,7 +75,7 @@ def test_split_by_ratio():
         shuffle=True,
         filter_unknown=False,
         pad_unknown=True,
-        pad_val=0
+        pad_val=0,
     )
     assert len(train_data) == 10
     assert len(eval_data) == 2
@@ -91,7 +91,7 @@ def test_split_by_num():
         shuffle=True,
         filter_unknown=False,
         pad_unknown=True,
-        pad_val=0
+        pad_val=0,
     )
     assert len(train_data) == 11
     assert len(eval_data) == 1

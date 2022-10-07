@@ -150,7 +150,7 @@ def test_processing(feat_train_data):
             train_data,
             dense_col=["age"],
             normalizer=normalizer,
-            transformer=("log", "sqrt", "square")
+            transformer=("log", "sqrt", "square"),
         )
 
         train_data, eval_data = pd_data.copy(), pd_data.copy()
@@ -158,5 +158,5 @@ def test_processing(feat_train_data):
             (train_data, eval_data),
             dense_col=["age", "label"],
             normalizer=normalizer,
-            transformer=("log", "sqrt", "square")
+            transformer=("log", "sqrt", "square"),
         )

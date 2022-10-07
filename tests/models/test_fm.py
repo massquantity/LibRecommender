@@ -25,14 +25,7 @@ from tests.utils_save_load import save_load_model
     [(False, None, 1, False, None), (True, 0.001, 3, True, 0.5)],
 )
 def test_fm(
-    prepare_feat_data,
-    task,
-    loss_type,
-    lr_decay,
-    reg,
-    num_neg,
-    use_bn,
-    dropout_rate
+    prepare_feat_data, task, loss_type, lr_decay, reg, num_neg, use_bn, dropout_rate
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_feat_data

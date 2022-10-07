@@ -10,7 +10,7 @@ from libreco.feature.column import recover_sparse_cols
 from libreco.feature.unique_features import (
     get_dense_indices,
     get_dense_values,
-    get_sparse_indices
+    get_sparse_indices,
 )
 
 
