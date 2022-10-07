@@ -1,9 +1,12 @@
+import sys
+
 import pytest
 import tensorflow as tf
 
 from libreco.algorithms import BPR
 
 from tests.utils_metrics import get_metrics
+from tests.utils_path import remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model
@@ -77,3 +80,12 @@ def test_bpr(prepare_pure_data, task, loss_type, reg, num_neg, use_tf, optimizer
             loaded_model, loaded_data_info = save_load_model(BPR, model, data_info)
             ptest_preds(loaded_model, task, pd_data, with_feats=False)
             ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
+            model.save("not_existed_path", "bpr2")
+            remove_path("not_existed_path")
+
+
+def test_failed_import(monkeypatch):
+    with monkeypatch.context() as m:
+        m.delitem(sys.modules, "libreco.algorithms.bpr")
+        m.setitem(sys.modules, "libreco.algorithms._bpr", None)
+        from libreco.algorithms.bpr import BPR

@@ -3,6 +3,7 @@ import pytest
 from libreco.algorithms import ItemCF
 
 from tests.utils_metrics import get_metrics
+from tests.utils_path import remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model
@@ -50,3 +51,18 @@ def test_item_cf(prepare_pure_data, task, sim_type, store_top_k):
 
         with pytest.raises(NotImplementedError):
             model.rebuild_model("model_path", "item_cf")
+
+
+def test_all_consumed_recommend(prepare_pure_data, monkeypatch):
+    pd_data, train_data, eval_data, data_info = prepare_pure_data
+    train_data.build_negative_samples(data_info, seed=2022)
+    eval_data.build_negative_samples(data_info, seed=2222)
+
+    model = ItemCF(task="ranking", data_info=data_info,)
+    model.fit(train_data, verbose=0)
+    model.save("not_existed_path", "item_cf2")
+    remove_path("not_existed_path")
+    with monkeypatch.context() as m:
+        m.setitem(model.user_consumed, 1, list(range(model.n_items)))
+        recos = model.recommend_user(user=1, n_rec=7)
+        assert recos == model.data_info.popular_items[:7]

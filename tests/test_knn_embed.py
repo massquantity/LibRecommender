@@ -1,9 +1,11 @@
+import sys
+
 import pytest
 
 from libreco.algorithms import ALS, RNN4Rec
 
 
-def test_knn_embed(prepare_pure_data):
+def test_knn_embed(prepare_pure_data, monkeypatch):
     _, train_data, eval_data, data_info = prepare_pure_data
     train_data.build_negative_samples(data_info, seed=2022)
     eval_data.build_negative_samples(data_info, seed=2222)
@@ -27,6 +29,12 @@ def test_knn_embed(prepare_pure_data):
         rnn.get_user_id(-1)
     with pytest.raises(ValueError):
         rnn.get_item_id(-1)
+
+    # test `approximate=True` when `nmslib` is unavailable
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "nmslib", None)
+        with pytest.raises((ImportError, ModuleNotFoundError)):
+            rnn.init_knn(approximate=True, sim_type="cosine")
 
 
 def ptest_knn(model):

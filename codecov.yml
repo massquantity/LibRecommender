@@ -13,9 +13,6 @@ coverage:
         target: '50'
         informational: true
 
-comment:
-  after_n_builds: 5
-
 ignore:
   - "README.md"
   - "libserving/README.md"

@@ -4,6 +4,7 @@ import tensorflow as tf
 from libreco.algorithms import DeepWalk
 
 from tests.utils_metrics import get_metrics
+from tests.utils_path import remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model
@@ -51,3 +52,5 @@ def test_deepwalk(
         loaded_model, loaded_data_info = save_load_model(DeepWalk, model, data_info)
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
         ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
+        model.save("not_existed_path", "deepwalk2")
+        remove_path("not_existed_path")

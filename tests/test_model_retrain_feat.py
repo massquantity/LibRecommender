@@ -160,7 +160,7 @@ def test_model_retrain_feat():
         k=10,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
         neg_sample=True,
-        update_features=False,
+        update_features=True,
         seed=2222,
     )
 

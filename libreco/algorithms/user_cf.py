@@ -184,10 +184,8 @@ class UserCF(Base):
         if user_id is None:
             if cold_start == "popular":
                 return popular_recommendations(self.data_info, inner_id, n_rec)
-            elif cold_start != "popular":
-                raise ValueError("UserCF only supports popular strategy")
             else:
-                raise ValueError(user)
+                raise ValueError("UserCF only supports popular strategy")
 
         user_slice = slice(
             self.sim_matrix.indptr[user], self.sim_matrix.indptr[user + 1]
