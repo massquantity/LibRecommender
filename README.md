@@ -5,7 +5,7 @@
 [![codecov](https://codecov.io/gh/massquantity/LibRecommender/branch/master/graph/badge.svg?token=BYOYFBUJRL)](https://codecov.io/gh/massquantity/LibRecommender)
 [![pypi](https://img.shields.io/pypi/v/LibRecommender?color=blue)](https://pypi.org/project/LibRecommender/)
 [![Downloads](https://static.pepy.tech/personalized-badge/librecommender?period=total&units=international_system&left_color=grey&right_color=lightgrey&left_text=Downloads)](https://pepy.tech/project/librecommender)
-[![python versions](https://img.shields.io/pypi/pyversions/LibRecommender)](https://pypi.org/project/LibRecommender/)
+[![python versions](https://img.shields.io/pypi/pyversions/LibRecommender?logo=python&logoColor=ffffba)](https://pypi.org/project/LibRecommender/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/860f0cb5339c41fba9bee5770d09be47)](https://www.codacy.com/gh/massquantity/LibRecommender/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=massquantity/LibRecommender&amp;utm_campaign=Badge_Grade)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-%23ffdfba)](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-%23ffdfba)
