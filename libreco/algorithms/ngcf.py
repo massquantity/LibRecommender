@@ -47,7 +47,7 @@ class NGCF(EmbedBase):
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
-        assert self.task == "ranking", "NGCF is only suitable for ranking"
+        assert task == "ranking", "NGCF is only suitable for ranking"
         self.all_args = locals()
         self.n_epochs = n_epochs
         self.lr = lr

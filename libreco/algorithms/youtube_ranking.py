@@ -72,7 +72,7 @@ class YouTubeRanking(TfBase):
     ):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
-        assert self.task == "ranking", "YouTube models is only suitable for ranking"
+        assert task == "ranking", "YouTube models is only suitable for ranking"
         self.all_args = locals()
         self.embed_size = embed_size
         self.reg = reg_config(reg)
