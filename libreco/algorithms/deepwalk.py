@@ -41,7 +41,7 @@ class DeepWalk(EmbedBase):
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
-        assert self.task == "ranking", "DeepWalk is only suitable for ranking"
+        assert task == "ranking", "DeepWalk is only suitable for ranking"
         self.all_args = locals()
         self.norm_embed = norm_embed
         self.n_walks = n_walks
