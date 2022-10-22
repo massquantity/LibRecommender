@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import aiohttp
 import requests
@@ -16,15 +17,13 @@ def parse_args():
     parser.add_argument("--user", type=str, help="user id")
     parser.add_argument("--n_rec", type=int, help="num of recommendations")
     parser.add_argument("--n_times", type=int, help="num of requests")
+    parser.add_argument("--n_threads", type=int, default=1, help="num pof threads")
     parser.add_argument("--algo", type=str, help="type of algorithm")
     return parser.parse_args()
 
 
-async def get_reco(
-    session: aiohttp.ClientSession,
-    url: str,
-    data: dict,
-    semaphore: asyncio.Semaphore
+async def get_reco_async(
+    session: aiohttp.ClientSession, url: str, data: dict, semaphore: asyncio.Semaphore
 ):
     async with semaphore, session.post(url, json=data) as resp:
         # if semaphore.locked():
@@ -39,19 +38,29 @@ async def main_async(args):
     data = {"user": args.user, "n_rec": args.n_rec}
     semaphore = asyncio.Semaphore(REQUEST_LIMIT)
     async with aiohttp.ClientSession() as session:
-        tasks = [get_reco(session, url, data, semaphore) for _ in range(args.n_times)]
+        tasks = [
+            get_reco_async(session, url, data, semaphore) for _ in range(args.n_times)
+        ]
         # await asyncio.gather(*tasks, return_exceptions=True)
         for future in asyncio.as_completed(tasks):
             _ = await future
 
 
+def get_reco_sync(url: str, data: dict):
+    resp = requests.post(url, json=data)
+    resp.raise_for_status()
+    return resp.json()
+
+
 def main_sync(args):
     url = f"http://{args.host}:{args.port}/{args.algo}/recommend"
     data = {"user": args.user, "n_rec": args.n_rec}
-    for _ in range(args.n_times):
-        resp = requests.post(url, json=data)
-        resp.raise_for_status()
-        _ = resp.json()
+    with ThreadPoolExecutor(max_workers=args.n_threads) as executor:
+        futures = [
+            executor.submit(get_reco_sync, url, data) for _ in range(args.n_times)
+        ]
+        for future in as_completed(futures):
+            _ = future.result()
 
 
 if __name__ == "__main__":
