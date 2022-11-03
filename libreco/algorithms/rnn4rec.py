@@ -34,7 +34,7 @@ class RNN4Rec(EmbedBase, TfMixin):
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
-        epsilon=4e-5,
+        epsilon=1e-5,
         hidden_units="16",
         reg=None,
         batch_size=256,

@@ -53,7 +53,7 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
         n_epochs=20,
         lr=0.01,
         lr_decay=False,
-        epsilon=4e-5,
+        epsilon=1e-5,
         reg=None,
         batch_size=256,
         num_sampled_per_batch=None,
