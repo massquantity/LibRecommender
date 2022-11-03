@@ -18,6 +18,7 @@ class TensorFlowTrainer(BaseTrainer):
         n_epochs,
         lr,
         lr_decay,
+        epsilon,
         batch_size,
         num_neg,
         k,
@@ -33,6 +34,7 @@ class TensorFlowTrainer(BaseTrainer):
             n_epochs,
             lr,
             lr_decay,
+            epsilon,
             batch_size,
             num_neg,
             k,
@@ -110,7 +112,10 @@ class TensorFlowTrainer(BaseTrainer):
         else:
             self.lr, global_steps = self.lr, None
 
-        optimizer = tf.train.AdamOptimizer(self.lr)
+        # https://github.com/tensorflow/tensorflow/blob/v1.15.0/tensorflow/python/training/adam.py#L64
+        # According to the official comment, default value of 1e-8 for `epsilon` is generally not good, so here we choose 4e-5.
+        # Users can try tuning this hyperparameter when training is unstable.
+        optimizer = tf.train.AdamOptimizer(self.lr, epsilon=self.epsilon)
         optimizer_op = optimizer.minimize(total_loss, global_step=global_steps)
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         self.training_op = tf.group([optimizer_op, update_ops])
@@ -132,6 +137,7 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
         n_epochs,
         lr,
         lr_decay,
+        epsilon,
         batch_size,
         num_sampled_per_batch,
         k,
@@ -146,6 +152,7 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
             n_epochs,
             lr,
             lr_decay,
+            epsilon,
             batch_size,
             1,
             k,
@@ -261,7 +268,7 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
                 )
             )
         else:
-            raise ValueError("Loss type must either be 'nce' or 'sampled_softmax")
+            raise ValueError("Loss type must either be `nce` or `sampled_softmax`")
 
         if self.use_reg:
             reg_keys = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -275,7 +282,7 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
         else:
             global_steps = None
 
-        optimizer = tf.train.AdamOptimizer(self.lr)
+        optimizer = tf.train.AdamOptimizer(self.lr, epsilon=self.epsilon)
         optimizer_op = optimizer.minimize(total_loss, global_step=global_steps)
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         self.training_op = tf.group([optimizer_op, update_ops])
@@ -291,6 +298,7 @@ class BPRTrainer(TensorFlowTrainer):
         n_epochs,
         lr,
         lr_decay,
+        epsilon,
         batch_size,
         num_neg,
         k,
@@ -304,6 +312,7 @@ class BPRTrainer(TensorFlowTrainer):
             n_epochs,
             lr,
             lr_decay,
+            epsilon,
             batch_size,
             num_neg,
             k,
@@ -356,6 +365,7 @@ class RNN4RecTrainer(TensorFlowTrainer):
         n_epochs,
         lr,
         lr_decay,
+        epsilon,
         batch_size,
         num_neg,
         k,
@@ -369,6 +379,7 @@ class RNN4RecTrainer(TensorFlowTrainer):
             n_epochs,
             lr,
             lr_decay,
+            epsilon,
             batch_size,
             num_neg,
             k,
@@ -443,6 +454,7 @@ class WideDeepTrainer(TensorFlowTrainer):
         n_epochs,
         lr,
         lr_decay,
+        epsilon,
         batch_size,
         num_neg,
         k,
@@ -456,6 +468,7 @@ class WideDeepTrainer(TensorFlowTrainer):
             n_epochs,
             lr,
             lr_decay,
+            epsilon,
             batch_size,
             num_neg,
             k,
@@ -491,7 +504,8 @@ class WideDeepTrainer(TensorFlowTrainer):
         wide_optimizer_op = wide_optimizer.minimize(
             loss=total_loss, global_step=wide_global_steps, var_list=var_dict["wide"]
         )
-        deep_optimizer = tf.train.AdamOptimizer(self.lr["deep"])
+
+        deep_optimizer = tf.train.AdamOptimizer(self.lr["deep"], epsilon=self.epsilon)
         deep_optimizer_op = deep_optimizer.minimize(
             loss=total_loss, global_step=deep_global_steps, var_list=var_dict["deep"]
         )

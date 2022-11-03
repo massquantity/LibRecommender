@@ -34,6 +34,7 @@ class SVDpp(EmbedBase, TfMixin):
         n_epochs=20,
         lr=0.01,
         lr_decay=False,
+        epsilon=4e-5,
         reg=None,
         batch_size=256,
         num_neg=1,
@@ -55,6 +56,7 @@ class SVDpp(EmbedBase, TfMixin):
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
+        self.epsilon = epsilon
         self.reg = reg_config(reg)
         self.batch_size = batch_size
         self.num_neg = num_neg
@@ -147,6 +149,7 @@ class SVDpp(EmbedBase, TfMixin):
                 self.n_epochs,
                 self.lr,
                 self.lr_decay,
+                self.epsilon,
                 self.batch_size,
                 self.num_neg,
                 self.k,
@@ -190,6 +193,7 @@ class SVDpp(EmbedBase, TfMixin):
             hparams["n_epochs"],
             hparams["lr"],
             hparams["lr_decay"],
+            hparams["epsilon"],
             hparams["batch_size"],
             hparams["num_neg"],
             hparams["k"],
