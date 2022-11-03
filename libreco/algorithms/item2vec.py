@@ -36,7 +36,7 @@ class Item2Vec(EmbedBase):
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
-        assert self.task == "ranking", "Item2Vec is only suitable for ranking"
+        assert task == "ranking", "Item2Vec is only suitable for ranking"
         self.all_args = locals()
         self.norm_embed = norm_embed
         self.window_size = self._decide_window_size(
