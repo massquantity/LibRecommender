@@ -113,8 +113,7 @@ class TensorFlowTrainer(BaseTrainer):
             self.lr, global_steps = self.lr, None
 
         # https://github.com/tensorflow/tensorflow/blob/v1.15.0/tensorflow/python/training/adam.py#L64
-        # According to the official comment, default value of 1e-8 for `epsilon` is generally not good,
-        # so here we choose 4e-5.
+        # According to the official comment, default value of 1e-8 for `epsilon` is generally not good, so here we choose 4e-5.
         # Users can try tuning this hyperparameter when training is unstable.
         optimizer = tf.train.AdamOptimizer(self.lr, epsilon=self.epsilon)
         optimizer_op = optimizer.minimize(total_loss, global_step=global_steps)
