@@ -3,6 +3,7 @@ import json
 import os
 
 import numpy as np
+import torch
 
 from ..tfops import tf
 
@@ -77,3 +78,20 @@ def load_tf_variables(model_class, path, model_name, data_info):
         # v.load(variables[v.name], session=model.sess)
     model.sess.run(update_ops)
     return model
+
+
+def save_torch_state_dict(model, path, model_name):
+    save_path = os.path.join(path, f"{model_name}_torch.pt")
+    torch.save(
+        {
+            "model_state_dict": model.torch_model.state_dict(),
+            "optimizer_state_dict": model.trainer.optimizer.state_dict(),
+        },
+        save_path,
+    )
+
+
+def load_torch_state_dict(path, model_name, device):
+    load_path = os.path.join(path, f"{model_name}_torch.pt")
+    state = torch.load(load_path, map_location=device)
+    return state["model_state_dict"], state["optimizer_state_dict"]
