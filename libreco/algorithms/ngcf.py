@@ -6,23 +6,17 @@ Reference: Xiang Wang et al. "Neural Graph Collaborative Filtering"
 author: massquantity
 
 """
-import os
-
 import numpy as np
 import scipy
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import optim
 
-from ..bases import EmbedBase
-from ..evaluation import print_metrics
-from ..utils.misc import time_block, colorize
-from ..utils.sampling import PairwiseSampling
-from ..utils.save_load import save_params
+from ..bases import EmbedBase, ModelMeta
+from ..training import TorchTrainer
 
 
-class NGCF(EmbedBase):
+class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
     def __init__(
         self,
         task,
@@ -31,6 +25,8 @@ class NGCF(EmbedBase):
         n_epochs=20,
         lr=0.01,
         lr_decay=False,
+        epsilon=1e-8,
+        amsgrad=False,
         reg=None,
         batch_size=256,
         num_neg=1,
@@ -52,7 +48,6 @@ class NGCF(EmbedBase):
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
-        self.reg = reg
         self.batch_size = batch_size
         self.num_neg = num_neg
         self.node_dropout = node_dropout
@@ -64,100 +59,39 @@ class NGCF(EmbedBase):
         self.eval_user_num = eval_user_num
         self.device = device
         if with_training:
-            self.model = self._build_model()
-
-    def _build_model(self):
-        return NGCFModel(
-            self.n_users,
-            self.n_items,
-            self.embed_size,
-            self.hidden_units,
-            self.node_dropout,
-            self.message_dropout,
-            self.user_consumed,
-            self.device,
-        )
-
-    def fit(
-        self,
-        train_data,
-        verbose=1,
-        shuffle=True,
-        eval_data=None,
-        metrics=None,
-        **kwargs,
-    ):
-        self.show_start_time()
-        optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-        data_generator = PairwiseSampling(train_data, self.data_info, self.num_neg)
-        for epoch in range(1, self.n_epochs + 1):
-            with time_block(f"Epoch {epoch}", verbose):
-                self.model.train()
-                train_total_loss = []
-                for (user, item_pos, item_neg) in data_generator(
-                    shuffle, self.batch_size
-                ):
-                    user_embeds, pos_item_embeds, neg_item_embeds = self.model(
-                        user, item_pos, item_neg, use_dropout=True
-                    )
-                    loss = self.bpr_loss(user_embeds, pos_item_embeds, neg_item_embeds)
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
-                    train_total_loss.append(loss.detach().cpu().item())
-
-            if verbose > 1:
-                train_loss_str = "train_loss: " + str(
-                    round(float(np.mean(train_total_loss)), 4)
-                )
-                print(f"\t {colorize(train_loss_str, 'green')}")
-                # for evaluation
-                self.set_embeddings()
-                print_metrics(
-                    model=self,
-                    eval_data=eval_data,
-                    metrics=metrics,
-                    eval_batch_size=self.eval_batch_size,
-                    k=self.k,
-                    sample_user_num=self.eval_user_num,
-                    seed=self.seed,
-                )
-                print("=" * 30)
-
-        # for prediction and recommendation
-        self.set_embeddings()
-        self.assign_embedding_oov()
-
-    def bpr_loss(self, user_embeds, pos_item_embeds, neg_item_embeds):
-        pos_scores = torch.sum(torch.mul(user_embeds, pos_item_embeds), axis=1)
-        neg_scores = torch.sum(torch.mul(user_embeds, neg_item_embeds), axis=1)
-        log_sigmoid = F.logsigmoid(pos_scores - neg_scores)
-        loss = torch.negative(torch.mean(log_sigmoid))
-        if self.reg:
-            embed_reg = (
-                torch.linalg.norm(user_embeds).pow(2)
-                + torch.linalg.norm(pos_item_embeds).pow(2)
-                + torch.linalg.norm(neg_item_embeds).pow(2)
-            ) / 2
-            loss += (self.reg * embed_reg) / float(len(user_embeds))
-        return loss
+            self.torch_model = NGCFModel(
+                self.n_users,
+                self.n_items,
+                self.embed_size,
+                self.hidden_units,
+                self.node_dropout,
+                self.message_dropout,
+                self.user_consumed,
+                self.device,
+            )
+            self.trainer = TorchTrainer(
+                self,
+                task,
+                "bpr",
+                n_epochs,
+                lr,
+                lr_decay,
+                epsilon,
+                amsgrad,
+                reg,
+                batch_size,
+                num_neg,
+                k,
+                eval_batch_size,
+                eval_user_num,
+            )
 
     @torch.no_grad()
     def set_embeddings(self):
-        self.model.eval()
-        embeddings = self.model.embedding_propagation(use_dropout=False)
+        self.torch_model.eval()
+        embeddings = self.torch_model.embedding_propagation(use_dropout=False)
         self.user_embed = embeddings[0].numpy()
         self.item_embed = embeddings[1].numpy()
-
-    def save(self, path, model_name, manual=True, inference_only=False):
-        if not os.path.isdir(path):
-            print(f"file folder {path} doesn't exists, creating a new one...")
-            os.makedirs(path)
-        save_params(self, path, model_name)
-        variable_path = os.path.join(path, model_name)
-        np.savez_compressed(
-            variable_path, user_embed=self.user_embed, item_embed=self.item_embed
-        )
 
 
 class NGCFModel(nn.Module):
@@ -240,9 +174,8 @@ class NGCFModel(nn.Module):
         )
         return laplacian_matrix
 
-    def forward(self, users, pos_items, neg_items, use_dropout):
-        user_embeds, item_embeds = self.embedding_propagation(use_dropout=use_dropout)
-        return user_embeds[users], item_embeds[pos_items], item_embeds[neg_items]
+    def forward(self, use_dropout):
+        return self.embedding_propagation(use_dropout=use_dropout)
 
     def embedding_propagation(self, use_dropout):
         if use_dropout and self.node_dropout > 0:

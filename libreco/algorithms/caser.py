@@ -13,15 +13,23 @@ from tensorflow.keras.initializers import (
     glorot_normal as tf_glorot_normal,
 )
 
-from ..bases import EmbedBase, TfMixin
+from ..bases import EmbedBase, ModelMeta
 from ..data.sequence import get_user_last_interacted
-from ..tfops import conv_nn, dropout_config, max_pool, reg_config, tf, tf_dense
+from ..tfops import (
+    conv_nn,
+    dropout_config,
+    max_pool,
+    reg_config,
+    sess_config,
+    tf,
+    tf_dense,
+)
 from ..training import TensorFlowTrainer
 from ..utils.misc import count_params
 from ..utils.validate import check_interaction_mode
 
 
-class Caser(EmbedBase, TfMixin):
+class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     user_variables = ["user_feat"]
     item_variables = ["item_weights", "item_biases", "input_embed"]
 
@@ -34,6 +42,7 @@ class Caser(EmbedBase, TfMixin):
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
+        epsilon=1e-5,
         reg=None,
         batch_size=256,
         num_neg=1,
@@ -51,8 +60,7 @@ class Caser(EmbedBase, TfMixin):
         tf_sess_config=None,
         with_training=True,
     ):
-        EmbedBase.__init__(self, task, data_info, embed_size, lower_upper_bound)
-        TfMixin.__init__(self, data_info, tf_sess_config)
+        super().__init__(task, data_info, embed_size, lower_upper_bound)
 
         self.all_args = locals()
         self.reg = reg_config(reg)
@@ -70,6 +78,7 @@ class Caser(EmbedBase, TfMixin):
         ) = self._set_last_interacted()
         if with_training:
             self._build_model()
+            self.sess = sess_config(tf_sess_config)
             self.trainer = TensorFlowTrainer(
                 self,
                 task,
@@ -77,6 +86,7 @@ class Caser(EmbedBase, TfMixin):
                 n_epochs,
                 lr,
                 lr_decay,
+                epsilon,
                 batch_size,
                 num_neg,
                 k,

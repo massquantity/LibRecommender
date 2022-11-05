@@ -12,13 +12,14 @@ from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal,
 )
 
-from ..bases import EmbedBase, TfMixin
+from ..bases import EmbedBase, ModelMeta
 from ..data.sequence import sparse_user_last_interacted
 from ..tfops import (
     dense_nn,
     dropout_config,
     multi_sparse_combine_embedding,
     reg_config,
+    sess_config,
     tf,
 )
 from ..training import YoutubeRetrievalTrainer
@@ -35,7 +36,7 @@ from ..utils.validate import (
 )
 
 
-class YouTubeRetrieval(EmbedBase, TfMixin):
+class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     """
     The model implemented mainly corresponds to the candidate generation
     phase based on the original paper.
@@ -53,13 +54,14 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
         n_epochs=20,
         lr=0.01,
         lr_decay=False,
+        epsilon=1e-5,
         reg=None,
         batch_size=256,
         num_sampled_per_batch=None,
         use_bn=True,
         dropout_rate=None,
         hidden_units="128,64",
-        loss_type="nce",
+        loss_type="sampled_softmax",
         recent_num=10,
         random_num=None,
         multi_sparse_combiner="sqrtn",
@@ -72,8 +74,7 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
         tf_sess_config=None,
         with_training=True,
     ):
-        EmbedBase.__init__(self, task, data_info, embed_size, lower_upper_bound)
-        TfMixin.__init__(self, data_info, tf_sess_config)
+        super().__init__(task, data_info, embed_size, lower_upper_bound)
 
         assert task == "ranking", "YouTube models is only suitable for ranking"
         if len(data_info.item_col) > 0:
@@ -108,6 +109,7 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
         )
         if with_training:
             self._build_model()
+            self.sess = sess_config(tf_sess_config)
             self.trainer = YoutubeRetrievalTrainer(
                 self,
                 task,
@@ -115,6 +117,7 @@ class YouTubeRetrieval(EmbedBase, TfMixin):
                 n_epochs,
                 lr,
                 lr_decay,
+                epsilon,
                 batch_size,
                 num_sampled_per_batch,
                 k,

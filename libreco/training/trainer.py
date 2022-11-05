@@ -12,6 +12,7 @@ class BaseTrainer(abc.ABC):
         n_epochs,
         lr,
         lr_decay,
+        epsilon,
         batch_size,
         num_neg,
         k,
@@ -24,6 +25,7 @@ class BaseTrainer(abc.ABC):
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
+        self.epsilon = epsilon
         self.batch_size = batch_size
         self.num_neg = num_neg
         self.k = k

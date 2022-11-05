@@ -68,7 +68,9 @@ class DataInfo(object):
         self._id2item = None
         self._data_size = None
         self.popular_items = None
-        # store old sparse len and oov
+        # store old info for rebuild models
+        self.old_n_users = None
+        self.old_n_items = None
         self.old_sparse_len = None
         self.old_sparse_oov = None
         self.old_sparse_offset = None
@@ -252,6 +254,8 @@ class DataInfo(object):
         self._data_size = None
 
     def store_old_info(self):
+        self.old_n_users = self.n_users
+        self.old_n_items = self.n_items
         if (
             self.sparse_unique_vals is not None
             or self.multi_sparse_unique_vals is not None
@@ -281,14 +285,14 @@ class DataInfo(object):
                     main_name = self.col_name_mapping["multi_sparse"][col]
                     pos = self.sparse_col.name.index(main_name)
                     # multi_sparse case, second to last is redundant.
-                    # Used in base.py, rebuild_graph()
+                    # Used in rebuild_tf_model(), rebuild_torch_model()
                     self.old_sparse_len.append(-1)
                     # self.old_sparse_oov.append(self.sparse_oov[pos])
                     self.old_sparse_offset.append(self.sparse_offset[pos])
 
     def expand_sparse_unique_vals_and_matrix(self, data):
-        self.reset_property()
         self.store_old_info()
+        self.reset_property()
 
         user_diff = np.setdiff1d(data.user.to_numpy(), self.user_unique_vals)
         if len(user_diff) > 0:

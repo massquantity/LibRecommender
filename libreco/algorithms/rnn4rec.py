@@ -13,15 +13,15 @@ from tensorflow.keras.initializers import (
     glorot_normal as tf_glorot_normal,
 )
 
-from ..bases import EmbedBase, TfMixin
+from ..bases import EmbedBase, ModelMeta
 from ..data.sequence import get_user_last_interacted
-from ..tfops import dropout_config, reg_config, tf_rnn, tf, tf_dense
+from ..tfops import dropout_config, reg_config, sess_config, tf_rnn, tf, tf_dense
 from ..training import RNN4RecTrainer
 from ..utils.misc import count_params
 from ..utils.validate import check_interaction_mode
 
 
-class RNN4Rec(EmbedBase, TfMixin):
+class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     item_variables = ["item_weights", "item_biases", "input_embed"]
 
     def __init__(
@@ -34,6 +34,7 @@ class RNN4Rec(EmbedBase, TfMixin):
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
+        epsilon=1e-5,
         hidden_units="16",
         reg=None,
         batch_size=256,
@@ -50,8 +51,7 @@ class RNN4Rec(EmbedBase, TfMixin):
         tf_sess_config=None,
         with_training=True,
     ):
-        EmbedBase.__init__(self, task, data_info, embed_size, lower_upper_bound)
-        TfMixin.__init__(self, data_info, tf_sess_config)
+        super().__init__(task, data_info, embed_size, lower_upper_bound)
 
         self.all_args = locals()
         self.rnn_type = rnn_type.lower()
@@ -70,6 +70,7 @@ class RNN4Rec(EmbedBase, TfMixin):
         self._check_params()
         if with_training:
             self._build_model(loss_type)
+            self.sess = sess_config(tf_sess_config)
             self.trainer = RNN4RecTrainer(
                 self,
                 task,
@@ -77,6 +78,7 @@ class RNN4Rec(EmbedBase, TfMixin):
                 n_epochs,
                 lr,
                 lr_decay,
+                epsilon,
                 batch_size,
                 num_neg,
                 k,

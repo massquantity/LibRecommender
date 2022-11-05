@@ -11,7 +11,7 @@ author: massquantity
 """
 from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
-from ..bases import TfBase
+from ..bases import ModelMeta, TfBase
 from ..tfops import (
     dropout_config,
     multi_sparse_combine_embedding,
@@ -32,7 +32,7 @@ from ..utils.validate import (
 )
 
 
-class FM(TfBase):
+class FM(TfBase, metaclass=ModelMeta):
     """
     Note this implementation is actually a mixture of FM and NFM,
     since it uses one dense layer in the final output
@@ -52,6 +52,7 @@ class FM(TfBase):
         n_epochs=20,
         lr=0.01,
         lr_decay=False,
+        epsilon=1e-5,
         reg=None,
         batch_size=256,
         num_neg=1,
@@ -97,6 +98,7 @@ class FM(TfBase):
                 n_epochs,
                 lr,
                 lr_decay,
+                epsilon,
                 batch_size,
                 num_neg,
                 k,

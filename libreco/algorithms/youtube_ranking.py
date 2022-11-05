@@ -9,7 +9,7 @@ author: massquantity
 import numpy as np
 from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
-from ..bases import TfBase
+from ..bases import ModelMeta, TfBase
 from ..data.sequence import get_user_last_interacted
 from ..tfops import (
     dense_nn,
@@ -33,7 +33,7 @@ from ..utils.validate import (
 )
 
 
-class YouTubeRanking(TfBase):
+class YouTubeRanking(TfBase, metaclass=ModelMeta):
     """
     The model implemented mainly corresponds to the ranking phase
     based on the original paper.
@@ -53,6 +53,7 @@ class YouTubeRanking(TfBase):
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
+        epsilon=1e-5,
         reg=None,
         batch_size=256,
         num_neg=1,
@@ -109,6 +110,7 @@ class YouTubeRanking(TfBase):
                 n_epochs,
                 lr,
                 lr_decay,
+                epsilon,
                 batch_size,
                 num_neg,
                 k,

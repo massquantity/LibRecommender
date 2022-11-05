@@ -14,14 +14,14 @@ from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal,
 )
 
-from ..bases import EmbedBase, TfMixin
+from ..bases import EmbedBase, ModelMeta
 from ..data.sequence import sparse_tensor_interaction
-from ..tfops import modify_variable_names, reg_config, tf
+from ..tfops import modify_variable_names, reg_config, sess_config, tf
 from ..training import TensorFlowTrainer
 from ..utils.save_load import load_params
 
 
-class SVDpp(EmbedBase, TfMixin):
+class SVDpp(EmbedBase):
     user_variables = ["bu_var", "pu_var", "yj_var"]
     item_variables = ["bi_var", "qi_var"]
 
@@ -34,6 +34,7 @@ class SVDpp(EmbedBase, TfMixin):
         n_epochs=20,
         lr=0.01,
         lr_decay=False,
+        epsilon=1e-5,
         reg=None,
         batch_size=256,
         num_neg=1,
@@ -47,14 +48,14 @@ class SVDpp(EmbedBase, TfMixin):
         tf_sess_config=None,
         with_training=True,
     ):
-        EmbedBase.__init__(self, task, data_info, embed_size, lower_upper_bound)
-        TfMixin.__init__(self, data_info, tf_sess_config)
+        super().__init__(task, data_info, embed_size, lower_upper_bound)
 
         self.all_args = locals()
         self.loss_type = loss_type
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
+        self.epsilon = epsilon
         self.reg = reg_config(reg)
         self.batch_size = batch_size
         self.num_neg = num_neg
@@ -64,6 +65,7 @@ class SVDpp(EmbedBase, TfMixin):
         self.eval_user_num = eval_user_num
         self.recent_num = recent_num
         self.random_sample_rate = random_sample_rate
+        self.sess = sess_config(tf_sess_config)
         self.trainer = None
         self.with_training = with_training
 
@@ -147,6 +149,7 @@ class SVDpp(EmbedBase, TfMixin):
                 self.n_epochs,
                 self.lr,
                 self.lr_decay,
+                self.epsilon,
                 self.batch_size,
                 self.num_neg,
                 self.k,
@@ -190,6 +193,7 @@ class SVDpp(EmbedBase, TfMixin):
             hparams["n_epochs"],
             hparams["lr"],
             hparams["lr_decay"],
+            hparams["epsilon"],
             hparams["batch_size"],
             hparams["num_neg"],
             hparams["k"],

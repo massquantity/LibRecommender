@@ -9,7 +9,7 @@ author: massquantity
 import numpy as np
 from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
-from ..bases import TfBase
+from ..bases import ModelMeta, TfBase
 from ..prediction import normalize_prediction
 from ..recommendation import popular_recommendations, rank_recommendations
 from ..tfops import dense_nn, dropout_config, reg_config, tf, tf_dense
@@ -17,7 +17,7 @@ from ..training import TensorFlowTrainer
 from ..utils.validate import check_unknown, check_unknown_user, convert_id
 
 
-class NCF(TfBase):
+class NCF(TfBase, metaclass=ModelMeta):
     user_variables = ["user_gmf", "user_mlp"]
     item_variables = ["item_gmf", "item_mlp"]
 
@@ -30,6 +30,7 @@ class NCF(TfBase):
         n_epochs=20,
         lr=0.01,
         lr_decay=False,
+        epsilon=1e-5,
         reg=None,
         batch_size=256,
         num_neg=1,
@@ -78,6 +79,7 @@ class NCF(TfBase):
                 n_epochs,
                 lr,
                 lr_decay,
+                epsilon,
                 batch_size,
                 num_neg,
                 k,
