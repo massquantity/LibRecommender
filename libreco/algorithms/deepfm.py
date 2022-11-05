@@ -8,7 +8,7 @@ author: massquantity
 """
 from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
-from ..bases import TfBase
+from ..bases import ModelMeta, TfBase
 from ..tfops import (
     dense_nn,
     dropout_config,
@@ -30,7 +30,7 @@ from ..utils.validate import (
 )
 
 
-class DeepFM(TfBase):
+class DeepFM(TfBase, metaclass=ModelMeta):
     user_variables = ["linear_user_feat", "embed_user_feat"]
     item_variables = ["linear_item_feat", "embed_item_feat"]
     sparse_variables = ["linear_sparse_feat", "embed_sparse_feat"]

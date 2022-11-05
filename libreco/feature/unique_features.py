@@ -184,9 +184,9 @@ def get_dense_values(data_info, user, item=None, n_items=None, mode="predict"):
         if user_dense_col and item_dense_col:
             user_dense_part = data_info.user_dense_unique[user]
             item_dense_part = data_info.item_dense_unique[item]
-            dense_values = np.concatenate(
-                [user_dense_part, item_dense_part], axis=-1
-            )[:, col_reindex]
+            dense_values = np.concatenate([user_dense_part, item_dense_part], axis=-1)[
+                :, col_reindex
+            ]
             return dense_values
         elif user_dense_col:
             return data_info.user_dense_unique[user]
@@ -197,9 +197,9 @@ def get_dense_values(data_info, user, item=None, n_items=None, mode="predict"):
         if user_dense_col and item_dense_col:
             user_dense_part = np.tile(data_info.user_dense_unique[user], (n_items, 1))
             item_dense_part = data_info.item_dense_unique[:-1]  # remove oov
-            dense_values = np.concatenate(
-                [user_dense_part, item_dense_part], axis=-1
-            )[:, col_reindex]
+            dense_values = np.concatenate([user_dense_part, item_dense_part], axis=-1)[
+                :, col_reindex
+            ]
             return dense_values
         elif user_dense_col:
             return np.tile(data_info.user_dense_unique[user], (n_items, 1))
@@ -272,9 +272,9 @@ def features_from_batch_data(data_info, sparse, dense, data):
         dense_values = None
 
     if sparse and dense:
-        assert len(sparse_indices) == len(dense_values), (
-            "indices and values length must equal"
-        )
+        assert len(sparse_indices) == len(
+            dense_values
+        ), "indices and values length must equal"
     return sparse_indices, dense_values
 
 

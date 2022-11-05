@@ -14,14 +14,14 @@ from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal,
 )
 
-from ..bases import EmbedBase, TfMixin
+from ..bases import EmbedBase, ModelMeta
 from ..data.sequence import sparse_tensor_interaction
-from ..tfops import modify_variable_names, reg_config, tf
+from ..tfops import modify_variable_names, reg_config, sess_config, tf
 from ..training import TensorFlowTrainer
 from ..utils.save_load import load_params
 
 
-class SVDpp(EmbedBase, TfMixin):
+class SVDpp(EmbedBase):
     user_variables = ["bu_var", "pu_var", "yj_var"]
     item_variables = ["bi_var", "qi_var"]
 
@@ -48,8 +48,7 @@ class SVDpp(EmbedBase, TfMixin):
         tf_sess_config=None,
         with_training=True,
     ):
-        EmbedBase.__init__(self, task, data_info, embed_size, lower_upper_bound)
-        TfMixin.__init__(self, data_info, tf_sess_config)
+        super().__init__(task, data_info, embed_size, lower_upper_bound)
 
         self.all_args = locals()
         self.loss_type = loss_type
@@ -66,6 +65,7 @@ class SVDpp(EmbedBase, TfMixin):
         self.eval_user_num = eval_user_num
         self.recent_num = recent_num
         self.random_sample_rate = random_sample_rate
+        self.sess = sess_config(tf_sess_config)
         self.trainer = None
         self.with_training = with_training
 

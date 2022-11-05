@@ -12,12 +12,12 @@ from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal,
 )
 
-from ..bases import EmbedBase, TfMixin
-from ..tfops import reg_config, tf
+from ..bases import EmbedBase, ModelMeta
+from ..tfops import reg_config, sess_config, tf
 from ..training import TensorFlowTrainer
 
 
-class SVD(EmbedBase, TfMixin):
+class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     user_variables = ["bu_var", "pu_var"]
     item_variables = ["bi_var", "qi_var"]
 
@@ -42,14 +42,14 @@ class SVD(EmbedBase, TfMixin):
         tf_sess_config=None,
         with_training=True,
     ):
-        EmbedBase.__init__(self, task, data_info, embed_size, lower_upper_bound)
-        TfMixin.__init__(self, data_info, tf_sess_config)
+        super().__init__(task, data_info, embed_size, lower_upper_bound)
 
         self.all_args = locals()
         self.reg = reg_config(reg)
         self.seed = seed
         if with_training:
             self._build_model()
+            self.sess = sess_config(tf_sess_config)
             self.trainer = TensorFlowTrainer(
                 self,
                 task,

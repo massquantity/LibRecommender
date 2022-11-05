@@ -7,7 +7,7 @@ author: massquantity
 """
 from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
-from ..bases import TfBase
+from ..bases import ModelMeta, TfBase
 from ..tfops import (
     dense_nn,
     dropout_config,
@@ -29,7 +29,7 @@ from ..utils.validate import (
 )
 
 
-class WideDeep(TfBase):
+class WideDeep(TfBase, metaclass=ModelMeta):
     """
     According to the original paper, the Wide part used
     FTRL with L1 regularization as the optimizer, so we'll also adopt it here.
@@ -188,9 +188,10 @@ class WideDeep(TfBase):
             regularizer=self.reg,
         )
 
-        if (
-            self.data_info.multi_sparse_combine_info
-            and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")
+        if self.data_info.multi_sparse_combine_info and self.multi_sparse_combiner in (
+            "sum",
+            "mean",
+            "sqrtn",
         ):
             wide_sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,

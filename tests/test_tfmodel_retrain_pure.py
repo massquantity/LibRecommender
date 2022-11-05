@@ -12,7 +12,7 @@ from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 
 
-def test_model_retrain_pure():
+def test_tfmodel_retrain_pure():
     tf.compat.v1.reset_default_graph()
     data_path = os.path.join(
         str(Path(os.path.realpath(__file__)).parent),

@@ -8,7 +8,12 @@ from .base import Base
 from ..prediction import predict_from_embedding
 from ..recommendation import recommend_from_embedding
 from ..utils.misc import colorize
-from ..utils.save_load import load_params, save_params, save_tf_variables
+from ..utils.save_load import (
+    load_params,
+    save_params,
+    save_tf_variables,
+    save_torch_state_dict,
+)
 
 
 class EmbedBase(Base):
@@ -78,8 +83,8 @@ class EmbedBase(Base):
             )
         elif hasattr(self, "sess"):
             save_tf_variables(self.sess, path, model_name, inference_only=False)
-        else:
-            pass  # todo: torch
+        elif hasattr(self, "torch_model"):
+            save_torch_state_dict(self, path, model_name)
 
     @classmethod
     def load(cls, path, model_name, data_info, **kwargs):
@@ -120,12 +125,7 @@ class EmbedBase(Base):
         return self.item_embed[item_id, : self.embed_size]
 
     def init_knn(
-        self,
-        approximate,
-        sim_type,
-        M=100,
-        ef_construction=200,
-        ef_search=200
+        self, approximate, sim_type, M=100, ef_construction=200, ef_search=200
     ):
         if sim_type == "cosine":
             space = "cosinesimil"

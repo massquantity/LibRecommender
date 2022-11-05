@@ -11,8 +11,13 @@ from tests.utils_save_load import save_load_model
 
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
-@pytest.mark.parametrize("reg, dropout, num_neg", [(0.0, 0.0, 1), (0.01, 0.2, 3)])
-def test_lightgcn(prepare_pure_data, task, reg, dropout, num_neg):
+@pytest.mark.parametrize(
+    "reg, dropout, num_neg, lr_decay, epsilon, amsgrad",
+    [(0.0, 0.0, 1, False, 1e-8, False), (0.01, 0.2, 3, True, 4e-5, True)],
+)
+def test_lightgcn(
+    prepare_pure_data, task, reg, dropout, num_neg, lr_decay, epsilon, amsgrad
+):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
@@ -29,6 +34,9 @@ def test_lightgcn(prepare_pure_data, task, reg, dropout, num_neg):
             embed_size=16,
             n_epochs=1,
             lr=1e-4,
+            lr_decay=lr_decay,
+            epsilon=epsilon,
+            amsgrad=amsgrad,
             batch_size=1024,
             n_layers=3,
             reg=reg,

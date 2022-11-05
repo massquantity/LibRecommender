@@ -15,9 +15,9 @@ from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal,
 )
 
-from ..bases import EmbedBase, TfMixin
+from ..bases import EmbedBase, ModelMeta
 from ..evaluation import print_metrics
-from ..tfops import reg_config, tf
+from ..tfops import reg_config, sess_config, tf
 from ..training import BPRTrainer
 from ..utils.initializers import truncated_normal
 from ..utils.misc import time_block
@@ -31,7 +31,7 @@ except (ImportError, ModuleNotFoundError):
     logging.warning("BPR cython version is not available")
 
 
-class BPR(EmbedBase, TfMixin):
+class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     """
     BPR is only suitable for ranking task
     """
@@ -63,9 +63,7 @@ class BPR(EmbedBase, TfMixin):
         num_threads=1,
         with_training=True,
     ):
-        EmbedBase.__init__(self, task, data_info, embed_size)
-        if use_tf:
-            TfMixin.__init__(self, data_info, tf_sess_config)
+        super().__init__(task, data_info, embed_size)
 
         assert task == "ranking", "BPR is only suitable for ranking"
         assert loss_type == "bpr", "BPR should use bpr loss"
@@ -83,6 +81,7 @@ class BPR(EmbedBase, TfMixin):
         if with_training:
             self._build_model()
             if use_tf:
+                self.sess = sess_config(tf_sess_config)
                 self.tf_trainer = BPRTrainer(
                     self,
                     task,

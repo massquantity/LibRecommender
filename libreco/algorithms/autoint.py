@@ -8,7 +8,7 @@ author: massquantity
 """
 from tensorflow.keras.initializers import truncated_normal
 
-from ..bases import TfBase
+from ..bases import ModelMeta, TfBase
 from ..tfops import (
     dropout_config,
     multi_sparse_combine_embedding,
@@ -28,7 +28,7 @@ from ..utils.validate import (
 )
 
 
-class AutoInt(TfBase):
+class AutoInt(TfBase, metaclass=ModelMeta):
     user_variables = ["user_feat"]
     item_variables = ["item_feat"]
     sparse_variables = ["sparse_feat"]
