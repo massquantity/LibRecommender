@@ -1,10 +1,9 @@
 import os
 
 from .base import Base
-from .tf_mixin import TfMixin
 from ..prediction import predict_tf_feat
 from ..recommendation import recommend_tf_feat
-from ..tfops import modify_variable_names, tf
+from ..tfops import modify_variable_names, sess_config, tf
 from ..utils.save_load import (
     load_tf_model,
     load_tf_variables,
@@ -14,10 +13,10 @@ from ..utils.save_load import (
 )
 
 
-class TfBase(Base, TfMixin):
+class TfBase(Base):
     def __init__(self, task, data_info, lower_upper_bound, tf_sess_config):
         Base.__init__(self, task, data_info, lower_upper_bound)
-        TfMixin.__init__(self, data_info, tf_sess_config)
+        self.sess = sess_config(tf_sess_config)
         self.trainer = None
 
     def fit(
