@@ -180,9 +180,3 @@ class LightGCNModel(nn.Module):
         indices = x._indices()[:, dropout_mask]
         values = x._values()[dropout_mask] / keep_prob
         return torch.sparse_coo_tensor(indices, values, x.shape, device=x.device)
-
-    def get_embed(self, indices, embed_type):
-        if embed_type == "user":
-            return self.user_init_embeds(torch.LongTensor(indices))
-        elif embed_type == "item":
-            return self.item_init_embeds(torch.LongTensor(indices))
