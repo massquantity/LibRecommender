@@ -270,9 +270,9 @@ If you want to predict on a whole dataset with features, you can use the `predic
 To make recommendation for one user, we can pass the user features to `user_feats` argument. It actually doesn't make much sense to change the item features when making recommendation for only one user, but we provide an `item_data` argument anyway, which can change the item features. The type of `item_data` must be `pandas.DataFrame` . We assume one may want to change the features of multiple items, since it nearly makes no difference to the recommendation result if only one item's features have been changed.
 
 ```python
->>> model.recommend_user(user=1, n_rec=7, cold_start="popular",
-    user_feats=pd.Series({"sex": "F", "occupation": 2, "age": 23}),
-    item_data=item_features)
+>>> model.recommend_user(user=1, n_rec=7, cold_start="popular", 
+                         user_feats=pd.Series({"sex": "F", "occupation": 2, "age": 23}), 
+                         item_data=item_features)
 ```
 
 Note the three functions described above doesn't change the unique user/item features inside the `DataInfo` object. So the next time you call `model.predict(user=1, item=110)` , it will still use the features stored in `DataInfo`. However, if you do want to change the features in `DataInfo`, then you can use `assign_user_features` and `assign_item_features` :
