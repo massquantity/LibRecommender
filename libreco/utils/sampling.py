@@ -290,7 +290,7 @@ class PairwiseSampling(SamplingBase):
                 batch_item_indices_neg.append(item_neg)
 
             batch_item_indices_neg = np.asarray(batch_item_indices_neg)
-            yield (batch_user_indices, batch_item_indices_pos, batch_item_indices_neg)
+            yield batch_user_indices, batch_item_indices_pos, batch_item_indices_neg
 
 
 class PairwiseSamplingSeq(PairwiseSampling):
