@@ -71,7 +71,7 @@ class TorchTrainer(BaseTrainer):
             with time_block(f"Epoch {epoch}", verbose):
                 self.torch_model.train()
                 train_total_loss = []
-                for (user, item_pos, item_neg) in data_generator(
+                for user, item_pos, item_neg in data_generator(
                     shuffle, self.batch_size
                 ):
                     loss = self.bpr_loss(user, item_pos, item_neg)
