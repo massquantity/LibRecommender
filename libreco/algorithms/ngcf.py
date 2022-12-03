@@ -21,6 +21,7 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
         self,
         task,
         data_info,
+        loss_type="cross_entropy",
         embed_size=16,
         n_epochs=20,
         lr=0.01,
@@ -30,9 +31,11 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
         reg=None,
         batch_size=256,
         num_neg=1,
-        node_dropout=None,
-        message_dropout=None,
+        node_dropout=0.0,
+        message_dropout=0.0,
         hidden_units="64,64,64",
+        margin=1.0,
+        sampler="random",
         seed=42,
         k=10,
         eval_batch_size=8192,
@@ -43,21 +46,14 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
-        assert task == "ranking", "NGCF is only suitable for ranking"
         self.all_args = locals()
-        self.n_epochs = n_epochs
-        self.lr = lr
-        self.lr_decay = lr_decay
-        self.batch_size = batch_size
-        self.num_neg = num_neg
+        self.loss_type = loss_type
         self.node_dropout = node_dropout
         self.message_dropout = message_dropout
         self.hidden_units = list(eval(hidden_units))
         self.seed = seed
-        self.k = k
-        self.eval_batch_size = eval_batch_size
-        self.eval_user_num = eval_user_num
         self.device = device
+        self._check_params()
         if with_training:
             self.torch_model = NGCFModel(
                 self.n_users,
@@ -72,7 +68,7 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
             self.trainer = TorchTrainer(
                 self,
                 task,
-                "bpr",
+                loss_type,
                 n_epochs,
                 lr,
                 lr_decay,
@@ -81,10 +77,19 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
                 reg,
                 batch_size,
                 num_neg,
+                margin,
+                sampler,
                 k,
                 eval_batch_size,
                 eval_user_num,
+                device,
             )
+
+    def _check_params(self):
+        if self.task != "ranking":
+            raise ValueError("NGCF is only suitable for ranking")
+        if self.loss_type not in ("cross_entropy", "focal", "bpr", "max_margin"):
+            raise ValueError(f"unsupported `loss_type` for NGCF: {self.loss_type}")
 
     @torch.no_grad()
     def set_embeddings(self):
