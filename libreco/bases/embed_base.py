@@ -165,9 +165,9 @@ class EmbedBase(Base):
             self.item_index = _create_index(self.get_item_embedding())
         elif sim_type == "cosine":
             self.user_norm = np.linalg.norm(self.get_user_embedding(), axis=1)
-            self.user_norm[self.user_norm == 0] = 1e-10
+            self.user_norm[self.user_norm == 0] = 1.0
             self.item_norm = np.linalg.norm(self.get_item_embedding(), axis=1)
-            self.item_norm[self.item_norm == 0] = 1e-10
+            self.item_norm[self.item_norm == 0] = 1.0
         self.approximate = approximate
         self.sim_type = sim_type
 

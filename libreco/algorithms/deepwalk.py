@@ -107,10 +107,10 @@ class DeepWalk(EmbedBase):
 
         if self.norm_embed:
             user_norms = np.linalg.norm(self.user_embed, axis=1, keepdims=True)
-            user_norms[user_norms == 0] = 1e-10
+            user_norms[user_norms == 0] = 1.0
             self.user_embed /= user_norms
             item_norms = np.linalg.norm(self.item_embed, axis=1, keepdims=True)
-            item_norms[item_norms == 0] = 1e-10
+            item_norms[item_norms == 0] = 1.0
             self.item_embed /= item_norms
 
     def save(self, path, model_name, manual=True, inference_only=False):

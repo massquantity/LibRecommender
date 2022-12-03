@@ -100,7 +100,7 @@ class DataInfo(object):
 
     @property
     def sparse_col(self):
-        if not self.col_name_mapping["sparse_col"]:
+        if not self.col_name_mapping or not self.col_name_mapping["sparse_col"]:
             return EmptyFeature
         return Feature(
             name=list(self.col_name_mapping["sparse_col"].keys()),
@@ -109,7 +109,7 @@ class DataInfo(object):
 
     @property
     def dense_col(self):
-        if not self.col_name_mapping["dense_col"]:
+        if not self.col_name_mapping or not self.col_name_mapping["dense_col"]:
             return EmptyFeature
         return Feature(
             name=list(self.col_name_mapping["dense_col"].keys()),
@@ -118,7 +118,7 @@ class DataInfo(object):
 
     @property
     def user_sparse_col(self):
-        if not self.col_name_mapping["user_sparse_col"]:
+        if not self.col_name_mapping or not self.col_name_mapping["user_sparse_col"]:
             return EmptyFeature
         return Feature(
             name=list(self.col_name_mapping["user_sparse_col"].keys()),
@@ -127,7 +127,7 @@ class DataInfo(object):
 
     @property
     def user_dense_col(self):
-        if not self.col_name_mapping["user_dense_col"]:
+        if not self.col_name_mapping or not self.col_name_mapping["user_dense_col"]:
             return EmptyFeature
         return Feature(
             name=list(self.col_name_mapping["user_dense_col"].keys()),
@@ -136,7 +136,7 @@ class DataInfo(object):
 
     @property
     def item_sparse_col(self):
-        if not self.col_name_mapping["item_sparse_col"]:
+        if not self.col_name_mapping or not self.col_name_mapping["item_sparse_col"]:
             return EmptyFeature
         return Feature(
             name=list(self.col_name_mapping["item_sparse_col"].keys()),
@@ -145,7 +145,7 @@ class DataInfo(object):
 
     @property
     def item_dense_col(self):
-        if not self.col_name_mapping["item_dense_col"]:
+        if not self.col_name_mapping or not self.col_name_mapping["item_dense_col"]:
             return EmptyFeature
         return Feature(
             name=list(self.col_name_mapping["item_dense_col"].keys()),
@@ -154,6 +154,8 @@ class DataInfo(object):
 
     @property
     def user_col(self):
+        if not self.col_name_mapping:
+            return []
         # will be sorted by key
         return (
             self.col_name_mapping["user_sparse_col"]
@@ -163,6 +165,8 @@ class DataInfo(object):
 
     @property
     def item_col(self):
+        if not self.col_name_mapping:
+            return []
         # will be sorted by key
         return (
             self.col_name_mapping["item_sparse_col"]
