@@ -31,7 +31,7 @@ def rank_recommendations(recos, model, user_id, n_rec, inner_id):
         (
             rec if inner_id else (model.data_info.id2item[rec[0]], rec[1])
             for rec in rank
-            if rec[0] not in consumed
+            if rec[0] not in consumed and rec[0] in model.data_info.id2item
         ),
         n_rec,
     )

@@ -12,16 +12,32 @@ from tests.utils_save_load import save_load_model
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize(
-    "reg, node_dropout, message_dropout, num_neg, lr_decay, epsilon, amsgrad",
-    [(0.0, 0.0, 0.0, 1, False, 1e-8, False), (0.01, 0.2, 0.2, 3, True, 4e-5, True)],
+    "loss_type, sampler, num_neg",
+    [
+        ("cross_entropy", "random", 1),
+        ("cross_entropy", "random", 0),
+        ("focal", None, 1),
+        ("focal", "unconsumed", 3),
+        ("bpr", "popular", 3),
+        ("max_margin", "random", 2),
+        ("max_margin", None, 2),
+        ("whatever", "random", 1),
+        ("bpr", "whatever", 1),
+    ],
+)
+@pytest.mark.parametrize(
+    "reg, node_dropout, message_dropout, lr_decay, epsilon, amsgrad",
+    [(0.0, 0.0, 0.0, False, 1e-8, False), (0.01, 0.2, 0.2, True, 4e-5, True)],
 )
 def test_ngcf(
     prepare_pure_data,
     task,
+    loss_type,
+    sampler,
+    num_neg,
     reg,
     node_dropout,
     message_dropout,
-    num_neg,
     lr_decay,
     epsilon,
     amsgrad,
@@ -29,16 +45,29 @@ def test_ngcf(
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
-        train_data.build_negative_samples(data_info, seed=2022)
+        # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
 
     if task == "rating":
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             _ = NGCF(task, data_info)
+    elif loss_type == "whatever":
+        with pytest.raises(ValueError):
+            _ = NGCF(task, data_info, loss_type, sampler=sampler, num_neg=num_neg)
+    elif loss_type == "cross_entropy" and sampler and num_neg <= 0:
+        with pytest.raises(AssertionError):
+            _ = NGCF(task, data_info, loss_type, sampler=sampler, num_neg=num_neg)
+    elif loss_type == "max_margin" and not sampler:
+        with pytest.raises(ValueError):
+            _ = NGCF(task, data_info, loss_type, sampler=sampler, num_neg=num_neg)
+    elif sampler and sampler == "whatever":
+        with pytest.raises(ValueError):
+            _ = NGCF(task, data_info, loss_type, sampler=sampler, num_neg=num_neg)
     else:
         model = NGCF(
             task=task,
             data_info=data_info,
+            loss_type=loss_type,
             embed_size=4,
             n_epochs=1,
             lr=1e-4,
@@ -50,6 +79,7 @@ def test_ngcf(
             node_dropout=node_dropout,
             message_dropout=message_dropout,
             num_neg=num_neg,
+            sampler=sampler,
         )
         model.fit(
             train_data,

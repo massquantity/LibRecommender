@@ -65,7 +65,7 @@ if __name__ == "__main__":
             "ndcg",
         ],
     )
-    print("prediction: ", rnn.predict(user=1, item=2333))
+    print("prediction: ", rnn.predict(user=1, item=2))
     print("recommendation: ", rnn.recommend_user(user=1, n_rec=7))
 
     tf.compat.v1.reset_default_graph()
