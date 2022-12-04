@@ -7,7 +7,7 @@ author: massquantity
 
 """
 import numpy as np
-import scipy
+import scipy.sparse as ssp
 import torch
 import torch.nn as nn
 
@@ -23,7 +23,7 @@ class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
         loss_type="bpr",
         embed_size=16,
         n_epochs=20,
-        lr=0.01,
+        lr=0.001,
         lr_decay=False,
         epsilon=1e-8,
         amsgrad=False,
@@ -124,14 +124,13 @@ class LightGCNModel(nn.Module):
         nn.init.normal_(item_embeds.weight, 0.0, 0.1)
         return user_embeds, item_embeds
 
-    # noinspection PyUnresolvedReferences
     def _build_laplacian_matrix(self):
-        R = scipy.sparse.dok_matrix((self.n_users, self.n_items), dtype=np.float32)
+        R = ssp.dok_matrix((self.n_users, self.n_items), dtype=np.float32)
         for u, items in self.user_consumed.items():
             R[u, items] = 1.0
         R = R.tolil()
 
-        adj_matrix = scipy.sparse.lil_matrix(
+        adj_matrix = ssp.lil_matrix(
             (self.n_users + self.n_items, self.n_items + self.n_users), dtype=np.float32
         )
         adj_matrix[: self.n_users, self.n_users :] = R
@@ -141,7 +140,7 @@ class LightGCNModel(nn.Module):
         row_sum = np.array(adj_matrix.sum(axis=1))
         diag_inv = np.power(row_sum, -0.5).flatten()
         diag_inv[np.isinf(diag_inv)] = 0.0
-        diag_matrix_inv = scipy.sparse.diags(diag_inv)
+        diag_matrix_inv = ssp.diags(diag_inv)
 
         coo = diag_matrix_inv.dot(adj_matrix).dot(diag_matrix_inv).tocoo()
         indices = torch.LongTensor(np.array([coo.row, coo.col]))

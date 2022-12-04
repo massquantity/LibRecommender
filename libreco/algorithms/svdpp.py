@@ -32,7 +32,7 @@ class SVDpp(EmbedBase):
         loss_type="cross_entropy",
         embed_size=16,
         n_epochs=20,
-        lr=0.01,
+        lr=0.001,
         lr_decay=False,
         epsilon=1e-5,
         reg=None,

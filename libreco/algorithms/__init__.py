@@ -19,6 +19,7 @@ from .item2vec import Item2Vec
 from .deepwalk import DeepWalk
 from .ngcf import NGCF
 from .lightgcn import LightGCN
+from .pinsage import PinSage
 
 __all__ = [
     "UserCF",
@@ -42,4 +43,5 @@ __all__ = [
     "DeepWalk",
     "NGCF",
     "LightGCN",
+    "PinSage",
 ]
