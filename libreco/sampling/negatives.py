@@ -14,21 +14,27 @@ def _check_invalid_negatives(negatives, items_pos, items=None):
     return list(invalid_indices)
 
 
-def negatives_from_random(np_rng, n_items, items_pos, num_neg, items=None):
+def negatives_from_random(
+    np_rng, n_items, items_pos, num_neg, items=None, tolerance=10
+):
     items_pos = np.repeat(items_pos, num_neg) if num_neg > 1 else items_pos
+    items = np.repeat(items, num_neg) if num_neg > 1 and items is not None else items
     replace = False if len(items_pos) < n_items else True
     negatives = np_rng.choice(n_items, size=len(items_pos), replace=replace)
     invalid_indices = _check_invalid_negatives(negatives, items_pos, items)
-    while invalid_indices:
+    for _ in range(tolerance):
         negatives[invalid_indices] = np_rng.choice(
             n_items, size=len(invalid_indices), replace=True
         )
         invalid_indices = _check_invalid_negatives(negatives, items_pos, items)
+        if not invalid_indices:
+            break
     return negatives
 
 
 def negatives_from_popular(np_rng, n_items, items_pos, num_neg, items=None, probs=None):
     items_pos = np.repeat(items_pos, num_neg) if num_neg > 1 else items_pos
+    items = np.repeat(items, num_neg) if num_neg > 1 and items is not None else items
     negatives = np_rng.choice(n_items, size=len(items_pos), replace=True, p=probs)
     invalid_indices = _check_invalid_negatives(negatives, items_pos, items)
     if invalid_indices:

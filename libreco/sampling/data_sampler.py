@@ -68,11 +68,11 @@ class DataGenerator:
             labels = self.labels
             sparse_indices = self.sparse_indices
             dense_values = self.dense_values
-        return self.__iter__(
+        return self._iterate_data(
             user_indices, item_indices, sparse_indices, dense_values, labels
         )
 
-    def __iter__(
+    def _iterate_data(
         self, user_indices, item_indices, sparse_indices, dense_values, labels
     ):
         batch_cls = PointwiseSepFeatBatch if self.separate_features else PointwiseBatch
@@ -152,7 +152,7 @@ class PointwiseDataGenerator(DataGenerator):
         )
         self.batch_size = max(1, int(batch_size / (num_neg + 1)))
 
-    def __iter__(self, user_indices, item_indices, sparse_indices, dense_values, *_):
+    def _iterate_data(self, user_indices, item_indices, sparse_indices, dense_values, *_):
         batch_cls = PointwiseSepFeatBatch if self.separate_features else PointwiseBatch
         for k in tqdm(
             range(0, self.data_size, self.batch_size), desc="pointwise data iterator"
@@ -268,7 +268,9 @@ class PairwiseDataGenerator(DataGenerator):
         self.batch_size = max(1, int(batch_size / num_neg))
         self.repeat_positives = repeat_positives
 
-    def __iter__(self, user_indices, item_indices, sparse_indices, dense_values, *_):
+    def _iterate_data(
+        self, user_indices, item_indices, sparse_indices, dense_values, *_
+    ):
         for k in tqdm(
             range(0, self.data_size, self.batch_size), desc="pairwise data iterator"
         ):
@@ -393,9 +395,9 @@ class PairwiseRandomWalkGenerator(PairwiseDataGenerator):
             )
 
     def __call__(self, *_):
-        return self.__iter__()
+        return self._iterate_data()
 
-    def __iter__(self, *_):
+    def _iterate_data(self, *_):
         n_batches = int(
             self.data_size / self.num_walks / self.walk_length / self.batch_size
         )
@@ -416,10 +418,6 @@ class PairwiseRandomWalkGenerator(PairwiseDataGenerator):
                 self.walk_length,
                 self.focus_start,
             )
-
-            if self.repeat_positives and self.num_neg > 1:
-                items = np.repeat(items, self.num_neg)
-                items_pos = np.repeat(items_pos, self.num_neg)
 
             if self.sampler == "out-batch":
                 items_neg = negatives_from_out_batch(
@@ -442,6 +440,10 @@ class PairwiseRandomWalkGenerator(PairwiseDataGenerator):
                     self.num_neg,
                     items=items,
                 )
+
+            if self.repeat_positives and self.num_neg > 1:
+                items = np.repeat(items, self.num_neg)
+                items_pos = np.repeat(items_pos, self.num_neg)
 
             sparse_feats = self.get_feats(items, items_pos, items_neg, is_sparse=True)
             dense_feats = self.get_feats(items, items_pos, items_neg, is_sparse=False)

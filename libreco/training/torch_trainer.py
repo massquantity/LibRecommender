@@ -90,7 +90,8 @@ class TorchTrainer(BaseTrainer):
                 and self.sampler != "out-batch"
             ):
                 raise ValueError(
-                    f"`sampler` must be one of (`random`, `unconsumed`, `popular`)"
+                    f"`sampler` must be one of (`random`, `unconsumed`, `popular`), "
+                    f"got {self.sampler}"
                 )
 
     def get_data_generator(self, train_data):
@@ -255,7 +256,7 @@ class SageTrainer(TorchTrainer):
         ):
             raise ValueError(
                 f"`sampler` must be one of (`random`, `out-batch`, `popular`) for i2i, "
-                f"consider using u2i for no sampling"
+                f"got {self.sampler}, consider using u2i for no sampling"
             )
         if self.paradigm == "i2i" and self.loss_type == "focal":
             raise ValueError("i2i doesn't support focal loss")
