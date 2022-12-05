@@ -2,6 +2,7 @@ from itertools import islice
 
 import numpy as np
 import pandas as pd
+from scipy.special import expit
 
 from ..feature import (
     add_item_features,
@@ -22,7 +23,8 @@ def popular_recommendations(data_info, inner_id, n_rec):
 
 def rank_recommendations(recos, model, user_id, n_rec, inner_id):
     if model.task == "ranking":
-        recos = 1 / (1 + np.exp(-recos))
+        # recos = 1 / (1 + np.exp(-recos))
+        recos = expit(recos)
     consumed = set(model.user_consumed[user_id])
     count = n_rec + len(consumed)
     ids = np.argpartition(recos, -count)[-count:]

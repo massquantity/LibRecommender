@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy.special import expit
 from tqdm import tqdm
 
 from ..feature import (
@@ -15,7 +16,8 @@ def normalize_prediction(preds, model, cold_start, unknown_num, unknown_index):
     if model.task == "rating":
         preds = np.clip(preds, model.lower_bound, model.upper_bound)
     elif model.task == "ranking":
-        preds = 1 / (1 + np.exp(-preds))
+        # preds = 1 / (1 + np.exp(-z))
+        preds = expit(preds)
 
     if unknown_num > 0 and cold_start == "popular":
         if isinstance(preds, np.ndarray):
