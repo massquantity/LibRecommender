@@ -34,6 +34,7 @@ class PinSage(EmbedBase):
         task,
         data_info,
         loss_type="max_margin",
+        paradigm="i2i",
         embed_size=16,
         n_epochs=20,
         lr=0.001,
@@ -44,7 +45,6 @@ class PinSage(EmbedBase):
         batch_size=256,
         num_neg=1,
         dropout=0.0,
-        paradigm="i2i",
         remove_edges=False,
         full_repr=True,
         num_layers=2,
@@ -211,8 +211,8 @@ class PinSage(EmbedBase):
                     nodes,
                     self.data_info.user_consumed,
                     self.data_info.item_consumed,
-                    num_neighbors=100,
-                    num_walks=100,
+                    num_neighbors=max(10, self.num_neighbors),
+                    num_walks=max(10, self.num_walks),
                     walk_length=self.neighbor_walk_len,
                 )
                 neighbor_tensors = item_unique_to_tensor(
