@@ -11,7 +11,7 @@ PURE_MODELS = (
     "LightGCN",
 )
 
-FEAT_MODELS = ("WideDeep", "FM", "DeepFM", "AutoInt")
+FEAT_MODELS = ("WideDeep", "FM", "DeepFM", "AutoInt", "PinSage")
 
 SEQUENCE_MODELS = (
     "YouTubeRetrieval",
