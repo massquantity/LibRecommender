@@ -54,7 +54,7 @@ def prepare_youtube_retrieval_data(multi_sparse=False):
         (True, 0.001, False, None, None, None),
     ],
 )
-@pytest.mark.parametrize("num_sampled_per_batch", [None, 1, 3111])
+@pytest.mark.parametrize("num_sampled_per_batch", [None, 1, 64])
 @pytest.mark.parametrize("loss_type", ["nce", "sampled_softmax", "unknown"])
 def test_youtube_retrieval(
     task,

@@ -24,8 +24,9 @@ def pairs_from_random_walk(
     items, items_pos = [], []
     for node in start_nodes:
         if has_no_neighbor(user_consumed, item_consumed, node):
-            print(f"no neighbor to walk for item {node}")
-            continue
+            print(f"no neighbor to walk for item node {node}")
+            items.append(node)
+            items_pos.append(node)
         for _ in range(num_walks):
             cur_node = node
             for _ in range(walk_length):
