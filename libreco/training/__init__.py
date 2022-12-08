@@ -5,11 +5,12 @@ from .tf_trainer import (
     WideDeepTrainer,
     YoutubeRetrievalTrainer,
 )
-from .torch_trainer import TorchTrainer
+from .torch_trainer import SageTrainer, TorchTrainer
 
 __all__ = [
     "BPRTrainer",
     "RNN4RecTrainer",
+    "SageTrainer",
     "TensorFlowTrainer",
     "TorchTrainer",
     "WideDeepTrainer",

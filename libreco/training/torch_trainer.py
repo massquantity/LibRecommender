@@ -12,13 +12,13 @@ from ..sampling.data_sampler import (
     PairwiseRandomWalkGenerator,
     PointwiseDataGenerator,
 )
-from ..torchops.features import feat_to_tensor
-from ..torchops.loss import (
+from ..torchops import (
     binary_cross_entropy_loss,
     bpr_loss,
     focal_loss,
-    graphsage_unsupervised_loss,
     max_margin_loss,
+    pairwise_bce_loss,
+    pairwise_focal_loss,
 )
 from ..utils.misc import colorize, time_block
 
@@ -208,7 +208,6 @@ class SageTrainer(TorchTrainer):
         batch_size,
         num_neg,
         paradigm,
-        full_repr,
         num_walks,
         walk_len,
         margin,
@@ -241,7 +240,6 @@ class SageTrainer(TorchTrainer):
         )
         self.data_info = model.data_info
         self.paradigm = paradigm
-        self.full_repr = full_repr
         self.num_walks = num_walks
         self.walk_len = walk_len
         self.start_node = start_node
@@ -258,8 +256,6 @@ class SageTrainer(TorchTrainer):
                 f"`sampler` must be one of (`random`, `out-batch`, `popular`) for i2i, "
                 f"got {self.sampler}, consider using u2i for no sampling"
             )
-        if self.paradigm == "i2i" and self.loss_type == "focal":
-            raise ValueError("i2i doesn't support focal loss")
 
     def get_data_generator(self, train_data):
         if self.paradigm == "u2i":
@@ -273,17 +269,7 @@ class SageTrainer(TorchTrainer):
                     self.model.seed,
                     separate_features=True,
                 )
-            if self.loss_type in ("cross_entropy", "focal"):
-                return PointwiseDataGenerator(
-                    train_data,
-                    self.model.data_info,
-                    self.batch_size,
-                    self.num_neg,
-                    self.sampler,
-                    self.model.seed,
-                    separate_features=True,
-                )
-            elif self.loss_type in ("bpr", "max_margin"):
+            else:
                 return PairwiseDataGenerator(
                     train_data,
                     self.model.data_info,
@@ -309,7 +295,11 @@ class SageTrainer(TorchTrainer):
             )
 
     def compute_loss(self, data):
-        if self.paradigm == "u2i" and self.loss_type in ("cross_entropy", "focal"):
+        if (
+            self.paradigm == "u2i"
+            and not self.sampler
+            and self.loss_type in ("cross_entropy", "focal")
+        ):
             user_feats = data.users, data.sparse_indices[0], data.dense_values[0]
             user_reprs = self.model.get_user_repr(*user_feats)
             item_feats = data.items, data.sparse_indices[1], data.dense_values[1]
@@ -338,23 +328,16 @@ class SageTrainer(TorchTrainer):
                 data.sparse_indices[2],
                 data.dense_values[2],
             )
-            if self.full_repr:
-                item_pos_reprs = self.model.get_item_repr(*item_pos_feats)
-                item_neg_reprs = self.model.get_item_repr(*item_neg_feats)
-            else:
-                item_pos_feats = feat_to_tensor(*item_pos_feats, device=self.device)
-                item_pos_reprs = self.torch_model.get_raw_features(
-                    *item_pos_feats, is_user=False
+            item_pos_reprs = self.model.get_item_repr(*item_pos_feats)
+            item_neg_reprs = self.model.get_item_repr(*item_neg_feats)
+            if self.loss_type in ("cross_entropy", "focal"):
+                loss_func = (
+                    pairwise_bce_loss
+                    if self.loss_type == "cross_entropy"
+                    else pairwise_focal_loss
                 )
-                item_neg_feats = feat_to_tensor(*item_neg_feats, device=self.device)
-                item_neg_reprs = self.torch_model.get_raw_features(
-                    *item_neg_feats, is_user=False
-                )
-
-            if self.paradigm == "i2i" and self.loss_type == "cross_entropy":
-                return graphsage_unsupervised_loss(
-                    query_reprs, item_pos_reprs, item_neg_reprs
-                )
+                mean = True if self.paradigm == "u2i" else False
+                return loss_func(query_reprs, item_pos_reprs, item_neg_reprs, mean=mean)
             if self.loss_type == "bpr":
                 return bpr_loss(query_reprs, item_pos_reprs, item_neg_reprs)
             else:

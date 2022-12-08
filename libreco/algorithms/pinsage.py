@@ -13,13 +13,13 @@ from torch import nn
 from tqdm import tqdm
 
 from ..bases import EmbedBase
-from ..sampling.random_walks import bipartite_neighbors_with_weights
-from ..torchops.features import (
+from ..sampling import bipartite_neighbors_with_weights
+from ..torchops import (
     feat_to_tensor,
     user_unique_to_tensor,
     item_unique_to_tensor,
 )
-from ..training.torch_trainer import SageTrainer
+from ..training import SageTrainer
 from ..utils.validate import (
     check_dense_values,
     check_sparse_indices,
@@ -46,7 +46,6 @@ class PinSage(EmbedBase):
         num_neg=1,
         dropout=0.0,
         remove_edges=False,
-        full_repr=True,
         num_layers=2,
         num_neighbors=3,
         num_walks=10,
@@ -77,7 +76,6 @@ class PinSage(EmbedBase):
         self.dropout = dropout
         self.paradigm = paradigm
         self.remove_edges = remove_edges
-        self.full_repr = full_repr
         self.num_layers = num_layers
         self.num_neighbors = num_neighbors
         self.num_walks = num_walks
@@ -116,7 +114,6 @@ class PinSage(EmbedBase):
                 batch_size,
                 num_neg,
                 paradigm,
-                full_repr,
                 num_walks,
                 sample_walk_len,
                 margin,
@@ -134,12 +131,8 @@ class PinSage(EmbedBase):
             raise ValueError("PinSage is only suitable for ranking")
         if self.paradigm not in ("u2i", "i2i"):
             raise ValueError("paradigm must either be `u2i` or `i2i`")
-        if self.paradigm == "u2i":
-            if self.loss_type not in ("cross_entropy", "focal", "bpr", "max_margin"):
-                raise ValueError(f"unsupported `loss_type` for u2i: {self.loss_type}")
-        elif self.paradigm == "i2i":
-            if self.loss_type not in ("cross_entropy", "bpr", "max_margin"):
-                raise ValueError(f"unsupported `loss_type` for i2i: {self.loss_type}")
+        if self.loss_type not in ("cross_entropy", "focal", "bpr", "max_margin"):
+            raise ValueError(f"unsupported `loss_type` for u2i: {self.loss_type}")
 
     def get_user_repr(self, users, sparse_indices, dense_values):
         query_feats = feat_to_tensor(users, sparse_indices, dense_values, self.device)
@@ -215,23 +208,29 @@ class PinSage(EmbedBase):
                     num_walks=max(10, self.num_walks),
                     walk_length=self.neighbor_walk_len,
                 )
-                neighbor_tensors = item_unique_to_tensor(
+                (
+                    neighbor_tensor,
+                    neighbor_sparse_indices,
+                    neighbor_dense_values,
+                ) = item_unique_to_tensor(
                     neighbors,
                     self.data_info,
                     self.device,
                 )
-                tensor_neighbors.append(neighbor_tensors[0])
-                tensor_neighbor_sparse_indices.append(neighbor_tensors[1])
-                tensor_neighbor_dense_values.append(neighbor_tensors[2])
+                tensor_neighbors.append(neighbor_tensor)
+                tensor_neighbor_sparse_indices.append(neighbor_sparse_indices)
+                tensor_neighbor_dense_values.append(neighbor_dense_values)
                 tensor_weights.append(torch.FloatTensor(weights, device=self.device))
                 tensor_offsets.append(torch.LongTensor(offsets, device=self.device))
                 nodes = neighbors
 
-            item_feats_tensor = item_unique_to_tensor(
+            item_tensor, item_sparse_indices, item_dense_values = item_unique_to_tensor(
                 batch_items, self.data_info, self.device
             )
             item_reprs = self.torch_model(
-                *item_feats_tensor,
+                item_tensor,
+                item_sparse_indices,
+                item_dense_values,
                 tensor_neighbors,
                 tensor_neighbor_sparse_indices,
                 tensor_neighbor_dense_values,

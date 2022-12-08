@@ -7,13 +7,16 @@ def binary_cross_entropy_loss(logits, labels):
 
 
 # focal loss for binary cross entropy based on [Lin et al., 2018](https://arxiv.org/pdf/1708.02002.pdf)
-def focal_loss(logits, labels, alpha=0.25, gamma=2.0):
+def focal_loss(logits, labels, alpha=0.25, gamma=2.0, mean=True):
     weighting_factor = (labels * alpha) + ((1 - labels) * (1 - alpha))
     probs = torch.sigmoid(logits)
     p_t = (labels * probs) + ((1 - labels) * (1 - probs))
     modulating_factor = torch.pow(1.0 - p_t, gamma)
     bce = F.binary_cross_entropy_with_logits(logits, labels, reduction="none")
-    return torch.mean(weighting_factor * modulating_factor * bce)
+    focal = weighting_factor * modulating_factor * bce
+    if mean:
+        focal = torch.mean(focal)
+    return focal
 
 
 def bpr_loss(targets, items_pos, items_neg):
@@ -29,17 +32,34 @@ def max_margin_loss(targets, items_pos, items_neg, margin):
     )
 
 
-def graphsage_unsupervised_loss(targets, items_pos, items_neg, neg_weights=1.0):
+def pairwise_bce_loss(targets, items_pos, items_neg, mean=True):
     pos_scores, neg_scores = compute_pair_scores(
         targets, items_pos, items_neg, repeat_positives=False
     )
     pos_bce = F.binary_cross_entropy_with_logits(
-        pos_scores, torch.ones_like(pos_scores)
+        pos_scores, torch.ones_like(pos_scores), reduction="none"
     )
     neg_bce = F.binary_cross_entropy_with_logits(
-        neg_scores, torch.zeros_like(neg_scores)
+        neg_scores, torch.zeros_like(neg_scores), reduction="none"
     )
-    return pos_bce.sum() + neg_weights * neg_bce.sum()
+    loss = torch.cat([pos_bce, neg_bce])
+    if mean:
+        return torch.mean(loss)
+    else:
+        return torch.sum(loss)
+
+
+def pairwise_focal_loss(targets, items_pos, items_neg, mean=True):
+    pos_scores, neg_scores = compute_pair_scores(
+        targets, items_pos, items_neg, repeat_positives=False
+    )
+    pos_focal = focal_loss(pos_scores, torch.ones_like(pos_scores), mean=False)
+    neg_focal = focal_loss(neg_scores, torch.zeros_like(neg_scores), mean=False)
+    loss = torch.cat([pos_focal, neg_focal])
+    if mean:
+        return torch.mean(loss)
+    else:
+        return torch.sum(loss)
 
 
 def compute_pair_scores(targets, items_pos, items_neg, repeat_positives=True):
