@@ -22,7 +22,7 @@ from tests.utils_save_load import save_load_model
         ("u2i", "focal", None, 1),
         ("u2i", "focal", "unconsumed", 3),
         ("u2i", "focal", "popular", 2),
-        ("i2i", "focal", "unconsumed", 3),
+        ("i2i", "focal", "random", 3),
         ("u2i", "bpr", "popular", 2),
         ("u2i", "bpr", "unconsumed", 2),
         ("u2i", "bpr", "random", 2),
@@ -36,7 +36,7 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "reg, dropout, lr_decay, epsilon, amsgrad, remove_edges, full_repr, num_layers, "
+    "reg, dropout, lr_decay, epsilon, amsgrad, remove_edges, num_layers, "
     "num_neighbors, num_walks, neighbor_walk_len, sample_walk_len, termination_prob, "
     "margin, start_node, focus_start",
     [
@@ -46,7 +46,6 @@ from tests.utils_save_load import save_load_model
             False,
             1e-8,
             False,
-            True,
             True,
             2,
             3,
@@ -64,7 +63,6 @@ from tests.utils_save_load import save_load_model
             True,
             4e-5,
             True,
-            False,
             False,
             3,
             1,
@@ -91,7 +89,6 @@ def test_pinsage(
     epsilon,
     amsgrad,
     remove_edges,
-    full_repr,
     num_layers,
     num_neighbors,
     num_walks,
@@ -126,7 +123,7 @@ def test_pinsage(
     elif loss_type == "whatever":
         with pytest.raises(ValueError):
             _ = PinSage(**params)
-    elif paradigm == "i2i" and (loss_type == "focal" or sampler == "unconsumed"):
+    elif paradigm == "i2i" and sampler == "unconsumed":
         with pytest.raises(ValueError):
             _ = PinSage(**params)
     elif loss_type == "cross_entropy" and sampler and num_neg <= 0:
@@ -156,7 +153,6 @@ def test_pinsage(
             num_neg=num_neg,
             sampler=sampler,
             remove_edges=remove_edges,
-            full_repr=full_repr,
             num_layers=num_layers,
             num_neighbors=num_neighbors,
             num_walks=num_walks,
