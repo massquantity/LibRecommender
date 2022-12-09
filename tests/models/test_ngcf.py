@@ -48,21 +48,29 @@ def test_ngcf(
         # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
 
+    params = {
+        "task": task,
+        "data_info": data_info,
+        "loss_type": loss_type,
+        "sampler": sampler,
+        "num_neg": num_neg,
+    }
+
     if task == "rating":
         with pytest.raises(ValueError):
-            _ = NGCF(task, data_info)
+            _ = NGCF(**params)
     elif loss_type == "whatever":
         with pytest.raises(ValueError):
-            _ = NGCF(task, data_info, loss_type, sampler=sampler, num_neg=num_neg)
+            _ = NGCF(**params)
     elif loss_type == "cross_entropy" and sampler and num_neg <= 0:
         with pytest.raises(AssertionError):
-            _ = NGCF(task, data_info, loss_type, sampler=sampler, num_neg=num_neg)
+            NGCF(**params).fit(train_data)
     elif loss_type == "max_margin" and not sampler:
         with pytest.raises(ValueError):
-            _ = NGCF(task, data_info, loss_type, sampler=sampler, num_neg=num_neg)
+            NGCF(**params).fit(train_data)
     elif sampler and sampler == "whatever":
         with pytest.raises(ValueError):
-            _ = NGCF(task, data_info, loss_type, sampler=sampler, num_neg=num_neg)
+            NGCF(**params).fit(train_data)
     else:
         model = NGCF(
             task=task,
