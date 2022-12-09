@@ -36,9 +36,21 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "reg, dropout, lr_decay, epsilon, amsgrad, remove_edges, num_layers, "
-    "num_neighbors, num_walks, neighbor_walk_len, sample_walk_len, termination_prob, "
-    "margin, start_node, focus_start",
+    "reg,"
+    "dropout,"
+    "lr_decay,"
+    "epsilon,"
+    "amsgrad,"
+    "remove_edges,"
+    "num_layers,"
+    "num_neighbors,"
+    "num_walks,"
+    "neighbor_walk_len,"
+    "sample_walk_len,"
+    "termination_prob,"
+    "margin,"
+    "start_node,"
+    "focus_start",
     [
         (
             0.0,
@@ -125,16 +137,16 @@ def test_pinsage(
             _ = PinSage(**params)
     elif paradigm == "i2i" and sampler == "unconsumed":
         with pytest.raises(ValueError):
-            _ = PinSage(**params)
+            PinSage(**params).fit(train_data)
     elif loss_type == "cross_entropy" and sampler and num_neg <= 0:
         with pytest.raises(AssertionError):
-            _ = PinSage(**params)
+            PinSage(**params).fit(train_data)
     elif loss_type == "max_margin" and not sampler:
         with pytest.raises(ValueError):
-            _ = PinSage(**params)
+            PinSage(**params).fit(train_data)
     elif sampler and sampler == "whatever":
         with pytest.raises(ValueError):
-            _ = PinSage(**params)
+            PinSage(**params).fit(train_data)
     else:
         model = PinSage(
             task=task,
