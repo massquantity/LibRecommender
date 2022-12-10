@@ -88,30 +88,21 @@ def recommend_tf_feat(model, user, n_rec, user_feats, item_data, cold_start, inn
             model.data_info, sparse_indices, dense_values, item_data
         )
 
+    params = {
+        "model": model,
+        "user_indices": user_indices,
+        "item_indices": item_indices,
+        "sparse_indices": sparse_indices,
+        "dense_values": dense_values,
+        "is_training": False,
+    }
     if model.model_category == "sequence":
         u_last_interacted = np.tile(
             model.user_last_interacted[user_id], (model.n_items, 1)
         )
         u_interacted_len = np.repeat(model.last_interacted_len[user_id], model.n_items)
-        feed_dict = get_feed_dict(
-            model=model,
-            user_indices=user_indices,
-            item_indices=item_indices,
-            sparse_indices=sparse_indices,
-            dense_values=dense_values,
-            user_interacted_seq=u_last_interacted,
-            user_interacted_len=u_interacted_len,
-            is_training=False,
-        )
-    else:
-        feed_dict = get_feed_dict(
-            model=model,
-            user_indices=user_indices,
-            item_indices=item_indices,
-            sparse_indices=sparse_indices,
-            dense_values=dense_values,
-            is_training=False,
-        )
+        params["user_interacted_seq"] = u_last_interacted
+        params["user_interacted_len"] = u_interacted_len
 
-    recos = model.sess.run(model.output, feed_dict)
+    recos = model.sess.run(model.output, get_feed_dict(**params))
     return rank_recommendations(recos, model, user_id, n_rec, inner_id)

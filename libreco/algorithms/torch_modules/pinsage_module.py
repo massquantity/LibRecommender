@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from libreco.utils.validate import (
+from ...utils.validate import (
     check_dense_values,
     check_sparse_indices,
     dense_field_size,

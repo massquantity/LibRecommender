@@ -154,8 +154,12 @@ class PinSage(EmbedBase):
             tensor_neighbors.append(neighbor_tensors[0])
             tensor_neighbor_sparse_indices.append(neighbor_tensors[1])
             tensor_neighbor_dense_values.append(neighbor_tensors[2])
-            tensor_weights.append(torch.FloatTensor(weights, device=self.device))
-            tensor_offsets.append(torch.LongTensor(offsets, device=self.device))
+            tensor_weights.append(
+                torch.tensor(weights, dtype=torch.float, device=self.device)
+            )
+            tensor_offsets.append(
+                torch.tensor(offsets, dtype=torch.long, device=self.device)
+            )
             nodes = neighbors
             item_indices = item_indices_in_samples
 
@@ -202,8 +206,12 @@ class PinSage(EmbedBase):
                 tensor_neighbors.append(neighbor_tensor)
                 tensor_neighbor_sparse_indices.append(neighbor_sparse_indices)
                 tensor_neighbor_dense_values.append(neighbor_dense_values)
-                tensor_weights.append(torch.FloatTensor(weights, device=self.device))
-                tensor_offsets.append(torch.LongTensor(offsets, device=self.device))
+                tensor_weights.append(
+                    torch.tensor(weights, dtype=torch.float, device=self.device)
+                )
+                tensor_offsets.append(
+                    torch.tensor(offsets, dtype=torch.long, device=self.device)
+                )
                 nodes = neighbors
 
             item_tensor, item_sparse_indices, item_dense_values = item_unique_to_tensor(

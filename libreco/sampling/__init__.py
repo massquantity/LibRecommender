@@ -2,7 +2,7 @@ from .batch_unit import PointwiseBatch, PairwiseBatch
 from .data_sampler import (
     DataGenerator,
     PairwiseDataGenerator,
-    PointwiseBatch,
+    PointwiseDataGenerator,
     PairwiseRandomWalkGenerator,
 )
 from .negatives import (
@@ -28,4 +28,5 @@ __all__ = [
     "PairwiseDataGenerator",
     "PairwiseRandomWalkGenerator",
     "PointwiseBatch",
+    "PointwiseDataGenerator",
 ]

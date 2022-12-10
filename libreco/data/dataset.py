@@ -328,9 +328,8 @@ class DatasetFeat(Dataset):
                 cls.multi_sparse_col, train_data, pad_val
             )
             if shuffle:
-                train_data = train_data.sample(frac=1, random_state=seed).reset_index(
-                    drop=True
-                )
+                train_data = train_data.sample(frac=1, random_state=seed)
+                train_data = train_data.reset_index(drop=True)
 
             user_indices, item_indices = get_user_item_sparse_indices(
                 train_data,

@@ -77,7 +77,7 @@ class NGCFModel(nn.Module):
         diag_matrix_inv = ssp.diags(diag_inv)
 
         coo = diag_matrix_inv.dot(adj_matrix).tocoo()
-        indices = torch.LongTensor(np.array([coo.row, coo.col]))
+        indices = torch.from_numpy(np.array([coo.row, coo.col]))
         values = torch.from_numpy(coo.data)
         laplacian_matrix = torch.sparse_coo_tensor(
             indices, values, coo.shape, dtype=torch.float32, device=self.device
