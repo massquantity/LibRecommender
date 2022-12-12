@@ -19,23 +19,18 @@ def focal_loss(logits, labels, alpha=0.25, gamma=2.0, mean=True):
     return focal
 
 
-def bpr_loss(targets, items_pos, items_neg):
-    pos_scores, neg_scores = compute_pair_scores(targets, items_pos, items_neg)
+def bpr_loss(pos_scores, neg_scores):
     log_sigmoid = F.logsigmoid(pos_scores - neg_scores)
     return torch.negative(torch.mean(log_sigmoid))
 
 
-def max_margin_loss(targets, items_pos, items_neg, margin):
-    pos_scores, neg_scores = compute_pair_scores(targets, items_pos, items_neg)
+def max_margin_loss(pos_scores, neg_scores, margin):
     return F.margin_ranking_loss(
         pos_scores, neg_scores, torch.ones_like(pos_scores), margin=margin
     )
 
 
-def pairwise_bce_loss(targets, items_pos, items_neg, mean=True):
-    pos_scores, neg_scores = compute_pair_scores(
-        targets, items_pos, items_neg, repeat_positives=False
-    )
+def pairwise_bce_loss(pos_scores, neg_scores, mean=True):
     pos_bce = F.binary_cross_entropy_with_logits(
         pos_scores, torch.ones_like(pos_scores), reduction="none"
     )
@@ -49,10 +44,7 @@ def pairwise_bce_loss(targets, items_pos, items_neg, mean=True):
         return torch.sum(loss)
 
 
-def pairwise_focal_loss(targets, items_pos, items_neg, mean=True):
-    pos_scores, neg_scores = compute_pair_scores(
-        targets, items_pos, items_neg, repeat_positives=False
-    )
+def pairwise_focal_loss(pos_scores, neg_scores, mean=True):
     pos_focal = focal_loss(pos_scores, torch.ones_like(pos_scores), mean=False)
     neg_focal = focal_loss(neg_scores, torch.zeros_like(neg_scores), mean=False)
     loss = torch.cat([pos_focal, neg_focal])
@@ -79,7 +71,7 @@ def compute_pair_scores(targets, items_pos, items_neg, repeat_positives=True):
             f"negatives length is not a multiple of positives length, "
             f"got {neg_len} and {pos_len}"
         )
-    factor = int(len(items_neg) / len(items_pos))
+    factor = int(neg_len / pos_len)
     embed_size = items_pos.shape[1]
     targets_neg = targets.unsqueeze(1)
     items_neg = items_neg.view(pos_len, factor, embed_size)
