@@ -62,26 +62,23 @@ class PinSage(EmbedBase):
         self.all_args = locals()
         self.loss_type = loss_type
         self.batch_size = batch_size
-        self.dropout = dropout
         self.paradigm = paradigm
         self.remove_edges = remove_edges
         self.num_layers = num_layers
         self.num_neighbors = num_neighbors
         self.num_walks = num_walks
         self.neighbor_walk_len = neighbor_walk_len
-        self.sample_walk_len = sample_walk_len
-        self.termination_prob = termination_prob
         self.seed = seed
         self.device = device
         self._check_params()
         if with_training:
             self.torch_model = PinSageModel(
-                self.paradigm,
-                self.data_info,
-                self.embed_size,
-                self.batch_size,
-                self.num_layers,
-                self.dropout,
+                paradigm,
+                data_info,
+                embed_size,
+                batch_size,
+                num_layers,
+                dropout,
             ).to(device)
             self.trainer = SageTrainer(
                 self,
@@ -114,7 +111,7 @@ class PinSage(EmbedBase):
         if self.paradigm not in ("u2i", "i2i"):
             raise ValueError("paradigm must either be `u2i` or `i2i`")
         if self.loss_type not in ("cross_entropy", "focal", "bpr", "max_margin"):
-            raise ValueError(f"unsupported `loss_type` for u2i: {self.loss_type}")
+            raise ValueError(f"unsupported `loss_type`: {self.loss_type}")
 
     def get_user_repr(self, users, sparse_indices, dense_values):
         query_feats = feat_to_tensor(users, sparse_indices, dense_values, self.device)

@@ -1,6 +1,7 @@
 import random
 
 import numpy as np
+import torch
 from tqdm import tqdm
 
 from .batch_unit import PairwiseBatch, PointwiseBatch, PointwiseSepFeatBatch
@@ -13,6 +14,7 @@ from .negatives import (
     pos_probs_from_frequency,
 )
 from .random_walks import pairs_from_random_walk
+from ..graph import pairs_from_dgl_graph
 
 
 class DataGenerator:
@@ -24,6 +26,7 @@ class DataGenerator:
         num_neg,
         sampler,
         seed,
+        use_features=True,
         separate_features=False,
         temperature=0.75,
     ):
@@ -40,6 +43,7 @@ class DataGenerator:
         self.data_size = len(dataset)
         self.sampler = sampler
         self.random_generator = np.random.default_rng(seed)
+        self.use_features = use_features
         self.separate_features = separate_features
         if self.sampler == "unconsumed":
             self.user_consumed_set = [
@@ -57,17 +61,21 @@ class DataGenerator:
             item_indices = self.item_indices[mask]
             labels = self.labels[mask]
             sparse_indices = (
-                self.sparse_indices[mask] if self.sparse_indices is not None else None
+                self.sparse_indices[mask]
+                if self.sparse_indices is not None and self.use_features
+                else None
             )
             dense_values = (
-                self.dense_values[mask] if self.dense_values is not None else None
+                self.dense_values[mask]
+                if self.dense_values is not None and self.use_features
+                else None
             )
         else:
             user_indices = self.user_indices
             item_indices = self.item_indices
             labels = self.labels
-            sparse_indices = self.sparse_indices
-            dense_values = self.dense_values
+            sparse_indices = self.sparse_indices if self.use_features else None
+            dense_values = self.dense_values if self.use_features else None
         return self._iterate_data(
             user_indices, item_indices, sparse_indices, dense_values, labels
         )
@@ -137,6 +145,7 @@ class PointwiseDataGenerator(DataGenerator):
         num_neg,
         sampler,
         seed,
+        use_features=True,
         separate_features=False,
         temperature=0.75,
     ):
@@ -147,12 +156,15 @@ class PointwiseDataGenerator(DataGenerator):
             num_neg,
             sampler,
             seed,
+            use_features,
             separate_features,
             temperature,
         )
         self.batch_size = max(1, int(batch_size / (num_neg + 1)))
 
-    def _iterate_data(self, user_indices, item_indices, sparse_indices, dense_values, *_):
+    def _iterate_data(
+        self, user_indices, item_indices, sparse_indices, dense_values, *_
+    ):
         batch_cls = PointwiseSepFeatBatch if self.separate_features else PointwiseBatch
         for k in tqdm(
             range(0, self.data_size, self.batch_size), desc="pointwise data iterator"
@@ -259,11 +271,20 @@ class PairwiseDataGenerator(DataGenerator):
         num_neg,
         sampler,
         seed,
+        use_features=True,
         repeat_positives=True,
         temperature=0.75,
     ):
         super().__init__(
-            dataset, data_info, batch_size, num_neg, sampler, seed, True, temperature
+            dataset,
+            data_info,
+            batch_size,
+            num_neg,
+            sampler,
+            seed,
+            use_features,
+            True,
+            temperature,
         )
         self.batch_size = max(1, int(batch_size / num_neg))
         self.repeat_positives = repeat_positives
@@ -364,11 +385,13 @@ class PairwiseRandomWalkGenerator(PairwiseDataGenerator):
         walk_length,
         sampler,
         seed,
+        use_features=True,
         repeat_positives=False,
         start_nodes="random",
         focus_start=False,
         temperature=0.75,
         alpha=1e-3,
+        graph=None,
     ):
         super().__init__(
             dataset,
@@ -377,6 +400,7 @@ class PairwiseRandomWalkGenerator(PairwiseDataGenerator):
             num_neg,
             sampler,
             seed,
+            use_features,
             repeat_positives,
             temperature,
         )
@@ -387,12 +411,15 @@ class PairwiseRandomWalkGenerator(PairwiseDataGenerator):
         self.walk_length = walk_length
         self.start_nodes = start_nodes
         self.focus_start = focus_start
+        self.graph = graph
         if self.start_nodes not in ("random", "unpopular"):
             raise ValueError("`start_nodes` must either be `random` or `unpopular`")
         if self.start_nodes == "unpopular":
             self.pos_probs = pos_probs_from_frequency(
                 data_info.item_consumed, self.n_users, self.n_items, alpha
             )
+            if graph is not None:
+                self.pos_probs = torch.tensor(self.pos_probs, dtype=torch.float)
 
     def __call__(self, *_):
         return self._iterate_data()
@@ -402,22 +429,37 @@ class PairwiseRandomWalkGenerator(PairwiseDataGenerator):
             self.data_size / self.num_walks / self.walk_length / self.batch_size
         )
         for _ in tqdm(range(n_batches), desc="pairwise random walk iterator"):
-            if self.start_nodes == "unpopular":
-                start_nodes = random.choices(
-                    range(self.n_items), weights=self.pos_probs, k=self.batch_size
+            if self.graph is not None:
+                if self.start_nodes == "unpopular":
+                    start_nodes = torch.multinomial(
+                        self.pos_probs, self.batch_size, replacement=True
+                    )
+                else:
+                    start_nodes = torch.randint(0, self.n_items, (self.batch_size,))
+                items, items_pos = pairs_from_dgl_graph(
+                    self.graph,
+                    start_nodes,
+                    self.num_walks,
+                    self.walk_length,
+                    self.focus_start,
                 )
             else:
-                start_nodes = self.random_generator.integers(
-                    0, self.n_items, size=self.batch_size
-                ).tolist()
-            items, items_pos = pairs_from_random_walk(
-                start_nodes,
-                self.user_consumed,
-                self.item_consumed,
-                self.num_walks,
-                self.walk_length,
-                self.focus_start,
-            )
+                if self.start_nodes == "unpopular":
+                    start_nodes = random.choices(
+                        range(self.n_items), weights=self.pos_probs, k=self.batch_size
+                    )
+                else:
+                    start_nodes = self.random_generator.integers(
+                        0, self.n_items, size=self.batch_size
+                    ).tolist()
+                items, items_pos = pairs_from_random_walk(
+                    start_nodes,
+                    self.user_consumed,
+                    self.item_consumed,
+                    self.num_walks,
+                    self.walk_length,
+                    self.focus_start,
+                )
 
             if self.sampler == "out-batch":
                 items_neg = negatives_from_out_batch(
@@ -445,8 +487,16 @@ class PairwiseRandomWalkGenerator(PairwiseDataGenerator):
                 items = np.repeat(items, self.num_neg)
                 items_pos = np.repeat(items_pos, self.num_neg)
 
-            sparse_feats = self.get_feats(items, items_pos, items_neg, is_sparse=True)
-            dense_feats = self.get_feats(items, items_pos, items_neg, is_sparse=False)
+            sparse_feats = (
+                self.get_feats(items, items_pos, items_neg, is_sparse=True)
+                if self.use_features
+                else None
+            )
+            dense_feats = (
+                self.get_feats(items, items_pos, items_neg, is_sparse=False)
+                if self.use_features
+                else None
+            )
             yield PairwiseBatch(
                 queries=items,
                 item_pairs=(items_pos, items_neg),
