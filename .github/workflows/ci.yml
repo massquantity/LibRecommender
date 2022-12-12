@@ -37,6 +37,7 @@ jobs:
           python -m pip install dgl -f https://data.dgl.ai/wheels/repo.html
           python -m pip install -r requirements.txt
           python -m pip install nmslib
+          python -m pip install dgl -f https://data.dgl.ai/wheels/repo.html
           python -m pip install -e .
 
       - name: Install dataclasses for python3.6
