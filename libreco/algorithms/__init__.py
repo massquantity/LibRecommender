@@ -20,6 +20,7 @@ from .deepwalk import DeepWalk
 from .ngcf import NGCF
 from .lightgcn import LightGCN
 from .pinsage import PinSage
+from .pinsage_dgl import PinSageDGL
 
 __all__ = [
     "UserCF",
@@ -44,4 +45,5 @@ __all__ = [
     "NGCF",
     "LightGCN",
     "PinSage",
+    "PinSageDGL",
 ]
