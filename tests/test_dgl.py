@@ -3,7 +3,6 @@ import sys
 
 import pytest
 
-from libreco.algorithms import PinSageDGL
 from libreco.graph import check_dgl
 
 
@@ -13,6 +12,7 @@ def test_dgl(prepare_feat_data, monkeypatch):
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "dgl", None)
         with pytest.raises(ModuleNotFoundError):
+            from libreco.algorithms import PinSageDGL
             _ = PinSageDGL("ranking", data_info)
 
     @check_dgl
