@@ -63,7 +63,7 @@ def pairs_from_dgl_graph(graph, start_nodes, num_walks, walk_len, focus_start):
     t u i u i
 
     focus_start:
-    t i i  ->  (t t), (i i i )  repeat-> (t t t t), (i i i i)
+    t i i  ->  (t t), (i i i i)  repeat-> (t t t t), (i i i i)
     t i i
 
     not focus_start:
