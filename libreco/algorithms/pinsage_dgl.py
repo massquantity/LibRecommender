@@ -143,7 +143,7 @@ class PinSageDGL(EmbedBase):
 
     def sample_blocks(self, nodes, target_nodes=None):
         """# noqa: W605
-        block: (items(nodes) -> sampled neighbor nodes)
+        bipartite graph block: (items(nodes) -> sampled neighbor nodes)
         -------------
         |     / ... |
         |    /  src |
