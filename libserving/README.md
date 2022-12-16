@@ -66,7 +66,7 @@ In `libserving`, the primary data serialization format is [`JSON`](<https://www.
 
 > Warning: The `pickle` module is not secure against erroneous or maliciously constructed data. Never unpickle data received from an untrusted or unauthenticated source.
 
-Aside from JSON, models built upon TensorFlow are saved using its own [`tf.saved_model`](<https://tensorflow.google.cn/versions/r1.15/api_docs/python/tf/saved_model>) API. The `SavedModel` format provides a language-neutral format to save machine-learning models.
+Aside from JSON, models built upon TensorFlow are saved using its own [`tf.saved_model`](https://www.tensorflow.org/versions/r1.15/api_docs/python/tf/saved_model) API. The `SavedModel` format provides a language-neutral format to save machine-learning models.
 
 
 
@@ -171,7 +171,7 @@ din/
         saved_model.pb
 ```
 
-We can inspect the saved `DIN` model by using `SavedModel CLI` described in [official doc](https://tensorflow.google.cn/guide/saved_model#details_of_the_savedmodel_command_line_interface). By default it is bundled with TensorFlow. The following command will output:
+We can inspect the saved `DIN` model by using `SavedModel CLI` described in [official doc](https://www.tensorflow.org/guide/saved_model#details_of_the_savedmodel_command_line_interface). By default it is bundled with TensorFlow. The following command will output:
 
 ```bash
 $ saved_model_cli show --dir tf_model/din/1 --all
