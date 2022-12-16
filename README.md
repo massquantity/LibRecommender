@@ -243,9 +243,6 @@ One can also use the library in a docker container without installing dependenci
 
 
 
-## License
+### Powered by
 
-#### MIT
-
-<br>
-
+[![JetBrains Logo](https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg)](https://www.jetbrains.com/community/opensource/#support)
