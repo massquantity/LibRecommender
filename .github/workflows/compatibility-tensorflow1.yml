@@ -32,6 +32,32 @@ jobs:
 
           - os: ubuntu-20.04
             python-version: '3.6'
+            tensorflow-version: 1.14.0
+            numpy-version: 1.19.5
+          - os: windows-latest
+            python-version: '3.6'
+            tensorflow-version: 1.14.0
+            numpy-version: 1.19.5
+          - os: macos-latest
+            python-version: '3.6'
+            tensorflow-version: 1.14.0
+            numpy-version: 1.19.5
+
+          - os: ubuntu-latest
+            python-version: '3.6'
+            tensorflow-version: 1.15.0
+            numpy-version: 1.19.5
+          - os: windows-latest
+            python-version: '3.6'
+            tensorflow-version: 1.15.0
+            numpy-version: 1.19.5
+          - os: macos-latest
+            python-version: '3.6'
+            tensorflow-version: 1.15.0
+            numpy-version: 1.19.5
+
+          - os: ubuntu-latest
+            python-version: '3.6'
             tensorflow-version: 1.15.5
             numpy-version: 1.19.5
           - os: windows-latest
