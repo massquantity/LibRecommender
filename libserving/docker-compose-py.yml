@@ -1,0 +1,36 @@
+version: "1"
+services:
+  libserving:
+    image: docker.io/massquantity/sanic-serving:0.1.0
+    ports:
+      - '8000:8000'
+    # command: sanic sanic_serving.embed_deploy:app --host=0.0.0.0 --port=8000 --dev --access-logs -v --workers 2
+    command: sanic sanic_serving.tf_deploy:app --host=0.0.0.0 --port=8000 --no-access-logs --workers 8
+    # command: python sanic_serving/knn_deploy.py
+    environment:
+      - REDIS_HOST=redis
+    networks:
+      - server
+    volumes:
+      - './embed_model:/app/faiss_index_path'
+    restart: always
+    depends_on:
+      - redis
+
+  redis:
+    image: docker.io/redis:7.0.4-alpine
+    ports:
+      - '6379:6379'
+    command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - server
+    volumes:
+      - './redis_data:/data'
+    restart: always
+
+volumes:
+  embed_model: {}
+  redis_data: {}
+
+networks:
+  server: {}

@@ -1,0 +1,17 @@
+FROM python:3.7-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir numpy==1.19.5 -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install --no-cache-dir sanic==22.6.2 -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install --no-cache-dir aiohttp==3.8.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install --no-cache-dir pydantic==1.9.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install --no-cache-dir ujson==5.4.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install --no-cache-dir redis==4.3.4 -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install --no-cache-dir faiss-cpu==1.7.2 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+COPY sanic_serving /app/sanic_serving
+
+ENV PYTHONPATH=/app
+
+EXPOSE 8000

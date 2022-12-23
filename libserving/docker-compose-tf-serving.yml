@@ -1,0 +1,27 @@
+version: "1"
+services:
+  libserving:
+    environment:
+      - TF_SERVING_HOST=tensorflow-serving
+    depends_on:
+      - tensorflow-serving
+
+  tensorflow-serving:
+    image: docker.io/tensorflow/serving:2.8.2
+    ports:
+      - '8500:8500'
+      - '8501:8501'
+    environment:
+      - MODEL_BASE_PATH=/usr/local/tf_model
+      - MODEL_NAME=youtuberanking
+    networks:
+      - server
+    volumes:
+      - './tf_model:/usr/local/tf_model'
+    restart: always
+
+volumes:
+  tf_model: {}
+
+networks:
+  server: {}
