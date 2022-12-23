@@ -119,7 +119,7 @@ print("cold recommendation: ", ytb_ranking.recommend_user(user="are we good?",
                                                           cold_start="popular"))
 ```
 
-### For more examples and usages, see [User Guide](https://github.com/massquantity/LibRecommender/tree/master/examples#user-guide)
+### For more examples and usages, see [User Guide](https://github.com/massquantity/LibRecommender/tree/master/doc/user_guide.md)
 
 
 
@@ -140,7 +140,7 @@ Besides, if you want to use some other meta features (e.g., age, sex, category e
 
 ## Serving
 
-For how to serve a trained model in LibRecommender, see [Serving Guide](https://github.com/massquantity/LibRecommender/tree/master/libserving) .
+For how to serve a trained model in LibRecommender, see [Serving Guide](https://github.com/massquantity/LibRecommender/tree/master/doc/python_serving_guide.md) .
 
 
 
@@ -177,7 +177,7 @@ $ python setup.py install
 - tqdm
 - [nmslib](https://github.com/nmslib/nmslib) (optional)
 
-LibRecommender is tested under TensorFlow 1.15, 2.5, 2.8 and 2.10. If you encounter any problem during running, feel free to open an issue.
+LibRecommender is tested under TensorFlow 1.15, 2.5, 2.8 and 2.10. If you encounter any problem during running, feel free to open an issue. If you are using Python 3.6, you also need to install [dataclasses](https://github.com/ericvsmith/dataclasses), since it is first included in Python 3.7.
 
 **Known issue**: Sometimes one may encounter errors like `ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject`. In this case try upgrading numpy, and version 1.22.0 or higher is probably a safe option.
 
@@ -194,7 +194,6 @@ The table below shows some compatible version combinations:
 
 #### Optional Dependencies for [`libserving`](https://github.com/massquantity/LibRecommender/tree/master/libserving):
 
-+ Python >= 3.7 (Many of the below libraries require at least 3.7)
 + sanic >= 22.3
 + requests
 + aiohttp

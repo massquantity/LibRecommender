@@ -1,8 +1,8 @@
 # User Guide
 
-The purpose of this guide is to illustrate some of the main features that LibRecommender provides. Example usages are all listed in this `examples/` folder. 
+The purpose of this guide is to illustrate some of the main features that LibRecommender provides. Example usages are all listed in [`examples`](https://github.com/massquantity/LibRecommender/tree/master/examples) folder. 
 
-This guide only demonstrates the data processing, feature engineering and model training parts. For how to serve a trained model in LibRecommender, see [Serving Guide](https://github.com/massquantity/LibRecommender/tree/master/libserving) .
+This guide only demonstrates the data processing, feature engineering and model training parts. For how to serve a trained model in LibRecommender, see [Serving Guide](https://github.com/massquantity/LibRecommender/tree/master/doc/python_serving_guide.md) .
 
 
 
