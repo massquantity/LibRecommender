@@ -10,7 +10,7 @@ def parse_args():
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default=8000)
     parser.add_argument("--user", type=str, help="user id")
-    parser.add_argument("--n_rec", type=str, help="num of recommendations")
+    parser.add_argument("--n_rec", type=int, help="num of recommendations")
     parser.add_argument("--algo", type=str, help="type of serving algorithm")
     return parser.parse_args()
 

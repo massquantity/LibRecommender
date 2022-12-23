@@ -1,3 +1,4 @@
+import os
 from collections import defaultdict
 from typing import List
 
@@ -72,7 +73,8 @@ async def recommend_on_item_similarities(
 
 @app.before_server_start
 async def redis_setup(app: Sanic):
-    app.ctx.redis = await redis.from_url("redis://localhost", decode_responses=True)
+    host = os.getenv("REDIS_HOST", "localhost")
+    app.ctx.redis = await redis.from_url(f"redis://{host}", decode_responses=True)
 
 
 @app.after_server_stop
