@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument("--user", type=str, help="user id")
     parser.add_argument("--n_rec", type=int, help="num of recommendations")
     parser.add_argument("--n_times", type=int, help="num of requests")
-    parser.add_argument("--n_threads", type=int, default=1, help="num pof threads")
+    parser.add_argument("--n_threads", type=int, default=1, help="num of threads")
     parser.add_argument("--algo", type=str, help="type of algorithm")
     return parser.parse_args()
 

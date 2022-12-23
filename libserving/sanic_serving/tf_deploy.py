@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List, Optional, Tuple
 
 import aiohttp
@@ -171,7 +172,8 @@ async def get_last_interaction(
 async def request_tf_serving(
     features: Dict[str, List[Any]], model_name: str
 ) -> List[float]:
-    url = f"http://localhost:8501/v1/models/{model_name.lower()}:predict"
+    host = os.getenv("TF_SERVING_HOST", "localhost")
+    url = f"http://{host}:8501/v1/models/{model_name.lower()}:predict"
     data = {"signature_name": "predict", "inputs": features}
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=data) as resp:
@@ -206,8 +208,9 @@ async def rank_items_by_score(
 
 
 @app.before_server_start
-async def redis_faiss_setup(app: Sanic):
-    app.ctx.redis = await redis.from_url("redis://localhost", decode_responses=True)
+async def redis_setup(app: Sanic):
+    host = os.getenv("REDIS_HOST", "localhost")
+    app.ctx.redis = await redis.from_url(f"redis://{host}", decode_responses=True)
     app.ctx.user_sparse = bool(await app.ctx.redis.hexists("feature", "user_sparse"))
     app.ctx.item_sparse = bool(await app.ctx.redis.hexists("feature", "item_sparse"))
     app.ctx.user_dense = bool(await app.ctx.redis.hexists("feature", "user_dense"))

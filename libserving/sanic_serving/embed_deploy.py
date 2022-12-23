@@ -58,7 +58,8 @@ async def recommend_on_similar_embeds(
 
 @app.before_server_start
 async def redis_faiss_setup(app: Sanic, loop: AbstractEventLoop):
-    app.ctx.redis = await redis.from_url("redis://localhost", decode_responses=True)
+    host = os.getenv("REDIS_HOST", "localhost")
+    app.ctx.redis = await redis.from_url(f"redis://{host}", decode_responses=True)
     app.ctx.faiss_index = faiss.read_index(find_index_path())
 
 
