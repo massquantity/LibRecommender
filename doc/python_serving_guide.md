@@ -11,6 +11,8 @@ $ sanic server:app --no-access-logs --workers 10  # production mode
 
 Refer to [Running Sanic](https://sanic.dev/en/guide/deployment/running.html) for more details.
 
+Beyond Python, one can also use Rust to serve a model. See [Rust Serving Guide](https://github.com/massquantity/LibRecommender/blob/master/doc/rust_serving_guide.md).
+
 <br>
 
 From serving's perspective, currently there are three kinds of models in LibRecommender: 
