@@ -1,0 +1,33 @@
+[source]
+
+[source.crates-io]
+replace-with = "tuna"
+
+[source.tuna]
+registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"
+
+[registries]
+
+[registries.bfsu]
+index = "https://mirrors.bfsu.edu.cn/git/crates.io-index.git"
+
+[registries.hit]
+index = "https://mirrors.hit.edu.cn/crates.io-index.git"
+
+[registries.nju]
+index = "https://mirror.nju.edu.cn/git/crates.io-index.git"
+
+[registries.rsproxy]
+index = "https://rsproxy.cn/crates.io-index"
+
+[registries.sjtu]
+index = "https://mirrors.sjtug.sjtu.edu.cn/git/crates.io-index"
+
+[registries.tuna]
+index = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"
+
+[registries.ustc]
+index = "git://mirrors.ustc.edu.cn/crates.io-index"
+
+[net]
+git-fetch-with-cli = false

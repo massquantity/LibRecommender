@@ -1,0 +1,38 @@
+version: "1"
+services:
+  libserving:
+    image: docker.io/massquantity/actix-serving:0.1.0
+    ports:
+      - '8080:8080'
+    command: /app/actix_serving
+    environment:
+      - PORT=8080
+      - MODEL_TYPE=embed
+      - REDIS_HOST=redis
+      - WORKERS=8
+      - RUST_LOG=info
+    networks:
+      - server
+    volumes:
+      - './embed_model:/app/faiss_index_path'
+    restart: always
+    depends_on:
+      - redis
+
+  redis:
+    image: docker.io/redis:7.0.4-alpine
+    ports:
+      - '6379:6379'
+    command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - server
+    volumes:
+      - './redis_data:/data'
+    restart: always
+
+volumes:
+  embed_model: {}
+  redis_data: {}
+
+networks:
+  server: {}

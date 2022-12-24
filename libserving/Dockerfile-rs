@@ -1,0 +1,73 @@
+FROM debian:bullseye-slim AS faiss-builder
+
+WORKDIR /cmake
+# install blas used in faiss
+RUN echo "deb http://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye main contrib non-free" >/etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y gcc g++ make wget git libblas-dev liblapack-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# install cmake to build faiss
+RUN wget https://cmake.org/files/LatestRelease/cmake-3.25.0-linux-x86_64.tar.gz
+RUN tar -zxf cmake-3.25.0-linux-x86_64.tar.gz -C /cmake --strip-components 1
+RUN ln -s /cmake/bin/cmake /usr/bin/cmake
+RUN cmake --version
+
+WORKDIR /faiss
+# clone branch `c_api_head` in faiss repository
+RUN git clone -b c_api_head https://github.com/Enet4/faiss.git .
+# COPY ./faiss /faiss
+RUN cmake -B build . \
+    -DFAISS_ENABLE_C_API=ON \
+    -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DFAISS_ENABLE_GPU=OFF \
+    -DFAISS_ENABLE_PYTHON=OFF \
+    -DBUILD_TESTING=OFF
+RUN make -C build/c_api
+
+FROM rust:1.64-slim-bullseye AS rust-builder
+
+WORKDIR /serving_build
+
+RUN echo "deb http://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye main contrib non-free" >/etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y libblas-dev liblapack-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# cache crate index
+COPY crate-index-config /usr/local/cargo/config
+RUN cargo init
+COPY actix_serving/Cargo.toml actix_serving/Cargo.lock /serving_build/
+RUN cargo fetch
+
+COPY actix_serving/src /serving_build/src
+COPY --from=faiss-builder /faiss/build/c_api/libfaiss_c.so /usr/lib
+COPY --from=faiss-builder /faiss/build/faiss/libfaiss.so /usr/lib
+ENV LD_LIBRARY_PATH=/usr/lib
+RUN cargo build --release
+
+FROM debian:bullseye-slim
+
+WORKDIR /app
+
+# need gcc & blas for faiss
+RUN echo "deb http://mirrors.tuna.tsinghua.edu.cn/debian/ bullseye main contrib non-free" >/etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y gcc libblas-dev liblapack-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=faiss-builder /faiss/build/c_api/libfaiss_c.so /usr/lib
+COPY --from=faiss-builder /faiss/build/faiss/libfaiss.so /usr/lib
+ENV LD_LIBRARY_PATH=/usr/lib
+
+COPY --from=rust-builder /serving_build/target/release/actix_serving /app
+
+USER 1001
+
+EXPOSE 8080
+
+CMD ["/app/actix_serving"]
