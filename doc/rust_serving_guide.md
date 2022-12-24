@@ -56,9 +56,9 @@ $ curl -d '{"user": "1", "n_rec": 10}' -H "Content-Type: application/json" -X PO
 
 ## Embed-based model
 
-Similar to [Python Serving Guide](https://github.com/massquantity/LibRecommender/tree/master/libserving#embed-based-model), we use faiss to find similar embeddings. However, faiss can't be installed directly as in Python, so we use [Rust bindings](https://github.com/Enet4/faiss-rs) to Faiss. According to the [instructions](https://github.com/Enet4/faiss-rs#installing-as-a-dependency), one should fork the [`c_api_head` branch](https://github.com/Enet4/faiss/tree/c_api_head) and build faiss from source manually before including the crate. We should warn you first, this process can be pretty frustrated, and if you get stuck, you can view the [Dockerfile-rs] file to get some hints:). Or you can just save all these troubles and use [Docker Compose](#serving-with-docker-compose).
+Similar to [Python Serving Guide](https://github.com/massquantity/LibRecommender/blob/master/doc/python_serving_guide.md), we use faiss to find similar embeddings. However, faiss can't be installed directly as in Python, so we use [Rust bindings](https://github.com/Enet4/faiss-rs) to Faiss. According to the [instructions](https://github.com/Enet4/faiss-rs#installing-as-a-dependency), one should fork the [`c_api_head` branch](https://github.com/Enet4/faiss/tree/c_api_head) and build faiss from source manually before including the crate. We should warn you first, this process can be pretty frustrated, and if you get stuck, you can view the [Dockerfile-rs](https://github.com/massquantity/LibRecommender/blob/master/libserving/Dockerfile-rs) file to get some hints:). Or you can just save all these troubles and use [Docker Compose](#serving-with-docker-compose).
 
-After successfully installed Rust faiss, i.e. copy the `c_api/libfaiss_c.so` and `faiss/libfaiss.so` to `LD_LIBRARY_PATH`, the rest is straightforward:
+After successfully installing Rust faiss, i.e. copy the `c_api/libfaiss_c.so` and `faiss/libfaiss.so` to `LD_LIBRARY_PATH`, the rest is straightforward:
 
 ```bash
 $ cd LibRecommender/libserving
@@ -152,7 +152,7 @@ $ ./target/release/actix_serving
 
 ## Serving with Docker Compose
 
-In [docker-compose-rs.yml]() file, change the corresponding `MODEL_TYPE` environment variable. You may also need to change the volumes path if model is stored in other place. Also Redis is included, so you don't need a Redis server locally. But one should start the docker compose *before* saving data to Redis. For example in embed-based models:
+In [docker-compose-rs.yml](https://github.com/massquantity/LibRecommender/blob/master/libserving/docker-compose-rs.yml) file, change the corresponding `MODEL_TYPE` environment variable. You may also need to change the volumes path if model is stored in other place. Also Redis is included, so you don't need a Redis server locally. But one should start the docker compose *before* saving data to Redis. For example in embed-based models:
 
 ```bash
 $ cd LibRecommender/libserving
@@ -186,7 +186,7 @@ $ curl -d '{"user": "1", "n_rec": 10}' -H "Content-Type: application/json" -X PO
 # {"rec_list":["2628","1552","260","969","2193","733","1573","1917","1037","10"]}
 ```
 
-For TensorFlow-based models, TensorFlow Serving config is in [docker-compose-tf-serving.yml]() file, so we need to start them both, and don't forget to change the `MODEL_BASE_PATH` and `MODEL_NAME` environment variables in the file:
+For TensorFlow-based models, TensorFlow Serving config is in [docker-compose-tf-serving.yml](https://github.com/massquantity/LibRecommender/blob/master/libserving/docker-compose-tf-serving.yml) file, so we need to start them both, and don't forget to change the `MODEL_BASE_PATH` and `MODEL_NAME` environment variables in the file:
 
 ```bash
 sudo docker compose -f docker-compose-rs.yml -f docker-compose-tf-serving.yml up
