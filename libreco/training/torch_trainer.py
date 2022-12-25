@@ -1,8 +1,9 @@
+import math
 from statistics import mean
 
 import torch
 from torch.optim import Adam
-from torch.optim.lr_scheduler import ExponentialLR
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 
 from .trainer import BaseTrainer
 from ..evaluation import print_metrics
@@ -77,8 +78,9 @@ class TorchTrainer(BaseTrainer):
             weight_decay=self.reg,
             amsgrad=self.amsgrad,
         )
+        # lr_schedular based on paper SGDR: https://arxiv.org/abs/1608.03983
         self.lr_scheduler = (
-            ExponentialLR(self.optimizer, gamma=0.96) if self.lr_decay else None
+            CosineAnnealingWarmRestarts(self.optimizer, T_0=1, T_mult=2)
         )
 
     def _check_params(self):
@@ -133,6 +135,7 @@ class TorchTrainer(BaseTrainer):
     def run(self, train_data, verbose, shuffle, eval_data, metrics, **kwargs):
         self._check_params()
         data_generator = self.get_data_generator(train_data)
+        n_batches = math.ceil(len(train_data) / self.batch_size)
         for epoch in range(1, self.n_epochs + 1):
             if self.lr_decay:
                 print(
@@ -142,11 +145,14 @@ class TorchTrainer(BaseTrainer):
             with time_block(f"Epoch {epoch}", verbose):
                 self.torch_model.train()
                 train_total_loss = []
-                for data in data_generator(shuffle):
+                for i, data in enumerate(data_generator(shuffle)):
                     loss = self.compute_loss(data)
                     self.optimizer.zero_grad()
                     loss.backward()
                     self.optimizer.step()
+                    if self.lr_scheduler:
+                        # noinspection PyTypeChecker
+                        self.lr_scheduler.step(epoch + i / n_batches)
                     train_total_loss.append(loss.detach().cpu().item())
 
             if verbose > 1:
@@ -164,9 +170,6 @@ class TorchTrainer(BaseTrainer):
                     seed=self.model.seed,
                 )
                 print("=" * 30)
-
-            if self.lr_scheduler:
-                self.lr_scheduler.step()
 
     def compute_loss(self, data):
         user_embeds, item_embeds = self.torch_model(use_dropout=True)
