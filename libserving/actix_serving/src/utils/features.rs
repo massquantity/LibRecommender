@@ -35,66 +35,71 @@ pub fn build_features(
         json!((0..n_items).collect::<Vec<usize>>()),
     );
 
+    // raw_feats.user_sparse_col.ok_or_else(|| error::ErrorInternalServerError("Failed to get user_sparse_col"))?,
     let sparse_key = String::from("sparse_indices");
-    if raw_feats.user_sparse_col.is_some() && raw_feats.item_sparse_col.is_some() {
-        data.insert(sparse_key, merge_feats::<isize>(raw_feats, n_items, true)?);
-    } else if raw_feats.user_sparse_col.is_some() {
-        data.insert(sparse_key, user_feats::<isize>(raw_feats, n_items, true)?);
-    } else if raw_feats.item_sparse_col.is_some() {
-        data.insert(sparse_key, item_feats::<isize>(raw_feats, n_items, true)?);
+    if let (Some(user_col), Some(item_col), Some(user_feats), Some(item_feats)) = (
+        raw_feats.user_sparse_col.as_ref(),
+        raw_feats.item_sparse_col.as_ref(),
+        raw_feats.user_sparse_indices.as_ref(),
+        raw_feats.item_sparse_indices.as_ref(),
+    ) {
+        let sparse_features =
+            merge_features::<isize>(user_col, item_col, user_feats, item_feats, n_items)?;
+        data.insert(sparse_key, sparse_features);
+    } else if let (Some(user_col), Some(user_feats)) = (
+        raw_feats.user_sparse_col.as_ref(),
+        raw_feats.user_sparse_indices.as_ref(),
+    ) {
+        let user_features = construct_user_features::<isize>(user_col, user_feats, n_items)?;
+        data.insert(sparse_key, user_features);
+    } else if let (Some(item_col), Some(item_feats)) = (
+        raw_feats.item_sparse_col.as_ref(),
+        raw_feats.item_sparse_indices.as_ref(),
+    ) {
+        let item_features = construct_item_features::<isize>(item_col, item_feats, n_items)?;
+        data.insert(sparse_key, item_features);
     }
 
     let dense_key = String::from("dense_values");
-    if raw_feats.user_dense_col.is_some() && raw_feats.item_dense_col.is_some() {
-        data.insert(dense_key, merge_feats::<f32>(raw_feats, n_items, false)?);
-    } else if raw_feats.user_dense_col.is_some() {
-        data.insert(dense_key, user_feats::<f32>(raw_feats, n_items, false)?);
-    } else if raw_feats.item_dense_col.is_some() {
-        data.insert(dense_key, item_feats::<f32>(raw_feats, n_items, false)?);
+    if let (Some(user_col), Some(item_col), Some(user_feats), Some(item_feats)) = (
+        raw_feats.user_dense_col.as_ref(),
+        raw_feats.item_dense_col.as_ref(),
+        raw_feats.user_dense_values.as_ref(),
+        raw_feats.item_dense_values.as_ref(),
+    ) {
+        let dense_features =
+            merge_features::<f32>(user_col, item_col, user_feats, item_feats, n_items)?;
+        data.insert(dense_key, dense_features);
+    } else if let (Some(user_col), Some(user_feats)) = (
+        raw_feats.user_dense_col.as_ref(),
+        raw_feats.user_dense_values.as_ref(),
+    ) {
+        let user_features = construct_user_features::<f32>(user_col, user_feats, n_items)?;
+        data.insert(dense_key, user_features);
+    } else if let (Some(item_col), Some(item_feats)) = (
+        raw_feats.item_dense_col.as_ref(),
+        raw_feats.item_dense_values.as_ref(),
+    ) {
+        let item_features = construct_item_features::<f32>(item_col, item_feats, n_items)?;
+        data.insert(dense_key, item_features);
     }
     Ok(())
 }
 
-fn merge_feats<T>(raw_feats: &Features, n_items: usize, is_sparse: bool) -> actix_web::Result<Value>
+fn merge_features<T>(
+    user_col: &str,
+    item_col: &str,
+    user_feats: &str,
+    item_feats: &[String],
+    n_items: usize,
+) -> actix_web::Result<Value>
 where
     T: Copy + Clone + Default + DeserializeOwned + Serialize,
 {
-    let (user_col_index_str, item_col_index_str, user_values_str, item_values_str) =
-        if is_sparse {
-            (
-                raw_feats.user_sparse_col.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get user_sparse_col")
-                })?,
-                raw_feats.item_sparse_col.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get item_sparse_col")
-                })?,
-                raw_feats.user_sparse_indices.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get user_sparse_indices")
-                })?,
-                raw_feats.item_sparse_indices.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get item_sparse_indices")
-                })?,
-            )
-        } else {
-            (
-                raw_feats.user_dense_col.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get user_dense_col")
-                })?,
-                raw_feats.item_dense_col.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get item_dense_col")
-                })?,
-                raw_feats.user_dense_values.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get user_dense_values")
-                })?,
-                raw_feats.item_dense_values.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get item_dense_values")
-                })?,
-            )
-        };
-    let user_col_index: Vec<usize> = serde_json::from_str(user_col_index_str)?;
-    let item_col_index: Vec<usize> = serde_json::from_str(item_col_index_str)?;
-    let user_values: Vec<T> = serde_json::from_str(user_values_str)?;
-    let item_values: Vec<Vec<T>> = item_values_str
+    let user_col_index: Vec<usize> = serde_json::from_str(user_col)?;
+    let item_col_index: Vec<usize> = serde_json::from_str(item_col)?;
+    let user_values: Vec<T> = serde_json::from_str(user_feats)?;
+    let item_values: Vec<Vec<T>> = item_feats
         .iter()
         .map(|i| Ok(serde_json::from_str(i))?)
         .collect::<Result<Vec<Vec<_>>, _>>()
@@ -113,32 +118,16 @@ where
     Ok(json!(features))
 }
 
-fn user_feats<T>(raw_feats: &Features, n_items: usize, is_sparse: bool) -> actix_web::Result<Value>
+fn construct_user_features<T>(
+    user_col: &str,
+    user_feats: &str,
+    n_items: usize,
+) -> actix_web::Result<Value>
 where
     T: Copy + Clone + Default + DeserializeOwned + Serialize,
 {
-    let (user_col_index_str, user_values_str) =
-        if is_sparse {
-            (
-                raw_feats.user_sparse_col.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get user_sparse_col")
-                })?,
-                raw_feats.user_sparse_indices.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get user_sparse_indices")
-                })?,
-            )
-        } else {
-            (
-                raw_feats.user_dense_col.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get user_dense_col")
-                })?,
-                raw_feats.user_dense_values.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get user_dense_values")
-                })?,
-            )
-        };
-    let user_col_index: Vec<usize> = serde_json::from_str(user_col_index_str)?;
-    let user_values: Vec<T> = serde_json::from_str(user_values_str)?;
+    let user_col_index: Vec<usize> = serde_json::from_str(user_col)?;
+    let user_values: Vec<T> = serde_json::from_str(user_feats)?;
     let mut features = vec![T::default(); user_col_index.len()];
     user_col_index
         .into_iter()
@@ -147,35 +136,20 @@ where
     Ok(json!(vec![features; n_items]))
 }
 
-fn item_feats<T>(raw_feats: &Features, n_items: usize, is_sparse: bool) -> actix_web::Result<Value>
+fn construct_item_features<T>(
+    item_col: &str,
+    item_feats: &[String],
+    n_items: usize,
+) -> actix_web::Result<Value>
 where
     T: Copy + Clone + Default + DeserializeOwned + Serialize,
 {
-    let (item_col_index_str, item_values_str) =
-        if is_sparse {
-            (
-                raw_feats.item_sparse_col.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get item_sparse_col")
-                })?,
-                raw_feats.item_sparse_indices.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get item_sparse_indices")
-                })?,
-            )
-        } else {
-            (
-                raw_feats.item_dense_col.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get item_dense_col")
-                })?,
-                raw_feats.item_dense_values.as_ref().ok_or_else(|| {
-                    error::ErrorInternalServerError("Failed to get item_dense_values")
-                })?,
-            )
-        };
-    let item_col_index: Vec<usize> = serde_json::from_str(item_col_index_str)?;
-    let item_values: Vec<Vec<T>> = item_values_str
+    let item_col_index: Vec<usize> = serde_json::from_str(item_col)?;
+    let item_values: Vec<Vec<T>> = item_feats
         .iter()
-        .map(|i| serde_json::from_str(i).unwrap())
-        .collect();
+        .map(|i| Ok(serde_json::from_str(i))?)
+        .collect::<Result<Vec<Vec<_>>, _>>()
+        .map_err(error::ErrorInternalServerError)?;
     let mut features = vec![vec![T::default(); item_col_index.len()]; n_items];
     for item_id in 0..n_items {
         for (i, v) in item_col_index.iter().zip(item_values[item_id].iter()) {
@@ -276,25 +250,22 @@ pub fn build_last_interaction(
     n_items: usize,
     user_consumed: &[usize],
 ) -> actix_web::Result<()> {
-    match max_seq_len {
-        Some(max_seq_len) => {
-            let (u_interacted_len, dst_start, src_start) = if max_seq_len <= user_consumed.len() {
-                (max_seq_len, 0, user_consumed.len() - max_seq_len)
-            } else {
-                (user_consumed.len(), max_seq_len - user_consumed.len(), 0)
-            };
-            let mut u_last_interacted = vec![n_items; max_seq_len];
-            u_last_interacted[dst_start..].copy_from_slice(&user_consumed[src_start..]);
-            data.insert(
-                String::from("user_interacted_seq"),
-                json!(vec![u_last_interacted; n_items]),
-            );
-            data.insert(
-                String::from("user_interacted_len"),
-                json!(vec![u_interacted_len; n_items]),
-            );
-        }
-        None => (),
+    if let Some(max_seq_len) = max_seq_len {
+        let (u_interacted_len, dst_start, src_start) = if max_seq_len <= user_consumed.len() {
+            (max_seq_len, 0, user_consumed.len() - max_seq_len)
+        } else {
+            (user_consumed.len(), max_seq_len - user_consumed.len(), 0)
+        };
+        let mut u_last_interacted = vec![n_items; max_seq_len];
+        u_last_interacted[dst_start..].copy_from_slice(&user_consumed[src_start..]);
+        data.insert(
+            String::from("user_interacted_seq"),
+            json!(vec![u_last_interacted; n_items]),
+        );
+        data.insert(
+            String::from("user_interacted_len"),
+            json!(vec![u_interacted_len; n_items]),
+        );
     }
     Ok(())
 }
