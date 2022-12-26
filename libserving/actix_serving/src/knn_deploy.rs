@@ -56,8 +56,10 @@ async fn rec_on_user_sims(
             if user_consumed.contains(&i) {
                 continue;
             }
-            let s = id_sim_map.entry(i).or_insert(0f32);
-            *s += sim
+            id_sim_map
+                .entry(i)
+                .and_modify(|s| *s += sim)
+                .or_insert(sim);
         }
     }
     let item_ids = sort_by_sims(&id_sim_map, n_rec);
@@ -78,8 +80,10 @@ async fn rec_on_item_sims(
             if user_consumed.contains(&j) {
                 continue;
             }
-            let s = id_sim_map.entry(j).or_insert(0f32);
-            *s += sim;
+            id_sim_map
+                .entry(j)
+                .and_modify(|s| *s += sim)
+                .or_insert(sim);
         }
     }
     let item_ids = sort_by_sims(&id_sim_map, n_rec);
