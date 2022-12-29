@@ -94,16 +94,16 @@ class PinSageModel(nn.Module):
             depth = self.num_layers - layer
             for k in range(depth):
                 current_embeds = hidden[k]
-                neighbor_embeds = F.relu(q_linear(self.dropout(hidden[k + 1])))
+                neighbor_embeds = self.dropout(F.relu(q_linear(hidden[k + 1])))
                 weighted_neighbors = F.embedding_bag(
-                    torch.arange(neighbor_embeds.shape[0]),
+                    torch.arange(neighbor_embeds.shape[0]).to(neighbor_embeds.device),
                     neighbor_embeds,
                     offsets=offsets[k],
                     per_sample_weights=weights[k],
                     mode="sum",
                 )
                 z = torch.cat([current_embeds, weighted_neighbors], dim=1)
-                z = F.relu(w_linear(self.dropout(z)))
+                z = F.relu(w_linear(z))
                 z_norm = z.norm(dim=1, keepdim=True)
                 default_norm = torch.tensor(1.0).to(z_norm)
                 z_norm = torch.where(z_norm == 0, default_norm, z_norm)
@@ -160,14 +160,14 @@ class PinSageDGLModel(PinSageModel):
             q_linear, w_linear = self.q_linears[layer], self.w_linears[layer]
             h_dst = h_src[: block.num_dst_nodes()]
             with block.local_scope():
-                block.srcdata["n"] = F.relu(q_linear(self.dropout(h_src)))
+                block.srcdata["n"] = self.dropout(F.relu(q_linear(h_src)))
                 block.edata["w"] = block.edata["weights"].float()
                 block.update_all(dfn.u_mul_e("n", "w", "m"), dfn.sum("m", "n"))
                 block.update_all(dfn.copy_e("w", "m"), dfn.sum("m", "ws"))
                 n = block.dstdata["n"]
                 ws = block.dstdata["ws"].unsqueeze(1).clamp(min=1)
                 z = torch.cat([h_dst, n / ws], dim=1)
-                z = F.relu(w_linear(self.dropout(z)))
+                z = F.relu(w_linear(z))
                 z_norm = z.norm(dim=1, keepdim=True)
                 default_norm = torch.tensor(1.0).to(z_norm)
                 z_norm = torch.where(z_norm == 0, default_norm, z_norm)
