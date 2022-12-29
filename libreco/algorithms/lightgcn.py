@@ -28,7 +28,7 @@ class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
         reg=None,
         batch_size=256,
         num_neg=1,
-        dropout=0.0,
+        dropout_rate=0.0,
         n_layers=3,
         margin=1.0,
         sampler="random",
@@ -44,7 +44,7 @@ class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
 
         self.all_args = locals()
         self.loss_type = loss_type
-        self.dropout = dropout
+        self.dropout_rate = dropout_rate
         self.n_layers = n_layers
         self.seed = seed
         self.device = device
@@ -55,7 +55,7 @@ class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
                 self.n_items,
                 self.embed_size,
                 self.n_layers,
-                self.dropout,
+                self.dropout_rate,
                 self.user_consumed,
                 self.device,
             )
