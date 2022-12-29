@@ -26,7 +26,7 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "reg, dropout, lr_decay, epsilon, amsgrad",
+    "reg, dropout_rate, lr_decay, epsilon, amsgrad",
     [(0.0, 0.0, False, 1e-8, False), (0.01, 0.2, True, 4e-5, True)],
 )
 def test_lightgcn(
@@ -36,7 +36,7 @@ def test_lightgcn(
     sampler,
     num_neg,
     reg,
-    dropout,
+    dropout_rate,
     lr_decay,
     epsilon,
     amsgrad,
@@ -84,7 +84,7 @@ def test_lightgcn(
             batch_size=1024,
             n_layers=3,
             reg=reg,
-            dropout=dropout,
+            dropout_rate=dropout_rate,
             num_neg=num_neg,
             sampler=sampler,
         )

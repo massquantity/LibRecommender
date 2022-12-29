@@ -11,7 +11,7 @@ class LightGCNModel(nn.Module):
         n_items,
         embed_size,
         n_layers,
-        dropout,
+        dropout_rate,
         user_consumed,
         device=torch.device("cpu"),
     ):
@@ -20,7 +20,7 @@ class LightGCNModel(nn.Module):
         self.n_items = n_items
         self.embed_size = embed_size
         self.n_layers = n_layers
-        self.dropout = dropout
+        self.dropout_rate = dropout_rate
         self.user_consumed = user_consumed
         self.device = device
         self.user_init_embeds, self.item_init_embeds = self.init_embeds()
@@ -63,7 +63,7 @@ class LightGCNModel(nn.Module):
         return self.embedding_propagation(use_dropout=use_dropout)
 
     def embedding_propagation(self, use_dropout):
-        if use_dropout and self.dropout > 0:
+        if use_dropout and self.dropout_rate > 0:
             laplacian_norm = self.sparse_dropout(
                 self.laplacian_matrix, self.laplacian_matrix._nnz()
             )
@@ -87,7 +87,7 @@ class LightGCNModel(nn.Module):
         return user_embeds, item_embeds
 
     def sparse_dropout(self, x, noise_shape):
-        keep_prob = 1 - self.dropout
+        keep_prob = 1 - self.dropout_rate
         random_tensor = (torch.rand(noise_shape) + keep_prob).to(x.device)
         dropout_mask = torch.floor(random_tensor).bool()
         indices = x._indices()[:, dropout_mask]
