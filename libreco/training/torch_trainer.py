@@ -81,6 +81,8 @@ class TorchTrainer(BaseTrainer):
         # lr_schedular based on paper SGDR: https://arxiv.org/abs/1608.03983
         self.lr_scheduler = (
             CosineAnnealingWarmRestarts(self.optimizer, T_0=1, T_mult=2)
+            if self.lr_decay
+            else None
         )
 
     def _check_params(self):
@@ -150,7 +152,7 @@ class TorchTrainer(BaseTrainer):
                     self.optimizer.zero_grad()
                     loss.backward()
                     self.optimizer.step()
-                    if self.lr_scheduler:
+                    if self.lr_scheduler is not None:
                         # noinspection PyTypeChecker
                         self.lr_scheduler.step(epoch + i / n_batches)
                     train_total_loss.append(loss.detach().cpu().item())
@@ -465,7 +467,7 @@ class SageDGLTrainer(SageTrainer):
                 repeat_positives=False,
                 start_nodes=self.start_node,
                 focus_start=self.focus_start,
-                graph=self.model.g,
+                graph=self.model.hetero_g,
             )
 
     def compute_loss(self, data):

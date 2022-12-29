@@ -41,6 +41,36 @@ def pairs_from_random_walk(
     return np.array(items), np.array(items_pos)
 
 
+def bipartite_neighbors(
+    nodes, user_consumed, item_consumed, num_neighbors, tolerance=5
+):
+    batch_neighbors, neighbor_lens = [], []
+    for node in nodes:
+        neighbors = []
+        for _ in range(num_neighbors):
+            n = bipartite_one_walk(user_consumed, item_consumed, node)
+            if n == node or n in neighbors:
+                success = False
+                for _ in range(tolerance):
+                    n = bipartite_one_walk(user_consumed, item_consumed, node)
+                    if n != node and n not in neighbors:
+                        success = True
+                        break
+                if not success:
+                    for _ in range(tolerance):
+                        n = bipartite_one_walk(user_consumed, item_consumed, node)
+                        if n != node:
+                            success = True
+                            break
+                if not success:
+                    n = bipartite_one_walk(user_consumed, item_consumed, node)
+                    print(f"possible not enough neighbors for item {node}.")
+            neighbors.append(n)
+        batch_neighbors.extend(neighbors)
+        neighbor_lens.append(len(neighbors))
+    return batch_neighbors, compute_offsets(neighbor_lens)
+
+
 def bipartite_neighbors_with_weights(
     nodes,
     user_consumed,

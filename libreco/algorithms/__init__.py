@@ -21,6 +21,8 @@ from .ngcf import NGCF
 from .lightgcn import LightGCN
 from .pinsage import PinSage
 from .pinsage_dgl import PinSageDGL
+from .graphsage import GraphSage
+from .graphsage_dgl import GraphSageDGL
 
 __all__ = [
     "UserCF",
@@ -46,4 +48,6 @@ __all__ = [
     "LightGCN",
     "PinSage",
     "PinSageDGL",
+    "GraphSage",
+    "GraphSageDGL",
 ]

@@ -11,7 +11,16 @@ PURE_MODELS = (
     "LightGCN",
 )
 
-FEAT_MODELS = ("WideDeep", "FM", "DeepFM", "AutoInt", "PinSage", "PinSageDGL")
+FEAT_MODELS = (
+    "WideDeep",
+    "FM",
+    "DeepFM",
+    "AutoInt",
+    "PinSage",
+    "PinSageDGL",
+    "GraphSage",
+    "GraphSageDGL",
+)
 
 SEQUENCE_MODELS = (
     "YouTubeRetrieval",
@@ -23,9 +32,24 @@ SEQUENCE_MODELS = (
     "WaveNet",
 )
 
-GRAPH_MODELS = ("DeepWalk", "NGCF", "LightGCN")
+GRAPH_MODELS = (
+    "DeepWalk",
+    "NGCF",
+    "LightGCN",
+    "PinSage",
+    "PinSageDGL",
+    "GraphSage",
+    "GraphSageDGL",
+)
 
-TF_FEAT_MODELS = ("WideDeep", "FM", "DeepFM", "YouTubeRanking", "AutoInt", "DIN")
+TF_FEAT_MODELS = (
+    "WideDeep",
+    "FM",
+    "DeepFM",
+    "YouTubeRanking",
+    "AutoInt",
+    "DIN",
+)
 
 EMBEDDING_MODELS = (
     "SVD",
@@ -40,4 +64,8 @@ EMBEDDING_MODELS = (
     "DeepWalk",
     "NGCF",
     "LightGCN",
+    "PinSage",
+    "PinSageDGL",
+    "GraphSage",
+    "GraphSageDGL",
 )
