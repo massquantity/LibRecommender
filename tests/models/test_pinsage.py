@@ -37,7 +37,7 @@ from tests.utils_save_load import save_load_model
 )
 @pytest.mark.parametrize(
     "reg,"
-    "dropout,"
+    "dropout_rate,"
     "lr_decay,"
     "epsilon,"
     "amsgrad,"
@@ -96,7 +96,7 @@ def test_pinsage(
     sampler,
     num_neg,
     reg,
-    dropout,
+    dropout_rate,
     lr_decay,
     epsilon,
     amsgrad,
@@ -161,7 +161,7 @@ def test_pinsage(
             amsgrad=amsgrad,
             batch_size=8192,
             reg=reg,
-            dropout=dropout,
+            dropout_rate=dropout_rate,
             num_neg=num_neg,
             sampler=sampler,
             remove_edges=remove_edges,

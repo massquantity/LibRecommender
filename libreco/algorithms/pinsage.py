@@ -6,22 +6,15 @@ Reference: Rex Ying et al. "Graph Convolutional Neural Networks for Web-Scale Re
 author: massquantity
 
 """
-import numpy as np
 import torch
-from tqdm import tqdm
 
+from .graphsage import GraphSage
 from .torch_modules import PinSageModel
-from ..bases import EmbedBase
 from ..sampling import bipartite_neighbors_with_weights
-from ..torchops import (
-    feat_to_tensor,
-    user_unique_to_tensor,
-    item_unique_to_tensor,
-)
-from ..training import SageTrainer
+from ..torchops import feat_to_tensor, item_unique_to_tensor
 
 
-class PinSage(EmbedBase):
+class PinSage(GraphSage):
     def __init__(
         self,
         task,
@@ -37,7 +30,7 @@ class PinSage(EmbedBase):
         reg=None,
         batch_size=256,
         num_neg=1,
-        dropout=0.0,
+        dropout_rate=0.0,
         remove_edges=False,
         num_layers=2,
         num_neighbors=3,
@@ -57,53 +50,42 @@ class PinSage(EmbedBase):
         lower_upper_bound=None,
         with_training=True,
     ):
-        super().__init__(task, data_info, embed_size, lower_upper_bound)
-
+        super().__init__(
+            task,
+            data_info,
+            loss_type,
+            paradigm,
+            embed_size,
+            n_epochs,
+            lr,
+            lr_decay,
+            epsilon,
+            amsgrad,
+            reg,
+            batch_size,
+            num_neg,
+            dropout_rate,
+            remove_edges,
+            num_layers,
+            num_neighbors,
+            num_walks,
+            sample_walk_len,
+            margin,
+            sampler,
+            start_node,
+            focus_start,
+            seed,
+            k,
+            eval_batch_size,
+            eval_user_num,
+            device,
+            lower_upper_bound,
+            with_training,
+        )
         self.all_args = locals()
-        self.loss_type = loss_type
-        self.batch_size = batch_size
-        self.paradigm = paradigm
-        self.remove_edges = remove_edges
-        self.num_layers = num_layers
-        self.num_neighbors = num_neighbors
         self.num_walks = num_walks
         self.neighbor_walk_len = neighbor_walk_len
-        self.seed = seed
-        self.device = device
-        self._check_params()
-        if with_training:
-            self.torch_model = PinSageModel(
-                paradigm,
-                data_info,
-                embed_size,
-                batch_size,
-                num_layers,
-                dropout,
-            ).to(device)
-            self.trainer = SageTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                amsgrad,
-                reg,
-                batch_size,
-                num_neg,
-                paradigm,
-                num_walks,
-                sample_walk_len,
-                margin,
-                sampler,
-                start_node,
-                focus_start,
-                k,
-                eval_batch_size,
-                eval_user_num,
-                device,
-            )
+        self.termination_prob = termination_prob
 
     def _check_params(self):
         if self.task != "ranking":
@@ -113,11 +95,17 @@ class PinSage(EmbedBase):
         if self.loss_type not in ("cross_entropy", "focal", "bpr", "max_margin"):
             raise ValueError(f"unsupported `loss_type`: {self.loss_type}")
 
-    def get_user_repr(self, users, sparse_indices, dense_values):
-        query_feats = feat_to_tensor(users, sparse_indices, dense_values, self.device)
-        return self.torch_model.user_repr(*query_feats)
+    def build_model(self):
+        return PinSageModel(
+            self.paradigm,
+            self.data_info,
+            self.embed_size,
+            self.batch_size,
+            self.num_layers,
+            self.dropout_rate,
+        )
 
-    def sample_neighbors(self, items, item_indices, items_pos):
+    def sample_neighbors(self, items, item_indices=None, items_pos=None):
         nodes = items
         tensor_neighbors, tensor_weights, tensor_offsets = [], [], []
         tensor_neighbor_sparse_indices, tensor_neighbor_dense_values = [], []
@@ -137,6 +125,7 @@ class PinSage(EmbedBase):
                 items,
                 item_indices,
                 items_pos,
+                self.termination_prob,
             )
             (
                 neighbor_tensor,
@@ -182,7 +171,7 @@ class PinSage(EmbedBase):
             tensor_offsets,
         ) = self.sample_neighbors(items, item_indices, items_pos)
 
-        if sparse_indices is not None and dense_values is not None:
+        if sparse_indices is not None or dense_values is not None:
             item_tensor, item_sparse_indices, item_dense_values = feat_to_tensor(
                 items, sparse_indices, dense_values, self.device
             )
@@ -200,33 +189,3 @@ class PinSage(EmbedBase):
             tensor_weights,
             tensor_offsets,
         )
-
-    @torch.no_grad()
-    def set_embeddings(self):
-        self.torch_model.eval()
-        all_items = list(range(self.n_items))
-        item_embed = []
-        for i in tqdm(range(0, self.n_items, self.batch_size), desc="item embedding"):
-            batch_items = all_items[i : i + self.batch_size]
-            item_reprs = self.get_item_repr(batch_items)
-            item_embed.append(item_reprs.cpu().numpy())
-        self.item_embed = np.concatenate(item_embed, axis=0)
-        self.user_embed = self.get_user_embeddings()
-
-    @torch.no_grad()
-    def get_user_embeddings(self):
-        self.torch_model.eval()
-        user_embed = []
-        if self.paradigm == "u2i":
-            for i in range(0, self.n_users, self.batch_size):
-                users = np.arange(i, min(i + self.batch_size, self.n_users))
-                user_tensors = user_unique_to_tensor(users, self.data_info, self.device)
-                user_reprs = self.torch_model.user_repr(*user_tensors)
-                user_embed.append(user_reprs.cpu().numpy())
-            return np.concatenate(user_embed, axis=0)
-        else:
-            for u in range(self.n_users):
-                items = self.user_consumed[u]
-                user_embed.append(np.mean(self.item_embed[items], axis=0))
-                # user_embed.append(self.item_embed[items[-1]])
-            return np.array(user_embed)
