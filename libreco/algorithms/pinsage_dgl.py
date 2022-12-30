@@ -12,11 +12,12 @@ import torch
 
 from .graphsage_dgl import GraphSageDGL
 from .torch_modules import PinSageDGLModel
+from ..bases import ModelMeta
 from ..graph import check_dgl
 
 
 @check_dgl
-class PinSageDGL(GraphSageDGL):
+class PinSageDGL(GraphSageDGL, metaclass=ModelMeta, backend="torch"):
     def __new__(cls, *args, **kwargs):
         if cls.dgl_error is not None:
             raise cls.dgl_error
