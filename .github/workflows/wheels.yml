@@ -47,27 +47,27 @@ jobs:
             platform_id: win_amd64
 
           # Linux 64 bit manylinux2014
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python: 36
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python: 37
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python: 38
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python: 39
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             python: 310
             bitness: 64
             platform_id: manylinux_x86_64
@@ -126,7 +126,7 @@ jobs:
   # Build the source distribution under Linux
   build_sdist:
     name: Source distribution
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Checkout
@@ -154,7 +154,7 @@ jobs:
   upload_pypi:
     name: Publish a Python distribution to PyPI
     needs: [build_wheels, build_sdist]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: ${{ github.event.inputs.publish_to_pypi == 'yes' }}
     steps:
       - uses: actions/download-artifact@v2
