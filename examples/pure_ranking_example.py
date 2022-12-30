@@ -332,7 +332,7 @@ if __name__ == "__main__":
         reg=0.0,
         batch_size=2048,
         num_neg=1,
-        dropout=0.0,
+        dropout_rate=0.0,
         n_layers=3,
         device=torch.device("cpu"),
     )
