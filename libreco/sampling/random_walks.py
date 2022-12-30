@@ -64,7 +64,7 @@ def bipartite_neighbors(
                             break
                 if not success:
                     n = bipartite_one_walk(user_consumed, item_consumed, node)
-                    print(f"possible not enough neighbors for item {node}.")
+                    # print(f"possible not enough neighbors for item {node}.")
             neighbors.append(n)
         batch_neighbors.extend(neighbors)
         neighbor_lens.append(len(neighbors))

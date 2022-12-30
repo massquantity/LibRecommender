@@ -4,46 +4,66 @@ from pathlib import Path
 import pandas as pd
 import tensorflow as tf
 
-from libreco.algorithms import WaveNet
-from libreco.data import DataInfo, DatasetPure, split_by_ratio_chrono
+from libreco.algorithms import GraphSage
+from libreco.data import DataInfo, DatasetFeat, split_by_ratio_chrono
 from libreco.evaluation import evaluate
 from tests.utils_path import SAVE_PATH, remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 
 
-def test_tfmodel_retrain_pure():
+def test_torchmodel_retrain_feat():
     tf.compat.v1.reset_default_graph()
     data_path = os.path.join(
-        str(Path(os.path.realpath(__file__)).parent),
+        str(Path(os.path.realpath(__file__)).parent.parent),
         "sample_data",
-        "sample_movielens_rating.dat",
+        "sample_movielens_merged.csv",
     )
-    all_data = pd.read_csv(
-        data_path, sep="::", names=["user", "item", "label", "time"], engine="python"
-    )
+    all_data = pd.read_csv(data_path, sep=",", header=0)
     # use first half data as first training part
     first_half_data = all_data[: (len(all_data) // 2)]
     train_data, eval_data = split_by_ratio_chrono(first_half_data, test_size=0.2)
-    train_data, data_info = DatasetPure.build_trainset(train_data)
-    eval_data = DatasetPure.build_evalset(eval_data)
-    train_data.build_negative_samples(data_info, seed=2022)
+
+    sparse_col = ["sex", "occupation", "genre1", "genre2", "genre3"]
+    dense_col = ["age"]
+    user_col = ["sex", "age", "occupation"]
+    item_col = ["genre1", "genre2", "genre3"]
+    train_data, data_info = DatasetFeat.build_trainset(
+        train_data,
+        user_col,
+        item_col,
+        sparse_col,
+        dense_col,
+        shuffle=False,
+    )
+    eval_data = DatasetFeat.build_evalset(eval_data)
+    # train_data.build_negative_samples(data_info, seed=2022)
     eval_data.build_negative_samples(data_info, seed=2222)
 
-    model = WaveNet(
+    model = GraphSage(
         "ranking",
         data_info,
-        loss_type="cross_entropy",
+        loss_type="max_margin",
+        paradigm="i2i",
         embed_size=16,
         n_epochs=1,
         lr=1e-4,
-        lr_decay=None,
+        lr_decay=False,
+        epsilon=1e-8,
+        amsgrad=False,
         reg=None,
         batch_size=2048,
-        n_filters=16,
-        n_blocks=2,
-        n_layers_per_block=4,
-        recent_num=10,
+        num_neg=1,
+        dropout_rate=0.0,
+        num_layers=1,
+        num_neighbors=10,
+        num_walks=10,
+        sample_walk_len=5,
+        margin=1.0,
+        sampler="random",
+        start_node="random",
+        focus_start=False,
+        seed=42,
     )
     model.fit(
         train_data,
@@ -64,55 +84,72 @@ def test_tfmodel_retrain_pure():
     eval_result = evaluate(
         model,
         eval_data,
+        sample_user_num=200,
         eval_batch_size=8192,
         k=10,
-        metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
+        metrics=[
+            "loss",
+            "balanced_accuracy",
+            "roc_auc",
+            "pr_auc",
+            "precision",
+            "recall",
+            "map",
+            "ndcg",
+        ],
         neg_sample=True,
         update_features=False,
         seed=2222,
     )
 
-    data_info.save(path=SAVE_PATH, model_name="wavenet_model")
+    data_info.save(path=SAVE_PATH, model_name="graphsage_model")
     model.save(
-        path=SAVE_PATH, model_name="wavenet_model", manual=True, inference_only=False
+        path=SAVE_PATH, model_name="graphsage_model", manual=True, inference_only=False
     )
 
     # ========================== load and retrain =============================
-    tf.compat.v1.reset_default_graph()
-    new_data_info = DataInfo.load(SAVE_PATH, model_name="wavenet_model")
+    new_data_info = DataInfo.load(SAVE_PATH, model_name="graphsage_model")
 
     # use second half data as second training part
     second_half_data = all_data[(len(all_data) // 2) :]
     train_data_orig, eval_data_orig = split_by_ratio_chrono(
         second_half_data, test_size=0.2
     )
-    train_data, new_data_info = DatasetPure.build_trainset(
+    train_data, new_data_info = DatasetFeat.build_trainset(
         train_data_orig, revolution=True, data_info=new_data_info, merge_behavior=True
     )
-    eval_data = DatasetPure.build_evalset(
+    eval_data = DatasetFeat.build_evalset(
         eval_data_orig, revolution=True, data_info=new_data_info
     )
-    train_data.build_negative_samples(new_data_info, seed=2022)
+    # train_data.build_negative_samples(new_data_info, seed=2022)
     eval_data.build_negative_samples(new_data_info, seed=2222)
 
-    new_model = WaveNet(
+    new_model = GraphSage(
         "ranking",
         new_data_info,
-        loss_type="focal",  # change loss
+        loss_type="focal",
+        paradigm="i2i",
         embed_size=16,
         n_epochs=1,
         lr=1e-4,
-        lr_decay=None,
+        lr_decay=False,
+        epsilon=1e-8,
+        amsgrad=False,
         reg=None,
         batch_size=2048,
-        n_filters=16,
-        n_blocks=2,
-        n_layers_per_block=4,
-        recent_num=10,
+        num_neg=1,
+        dropout_rate=0.0,
+        num_layers=1,
+        num_neighbors=10,
+        num_walks=10,
+        sample_walk_len=5,
+        margin=1.0,
+        sampler="random",
+        start_node="random",
+        focus_start=False,
+        seed=42,
     )
-    new_model.rebuild_model(
-        path=SAVE_PATH, model_name="wavenet_model", full_assign=True
-    )
+    new_model.rebuild_model(path=SAVE_PATH, model_name="graphsage_model")
     new_model.fit(
         train_data,
         verbose=2,
@@ -135,11 +172,12 @@ def test_tfmodel_retrain_pure():
     new_eval_result = evaluate(
         new_model,
         eval_data_orig,
+        sample_user_num=200,
         eval_batch_size=8192,
         k=10,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
         neg_sample=True,
-        update_features=False,
+        update_features=True,
         seed=2222,
     )
 

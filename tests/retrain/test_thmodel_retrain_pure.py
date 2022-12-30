@@ -14,7 +14,7 @@ from tests.utils_reco import ptest_recommends
 
 def test_torchmodel_retrain_pure():
     data_path = os.path.join(
-        str(Path(os.path.realpath(__file__)).parent),
+        str(Path(os.path.realpath(__file__)).parent.parent),
         "sample_data",
         "sample_movielens_rating.dat",
     )
@@ -26,7 +26,7 @@ def test_torchmodel_retrain_pure():
     train_data, eval_data = split_by_ratio_chrono(first_half_data, test_size=0.2)
     train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)
-    train_data.build_negative_samples(data_info, seed=2022)
+    # train_data.build_negative_samples(data_info, seed=2022)
     eval_data.build_negative_samples(data_info, seed=2222)
 
     model = NGCF(
@@ -92,7 +92,7 @@ def test_torchmodel_retrain_pure():
     eval_data = DatasetPure.build_evalset(
         eval_data_orig, revolution=True, data_info=new_data_info
     )
-    train_data.build_negative_samples(new_data_info, seed=2022)
+    # train_data.build_negative_samples(new_data_info, seed=2022)
     eval_data.build_negative_samples(new_data_info, seed=2222)
 
     new_model = NGCF(

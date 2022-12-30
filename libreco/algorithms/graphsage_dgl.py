@@ -14,14 +14,14 @@ import torch
 from tqdm import tqdm
 
 from .torch_modules import GraphSageDGLModel
-from ..bases import EmbedBase
+from ..bases import EmbedBase, ModelMeta
 from ..graph import check_dgl
 from ..torchops import user_unique_to_tensor, item_unique_to_tensor
 from ..training import SageDGLTrainer
 
 
 @check_dgl
-class GraphSageDGL(EmbedBase):
+class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
     def __new__(cls, *args, **kwargs):
         if cls.dgl_error is not None:
             raise cls.dgl_error

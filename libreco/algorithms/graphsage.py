@@ -11,7 +11,7 @@ import torch
 from tqdm import tqdm
 
 from .torch_modules import GraphSageModel
-from ..bases import EmbedBase
+from ..bases import EmbedBase, ModelMeta
 from ..sampling import bipartite_neighbors
 from ..torchops import (
     feat_to_tensor,
@@ -21,7 +21,7 @@ from ..torchops import (
 from ..training import SageTrainer
 
 
-class GraphSage(EmbedBase):
+class GraphSage(EmbedBase, metaclass=ModelMeta, backend="torch"):
     def __init__(
         self,
         task,

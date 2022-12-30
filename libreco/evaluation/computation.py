@@ -19,7 +19,11 @@ def build_transformed_data(model, data, negative_sample, update_features, seed):
     item_indices = np.array([data_info.item2id.get(i, n_items) for i in items])
     labels = data.label.to_numpy(dtype=np.float32)
     sparse_indices, dense_values = None, None
-    if data_info.col_name_mapping is not None:
+    if (
+        data_info.col_name_mapping is not None
+        and hasattr(model, "sparse")
+        and hasattr(model, "dense")
+    ):
         sparse_indices, dense_values = features_from_batch_data(
             data_info, model.sparse, model.dense, data
         )

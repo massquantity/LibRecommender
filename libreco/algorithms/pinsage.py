@@ -10,11 +10,12 @@ import torch
 
 from .graphsage import GraphSage
 from .torch_modules import PinSageModel
+from ..bases import ModelMeta
 from ..sampling import bipartite_neighbors_with_weights
 from ..torchops import feat_to_tensor, item_unique_to_tensor
 
 
-class PinSage(GraphSage):
+class PinSage(GraphSage, metaclass=ModelMeta, backend="torch"):
     def __init__(
         self,
         task,
