@@ -1,6 +1,6 @@
 # LibRecommender
 
-[![Build](https://img.shields.io/github/workflow/status/massquantity/LibRecommender/Build%20wheels)](https://github.com/massquantity/LibRecommender/actions/workflows/wheels.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/massquantity/LibRecommender/wheels.yml?branch=master)](https://github.com/massquantity/LibRecommender/actions/workflows/wheels.yml)
 [![CI](https://github.com/massquantity/LibRecommender/actions/workflows/ci.yml/badge.svg)](https://github.com/massquantity/LibRecommender/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/massquantity/LibRecommender/branch/master/graph/badge.svg?token=BYOYFBUJRL)](https://codecov.io/gh/massquantity/LibRecommender)
 [![pypi](https://img.shields.io/pypi/v/LibRecommender?color=blue)](https://pypi.org/project/LibRecommender/)
@@ -231,6 +231,8 @@ One can also use the library in a docker container without installing dependenci
 |     DeepWalk      | pure | / |  | :heavy_check_mark: | :heavy_check_mark: | [DeepWalk: Online Learning of Social Representations](https://arxiv.org/pdf/1403.6652.pdf) |
 |       NGCF        | pure | PyTorch |  | :heavy_check_mark: | :heavy_check_mark: | [Neural Graph Collaborative Filtering](https://arxiv.org/pdf/1905.08108.pdf) |
 |     LightGCN      | pure | PyTorch |  | :heavy_check_mark: | :heavy_check_mark: | [LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation](https://arxiv.org/pdf/2002.02126.pdf) |
+| GraphSage | feat | DGL, PyTorch | | :heavy_check_mark: | :heavy_check_mark: | [Inductive Representation Learning on Large Graphs](https://arxiv.org/abs/1706.02216) |
+| PinSage | feat | DGL, PyTorch | | :heavy_check_mark: | :heavy_check_mark: | [Graph Convolutional Neural Networks for Web-Scale Recommender Systems](https://arxiv.org/abs/1806.01973) |
 
 > <sup id="fn1">[1] **Category**: `pure` means collaborative-filtering algorithms which only use behavior data,  `feat` means other side-features can be included. <a href="#ref1" title="Jump back to footnote 1 in the text.">↩</a></sup>
 > 
