@@ -157,20 +157,23 @@ class NCF(TfBase, metaclass=ModelMeta):
         item_data=None,
         cold_start="average",
         inner_id=False,
+        filter_consumed=True,
+        random_rec=False,
+        return_scores=False,
     ):
-        assert user_feats is None and item_data is None, "NCF doesn't have features."
-        user_id = check_unknown_user(self, user, inner_id)
+        assert user_feats is None and item_data is None, "NCF doesn't use features."
+        user_id = check_unknown_user(self.data_info, user, inner_id)
         if user_id is None:
             if cold_start == "average":
                 user_id = self.n_users
             elif cold_start == "popular":
                 return popular_recommendations(self.data_info, inner_id, n_rec)
             else:
-                raise ValueError(user)
+                raise ValueError(f"unknown cold start: {cold_start}")
 
         user_indices = np.full(self.n_items, user_id)
         item_indices = np.arange(self.n_items)
-        recos = self.sess.run(
+        preds = self.sess.run(
             self.output,
             feed_dict={
                 self.user_indices: user_indices,
@@ -178,4 +181,15 @@ class NCF(TfBase, metaclass=ModelMeta):
                 self.is_training: False,
             },
         )
-        return rank_recommendations(recos, self, user_id, n_rec, inner_id)
+        return rank_recommendations(
+            self.task,
+            preds,
+            n_rec,
+            self.n_items,
+            self.user_consumed[user_id],
+            self.data_info.id2item,
+            inner_id,
+            filter_consumed,
+            random_rec,
+            return_scores,
+        )

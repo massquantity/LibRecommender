@@ -30,9 +30,9 @@ def check_unknown(model, user, item):
     return unknown_num, unknown_index, user, item
 
 
-def check_unknown_user(model, user, inner_id=False):
-    user_id = model.data_info.user2id.get(user, -1) if not inner_id else user
-    if 0 <= user_id < model.n_users:
+def check_unknown_user(data_info, user, inner_id=False):
+    user_id = data_info.user2id.get(user, -1) if not inner_id else user
+    if 0 <= user_id < data_info.n_users:
         return user_id
     else:
         if not inner_id:

@@ -6,7 +6,7 @@ import numpy as np
 
 from .base import Base
 from ..prediction import predict_from_embedding
-from ..recommendation import recommend_from_embedding
+from ..recommendation import popular_recommendations, recommend_from_embedding
 from ..utils.misc import colorize
 from ..utils.save_load import (
     load_params,
@@ -14,6 +14,7 @@ from ..utils.save_load import (
     save_tf_variables,
     save_torch_state_dict,
 )
+from ..utils.validate import check_unknown_user
 
 
 class EmbedBase(Base):
@@ -52,8 +53,36 @@ class EmbedBase(Base):
     def predict(self, user, item, cold_start="average", inner_id=False):
         return predict_from_embedding(self, user, item, cold_start, inner_id)
 
-    def recommend_user(self, user, n_rec, cold_start="average", inner_id=False):
-        return recommend_from_embedding(self, user, n_rec, cold_start, inner_id)
+    def recommend_user(
+        self,
+        user,
+        n_rec,
+        cold_start="average",
+        inner_id=False,
+        filter_consumed=True,
+        random_rec=False,
+        return_scores=False,
+    ):
+        user_id = check_unknown_user(self.data_info, user, inner_id)
+        if user_id is None:
+            if cold_start == "average":
+                user_id = self.n_users
+            elif cold_start == "popular":
+                return popular_recommendations(self.data_info, inner_id, n_rec)
+            else:
+                raise ValueError(f"unknown cold start: {cold_start}")
+        return recommend_from_embedding(
+            self.task,
+            self.data_info,
+            self.user_embed,
+            self.item_embed,
+            user_id,
+            n_rec,
+            inner_id,
+            filter_consumed,
+            random_rec,
+            return_scores,
+        )
 
     @abc.abstractmethod
     def set_embeddings(self, *args, **kwargs):
