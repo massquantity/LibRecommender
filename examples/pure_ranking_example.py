@@ -347,13 +347,18 @@ if __name__ == "__main__":
     print("recommendation: ", lightgcn.recommend_user(user=1, n_rec=7))
 
     reset_state("user_cf")
-    user_cf = UserCF(task="ranking", data_info=data_info, k_sim=20, sim_type="cosine")
-    user_cf.fit(
-        train_data,
-        verbose=2,
+    user_cf = UserCF(
+        task="ranking",
+        data_info=data_info,
+        k_sim=20,
+        sim_type="cosine",
         mode="invert",
         num_threads=4,
         min_common=1,
+    )
+    user_cf.fit(
+        train_data,
+        verbose=2,
         eval_data=eval_data,
         metrics=metrics,
     )
@@ -361,13 +366,18 @@ if __name__ == "__main__":
     print("recommendation: ", user_cf.recommend_user(user=1, n_rec=7))
 
     reset_state("item_cf")
-    item_cf = ItemCF(task="ranking", data_info=data_info, k_sim=20, sim_type="pearson")
-    item_cf.fit(
-        train_data,
-        verbose=2,
+    item_cf = ItemCF(
+        task="ranking",
+        data_info=data_info,
+        k_sim=20,
+        sim_type="jaccard",
         mode="invert",
         num_threads=1,
         min_common=1,
+    )
+    item_cf.fit(
+        train_data,
+        verbose=2,
         eval_data=eval_data,
         metrics=metrics,
     )

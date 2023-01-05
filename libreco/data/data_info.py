@@ -220,7 +220,7 @@ class DataInfo(object):
         n_users = self.n_users
         n_items = self.n_items
         n_labels = len(self.interaction_data)
-        return "n_users: %d, n_items: %d, data sparsity: %.4f %%" % (
+        return "n_users: %d, n_items: %d, data density: %.4f %%" % (
             n_users,
             n_items,
             100 * n_labels / (n_users * n_items),

@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from libreco.algorithms import UserCF
@@ -23,6 +24,7 @@ def test_user_cf(prepare_pure_data, task, sim_type, store_top_k):
         data_info=data_info,
         sim_type=sim_type,
         k_sim=20,
+        store_top_k=store_top_k,
         k=10,
         eval_user_num=200,
     )
@@ -36,7 +38,6 @@ def test_user_cf(prepare_pure_data, task, sim_type, store_top_k):
             verbose=2,
             eval_data=eval_data,
             metrics=get_metrics(task),
-            store_top_k=store_top_k,
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)
@@ -53,3 +54,18 @@ def test_user_cf(prepare_pure_data, task, sim_type, store_top_k):
 
         with pytest.raises(NotImplementedError):
             model.rebuild_model("model_path", "user_cf")
+
+
+def test_all_consumed_recommend(prepare_pure_data, monkeypatch):
+    pd_data, train_data, eval_data, data_info = prepare_pure_data
+    train_data.build_negative_samples(data_info, seed=2022)
+    eval_data.build_negative_samples(data_info, seed=2222)
+
+    model = UserCF(task="ranking", data_info=data_info)
+    model.fit(train_data, verbose=0)
+    model.save("not_existed_path", "user_cf2")
+    remove_path("not_existed_path")
+    with monkeypatch.context() as m:
+        m.setitem(model.user_consumed, 0, list(range(model.n_items)))
+        recos = model.recommend_user(user=1, n_rec=7)
+        np.testing.assert_array_equal(recos, model.data_info.popular_items[:7])
