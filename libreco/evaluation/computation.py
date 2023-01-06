@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import expit
 from tqdm import tqdm
 
 from ..data import TransformedSet
@@ -7,7 +8,7 @@ from ..tfops import get_feed_dict
 from ..utils.constants import TF_FEAT_MODELS
 
 
-def build_transformed_data(model, data, negative_sample, update_features, seed):
+def build_eval_transformed_data(model, data, negative_sample, update_features, seed):
     data_info = model.data_info
     n_users = data_info.n_users
     n_items = data_info.n_items
@@ -46,7 +47,7 @@ def compute_preds(model, data, batch_size):
     y_pred = list()
     y_label = list()
     predict_func = choose_pred_func(model)
-    for batch_data in tqdm(range(0, len(data), batch_size), desc="eval_pred"):
+    for batch_data in tqdm(range(0, len(data), batch_size), desc="eval_pointwise"):
         batch_slice = slice(batch_data, batch_data + batch_size)
         labels = data.labels[batch_slice]
         preds = predict_func(model, data, batch_slice)
@@ -63,7 +64,7 @@ def compute_recommends(model, users, k):
     y_recommends = dict()
     no_rec_num = 0
     no_rec_users = []
-    for u in tqdm(users, desc="eval_rec"):
+    for u in tqdm(users, desc="eval_listwise"):
         reco = model.recommend_user(
             user=u,
             n_rec=k,
@@ -136,5 +137,5 @@ def predict_tf_feat(model, transformed_data, batch_slice):
     if model.task == "rating":
         preds = np.clip(preds, model.lower_bound, model.upper_bound)
     elif model.task == "ranking":
-        preds = 1 / (1 + np.exp(-preds))
+        preds = expit(preds)
     return preds.tolist() if isinstance(preds, np.ndarray) else [preds]
