@@ -12,7 +12,7 @@ pub async fn knn_serving(
     redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
     let Param { user, n_rec } = param.0;
-    let mut conn = redis.get_async_connection().await.map_err(|e| {
+    let mut conn = redis.get_tokio_connection_manager().await.map_err(|e| {
         error::ErrorInternalServerError(format!("Failed to connect to redis: {}", e))
     })?;
     info!("recommend {n_rec} items for user {user}");
@@ -43,7 +43,7 @@ async fn rec_on_user_sims(
     user_id: &str,
     n_rec: usize,
     user_consumed: &HashSet<usize>,
-    conn: &mut redis::aio::Connection,
+    conn: &mut redis::aio::ConnectionManager,
 ) -> Result<Vec<String>, actix_web::Error> {
     let mut id_sim_map: HashMap<usize, f32> = HashMap::new();
     let k_sim_users: Vec<(usize, f32)> =
@@ -56,10 +56,7 @@ async fn rec_on_user_sims(
             if user_consumed.contains(&i) {
                 continue;
             }
-            id_sim_map
-                .entry(i)
-                .and_modify(|s| *s += sim)
-                .or_insert(sim);
+            id_sim_map.entry(i).and_modify(|s| *s += sim).or_insert(sim);
         }
     }
     let item_ids = sort_by_sims(&id_sim_map, n_rec);
@@ -69,7 +66,7 @@ async fn rec_on_user_sims(
 async fn rec_on_item_sims(
     n_rec: usize,
     user_consumed: &HashSet<usize>,
-    conn: &mut redis::aio::Connection,
+    conn: &mut redis::aio::ConnectionManager,
 ) -> Result<Vec<String>, actix_web::Error> {
     let mut id_sim_map: HashMap<usize, f32> = HashMap::new();
     for i in user_consumed {
@@ -80,10 +77,7 @@ async fn rec_on_item_sims(
             if user_consumed.contains(&j) {
                 continue;
             }
-            id_sim_map
-                .entry(j)
-                .and_modify(|s| *s += sim)
-                .or_insert(sim);
+            id_sim_map.entry(j).and_modify(|s| *s += sim).or_insert(sim);
         }
     }
     let item_ids = sort_by_sims(&id_sim_map, n_rec);

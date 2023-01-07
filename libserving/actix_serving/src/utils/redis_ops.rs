@@ -15,7 +15,7 @@ pub async fn list_all_keys(
 }
 
 pub async fn check_exists(
-    conn: &mut redis::aio::Connection,
+    conn: &mut redis::aio::ConnectionManager,
     key: &str,
     field: &str,
     command: &str,
@@ -41,7 +41,7 @@ pub async fn check_exists(
 }
 
 pub async fn get_str(
-    conn: &mut redis::aio::Connection,
+    conn: &mut redis::aio::ConnectionManager,
     key: &str,
     field: &str,
     command: &str,
@@ -56,7 +56,7 @@ pub async fn get_str(
 }
 
 pub async fn get_multi_str(
-    conn: &mut redis::aio::Connection,
+    conn: &mut redis::aio::ConnectionManager,
     key: &str,
     fields: &[usize],
 ) -> Result<Vec<String>, actix_web::Error> {
@@ -76,7 +76,7 @@ pub async fn get_multi_str(
 }
 
 pub async fn get_vec<T>(
-    conn: &mut redis::aio::Connection,
+    conn: &mut redis::aio::ConnectionManager,
     key: &str,
     field: &str,
 ) -> actix_web::Result<T>

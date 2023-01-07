@@ -39,7 +39,7 @@ pub async fn embed_serving(
     redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
     let Param { user, n_rec } = param.0;
-    let mut conn = redis.get_async_connection().await.map_err(|e| {
+    let mut conn = redis.get_tokio_connection_manager().await.map_err(|e| {
         error::ErrorInternalServerError(format!("Failed to connect to redis: {}", e))
     })?;
     info!("recommend {n_rec} items for user {user}");
