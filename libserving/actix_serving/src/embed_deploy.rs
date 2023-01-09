@@ -4,6 +4,7 @@ use std::io::ErrorKind;
 use std::sync::{Mutex, MutexGuard};
 
 use actix_web::{error, post, web, Responder};
+use deadpool_redis::Pool;
 use faiss::index::{IndexImpl, SearchResult};
 use faiss::{index_factory, Index, MetricType};
 use log::info;
@@ -36,11 +37,11 @@ pub fn init_embed_state(model_type: &str) -> std::io::Result<Option<web::Data<Em
 pub async fn embed_serving(
     param: web::Json<Param>,
     state: web::Data<EmbedAppState>,
-    redis: web::Data<redis::Client>,
+    redis_pool: web::Data<Pool>,
 ) -> actix_web::Result<impl Responder> {
     let Param { user, n_rec } = param.0;
-    let mut conn = redis.get_tokio_connection_manager().await.map_err(|e| {
-        error::ErrorInternalServerError(format!("Failed to connect to redis: {}", e))
+    let mut conn = redis_pool.get().await.map_err(|e| {
+        error::ErrorInternalServerError(format!("Failed to get redis pool connection: {}", e))
     })?;
     info!("recommend {n_rec} items for user {user}");
 
