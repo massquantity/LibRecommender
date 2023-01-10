@@ -37,4 +37,4 @@ jobs:
         if: matrix.python-version == '3.6'
 
       - name: Test install
-        run: python -c "import nmslib; import libreco; print(libreco.__version__)"
+        run: python -c "import dgl; import nmslib; import libreco; print(libreco.__version__)"
