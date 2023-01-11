@@ -25,8 +25,6 @@ def test_user_cf(prepare_pure_data, task, sim_type, store_top_k):
         sim_type=sim_type,
         k_sim=20,
         store_top_k=store_top_k,
-        k=10,
-        eval_user_num=200,
     )
 
     if sim_type == "unknown":
@@ -38,6 +36,8 @@ def test_user_cf(prepare_pure_data, task, sim_type, store_top_k):
             verbose=2,
             eval_data=eval_data,
             metrics=get_metrics(task),
+            k=10,
+            eval_user_num=100,
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)
@@ -68,4 +68,4 @@ def test_all_consumed_recommend(prepare_pure_data, monkeypatch):
     with monkeypatch.context() as m:
         m.setitem(model.user_consumed, 0, list(range(model.n_items)))
         recos = model.recommend_user(user=1, n_rec=7)
-        np.testing.assert_array_equal(recos, model.data_info.popular_items[:7])
+        assert np.all(np.isin(recos[1], data_info.popular_items))

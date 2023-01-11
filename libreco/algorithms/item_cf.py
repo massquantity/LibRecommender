@@ -5,8 +5,6 @@ import numpy as np
 from tqdm import tqdm
 
 from ..bases import CfBase
-from ..recommendation import popular_recommendations
-from ..utils.validate import check_unknown_user
 
 
 class ItemCF(CfBase):
@@ -22,9 +20,6 @@ class ItemCF(CfBase):
         min_common=1,
         mode="invert",
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         lower_upper_bound=None,
     ):
         super().__init__(
@@ -39,9 +34,6 @@ class ItemCF(CfBase):
             min_common,
             mode,
             seed,
-            k,
-            eval_batch_size,
-            eval_user_num,
             lower_upper_bound,
         )
         self.all_args = locals()
@@ -53,7 +45,7 @@ class ItemCF(CfBase):
         interaction = self.user_interaction
         for u, i in zip(user_arr, item_arr):
             if u == self.n_users or i == self.n_items:
-                preds.append(self.default_prediction)
+                preds.append(self.default_pred)
                 continue
             item_slice = slice(sim_matrix.indptr[i], sim_matrix.indptr[i + 1])
             sim_items = sim_matrix.indices[item_slice]
@@ -74,23 +66,8 @@ class ItemCF(CfBase):
             preds.append(pred)
         return preds[0] if len(user_arr) == 1 else preds
 
-    def recommend_user(
-        self,
-        user,
-        n_rec,
-        cold_start="popular",
-        inner_id=False,
-        filter_consumed=True,
-        random_rec=False,
-        return_scores=False,
-    ):
-        user_id = check_unknown_user(self.data_info, user, inner_id)
-        if user_id is None:
-            if cold_start == "popular":
-                return popular_recommendations(self.data_info, inner_id, n_rec)
-            else:
-                raise ValueError("ItemCF only supports `popular` cold start strategy")
-
+    # all the items returned by this function will be inner_ids
+    def recommend_one(self, user_id, n_rec, filter_consumed, random_rec):
         user_slice = slice(
             self.user_interaction.indptr[user_id],
             self.user_interaction.indptr[user_id + 1],
@@ -119,12 +96,11 @@ class ItemCF(CfBase):
         ids = np.array(result[0])
         preds = np.array(result[1])
         return self.rank_recommendations(
-            user,
+            user_id,
             ids,
             preds,
             n_rec,
             self.user_consumed[user_id],
-            inner_id,
             filter_consumed,
             random_rec,
         )
@@ -139,3 +115,6 @@ class ItemCF(CfBase):
                 zip(sim_items, sim_values), key=itemgetter(1), reverse=True
             )[: self.k_sim]
         self.topk_sim = top_k
+
+    def rebuild_model(self, path, model_name, **kwargs):
+        raise NotImplementedError(f"{self.model_name} doesn't support model retraining")
