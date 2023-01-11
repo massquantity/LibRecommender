@@ -1,7 +1,6 @@
 import time
 
 import pandas as pd
-import torch
 
 from examples.utils import reset_state
 from libreco.data import split_by_ratio_chrono, DatasetPure
@@ -18,8 +17,6 @@ from libreco.algorithms import (
     WaveNet,
     Item2Vec,
     DeepWalk,
-    NGCF,
-    LightGCN,
 )
 
 
@@ -294,57 +291,6 @@ if __name__ == "__main__":
     )
     print("prediction: ", deepwalk.predict(user=1, item=2333))
     print("recommendation: ", deepwalk.recommend_user(user=1, n_rec=7))
-
-    reset_state("NGCF")
-    ngcf = NGCF(
-        "ranking",
-        data_info,
-        embed_size=16,
-        n_epochs=2,
-        lr=3e-4,
-        lr_decay=None,
-        reg=0.0,
-        batch_size=2048,
-        num_neg=1,
-        node_dropout=0.0,
-        message_dropout=0.0,
-        hidden_units="64,64,64",
-        device=torch.device("cpu"),
-    )
-    ngcf.fit(
-        train_data,
-        verbose=2,
-        shuffle=True,
-        eval_data=eval_data,
-        metrics=metrics,
-    )
-    print("prediction: ", ngcf.predict(user=1, item=2333))
-    print("recommendation: ", ngcf.recommend_user(user=1, n_rec=7))
-
-    reset_state("LightGCN")
-    lightgcn = LightGCN(
-        "ranking",
-        data_info,
-        embed_size=32,
-        n_epochs=2,
-        lr=1e-4,
-        lr_decay=None,
-        reg=0.0,
-        batch_size=2048,
-        num_neg=1,
-        dropout_rate=0.0,
-        n_layers=3,
-        device=torch.device("cpu"),
-    )
-    lightgcn.fit(
-        train_data,
-        verbose=2,
-        shuffle=True,
-        eval_data=eval_data,
-        metrics=metrics,
-    )
-    print("prediction: ", lightgcn.predict(user=1, item=2333))
-    print("recommendation: ", lightgcn.recommend_user(user=1, n_rec=7))
 
     reset_state("user_cf")
     user_cf = UserCF(
