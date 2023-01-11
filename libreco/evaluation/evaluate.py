@@ -1,3 +1,4 @@
+import math
 import numbers
 
 import numpy as np
@@ -82,8 +83,11 @@ def print_metrics(
                 print_metrics_ranking_pointwise(metrics, y_prob, y_true)
             if LISTWISE_METRICS.intersection(metrics):
                 chosen_users = sample_user(eval_data, seed, sample_user_num)
-                y_reco_list, users = compute_recommends(model, chosen_users, k)
+                num_batch_users = max(1, math.floor(eval_batch_size / model.n_items))
                 y_true_list = eval_data.user_consumed
+                y_reco_list, users = compute_recommends(
+                    model, chosen_users, k, num_batch_users
+                )
                 print_metrics_ranking_listwise(
                     metrics, y_reco_list, y_true_list, users, k
                 )
@@ -210,8 +214,11 @@ def evaluate(
                     eval_result[m] = auc(recall, precision)
         if LISTWISE_METRICS.intersection(metrics):
             chosen_users = sample_user(data, seed, sample_user_num)
-            y_reco_list, users = compute_recommends(model, chosen_users, k)
+            num_batch_users = max(1, math.floor(eval_batch_size / model.n_items))
             y_true_list = data.user_consumed
+            y_reco_list, users = compute_recommends(
+                model, chosen_users, k, num_batch_users
+            )
             for m in metrics:
                 if m == "precision":
                     eval_result[m] = precision_at_k(y_true_list, y_reco_list, users, k)

@@ -60,25 +60,26 @@ def compute_probs(model, data, batch_size):
     return compute_preds(model, data, batch_size)
 
 
-def compute_recommends(model, users, k):
+def compute_recommends(model, users, k, num_batch_users):
     y_recommends = dict()
     no_rec_num = 0
     no_rec_users = []
-    for u in tqdm(users, desc="eval_listwise"):
-        reco = model.recommend_user(
-            user=u,
+    for i in tqdm(range(0, len(users), num_batch_users), desc="eval_listwise"):
+        batch_users = users[i: i + num_batch_users]
+        batch_recs = model.recommend_user(
+            user=batch_users,
             n_rec=k,
             inner_id=True,
             filter_consumed=True,
             random_rec=False,
-            return_scores=False,
         )
-        if len(reco) == 0:
-            # print("no recommend user: ", u)
-            no_rec_num += 1
-            no_rec_users.append(u)
-            continue
-        y_recommends[u] = reco
+        for u in batch_users:
+            if len(batch_recs[u]) == 0:
+                # print("no recommend user: ", u)
+                no_rec_num += 1
+                no_rec_users.append(u)
+                continue
+            y_recommends[u] = batch_recs[u]
     if no_rec_num > 0:
         # print(f"{no_rec_num} users has no recommendation")
         users = list(set(users).difference(no_rec_users))
