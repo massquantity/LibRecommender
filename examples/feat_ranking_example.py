@@ -211,8 +211,6 @@ if __name__ == "__main__":
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
-        recent_num=None,
-        sample_rate=None,
         metrics=metrics,
     )
     print("prediction: ", ytb_ranking.predict(user=1, item=2333))
