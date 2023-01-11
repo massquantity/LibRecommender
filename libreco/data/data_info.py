@@ -5,6 +5,7 @@ import os
 
 import numpy as np
 import pandas as pd
+from numpy.random import default_rng
 
 from ..feature import (
     interaction_consumed,
@@ -60,6 +61,9 @@ class DataInfo(object):
             multi_sparse_unique_vals
         )
         self.multi_sparse_combine_info = multi_sparse_combine_info
+        # Numpy doc states that it is recommended to use new random API
+        # https://numpy.org/doc/stable/reference/random/index.html
+        self.np_rng = default_rng()
         self._n_users = None
         self._n_items = None
         self._user2id = None
