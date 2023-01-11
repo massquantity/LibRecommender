@@ -6,10 +6,12 @@ import numpy as np
 
 from .base import Base
 from ..prediction import predict_from_embedding
-from ..recommendation import popular_recommendations, recommend_from_embedding
+from ..recommendation import cold_start_rec, construct_rec, recommend_from_embedding
 from ..utils.misc import colorize
 from ..utils.save_load import (
+    load_default_recs,
     load_params,
+    save_default_recs,
     save_params,
     save_tf_variables,
     save_torch_state_dict,
@@ -44,11 +46,34 @@ class EmbedBase(Base):
         assert (
             self.trainer is not None
         ), "loaded model doesn't support retraining, use `rebuild_model` instead."
+        k = kwargs.get("k", 10)
+        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
+        eval_user_num = kwargs.get("eval_user_num", None)
+        assert k <= self.n_items, f"eval `k` {k} exceeds num of items {self.n_items}"
         self.show_start_time()
         # self._check_has_sampled(train_data, verbose)
-        self.trainer.run(train_data, verbose, shuffle, eval_data, metrics)
+        self.trainer.run(
+            train_data,
+            verbose,
+            shuffle,
+            eval_data,
+            metrics,
+            k,
+            eval_batch_size,
+            eval_user_num,
+        )
         self.set_embeddings()
         self.assign_embedding_oov()
+        self.default_recs = recommend_from_embedding(
+            task=self.task,
+            user_ids=[self.n_users],
+            n_rec=min(2000, self.n_items),
+            data_info=self.data_info,
+            user_embed=self.user_embed,
+            item_embed=self.item_embed,
+            filter_consumed=False,
+            random_rec=False,
+        ).flatten()
 
     def predict(self, user, item, cold_start="average", inner_id=False):
         return predict_from_embedding(self, user, item, cold_start, inner_id)
@@ -61,28 +86,33 @@ class EmbedBase(Base):
         inner_id=False,
         filter_consumed=True,
         random_rec=False,
-        return_scores=False,
     ):
-        user_id = check_unknown_user(self.data_info, user, inner_id)
-        if user_id is None:
-            if cold_start == "average":
-                user_id = self.n_users
-            elif cold_start == "popular":
-                return popular_recommendations(self.data_info, inner_id, n_rec)
-            else:
-                raise ValueError(f"unknown cold start: {cold_start}")
-        return recommend_from_embedding(
-            self.task,
-            self.data_info,
-            self.user_embed,
-            self.item_embed,
-            user_id,
-            n_rec,
-            inner_id,
-            filter_consumed,
-            random_rec,
-            return_scores,
-        )
+        result_recs = dict()
+        user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
+        if unknown_users:
+            cold_recs = cold_start_rec(
+                self.data_info,
+                self.default_recs,
+                cold_start,
+                unknown_users,
+                n_rec,
+                inner_id,
+            )
+            result_recs.update(cold_recs)
+        if user_ids:
+            computed_recs = recommend_from_embedding(
+                self.task,
+                user_ids,
+                n_rec,
+                self.data_info,
+                self.user_embed,
+                self.item_embed,
+                filter_consumed,
+                random_rec,
+            )
+            user_recs = construct_rec(self.data_info, user_ids, computed_recs, inner_id)
+            result_recs.update(user_recs)
+        return result_recs
 
     @abc.abstractmethod
     def set_embeddings(self, *args, **kwargs):
@@ -103,6 +133,7 @@ class EmbedBase(Base):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
         save_params(self, path, model_name)
+        save_default_recs(self, path, model_name)
         if inference_only:
             variable_path = os.path.join(path, model_name)
             np.savez_compressed(
@@ -121,6 +152,7 @@ class EmbedBase(Base):
         variables = np.load(variable_path)
         hparams = load_params(cls, path, data_info, model_name)
         model = cls(**hparams)
+        model.default_recs = load_default_recs(path, model_name)
         setattr(model, "user_embed", variables["user_embed"])
         setattr(model, "item_embed", variables["item_embed"])
         return model

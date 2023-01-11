@@ -31,14 +31,18 @@ def check_unknown(model, user, item):
 
 
 def check_unknown_user(data_info, user, inner_id=False):
-    user_id = data_info.user2id.get(user, -1) if not inner_id else user
-    if 0 <= user_id < data_info.n_users:
-        return user_id
-    else:
-        if not inner_id:
-            unknown_str = f"detect unknown user: {user}"
-            print(f"{colorize(unknown_str, 'red')}")
-        return
+    known_users_ids, unknown_users = [], []
+    users = [user] if np.isscalar(user) else user
+    for u in users:
+        user_id = data_info.user2id.get(u, -1) if not inner_id else u
+        if 0 <= user_id < data_info.n_users:
+            known_users_ids.append(user_id)
+        else:
+            if not inner_id:
+                unknown_str = f"Detect unknown user: {u}"
+                print(f"{colorize(unknown_str, 'red')}")
+            unknown_users.append(u)
+    return known_users_ids, unknown_users
 
 
 def check_has_sampled(data, verbose):

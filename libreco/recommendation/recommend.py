@@ -10,12 +10,17 @@ from ..feature import (
 from ..tfops import get_feed_dict
 
 
-def popular_recommendations(data_info, inner_id, n_rec):
-    if not inner_id:
-        return np.array(data_info.popular_items[:n_rec])
-    else:
-        top_populars = data_info.popular_items[:n_rec]
-        return np.array([data_info.item2id[i] for i in top_populars])
+def construct_rec(data_info, user_ids, computed_recs, inner_id):
+    result_recs = dict()
+    for i, u in enumerate(user_ids):
+        if inner_id:
+            result_recs[u] = computed_recs[i]
+        else:
+            u = data_info.id2user[u]
+            result_recs[u] = np.array(
+                [data_info.id2item[ri] for ri in computed_recs[i]]
+            )
+    return result_recs
 
 
 # def rank_recommendations(preds, model, user_id, n_rec, inner_id):
@@ -38,50 +43,54 @@ def popular_recommendations(data_info, inner_id, n_rec):
 
 def recommend_from_embedding(
     task,
+    user_ids,
+    n_rec,
     data_info,
     user_embed,
     item_embed,
-    user_id,
-    n_rec,
-    inner_id,
     filter_consumed,
     random_rec,
-    return_scores,
 ):
-    preds = user_embed[user_id] @ item_embed[:-1].T  # exclude item oov
+    preds = user_embed[user_ids] @ item_embed[:data_info.n_items].T  # exclude item oov
     return rank_recommendations(
         task,
+        user_ids,
         preds,
         n_rec,
         data_info.n_items,
-        data_info.user_consumed[user_id],
-        data_info.id2item,
-        inner_id,
+        data_info.user_consumed,
         filter_consumed,
         random_rec,
-        return_scores,
     )
 
 
 def recommend_tf_feat(
     model,
-    user_id,
+    user_ids,
     n_rec,
     user_feats,
     item_data,
-    inner_id,
     filter_consumed,
     random_rec,
-    return_scores,
 ):
-    (
-        user_indices,
-        item_indices,
-        sparse_indices,
-        dense_values,
-    ) = get_recommend_indices_and_values(
-        model.data_info, user_id, model.n_items, model.sparse, model.dense
-    )
+    user_indices, item_indices, sparse_indices, dense_values = [], [], [], []
+    has_sparse = model.sparse if hasattr(model, "sparse") else None
+    has_dense = model.dense if hasattr(model, "dense") else None
+    for u in user_ids:
+        u, i, s, d = get_recommend_indices_and_values(
+            model.data_info, u, model.n_items, has_sparse, has_dense
+        )
+        user_indices.append(u)
+        item_indices.append(i)
+        if s is not None:
+            sparse_indices.append(s)
+        if d is not None:
+            dense_values.append(d)
+    user_indices = np.concatenate(user_indices, axis=0)
+    item_indices = np.concatenate(item_indices, axis=0)
+    sparse_indices = np.concatenate(sparse_indices, axis=0) if sparse_indices else None
+    dense_values = np.concatenate(dense_values, axis=0) if dense_values else None
+
     if user_feats is not None:
         assert isinstance(
             user_feats, (dict, pd.Series)
@@ -107,23 +116,21 @@ def recommend_tf_feat(
         "is_training": False,
     }
     if model.model_category == "sequence":
-        u_last_interacted = np.tile(
-            model.user_last_interacted[user_id], (model.n_items, 1)
+        u_last_interacted = np.repeat(
+            model.user_last_interacted[user_ids], model.n_items, axis=0
         )
-        u_interacted_len = np.repeat(model.last_interacted_len[user_id], model.n_items)
+        u_interacted_len = np.repeat(model.last_interacted_len[user_ids], model.n_items)
         params["user_interacted_seq"] = u_last_interacted
         params["user_interacted_len"] = u_interacted_len
 
     preds = model.sess.run(model.output, get_feed_dict(**params))
     return rank_recommendations(
         model.task,
+        user_ids,
         preds,
         n_rec,
         model.n_items,
-        model.user_consumed[user_id],
-        model.data_info.id2item,
-        inner_id,
+        model.user_consumed,
         filter_consumed,
         random_rec,
-        return_scores,
     )

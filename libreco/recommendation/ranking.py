@@ -9,32 +9,46 @@ np_rng = default_rng()
 
 def rank_recommendations(
     task,
-    preds,
+    user_ids,
+    model_preds,
     n_rec,
     n_items,
-    consumed,
-    id2item,
-    inner_id,
+    user_consumed,
     filter_consumed=True,
     random_rec=False,
     return_scores=False,
 ):
     if n_rec > n_items:
         raise ValueError(f"`n_rec` {n_rec} exceeds num of items {n_items}")
-    ids = np.arange(len(preds))
-    if filter_consumed and n_rec + len(consumed) <= n_items:
-        ids, preds = filter_items(ids, preds, consumed)
-    if random_rec:
-        ids, preds = random_select(ids, preds, n_rec)
+    if model_preds.ndim == 1:
+        assert len(model_preds) % n_items == 0
+        batch_size = int(len(model_preds) / n_items)
+        all_preds = model_preds.reshape(batch_size, n_items)
     else:
-        ids, preds = partition_select(ids, preds, n_rec)
+        batch_size = len(model_preds)
+        all_preds = model_preds
+    all_ids = np.tile(np.arange(n_items), (batch_size, 1))
 
-    if not inner_id:
-        ids = np.array([id2item[i] for i in ids])
-    indices = np.argsort(preds)[::-1]
-    ids = ids[indices]
+    batch_ids, batch_preds = [], []
+    for i in range(batch_size):
+        user = user_ids[i]
+        ids = all_ids[i]
+        preds = all_preds[i]
+        consumed = user_consumed[user]
+        if filter_consumed and n_rec + len(consumed) <= n_items:
+            ids, preds = filter_items(ids, preds, consumed)
+        if random_rec:
+            ids, preds = random_select(ids, preds, n_rec)
+        else:
+            ids, preds = partition_select(ids, preds, n_rec)
+        batch_ids.append(ids)
+        batch_preds.append(preds)
+
+    ids, preds = np.array(batch_ids), np.array(batch_preds)
+    indices = np.argsort(preds, axis=1)[:, ::-1]
+    ids = np.take_along_axis(ids, indices, axis=1)
     if return_scores:
-        scores = preds[indices]
+        scores = np.take_along_axis(preds, indices, axis=1)
         if task == "ranking":
             scores = expit(scores)
         return ids, scores
