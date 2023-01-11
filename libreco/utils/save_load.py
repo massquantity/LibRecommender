@@ -36,6 +36,18 @@ def load_params(model_class, path, data_info, model_name):
     return hparams
 
 
+def save_default_recs(model, path, model_name):
+    rec_path = os.path.join(path, f"{model_name}_default_recs")
+    if model.default_recs is not None:
+        np.savez_compressed(rec_path, default_recs=model.default_recs)
+
+
+def load_default_recs(path, model_name):
+    rec_path = os.path.join(path, f"{model_name}_default_recs.npz")
+    if os.path.exists(rec_path):
+        return np.load(rec_path)["default_recs"]
+
+
 def save_tf_model(sess, path, model_name):
     model_path = os.path.join(path, f"{model_name}_tf")
     saver = tf.train.Saver()
@@ -46,6 +58,7 @@ def load_tf_model(model_class, path, model_name, data_info):
     model_path = os.path.join(path, f"{model_name}_tf")
     hparams = load_params(model_class, path, data_info, model_name)
     model = model_class(**hparams)  # model_class.__class__(**hparams)
+    model.default_recs = load_default_recs(path, model_name)
     # saver = tf.train.import_meta_graph(os.path.join(path, model_name + ".meta"))
     saver = tf.train.Saver()
     saver.restore(model.sess, model_path)
@@ -70,6 +83,7 @@ def load_tf_variables(model_class, path, model_name, data_info):
     variables = np.load(variable_path)
     hparams = load_params(model_class, path, data_info, model_name)
     model = model_class(**hparams)
+    model.default_recs = load_default_recs(path, model_name)
     update_ops = []
     for v in tf.global_variables():
         # also load moving_mean and moving_var for batch_normalization

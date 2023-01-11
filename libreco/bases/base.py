@@ -40,7 +40,8 @@ class Base(abc.ABC):
         elif task != "ranking":
             raise ValueError("task must either be rating or ranking")
 
-        self.default_prediction = data_info.global_mean if task == "rating" else 0.0
+        self.default_pred = data_info.global_mean if task == "rating" else 0.0
+        self.default_recs = None
 
     @abc.abstractmethod
     def fit(self, train_data, **kwargs):
@@ -59,14 +60,14 @@ class Base(abc.ABC):
 
         Parameters
         ----------
-        user : int or array_like
+        user : int or str or array_like
             User id or batch of user ids.
-        item : int or array_like
+        item : int or str or array_like
             Item id or batch of item ids.
 
         Returns
         -------
-        prediction : int or array_like
+        prediction : float or array_like
             Predicted scores for each user-item pair.
         """
         raise NotImplementedError
@@ -77,16 +78,16 @@ class Base(abc.ABC):
 
         Parameters
         ----------
-        user : int
-            User id to recommend.
+        user : int or str or array_like
+            User id or batch of user ids to recommend.
         n_rec : int
-            number of recommendations to return.
+            Number of recommendations to return.
 
         Returns
         -------
-        result : list of tuples
-            A recommendation list, each recommendation
-            contains an (item_id, score) tuple.
+        result : dict
+            Recommendation result that has user ids as keys
+            and array-like recommended items as values.
         """
         raise NotImplementedError
 
