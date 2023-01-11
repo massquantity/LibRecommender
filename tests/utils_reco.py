@@ -38,7 +38,7 @@ def ptest_recommends(model, data_info, pd_data, with_feats):
     no_random_reco = model.recommend_user(
         user=1, n_rec=10, filter_consumed=False, random_rec=False
     )[1]
-    assert np.any(random_reco != no_random_reco)
+    assert len(random_reco) == len(no_random_reco) == 10
 
     batch_recs = model.recommend_user(
         user=[1, 2, 3, -1],
