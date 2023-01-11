@@ -30,7 +30,7 @@ By the way, some models such as `BPR` , `YouTubeRetrieval`, `YouTubeRanking`, `I
 
 LibRecommender is a hybrid recommender system, which means you can choose whether to use features other than user behaviors or not. For models only use user behaviors, we classify them as  `pure` models. This category includes `UserCF`, `ItemCF`, `SVD`, `SVD++`, `ALS`, `NCF`, `BPR`, `RNN4Rec`, `Item2Vec`, `Caser`, `WaveNet`, `DeepWalk`, `NGCF`, `LightGCN`. 
 
-Then for models that can include other features (e.g., age, sex, name etc.), we call them `feat` models. This category includes `WideDeep`, `FM`, `DeepFM`, `YouTubeRetrieval`, `YouTubeRanking`, `AutoInt`, `DIN`.
+Then for models that can include other features (e.g., age, sex, name etc.), we call them `feat` models. This category includes `WideDeep`, `FM`, `DeepFM`, `YouTubeRetrieval`, `YouTubeRanking`, `AutoInt`, `DIN`, `GraphSage`, `PinSage`.
 
  The main difference on usage between these two kinds of models are:
 
@@ -102,7 +102,7 @@ Note it's a list of list, because there are possibly many multi_sparse features,
 
 When you specify a feature as `multi_sparse` feature like this, each sub-feature, i.e. `genre1`, `genre2`, `genre3` in the table above, will share the same embedding of the original feature `genre`. Whether the embedding sharing would improve the model performance is data-dependent. But one thing is certain, it will reduce the total number of model parameters.
 
-LibRecommender provides multiple ways of dealing with `multi_sparse` features, i.e. `normal`, `sum` , `mean` and `sqrtn`. `normal` means treating each sub-feature's embedding separately, and in most cases they will be concatenated at last. `sum` and `mean` means computing the sum or mean of each sub-feature's embedding, in this case they are combined as one feature. `sqrtn` means the result of `sum` divided by the square root of sub-feature number, e.g. sqrt(3) in `genre` feature. I'm not sure about this, but I think this `sqrtn` idea originally came from [SVD++](https://people.engr.tamu.edu/huangrh/Spring16/papers_course/matrix_factorization.pdf). Generally the four methods described here have similar functionality as in [tf.nn.embedding_lookup_sparse](https://www.tensorflow.org/versions/r1.15/api_docs/python/tf/nn/embedding_lookup_sparse), but we didn't use it directly in our implementation since it has no `normal` choice.
+LibRecommender provides multiple ways of dealing with `multi_sparse` features, i.e. `normal`, `sum` , `mean` and `sqrtn`. `normal` means treating each sub-feature's embedding separately, and in most cases they will be concatenated at last. `sum` and `mean` means computing the sum or mean of each sub-feature's embedding, in this case they are combined as one feature. `sqrtn` means the result of `sum` divided by the square root of sub-feature number, e.g. sqrt(3) in `genre` feature. I'm not sure about this, but I think this `sqrtn` idea originally came from [SVD++](https://people.engr.tamu.edu/huangrh/Spring16/papers_course/matrix_factorization.pdf), and it was also used in *Scaled Dot-Product Attention* part of [Transformer](https://arxiv.org/pdf/1706.03762.pdf). Generally the four methods described here have similar functionality as in [tf.nn.embedding_lookup_sparse](https://www.tensorflow.org/versions/r1.15/api_docs/python/tf/nn/embedding_lookup_sparse), but we didn't use it directly in our implementation since it has no `normal` choice.
 
 So in general you should choose a strategy in parameter `multi_sparse_combiner` when building models with `multi_sparse` features:
 
@@ -144,20 +144,66 @@ If you have only one data, you can split the data in following ways:
 + `split_by_ratio_chrono`. For each user, assign certain ratio of items to test_data, where items are sorted by time first. In this case, data should contain a `time` column.
 + `split_by_num_chrono`. For each user, assign certain number of items to test_data, where items are sorted by time first. In this case, data should contain a `time` column.
 
+If your data size is small (less than 10,000 rows), the four `split_by_*` function may not be suitable. Since the number of interacted items for each user may be only one or two, and it's difficult to split the whole data. In this case `random_split` is more suitable.
+
 **Note that your data should not contain any missing value.**
 
 See [`split_data_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/split_data_example.py) .
 
 
 
+## Recommend Strategy
+
+By default, the recommendation result returned by `model.recommend_user()` method will filter out items that a user has previously consumed. However, if you use a very large `n_rec` and number of consumed items for this user plus `n_rec` exceeds number of total items, i.e. `len(user_consumed) + n_rec > n_items`, the consumed items will not be filtered out since there are not enough items to recommend. If you don't want to filter out consumed items, set `filter_consumed=False`. 
+
+LibRecommender also supports random recommendation by setting `random_rec=True` (By default it is False). Of course, it's not completely random, but random sampling based on items' prediction scores. It's a trade-off between accuracy and diversity, and this is inspired by [ChatGPT](https://openai.com/blog/chatgpt/) :), because in ChatGPT the model also samples words based on predict probability to form answers.
+
+Finally, batch recommendation is also supported by simply pass a list to the `user` parameter. The returned result will be a dict, which has users as keys and `numpy.array` as values.
+
+```python
+>>> model.recommend_user(user=[1, 2, 3], n_rec=3, filter_consumed=True, random_rec=False)
+# returns {1: array([2529, 1196, 2916]), 2: array([ 541,  750, 1299]), 3: array([3183, 2722, 2672])}
+```
+
+
+
+## Evaluation
+
+The standard process in LibRecommender is evaluating during training. However, for some complex models doing full evaluation on eval data can be very time-consuming, so you can specify some evaluation parameters to speed this up. 
+
+The default value of `eval_batch_size` is `2**15 = 32768`, and you can use a higher value if you have enough machine or GPU memory. 
+
+The `eval_user_num` parameter controls how many users to use in evaluation. By default, it is `None`, which uses all the users in eval data. You can use a smaller value if the evaluation is slow, and this will sample `eval_user_num` users randomly from eval data.
+
+```python
+>>> model.fit(
+        train_data,
+        verbose=2,
+        shuffle=True,
+        eval_data=eval_data,
+        metrics=metrics,
+    	k=10,  # parameter of metrics, e.g. recall at k, ndcg at k
+    	eval_batch_size=2**15,
+    	eval_user_num=100,
+    )
+```
+
+
+
 ## Negative Sampling
 
-For implicit data with only positive labels, negative sampling is typically needed for model training. There are some special cases, such as `UserCF`, `ItemCF`, `BPR`, `YouTubeRetrieval`, `RNN4Rec with bpr loss`, because these models do not need negative sampling during training. However, when evaluating these models using some metrics such as `cross_entropy loss`, `roc_auc`, `pr_auc`, negative labels are indeed needed. So we recommend doing negative sampling as long as the data is implicit and only contains positive labels, no matter which model you choose. Also note that train_data and test_data should use different sampling seed.
+For implicit data with only positive labels, negative sampling is typically needed for model training. There are some special cases, such as `UserCF`, `ItemCF`, `BPR`, `YouTubeRetrieval`, `RNN4Rec with bpr loss`, because these models do not need negative sampling during training. However, when evaluating these models using some metrics such as `cross_entropy loss`, `roc_auc`, `pr_auc`, negative labels are indeed needed. 
+
+For PyTorch-based models, only eval or test data needs negative sampling. These models includes `NGCF`, `LightGCN`, `GraphSage`, `GraphSageDGL`, `PinSage`, `PinSageDGL` , see [torch_ranking_example.py](https://github.com/massquantity/LibRecommender/blob/master/examples/torch_ranking_example.py) .
+
+For other models, doing negative sampling on all the data is recommended as long as the data is implicit and only contains positive labels.
 
 ```python
 >>> train_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2020)
 >>> test_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2222)
 ```
+
+In the future, we plan to remove this explicit negative sampling part before training. This requires encapsulating the sampling into the batch training process, so that users won't undertake the ambiguity above. Some other sampling techniques besides "random" will also be added.
 
 
 
