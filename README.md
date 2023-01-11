@@ -175,7 +175,8 @@ $ python setup.py install
 - scikit-learn >= 0.20.0
 - gensim >= 4.0.0
 - tqdm
-- [nmslib](https://github.com/nmslib/nmslib) (optional)
+- [nmslib](https://github.com/nmslib/nmslib) (optional, see [User Guide](https://github.com/massquantity/LibRecommender/blob/master/doc/user_guide.md#embedding))
+- [DGL](https://github.com/dmlc/dgl) (optional, see [Implementation Details](https://github.com/massquantity/LibRecommender/blob/master/doc/implementation_details.md#pinsage))
 
 LibRecommender is tested under TensorFlow 1.15, 2.5, 2.8 and 2.10. If you encounter any problem during running, feel free to open an issue. If you are using Python 3.6, you also need to install [dataclasses](https://github.com/ericvsmith/dataclasses), since it is first included in Python 3.7.
 
