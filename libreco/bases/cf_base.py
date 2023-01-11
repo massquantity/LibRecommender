@@ -193,7 +193,9 @@ class CfBase(Base):
         user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
         if unknown_users:
             if cold_start != "popular":
-                raise ValueError("UserCF only supports `popular` cold start strategy")
+                raise ValueError(
+                    f"{self.model_name} only supports `popular` cold start strategy"
+                )
             for u in unknown_users:
                 result_recs[u] = popular_recommendations(
                     self.data_info, inner_id, n_rec
