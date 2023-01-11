@@ -87,13 +87,13 @@ Another important extension in LibRecommender is that users can choose which fea
         data_info,
         loss_type="cross_entropy",  # or "focal", "bpr", "max_margin"
         paradigm="u2i",  # or "i2i"
-	)
+    )
 >>> model = PinSageDGL(  # DGL version
         task,
         data_info,
         loss_type="max_margin",
         paradigm="i2i",
-	)
+    )
 >>> model.fit(train_data)
 ```
 
@@ -116,14 +116,14 @@ GraphSage was not originally designed for recommender system problem, but we hav
         data_info,
         loss_type="cross_entropy",  # or "focal", "bpr", "max_margin"
         paradigm="u2i",  # or "i2i"
-	)
+    )
 >>> model = GraphSageDGL(  # DGL version
         task,
         data_info,
         loss_type="focal",
         paradigm="i2i",
     	aggregator_type="mean",  # or "gcn", "pool", "lstm"
-	)
+    )
 >>> model.fit(train_data)
 ```
 
