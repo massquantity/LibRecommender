@@ -63,31 +63,6 @@ def recommend_from_embedding(
         random_rec,
     )
 
-def recommend_from_embedding(
-    task,
-    data_info,
-    user_embed,
-    item_embed,
-    user_id,
-    n_rec,
-    inner_id,
-    filter_consumed,
-    random_rec,
-    return_scores,
-):
-    preds = user_embed[user_id] @ item_embed[:-1].T  # exclude item oov
-    return rank_recommendations(
-        task,
-        preds,
-        n_rec,
-        data_info.n_items,
-        data_info.user_consumed[user_id],
-        data_info.id2item,
-        inner_id,
-        filter_consumed,
-        random_rec,
-        return_scores,
-    )
 
 def recommend_tf_feat(
     model,
