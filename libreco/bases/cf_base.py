@@ -1,3 +1,4 @@
+import abc
 import os
 import random
 from functools import partial
@@ -9,12 +10,12 @@ from scipy.sparse import issparse, save_npz as save_sparse, load_npz as load_spa
 
 from ..bases import Base
 from ..evaluation import print_metrics
-from ..recommendation import popular_recommendations
+from ..recommendation import construct_rec, popular_recommendations
 from ..recommendation.ranking import filter_items
 from ..utils.misc import time_block, colorize
 from ..utils.save_load import load_params, save_params
 from ..utils.similarities import cosine_sim, jaccard_sim, pearson_sim
-from ..utils.validate import convert_id, check_unknown
+from ..utils.validate import check_unknown_user, convert_id, check_unknown
 
 
 class CfBase(Base):
@@ -31,9 +32,6 @@ class CfBase(Base):
         min_common=1,
         mode="invert",
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         lower_upper_bound=None,
     ):
         super().__init__(task, data_info, lower_upper_bound)
@@ -49,9 +47,6 @@ class CfBase(Base):
         self.min_common = min_common
         self.mode = mode
         self.seed = seed
-        self.k = k
-        self.eval_batch_size = eval_batch_size
-        self.eval_user_num = eval_user_num
         # sparse matrix, user as row and item as column
         self.user_interaction = None
         # sparse matrix, item as row and user as column
@@ -64,17 +59,16 @@ class CfBase(Base):
 
     def _caution_sim_type(self):
         if self.task == "ranking" and self.sim_type == "pearson":
-            caution_str = (
-                f"Warning: {self.sim_type} is not suitable " f"for implicit data"
-            )
+            caution_str = "Warning: pearson is not suitable for implicit data"
             print(f"{colorize(caution_str, 'red')}")
         if self.task == "rating" and self.sim_type == "jaccard":
-            caution_str = (
-                f"Warning: {self.sim_type} is not suitable " f"for explicit data"
-            )
+            caution_str = "Warning: jaccard is not suitable for explicit data"
             print(f"{colorize(caution_str, 'red')}")
 
-    def fit(self, train_data, verbose=1, eval_data=None, metrics=None):
+    def fit(self, train_data, verbose=1, eval_data=None, metrics=None, **kwargs):
+        k = kwargs.get("k", 10)
+        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
+        eval_user_num = kwargs.get("eval_user_num", None)
         self.show_start_time()
         self.user_interaction = train_data.sparse_interaction
         self.item_interaction = self.user_interaction.T.tocsr()
@@ -130,20 +124,20 @@ class CfBase(Base):
                 model=self,
                 eval_data=eval_data,
                 metrics=metrics,
-                eval_batch_size=self.eval_batch_size,
-                k=self.k,
-                sample_user_num=self.eval_user_num,
+                eval_batch_size=eval_batch_size,
+                k=k,
+                sample_user_num=eval_user_num,
                 seed=self.seed,
             )
             print("=" * 30)
 
+    @abc.abstractmethod
     def compute_top_k(self):
         ...
 
-    def predict(self, user, item, **kwargs):
-        ...
-
-    def recommend_user(self, user, n_rec, **kwargs):
+    # all the items returned by this function will be inner_ids
+    @abc.abstractmethod
+    def recommend_one(self, user_id, n_rec, filter_consumed, random_rec):
         ...
 
     def pre_predict_check(self, user, item, inner_id, cold_start):
@@ -163,7 +157,7 @@ class CfBase(Base):
             )
             if self.print_count < 7:
                 print(f"{colorize(no_str, 'red')}")
-            return self.default_prediction
+            return self.default_pred
         else:
             k_neighbor_labels, k_neighbor_sims = zip(
                 *islice(
@@ -186,6 +180,33 @@ class CfBase(Base):
             elif self.task == "ranking":
                 return np.mean(k_neighbor_sims)
 
+    def recommend_user(
+        self,
+        user,
+        n_rec,
+        cold_start="popular",
+        inner_id=False,
+        filter_consumed=True,
+        random_rec=False,
+    ):
+        result_recs = dict()
+        user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
+        if unknown_users:
+            if cold_start != "popular":
+                raise ValueError("UserCF only supports `popular` cold start strategy")
+            for u in unknown_users:
+                result_recs[u] = popular_recommendations(
+                    self.data_info, inner_id, n_rec
+                )
+        if user_ids:
+            computed_recs = [
+                self.recommend_one(u, n_rec, filter_consumed, random_rec)
+                for u in user_ids
+            ]
+            user_recs = construct_rec(self.data_info, user_ids, computed_recs, inner_id)
+            result_recs.update(user_recs)
+        return result_recs
+
     def rank_recommendations(
         self,
         user,
@@ -193,7 +214,6 @@ class CfBase(Base):
         preds,
         n_rec,
         consumed,
-        inner_id,
         filter_consumed,
         random_rec,
     ):
@@ -207,15 +227,13 @@ class CfBase(Base):
             )
             if self.print_count < 11:
                 print(f"{colorize(no_str, 'red')}")
-            return popular_recommendations(self.data_info, inner_id, n_rec)
+            return popular_recommendations(self.data_info, inner_id=True, n_rec=n_rec)
 
         if random_rec and len(ids) > n_rec:
             ids = random.sample(list(ids), k=n_rec)
         else:
             indices = np.argsort(preds)[::-1]
             ids = ids[indices][:n_rec]
-        if not inner_id:
-            ids = [self.data_info.id2item[i] for i in ids]
         return np.asarray(ids)
 
     def save(self, path, model_name, **kwargs):
@@ -237,6 +255,3 @@ class CfBase(Base):
         model.user_interaction = load_sparse(f"{model_path}_user_inter.npz")
         model.item_interaction = load_sparse(f"{model_path}_item_inter.npz")
         return model
-
-    def rebuild_model(self, path, model_name, **kwargs):
-        raise NotImplementedError(f"{self.model_name} doesn't support model retraining")
