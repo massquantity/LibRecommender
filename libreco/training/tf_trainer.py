@@ -21,9 +21,6 @@ class TensorFlowTrainer(BaseTrainer):
         epsilon,
         batch_size,
         num_neg,
-        k,
-        eval_batch_size,
-        eval_user_num,
         *args,
         **kwargs,
     ):
@@ -37,15 +34,22 @@ class TensorFlowTrainer(BaseTrainer):
             epsilon,
             batch_size,
             num_neg,
-            k,
-            eval_batch_size,
-            eval_user_num,
         )
         self.sess = model.sess
         self.use_reg = self._check_reg()
         self._build_train_ops(*args, **kwargs)
 
-    def run(self, train_data, verbose, shuffle, eval_data, metrics):
+    def run(
+        self,
+        train_data,
+        verbose,
+        shuffle,
+        eval_data,
+        metrics,
+        k,
+        eval_batch_size,
+        eval_user_num,
+    ):
         data_generator = self.get_data_generator(train_data)
         for epoch in range(1, self.n_epochs + 1):
             if self.lr_decay:
@@ -91,9 +95,9 @@ class TensorFlowTrainer(BaseTrainer):
                     model=self.model,
                     eval_data=eval_data,
                     metrics=metrics,
-                    eval_batch_size=self.eval_batch_size,
-                    k=self.k,
-                    sample_user_num=self.eval_user_num,
+                    eval_batch_size=eval_batch_size,
+                    k=k,
+                    sample_user_num=eval_user_num,
                     seed=self.model.seed,
                 )
                 print("=" * 30)
@@ -140,9 +144,6 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
         epsilon,
         batch_size,
         num_sampled_per_batch,
-        k,
-        eval_batch_size,
-        eval_user_num,
         sampler,
     ):
         super().__init__(
@@ -155,14 +156,21 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
             epsilon,
             batch_size,
             1,
-            k,
-            eval_batch_size,
-            eval_user_num,
             num_sampled_per_batch,
             sampler,
         )
 
-    def run(self, train_data, verbose, shuffle, eval_data, metrics):
+    def run(
+        self,
+        train_data,
+        verbose,
+        shuffle,
+        eval_data,
+        metrics,
+        k,
+        eval_batch_size,
+        eval_user_num,
+    ):
         data_generator = SparseTensorSequence(
             train_data,
             self.model.data_info,
@@ -207,9 +215,9 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
                     model=self.model,
                     eval_data=eval_data,
                     metrics=metrics,
-                    eval_batch_size=self.eval_batch_size,
-                    k=self.k,
-                    sample_user_num=self.eval_user_num,
+                    eval_batch_size=eval_batch_size,
+                    k=k,
+                    sample_user_num=eval_user_num,
                     seed=self.model.seed,
                 )
                 print("=" * 30)
@@ -301,9 +309,6 @@ class BPRTrainer(TensorFlowTrainer):
         epsilon,
         batch_size,
         num_neg,
-        k,
-        eval_batch_size,
-        eval_user_num,
     ):
         super().__init__(
             model,
@@ -315,12 +320,19 @@ class BPRTrainer(TensorFlowTrainer):
             epsilon,
             batch_size,
             num_neg,
-            k,
-            eval_batch_size,
-            eval_user_num,
         )
 
-    def run(self, train_data, verbose, shuffle, eval_data, metrics):
+    def run(
+        self,
+        train_data,
+        verbose,
+        shuffle,
+        eval_data,
+        metrics,
+        k,
+        eval_batch_size,
+        eval_user_num,
+    ):
         data_generator = PairwiseSampling(
             train_data, self.model.data_info, self.num_neg
         )
@@ -348,9 +360,9 @@ class BPRTrainer(TensorFlowTrainer):
                     model=self.model,
                     eval_data=eval_data,
                     metrics=metrics,
-                    eval_batch_size=self.eval_batch_size,
-                    k=self.k,
-                    sample_user_num=self.eval_user_num,
+                    eval_batch_size=eval_batch_size,
+                    k=k,
+                    sample_user_num=eval_user_num,
                     seed=self.model.seed,
                 )
                 print("=" * 30)
@@ -368,9 +380,6 @@ class RNN4RecTrainer(TensorFlowTrainer):
         epsilon,
         batch_size,
         num_neg,
-        k,
-        eval_batch_size,
-        eval_user_num,
     ):
         super().__init__(
             model,
@@ -382,20 +391,55 @@ class RNN4RecTrainer(TensorFlowTrainer):
             epsilon,
             batch_size,
             num_neg,
-            k,
-            eval_batch_size,
-            eval_user_num,
         )
 
-    def run(self, train_data, verbose, shuffle, eval_data, metrics):
+    def run(
+        self,
+        train_data,
+        verbose,
+        shuffle,
+        eval_data,
+        metrics,
+        k,
+        eval_batch_size,
+        eval_user_num,
+    ):
         if self.task == "rating" or self.loss_type in ("cross_entropy", "focal"):
-            super().run(train_data, verbose, shuffle, eval_data, metrics)
+            super().run(
+                train_data,
+                verbose,
+                shuffle,
+                eval_data,
+                metrics,
+                k,
+                eval_batch_size,
+                eval_user_num,
+            )
         elif self.loss_type == "bpr":
-            self._run_bpr(train_data, verbose, shuffle, eval_data, metrics)
+            self._run_bpr(
+                train_data,
+                verbose,
+                shuffle,
+                eval_data,
+                metrics,
+                k,
+                eval_batch_size,
+                eval_user_num,
+            )
         else:
             raise ValueError(f"unknown task or loss: {self.task}, {self.loss_type}")
 
-    def _run_bpr(self, train_data, verbose, shuffle, eval_data, metrics):
+    def _run_bpr(
+        self,
+        train_data,
+        verbose,
+        shuffle,
+        eval_data,
+        metrics,
+        k,
+        eval_batch_size,
+        eval_user_num,
+    ):
         data_generator = PairwiseSamplingSeq(
             dataset=train_data,
             data_info=self.model.data_info,
@@ -437,9 +481,9 @@ class RNN4RecTrainer(TensorFlowTrainer):
                     model=self.model,
                     eval_data=eval_data,
                     metrics=metrics,
-                    eval_batch_size=self.eval_batch_size,
-                    k=self.k,
-                    sample_user_num=self.eval_user_num,
+                    eval_batch_size=eval_batch_size,
+                    k=k,
+                    sample_user_num=eval_user_num,
                     seed=self.model.seed,
                 )
                 print("=" * 30)
@@ -457,9 +501,6 @@ class WideDeepTrainer(TensorFlowTrainer):
         epsilon,
         batch_size,
         num_neg,
-        k,
-        eval_batch_size,
-        eval_user_num,
     ):
         super().__init__(
             model,
@@ -471,9 +512,6 @@ class WideDeepTrainer(TensorFlowTrainer):
             epsilon,
             batch_size,
             num_neg,
-            k,
-            eval_batch_size,
-            eval_user_num,
         )
 
     def _build_train_ops(self, **kwargs):

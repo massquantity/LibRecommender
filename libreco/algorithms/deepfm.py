@@ -54,9 +54,6 @@ class DeepFM(TfBase, metaclass=ModelMeta):
         hidden_units="128,64,32",
         multi_sparse_combiner="sqrtn",
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
         with_training=True,
@@ -95,9 +92,6 @@ class DeepFM(TfBase, metaclass=ModelMeta):
                 epsilon,
                 batch_size,
                 num_neg,
-                k,
-                eval_batch_size,
-                eval_user_num,
             )
 
     def _build_model(self):

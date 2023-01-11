@@ -22,9 +22,10 @@ import numpy as np
 
 from ..bases import EmbedBase
 from ..evaluation import print_metrics
+from ..recommendation import recommend_from_embedding
 from ..utils.initializers import truncated_normal
 from ..utils.misc import time_block
-from ..utils.save_load import save_params
+from ..utils.save_load import save_default_recs, save_params
 from ..utils.validate import check_has_sampled
 
 try:
@@ -48,9 +49,6 @@ class ALS(EmbedBase):
         use_cg=True,
         n_threads=1,
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         lower_upper_bound=None,
         with_training=True,
     ):
@@ -63,9 +61,6 @@ class ALS(EmbedBase):
         self.use_cg = use_cg
         self.n_threads = n_threads
         self.seed = seed
-        self.k = k
-        self.eval_batch_size = eval_batch_size
-        self.eval_user_num = eval_user_num
         if with_training:
             self._build_model()
 
@@ -87,6 +82,9 @@ class ALS(EmbedBase):
         metrics=None,
         **kwargs,
     ):
+        k = kwargs.get("k", 10)
+        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
+        eval_user_num = kwargs.get("eval_user_num", None)
         self.show_start_time()
         assert isinstance(self.reg, numbers.Real), "`reg` must be float"
         user_interaction = train_data.sparse_interaction  # sparse.csr_matrix
@@ -120,20 +118,31 @@ class ALS(EmbedBase):
                     train_data=train_data,
                     eval_data=eval_data,
                     metrics=metrics,
-                    eval_batch_size=self.eval_batch_size,
-                    k=self.k,
-                    sample_user_num=self.eval_user_num,
+                    eval_batch_size=eval_batch_size,
+                    k=k,
+                    sample_user_num=eval_user_num,
                     seed=self.seed,
                 )
                 print("=" * 30)
         self.set_embeddings()
         self.assign_embedding_oov()
+        self.default_recs = recommend_from_embedding(
+            task=self.task,
+            user_ids=[self.n_users],
+            n_rec=min(2000, self.n_items),
+            data_info=self.data_info,
+            user_embed=self.user_embed,
+            item_embed=self.item_embed,
+            filter_consumed=False,
+            random_rec=False,
+        ).flatten()
 
     def save(self, path, model_name, **kwargs):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
         save_params(self, path, model_name)
+        save_default_recs(self, path, model_name)
         variable_path = os.path.join(path, model_name)
         np.savez_compressed(
             variable_path, user_embed=self.user_embed, item_embed=self.item_embed

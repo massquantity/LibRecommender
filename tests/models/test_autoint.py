@@ -59,7 +59,6 @@ def test_autoint(
             use_residual=use_residual,
             att_embed_size=att_embed_size,
             num_heads=num_heads,
-            eval_user_num=40,
             tf_sess_config=None,
         )
         model.fit(
@@ -68,6 +67,7 @@ def test_autoint(
             shuffle=True,
             eval_data=eval_data,
             metrics=get_metrics(task),
+            eval_user_num=40,
         )
         ptest_preds(model, task, pd_data, with_feats=True)
         ptest_recommends(model, data_info, pd_data, with_feats=True)

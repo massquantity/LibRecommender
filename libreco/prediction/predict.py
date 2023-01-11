@@ -21,12 +21,12 @@ def normalize_prediction(preds, model, cold_start, unknown_num, unknown_index):
 
     if unknown_num > 0 and cold_start == "popular":
         if isinstance(preds, np.ndarray):
-            preds[unknown_index] = model.default_prediction
+            preds[unknown_index] = model.default_pred
         elif isinstance(preds, list):
             for i in unknown_index:
-                preds[i] = model.default_prediction
+                preds[i] = model.default_pred
         else:
-            preds = model.default_prediction
+            preds = model.default_pred
     return preds
 
 

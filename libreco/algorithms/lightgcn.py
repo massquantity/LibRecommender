@@ -33,9 +33,6 @@ class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
         margin=1.0,
         sampler="random",
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         device=torch.device("cpu"),
         lower_upper_bound=None,
         with_training=True,
@@ -73,9 +70,6 @@ class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
                 num_neg,
                 margin,
                 sampler,
-                k,
-                eval_batch_size,
-                eval_user_num,
                 device,
             )
 

@@ -51,7 +51,6 @@ def test_fm(
             use_bn=use_bn,
             dropout_rate=dropout_rate,
             tf_sess_config=None,
-            eval_user_num=200,
         )
         model.fit(
             train_data,
@@ -59,6 +58,7 @@ def test_fm(
             shuffle=True,
             eval_data=eval_data,
             metrics=get_metrics(task),
+            eval_user_num=200,
         )
         ptest_preds(model, task, pd_data, with_feats=True)
         ptest_recommends(model, data_info, pd_data, with_feats=True)

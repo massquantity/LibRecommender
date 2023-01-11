@@ -135,8 +135,8 @@ def test_torchmodel_retrain_pure():
     new_eval_result = evaluate(
         new_model,
         eval_data_orig,
-        eval_batch_size=8192,
-        k=10,
+        eval_batch_size=100000,
+        k=100,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
         neg_sample=True,
         update_features=False,

@@ -48,9 +48,6 @@ class GraphSage(EmbedBase, metaclass=ModelMeta, backend="torch"):
         start_node="random",
         focus_start=False,
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         device=torch.device("cpu"),
         lower_upper_bound=None,
         with_training=True,
@@ -89,9 +86,6 @@ class GraphSage(EmbedBase, metaclass=ModelMeta, backend="torch"):
                 sampler,
                 start_node,
                 focus_start,
-                k,
-                eval_batch_size,
-                eval_user_num,
                 device,
             )
 

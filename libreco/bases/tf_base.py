@@ -1,12 +1,15 @@
 import os
 
+import numpy as np
+
 from .base import Base
 from ..prediction import predict_tf_feat
-from ..recommendation import popular_recommendations, recommend_tf_feat
+from ..recommendation import cold_start_rec, construct_rec, recommend_tf_feat
 from ..tfops import modify_variable_names, sess_config, tf
 from ..utils.save_load import (
     load_tf_model,
     load_tf_variables,
+    save_default_recs,
     save_params,
     save_tf_model,
     save_tf_variables,
@@ -29,9 +32,31 @@ class TfBase(Base):
         metrics=None,
         **kwargs,
     ):
+        k = kwargs.get("k", 10)
+        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
+        eval_user_num = kwargs.get("eval_user_num", None)
+        assert k <= self.n_items, f"eval `k` {k} exceeds num of items {self.n_items}"
         self.show_start_time()
-        self.trainer.run(train_data, verbose, shuffle, eval_data, metrics)
+        self.trainer.run(
+            train_data,
+            verbose,
+            shuffle,
+            eval_data,
+            metrics,
+            k,
+            eval_batch_size,
+            eval_user_num,
+        )
         self.assign_tf_variables_oov()
+        self.default_recs = recommend_tf_feat(
+            model=self,
+            user_ids=[self.n_users],
+            n_rec=min(2000, self.n_items),
+            user_feats=None,
+            item_data=None,
+            filter_consumed=False,
+            random_rec=False,
+        ).flatten()
 
     def predict(self, user, item, feats=None, cold_start="average", inner_id=False):
         return predict_tf_feat(self, user, item, feats, cold_start, inner_id)
@@ -46,27 +71,41 @@ class TfBase(Base):
         inner_id=False,
         filter_consumed=True,
         random_rec=False,
-        return_scores=False,
     ):
-        user_id = check_unknown_user(self.data_info, user, inner_id)
-        if user_id is None:
-            if cold_start == "average":
-                user_id = self.n_users
-            elif cold_start == "popular":
-                return popular_recommendations(self.data_info, inner_id, n_rec)
-            else:
-                raise ValueError(f"unknown cold start: {cold_start}")
-        return recommend_tf_feat(
-            self,
-            user_id,
-            n_rec,
-            user_feats,
-            item_data,
-            inner_id,
-            filter_consumed,
-            random_rec,
-            return_scores,
-        )
+        if (
+            (user_feats is not None or item_data is not None)
+            and not np.isscalar(user)
+            and len(user) > 1
+        ):
+            raise ValueError(
+                f"Batch recommend doesn't support assigning arbitrary features: {user}"
+            )
+
+        result_recs = dict()
+        user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
+        if unknown_users:
+            cold_recs = cold_start_rec(
+                self.data_info,
+                self.default_recs,
+                cold_start,
+                unknown_users,
+                n_rec,
+                inner_id,
+            )
+            result_recs.update(cold_recs)
+        if user_ids:
+            computed_recs = recommend_tf_feat(
+                self,
+                user_ids,
+                n_rec,
+                user_feats,
+                item_data,
+                filter_consumed,
+                random_rec,
+            )
+            user_recs = construct_rec(self.data_info, user_ids, computed_recs, inner_id)
+            result_recs.update(user_recs)
+        return result_recs
 
     def assign_tf_variables_oov(self):
         (
@@ -118,6 +157,7 @@ class TfBase(Base):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
         save_params(self, path, model_name)
+        save_default_recs(self, path, model_name)
         if manual:
             save_tf_variables(self.sess, path, model_name, inference_only)
         else:

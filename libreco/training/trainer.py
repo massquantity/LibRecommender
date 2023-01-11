@@ -15,9 +15,6 @@ class BaseTrainer(abc.ABC):
         epsilon,
         batch_size,
         num_neg,
-        k,
-        eval_batch_size,
-        eval_user_num,
     ):
         self.model = model
         self.task = task
@@ -28,9 +25,6 @@ class BaseTrainer(abc.ABC):
         self.epsilon = epsilon
         self.batch_size = batch_size
         self.num_neg = num_neg
-        self.k = k
-        self.eval_batch_size = eval_batch_size
-        self.eval_user_num = eval_user_num
 
     def get_data_generator(self, train_data):
         if self.model.model_category == "pure":

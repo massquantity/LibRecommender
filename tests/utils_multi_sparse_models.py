@@ -16,7 +16,6 @@ def fit_multi_sparse(cls, train_data, eval_data, data_info, lr=None):
         n_epochs=1,
         lr=1e-4 if not lr else lr,
         batch_size=8192,
-        eval_user_num=40,
     )
     model.fit(
         train_data,
@@ -24,5 +23,6 @@ def fit_multi_sparse(cls, train_data, eval_data, data_info, lr=None):
         shuffle=True,
         eval_data=eval_data,
         metrics=["roc_auc", "precision", "map", "ndcg"],
+        eval_user_num=40,
     )
     return model

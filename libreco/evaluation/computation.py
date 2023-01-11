@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import expit
 from tqdm import tqdm
 
 from ..data import TransformedSet
@@ -7,7 +8,7 @@ from ..tfops import get_feed_dict
 from ..utils.constants import TF_FEAT_MODELS
 
 
-def build_transformed_data(model, data, negative_sample, update_features, seed):
+def build_eval_transformed_data(model, data, negative_sample, update_features, seed):
     data_info = model.data_info
     n_users = data_info.n_users
     n_items = data_info.n_items
@@ -46,7 +47,7 @@ def compute_preds(model, data, batch_size):
     y_pred = list()
     y_label = list()
     predict_func = choose_pred_func(model)
-    for batch_data in tqdm(range(0, len(data), batch_size), desc="eval_pred"):
+    for batch_data in tqdm(range(0, len(data), batch_size), desc="eval_pointwise"):
         batch_slice = slice(batch_data, batch_data + batch_size)
         labels = data.labels[batch_slice]
         preds = predict_func(model, data, batch_slice)
@@ -59,25 +60,26 @@ def compute_probs(model, data, batch_size):
     return compute_preds(model, data, batch_size)
 
 
-def compute_recommends(model, users, k):
+def compute_recommends(model, users, k, num_batch_users):
     y_recommends = dict()
     no_rec_num = 0
     no_rec_users = []
-    for u in tqdm(users, desc="eval_rec"):
-        reco = model.recommend_user(
-            user=u,
+    for i in tqdm(range(0, len(users), num_batch_users), desc="eval_listwise"):
+        batch_users = users[i: i + num_batch_users]
+        batch_recs = model.recommend_user(
+            user=batch_users,
             n_rec=k,
             inner_id=True,
             filter_consumed=True,
             random_rec=False,
-            return_scores=False,
         )
-        if len(reco) == 0:
-            # print("no recommend user: ", u)
-            no_rec_num += 1
-            no_rec_users.append(u)
-            continue
-        y_recommends[u] = reco
+        for u in batch_users:
+            if len(batch_recs[u]) == 0:
+                # print("no recommend user: ", u)
+                no_rec_num += 1
+                no_rec_users.append(u)
+                continue
+            y_recommends[u] = batch_recs[u]
     if no_rec_num > 0:
         # print(f"{no_rec_num} users has no recommendation")
         users = list(set(users).difference(no_rec_users))
@@ -136,5 +138,5 @@ def predict_tf_feat(model, transformed_data, batch_slice):
     if model.task == "rating":
         preds = np.clip(preds, model.lower_bound, model.upper_bound)
     elif model.task == "ranking":
-        preds = 1 / (1 + np.exp(-preds))
+        preds = expit(preds)
     return preds.tolist() if isinstance(preds, np.ndarray) else [preds]

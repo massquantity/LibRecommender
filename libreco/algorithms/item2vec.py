@@ -23,9 +23,6 @@ class Item2Vec(GensimBase):
         n_epochs=5,
         n_threads=0,
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         lower_upper_bound=None,
         with_training=True,
     ):
@@ -38,9 +35,6 @@ class Item2Vec(GensimBase):
             n_epochs,
             n_threads,
             seed,
-            k,
-            eval_batch_size,
-            eval_user_num,
             lower_upper_bound,
         )
         assert task == "ranking", "Item2Vec is only suitable for ranking"

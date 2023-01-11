@@ -96,7 +96,6 @@ def test_youtube_retrieval(
             recent_num=recent_num,
             random_num=random_num,
             tf_sess_config=None,
-            eval_user_num=200,
         )
         model.fit(
             train_data,
@@ -104,6 +103,7 @@ def test_youtube_retrieval(
             shuffle=True,
             eval_data=eval_data,
             metrics=get_metrics(task),
+            eval_user_num=200,
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)
@@ -144,7 +144,6 @@ def test_youtube_retrieval_multi_sparse():
         num_sampled_per_batch=None,
         loss_type="sampled_softmax",
         tf_sess_config=None,
-        eval_user_num=200,
     )
     model.fit(
         train_data,
@@ -152,6 +151,7 @@ def test_youtube_retrieval_multi_sparse():
         shuffle=True,
         eval_data=eval_data,
         metrics=get_metrics(task),
+        eval_user_num=200,
     )
     ptest_preds(model, task, pd_data, with_feats=False)
     ptest_recommends(model, data_info, pd_data, with_feats=False)

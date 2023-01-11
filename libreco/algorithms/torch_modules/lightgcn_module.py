@@ -35,7 +35,8 @@ class LightGCNModel(nn.Module):
 
     def _build_laplacian_matrix(self):
         R = ssp.dok_matrix((self.n_users, self.n_items), dtype=np.float32)
-        for u, items in self.user_consumed.items():
+        for u in range(self.n_users):
+            items = self.user_consumed[u]
             R[u, items] = 1.0
         R = R.tolil()
 

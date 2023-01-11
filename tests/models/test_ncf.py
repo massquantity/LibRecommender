@@ -58,7 +58,6 @@ def test_ncf(
             dropout_rate=dropout_rate,
             hidden_units=hidden_units,
             tf_sess_config=None,
-            eval_user_num=200,
         )
         model.fit(
             train_data,
@@ -66,6 +65,7 @@ def test_ncf(
             shuffle=True,
             eval_data=eval_data,
             metrics=get_metrics(task),
+            eval_user_num=200,
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)

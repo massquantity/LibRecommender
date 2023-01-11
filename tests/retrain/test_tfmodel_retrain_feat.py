@@ -53,7 +53,6 @@ def test_tfmodel_retrain_feat():
         hidden_units="32,16",
         recent_num=10,
         use_tf_attention=True,
-        eval_user_num=200,
     )
     model.fit(
         train_data,
@@ -70,6 +69,7 @@ def test_tfmodel_retrain_feat():
             "map",
             "ndcg",
         ],
+        eval_user_num=20,
     )
     eval_result = evaluate(
         model,
@@ -128,7 +128,6 @@ def test_tfmodel_retrain_feat():
         hidden_units="32,16",
         recent_num=10,
         use_tf_attention=True,
-        eval_user_num=200,
     )
     new_model.rebuild_model(path=SAVE_PATH, model_name="din_model", full_assign=True)
     new_model.fit(
@@ -146,6 +145,7 @@ def test_tfmodel_retrain_feat():
             "map",
             "ndcg",
         ],
+        eval_user_num=20,
     )
     ptest_preds(new_model, "ranking", second_half_data, with_feats=False)
     ptest_recommends(new_model, new_data_info, second_half_data, with_feats=False)
@@ -154,8 +154,8 @@ def test_tfmodel_retrain_feat():
         new_model,
         eval_data_orig,
         sample_user_num=200,
-        eval_batch_size=8192,
-        k=10,
+        eval_batch_size=100000,
+        k=20,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
         neg_sample=True,
         update_features=True,

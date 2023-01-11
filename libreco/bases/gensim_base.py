@@ -6,8 +6,9 @@ from gensim.models import Word2Vec
 
 from .embed_base import EmbedBase
 from ..evaluation import print_metrics
+from ..recommendation import recommend_from_embedding
 from ..utils.misc import time_block
-from ..utils.save_load import save_params
+from ..utils.save_load import save_default_recs, save_params
 
 
 class GensimBase(EmbedBase):
@@ -21,9 +22,6 @@ class GensimBase(EmbedBase):
         n_epochs=5,
         n_threads=0,
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         lower_upper_bound=None,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
@@ -32,9 +30,6 @@ class GensimBase(EmbedBase):
         self.n_epochs = n_epochs
         self.workers = os.cpu_count() if not n_threads else n_threads
         self.seed = seed
-        self.k = k
-        self.eval_batch_size = eval_batch_size
-        self.eval_user_num = eval_user_num
         self.gensim_model = None
         self.data = None
 
@@ -46,7 +41,10 @@ class GensimBase(EmbedBase):
     def build_model(self):
         raise NotImplementedError
 
-    def fit(self, train_data, verbose=1, eval_data=None, metrics=None, **_):
+    def fit(self, train_data, verbose=1, eval_data=None, metrics=None, **kwargs):
+        k = kwargs.get("k", 10)
+        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
+        eval_user_num = kwargs.get("eval_user_num", None)
         self.check_data()
         self.show_start_time()
         if self.gensim_model is None:
@@ -59,14 +57,25 @@ class GensimBase(EmbedBase):
             )
         self.set_embeddings()
         self.assign_embedding_oov()
+        self.default_recs = recommend_from_embedding(
+            task=self.task,
+            user_ids=[self.n_users],
+            n_rec=min(2000, self.n_items),
+            data_info=self.data_info,
+            user_embed=self.user_embed,
+            item_embed=self.item_embed,
+            filter_consumed=False,
+            random_rec=False,
+        ).flatten()
+
         if verbose > 1:
             print_metrics(
                 model=self,
                 eval_data=eval_data,
                 metrics=metrics,
-                eval_batch_size=self.eval_batch_size,
-                k=self.k,
-                sample_user_num=self.eval_user_num,
+                eval_batch_size=eval_batch_size,
+                k=k,
+                sample_user_num=eval_user_num,
                 seed=self.seed,
             )
             print("=" * 30)
@@ -95,6 +104,7 @@ class GensimBase(EmbedBase):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
         save_params(self, path, model_name)
+        save_default_recs(self, path, model_name)
         if inference_only:
             variable_path = os.path.join(path, model_name)
             np.savez_compressed(

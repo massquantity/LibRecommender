@@ -6,15 +6,13 @@ Reference: Xiangnan He et al. "Neural Collaborative Filtering"
 author: massquantity
 
 """
-import numpy as np
 from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
 
 from ..bases import ModelMeta, TfBase
 from ..prediction import normalize_prediction
-from ..recommendation import popular_recommendations, rank_recommendations
 from ..tfops import dense_nn, dropout_config, reg_config, tf, tf_dense
 from ..training import TensorFlowTrainer
-from ..utils.validate import check_unknown, check_unknown_user, convert_id
+from ..utils.validate import check_unknown, convert_id
 
 
 class NCF(TfBase, metaclass=ModelMeta):
@@ -39,9 +37,6 @@ class NCF(TfBase, metaclass=ModelMeta):
         hidden_units="128,64,32",
         batch_sampling=False,
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
         with_training=True,
@@ -66,9 +61,6 @@ class NCF(TfBase, metaclass=ModelMeta):
         self.n_users = data_info.n_users
         self.n_items = data_info.n_items
         self.seed = seed
-        self.k = k
-        self.eval_batch_size = eval_batch_size
-        self.eval_user_num = eval_user_num
         self.user_consumed = data_info.user_consumed
         self._build_model()
         if with_training:
@@ -82,9 +74,6 @@ class NCF(TfBase, metaclass=ModelMeta):
                 epsilon,
                 batch_size,
                 num_neg,
-                k,
-                eval_batch_size,
-                eval_user_num,
             )
 
     def _build_model(self):
@@ -136,7 +125,7 @@ class NCF(TfBase, metaclass=ModelMeta):
         self.output = tf.reshape(tf_dense(units=1)(concat_layer), [-1])
 
     def predict(self, user, item, feats=None, cold_start="average", inner_id=False):
-        assert feats is None, "NCF doesn't have features."
+        assert feats is None, "NCF can't use features."
         user, item = convert_id(self, user, item, inner_id)
         unknown_num, unknown_index, user, item = check_unknown(self, user, item)
         preds = self.sess.run(
@@ -159,37 +148,16 @@ class NCF(TfBase, metaclass=ModelMeta):
         inner_id=False,
         filter_consumed=True,
         random_rec=False,
-        return_scores=False,
-    ):
-        assert user_feats is None and item_data is None, "NCF doesn't use features."
-        user_id = check_unknown_user(self.data_info, user, inner_id)
-        if user_id is None:
-            if cold_start == "average":
-                user_id = self.n_users
-            elif cold_start == "popular":
-                return popular_recommendations(self.data_info, inner_id, n_rec)
-            else:
-                raise ValueError(f"unknown cold start: {cold_start}")
 
-        user_indices = np.full(self.n_items, user_id)
-        item_indices = np.arange(self.n_items)
-        preds = self.sess.run(
-            self.output,
-            feed_dict={
-                self.user_indices: user_indices,
-                self.item_indices: item_indices,
-                self.is_training: False,
-            },
-        )
-        return rank_recommendations(
-            self.task,
-            preds,
+    ):
+        assert user_feats is None and item_data is None, "NCF can't use features."
+        return super().recommend_user(
+            user,
             n_rec,
-            self.n_items,
-            self.user_consumed[user_id],
-            self.data_info.id2item,
+            user_feats,
+            item_data,
+            cold_start,
             inner_id,
             filter_consumed,
             random_rec,
-            return_scores,
         )

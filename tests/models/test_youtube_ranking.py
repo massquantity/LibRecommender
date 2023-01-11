@@ -67,7 +67,6 @@ def test_youtube_ranking(
             hidden_units=hidden_units,
             recent_num=recent_num,
             tf_sess_config=None,
-            eval_user_num=200,
         )
         model.fit(
             train_data,
@@ -75,6 +74,7 @@ def test_youtube_ranking(
             shuffle=True,
             eval_data=eval_data,
             metrics=get_metrics(task),
+            eval_user_num=200,
         )
         ptest_preds(model, task, pd_data, with_feats=True)
         ptest_recommends(model, data_info, pd_data, with_feats=True)
