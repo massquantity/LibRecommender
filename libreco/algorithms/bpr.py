@@ -17,6 +17,7 @@ from tensorflow.keras.initializers import (
 
 from ..bases import EmbedBase, ModelMeta
 from ..evaluation import print_metrics
+from ..recommendation import recommend_from_embedding
 from ..tfops import reg_config, sess_config, tf
 from ..training import BPRTrainer
 from ..utils.initializers import truncated_normal
@@ -54,9 +55,6 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         num_neg=1,
         use_tf=True,
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
         optimizer="adam",
@@ -73,9 +71,6 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.lr = lr
         self.use_tf = use_tf
         self.seed = seed
-        self.k = k
-        self.eval_batch_size = eval_batch_size
-        self.eval_user_num = eval_user_num
         self.optimizer = optimizer
         self.num_threads = num_threads
         if with_training:
@@ -92,9 +87,6 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                     epsilon,
                     batch_size,
                     num_neg,
-                    k,
-                    eval_batch_size,
-                    eval_user_num,
                 )
 
     def _build_model(self):
@@ -167,10 +159,22 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         metrics=None,
         **kwargs,
     ):
+        k = kwargs.get("k", 10)
+        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
+        eval_user_num = kwargs.get("eval_user_num", None)
         self.show_start_time()
         check_has_sampled(train_data, verbose)
         if self.use_tf:
-            self.tf_trainer.run(train_data, verbose, shuffle, eval_data, metrics)
+            self.tf_trainer.run(
+                train_data,
+                verbose,
+                shuffle,
+                eval_data,
+                metrics,
+                k,
+                eval_batch_size,
+                eval_user_num,
+            )
             self.set_embeddings()
         else:
             self._fit_cython(
@@ -179,8 +183,21 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 shuffle=shuffle,
                 eval_data=eval_data,
                 metrics=metrics,
+                k=k,
+                eval_batch_size=eval_batch_size,
+                eval_user_num=eval_user_num,
             )
         self.assign_embedding_oov()
+        self.default_recs = recommend_from_embedding(
+            task=self.task,
+            user_ids=[self.n_users],
+            n_rec=min(2000, self.n_items),
+            data_info=self.data_info,
+            user_embed=self.user_embed,
+            item_embed=self.item_embed,
+            filter_consumed=False,
+            random_rec=False,
+        ).flatten()
 
     def _fit_cython(
         self,
@@ -189,6 +206,9 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         shuffle=True,
         eval_data=None,
         metrics=None,
+        k=None,
+        eval_batch_size=None,
+        eval_user_num=None,
     ):
         if self.optimizer == "sgd":
             trainer = partial(bpr_update)
@@ -249,9 +269,9 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                     model=self,
                     eval_data=eval_data,
                     metrics=metrics,
-                    eval_batch_size=self.eval_batch_size,
-                    k=self.k,
-                    sample_user_num=self.eval_user_num,
+                    eval_batch_size=eval_batch_size,
+                    k=k,
+                    sample_user_num=eval_user_num,
                     seed=self.seed,
                 )
                 print("=" * 30)

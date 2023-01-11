@@ -46,9 +46,6 @@ class TorchTrainer(BaseTrainer):
         num_neg,
         margin,
         sampler,
-        k,
-        eval_batch_size,
-        eval_user_num,
         device,
     ):
         super().__init__(
@@ -61,9 +58,6 @@ class TorchTrainer(BaseTrainer):
             epsilon,
             batch_size,
             num_neg,
-            k,
-            eval_batch_size,
-            eval_user_num,
         )
         self.amsgrad = amsgrad
         self.reg = reg or 0
@@ -134,7 +128,17 @@ class TorchTrainer(BaseTrainer):
         else:
             raise ValueError(f"unknown `loss_type`: {self.loss_type}")
 
-    def run(self, train_data, verbose, shuffle, eval_data, metrics, **kwargs):
+    def run(
+        self,
+        train_data,
+        verbose,
+        shuffle,
+        eval_data,
+        metrics,
+        k,
+        eval_batch_size,
+        eval_user_num,
+    ):
         self._check_params()
         data_generator = self.get_data_generator(train_data)
         n_batches = math.ceil(len(train_data) / self.batch_size)
@@ -166,9 +170,9 @@ class TorchTrainer(BaseTrainer):
                     model=self.model,
                     eval_data=eval_data,
                     metrics=metrics,
-                    eval_batch_size=self.eval_batch_size,
-                    k=self.k,
-                    sample_user_num=self.eval_user_num,
+                    eval_batch_size=eval_batch_size,
+                    k=k,
+                    sample_user_num=eval_user_num,
                     seed=self.model.seed,
                 )
                 print("=" * 30)
@@ -227,9 +231,6 @@ class SageTrainer(TorchTrainer):
         sampler,
         start_node,
         focus_start,
-        k,
-        eval_batch_size,
-        eval_user_num,
         device,
     ):
         super().__init__(
@@ -246,9 +247,6 @@ class SageTrainer(TorchTrainer):
             num_neg,
             margin,
             sampler,
-            k,
-            eval_batch_size,
-            eval_user_num,
             device,
         )
         self.data_info = model.data_info
@@ -406,9 +404,6 @@ class SageDGLTrainer(SageTrainer):
         sampler,
         start_node,
         focus_start,
-        k,
-        eval_batch_size,
-        eval_user_num,
         device,
     ):
         super().__init__(
@@ -430,9 +425,6 @@ class SageDGLTrainer(SageTrainer):
             sampler,
             start_node,
             focus_start,
-            k,
-            eval_batch_size,
-            eval_user_num,
             device,
         )
 

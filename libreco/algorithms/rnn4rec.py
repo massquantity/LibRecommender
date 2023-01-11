@@ -44,9 +44,6 @@ class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         recent_num=10,
         random_num=None,
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
         with_training=True,
@@ -81,9 +78,6 @@ class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 epsilon,
                 batch_size,
                 num_neg,
-                k,
-                eval_batch_size,
-                eval_user_num,
             )
 
     def _build_model(self, loss_type):

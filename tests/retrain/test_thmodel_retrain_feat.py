@@ -173,7 +173,7 @@ def test_torchmodel_retrain_feat():
         new_model,
         eval_data_orig,
         sample_user_num=200,
-        eval_batch_size=8192,
+        eval_batch_size=100000,
         k=10,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
         neg_sample=True,

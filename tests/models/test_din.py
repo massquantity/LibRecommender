@@ -71,7 +71,6 @@ def test_din(
             recent_num=recent_num,
             use_tf_attention=use_tf_attention,
             tf_sess_config=None,
-            eval_user_num=40,
         )
         model.fit(
             train_data,
@@ -79,6 +78,7 @@ def test_din(
             shuffle=True,
             eval_data=eval_data,
             metrics=get_metrics(task),
+            eval_user_num=40,
         )
         ptest_preds(model, task, pd_data, with_feats=True)
         ptest_recommends(model, data_info, pd_data, with_feats=True)
@@ -121,7 +121,6 @@ def test_item_dense_feature():
         lr=3e-4,
         n_epochs=1,
         batch_size=8192,
-        eval_user_num=40,
     )
     model.fit(
         train_data,
@@ -129,6 +128,7 @@ def test_item_dense_feature():
         shuffle=True,
         eval_data=eval_data,
         metrics=get_metrics("rating"),
+        eval_user_num=40,
     )
     ptest_preds(model, "rating", pd_data, with_feats=True)
     ptest_recommends(model, data_info, pd_data, with_feats=True)

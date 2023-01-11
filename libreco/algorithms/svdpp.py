@@ -14,8 +14,9 @@ from tensorflow.keras.initializers import (
     truncated_normal as tf_truncated_normal,
 )
 
-from ..bases import EmbedBase, ModelMeta
+from ..bases import EmbedBase
 from ..data.sequence import sparse_tensor_interaction
+from ..recommendation import recommend_from_embedding
 from ..tfops import modify_variable_names, reg_config, sess_config, tf
 from ..training import TensorFlowTrainer
 from ..utils.save_load import load_params
@@ -39,9 +40,6 @@ class SVDpp(EmbedBase):
         batch_size=256,
         num_neg=1,
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         recent_num=None,
         random_sample_rate=None,
         lower_upper_bound=None,
@@ -60,9 +58,6 @@ class SVDpp(EmbedBase):
         self.batch_size = batch_size
         self.num_neg = num_neg
         self.seed = seed
-        self.k = k
-        self.eval_batch_size = eval_batch_size
-        self.eval_user_num = eval_user_num
         self.recent_num = recent_num
         self.random_sample_rate = random_sample_rate
         self.sess = sess_config(tf_sess_config)
@@ -133,6 +128,9 @@ class SVDpp(EmbedBase):
         metrics=None,
         **kwargs,
     ):
+        k = kwargs.get("k", 10)
+        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
+        eval_user_num = kwargs.get("eval_user_num", None)
         self.show_start_time()
         # check_has_sampled(train_data, verbose)
         if self.with_training:
@@ -152,14 +150,30 @@ class SVDpp(EmbedBase):
                 self.epsilon,
                 self.batch_size,
                 self.num_neg,
-                self.k,
-                self.eval_batch_size,
-                self.eval_user_num,
             )
             self.with_training = False
-        self.trainer.run(train_data, verbose, shuffle, eval_data, metrics)
+        self.trainer.run(
+            train_data,
+            verbose,
+            shuffle,
+            eval_data,
+            metrics,
+            k,
+            eval_batch_size,
+            eval_user_num,
+        )
         self.set_embeddings()
         self.assign_embedding_oov()
+        self.default_recs = recommend_from_embedding(
+            task=self.task,
+            user_ids=[self.n_users],
+            n_rec=min(2000, self.n_items),
+            data_info=self.data_info,
+            user_embed=self.user_embed,
+            item_embed=self.item_embed,
+            filter_consumed=False,
+            random_rec=False,
+        ).flatten()
 
     def set_embeddings(self):
         bu, bi, puj, qi = self.sess.run(
@@ -196,9 +210,6 @@ class SVDpp(EmbedBase):
             hparams["epsilon"],
             hparams["batch_size"],
             hparams["num_neg"],
-            hparams["k"],
-            hparams["eval_batch_size"],
-            hparams["eval_user_num"],
         )
         # self.trainer._build_train_ops()
         self.with_training = False

@@ -67,9 +67,6 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         multi_sparse_combiner="sqrtn",
         sampler="uniform",
         seed=42,
-        k=10,
-        eval_batch_size=8192,
-        eval_user_num=None,
         lower_upper_bound=None,
         tf_sess_config=None,
         with_training=True,
@@ -120,9 +117,6 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 epsilon,
                 batch_size,
                 num_sampled_per_batch,
-                k,
-                eval_batch_size,
-                eval_user_num,
                 sampler,
             )
 

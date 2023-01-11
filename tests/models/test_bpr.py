@@ -54,7 +54,6 @@ def test_bpr(prepare_pure_data, task, loss_type, reg, num_neg, use_tf, optimizer
             num_neg=num_neg,
             use_tf=use_tf,
             optimizer=optimizer,
-            eval_user_num=200,
         )
         if optimizer == "unknown":
             with pytest.raises(ValueError):
@@ -72,6 +71,7 @@ def test_bpr(prepare_pure_data, task, loss_type, reg, num_neg, use_tf, optimizer
                 shuffle=True,
                 eval_data=eval_data,
                 metrics=get_metrics(task),
+                eval_user_num=200,
             )
             ptest_preds(model, task, pd_data, with_feats=False)
             ptest_recommends(model, data_info, pd_data, with_feats=False)
