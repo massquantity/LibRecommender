@@ -1,5 +1,3 @@
-import numbers
-
 import numpy as np
 from tqdm import tqdm
 
@@ -66,14 +64,19 @@ def compute_recommends(model, users, k):
     no_rec_num = 0
     no_rec_users = []
     for u in tqdm(users, desc="eval_rec"):
-        reco = model.recommend_user(u, k, inner_id=True)
-        # user_cf popular
-        if not reco or isinstance(reco[0], numbers.Real):
+        reco = model.recommend_user(
+            user=u,
+            n_rec=k,
+            inner_id=True,
+            filter_consumed=True,
+            random_rec=False,
+            return_scores=False,
+        )
+        if len(reco) == 0:
             # print("no recommend user: ", u)
             no_rec_num += 1
             no_rec_users.append(u)
             continue
-        reco = [r[0] for r in reco]
         y_recommends[u] = reco
     if no_rec_num > 0:
         # print(f"{no_rec_num} users has no recommendation")

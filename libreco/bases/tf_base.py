@@ -2,7 +2,7 @@ import os
 
 from .base import Base
 from ..prediction import predict_tf_feat
-from ..recommendation import recommend_tf_feat
+from ..recommendation import popular_recommendations, recommend_tf_feat
 from ..tfops import modify_variable_names, sess_config, tf
 from ..utils.save_load import (
     load_tf_model,
@@ -11,6 +11,7 @@ from ..utils.save_load import (
     save_tf_model,
     save_tf_variables,
 )
+from ..utils.validate import check_unknown_user
 
 
 class TfBase(Base):
@@ -43,9 +44,28 @@ class TfBase(Base):
         item_data=None,
         cold_start="average",
         inner_id=False,
+        filter_consumed=True,
+        random_rec=False,
+        return_scores=False,
     ):
+        user_id = check_unknown_user(self.data_info, user, inner_id)
+        if user_id is None:
+            if cold_start == "average":
+                user_id = self.n_users
+            elif cold_start == "popular":
+                return popular_recommendations(self.data_info, inner_id, n_rec)
+            else:
+                raise ValueError(f"unknown cold start: {cold_start}")
         return recommend_tf_feat(
-            self, user, n_rec, user_feats, item_data, cold_start, inner_id
+            self,
+            user_id,
+            n_rec,
+            user_feats,
+            item_data,
+            inner_id,
+            filter_consumed,
+            random_rec,
+            return_scores,
         )
 
     def assign_tf_variables_oov(self):
