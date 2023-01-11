@@ -148,6 +148,7 @@ class NCF(TfBase, metaclass=ModelMeta):
         inner_id=False,
         filter_consumed=True,
         random_rec=False,
+
     ):
         assert user_feats is None and item_data is None, "NCF can't use features."
         return super().recommend_user(
