@@ -34,8 +34,8 @@ def rank_recommendations(
         user = user_ids[i]
         ids = all_ids[i]
         preds = all_preds[i]
-        consumed = user_consumed[user]
-        if filter_consumed and n_rec + len(consumed) <= n_items:
+        consumed = user_consumed[user] if user in user_consumed else []
+        if filter_consumed and consumed and n_rec + len(consumed) <= n_items:
             ids, preds = filter_items(ids, preds, consumed)
         if random_rec:
             ids, preds = random_select(ids, preds, n_rec)
