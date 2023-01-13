@@ -1,10 +1,11 @@
 use actix_web::error;
+use deadpool_redis::{redis::AsyncCommands, Connection};
 use futures::stream::StreamExt;
-use redis::{AsyncCommands, AsyncIter};
+use redis::AsyncIter;
 use serde::de::DeserializeOwned;
 
 pub async fn list_all_keys(
-    conn: &mut redis::aio::Connection,
+    conn: &mut Connection,
 ) -> Result<Vec<String>, actix_web::Error> {
     let iter: AsyncIter<String> = conn.scan()
         .await
@@ -15,7 +16,7 @@ pub async fn list_all_keys(
 }
 
 pub async fn check_exists(
-    conn: &mut redis::aio::Connection,
+    conn: &mut Connection,
     key: &str,
     field: &str,
     command: &str,
@@ -41,7 +42,7 @@ pub async fn check_exists(
 }
 
 pub async fn get_str(
-    conn: &mut redis::aio::Connection,
+    conn: &mut Connection,
     key: &str,
     field: &str,
     command: &str,
@@ -56,7 +57,7 @@ pub async fn get_str(
 }
 
 pub async fn get_multi_str(
-    conn: &mut redis::aio::Connection,
+    conn: &mut Connection,
     key: &str,
     fields: &[usize],
 ) -> Result<Vec<String>, actix_web::Error> {
@@ -76,7 +77,7 @@ pub async fn get_multi_str(
 }
 
 pub async fn get_vec<T>(
-    conn: &mut redis::aio::Connection,
+    conn: &mut Connection,
     key: &str,
     field: &str,
 ) -> actix_web::Result<T>

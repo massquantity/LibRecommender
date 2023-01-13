@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::io::ErrorKind;
 
 use actix_web::{middleware::Logger, web, App, HttpServer};
+use deadpool_redis::{Config, Pool, Runtime};
 
 use actix_serving::embed_deploy::{init_embed_state, EmbedAppState};
 use actix_serving::{embed_serving, knn_serving, tf_serving};
@@ -23,6 +24,11 @@ fn get_env() -> std::io::Result<(String, u16, usize, String)> {
     Ok((host, port, workers, log_level))
 }
 
+fn create_redis_pool(host: String) -> Pool {
+    let cfg = Config::from_url(format!("redis://{}:6379", host));
+    cfg.create_pool(Some(Runtime::Tokio1)).expect("Failed to create redis pool")
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let (redis_host, port, workers, log_level) = get_env()?;
@@ -32,12 +38,13 @@ async fn main() -> std::io::Result<()> {
 
     let model_type = std::env::var("MODEL_TYPE").unwrap_or_else(|_| String::from("no_model"));
     let embed_state: Option<web::Data<EmbedAppState>> = init_embed_state(&model_type)?;
-    let redis = redis::Client::open(format!("redis://{}:6379", redis_host)).unwrap();
+    // let redis = redis::Client::open(format!("redis://{}:6379", redis_host)).unwrap();
+    let redis_pool = create_redis_pool(redis_host);
     HttpServer::new(move || {
         let logger = Logger::default();
         let app = App::new()
             .wrap(logger)
-            .app_data(web::Data::new(redis.clone()));
+            .app_data(web::Data::new(redis_pool.clone()));
 
         match model_type.as_str() {
             "knn" => app.service(knn_serving),

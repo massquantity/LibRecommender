@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use actix_web::{error, post, web, Responder};
+use deadpool_redis::{redis::AsyncCommands, Pool};
 use log::info;
-use redis::AsyncCommands;
 use serde_json::{json, Value};
 
 use crate::common::{Param, Prediction, Recommendation};
@@ -12,11 +12,11 @@ use crate::redis_ops::{check_exists, get_multi_str, get_str, get_vec};
 #[post("/tf/recommend")]
 pub async fn tf_serving(
     param: web::Json<Param>,
-    redis: web::Data<redis::Client>,
+    redis_pool: web::Data<Pool>,
 ) -> actix_web::Result<impl Responder> {
     let Param { user, n_rec } = param.0;
-    let mut conn = redis.get_async_connection().await.map_err(|e| {
-        error::ErrorInternalServerError(format!("Failed to connect to redis: {}", e))
+    let mut conn = redis_pool.get().await.map_err(|e| {
+        error::ErrorInternalServerError(format!("Failed to get redis pool connection: {}", e))
     })?;
     info!("recommend {n_rec} items for user {user}");
 

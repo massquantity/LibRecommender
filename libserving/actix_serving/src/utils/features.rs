@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use actix_web::error;
-use redis::AsyncCommands;
+use deadpool_redis::{redis::AsyncCommands, Connection};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -161,7 +161,7 @@ where
 
 pub async fn get_raw_features(
     user_id: &str,
-    conn: &mut redis::aio::Connection,
+    conn: &mut Connection,
 ) -> Result<Features, actix_web::Error> {
     let (user_sparse_col, user_sparse_indices) =
         get_one_feat_from_redis(conn, "user_sparse_col_index", "user_sparse_values", user_id)
@@ -184,14 +184,14 @@ pub async fn get_raw_features(
     })
 }
 
-async fn feature_exists(conn: &mut redis::aio::Connection, key: &str) -> actix_web::Result<bool> {
+async fn feature_exists(conn: &mut Connection, key: &str) -> actix_web::Result<bool> {
     conn.exists(key)
         .await
         .map_err(error::ErrorInternalServerError)
 }
 
 async fn get_one_feat_from_redis(
-    conn: &mut redis::aio::Connection,
+    conn: &mut Connection,
     index_name: &str,
     value_name: &str,
     id: &str,
@@ -206,7 +206,7 @@ async fn get_one_feat_from_redis(
 }
 
 async fn get_all_feats_from_redis(
-    conn: &mut redis::aio::Connection,
+    conn: &mut Connection,
     index_name: &str,
     value_name: &str,
 ) -> actix_web::Result<(Option<String>, Option<Vec<String>>)> {
@@ -224,7 +224,7 @@ async fn get_all_feats_from_redis(
 }
 
 pub async fn get_seq_feature(
-    conn: &mut redis::aio::Connection,
+    conn: &mut Connection,
     model_name: &str,
 ) -> actix_web::Result<Option<usize>> {
     let max_seq_len: Option<usize> = if TF_SEQ_MODELS.contains(&model_name) {
