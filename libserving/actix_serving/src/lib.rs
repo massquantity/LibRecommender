@@ -11,3 +11,4 @@ pub use utils::constants;
 pub use utils::faiss;
 pub use utils::features;
 pub use utils::redis_ops;
+pub use utils::errors;

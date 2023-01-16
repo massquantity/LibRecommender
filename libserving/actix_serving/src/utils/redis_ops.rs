@@ -1,15 +1,21 @@
-use actix_web::error;
-use deadpool_redis::{redis::AsyncCommands, Connection};
+use deadpool_redis::{
+    redis::{cmd, AsyncCommands},
+    Config, Connection, Pool, Runtime,
+};
 use futures::stream::StreamExt;
-use redis::AsyncIter;
+use redis::{AsyncIter, RedisError};
 use serde::de::DeserializeOwned;
 
-pub async fn list_all_keys(
-    conn: &mut Connection,
-) -> Result<Vec<String>, actix_web::Error> {
-    let iter: AsyncIter<String> = conn.scan()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+use crate::errors::ServingResult;
+
+pub fn create_redis_pool(host: String) -> Pool {
+    let cfg = Config::from_url(format!("redis://{}:6379", host));
+    cfg.create_pool(Some(Runtime::Tokio1))
+        .expect("Failed to create redis pool")
+}
+
+pub async fn list_all_keys(conn: &mut Connection) -> Result<Vec<String>, RedisError> {
+    let iter: AsyncIter<String> = conn.scan().await?;
     let mut keys = iter.collect::<Vec<_>>().await;
     keys.sort();
     Ok(keys)
@@ -20,24 +26,23 @@ pub async fn check_exists(
     key: &str,
     field: &str,
     command: &str,
-) -> Result<(), String> {
+) -> Result<(), RedisError> {
     let ex = match command {
-        "get" | "lrange" => redis::cmd("EXISTS")
-            .arg(key)
-            .query_async(conn)
-            .await,
-        "hget" => redis::cmd("HEXISTS")
-            .arg(key)
-            .arg(field)
-            .query_async(conn)
-            .await,
-        _ => return Err(format!("Unknown redis command: {}", command)),
+        "get" | "lrange" => cmd("EXISTS").arg(key).query_async(conn).await,
+        "hget" => cmd("HEXISTS").arg(key).arg(field).query_async(conn).await,
+        _ => {
+            return Err(RedisError::from(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Unknown redis command: {}", command),
+            )))
+        }
     };
     match ex {
         Ok(true) => Ok(()),
-        Ok(false) | Err(_) => Err(
-            format!("{} {} {} doesn't exist", command, key, field)
-        )
+        Ok(false) | Err(_) => Err(RedisError::from((
+            redis::ErrorKind::ResponseError,
+            "not exists",
+        ))),
     }
 }
 
@@ -46,43 +51,33 @@ pub async fn get_str(
     key: &str,
     field: &str,
     command: &str,
-) -> Result<String, actix_web::Error> {
+) -> Result<String, RedisError> {
     match command {
-        "get" => conn.get(key).await,
-        "hget" => conn.hget(key, field).await,
-        _ => return Err(error::ErrorInternalServerError(
-            format!("Unknown redis command: {}", command)
-        )),
-    }.map_err(error::ErrorInternalServerError)
+        "get" => cmd("GET").arg(key).query_async(conn).await,
+        "hget" => cmd("HGET").arg(&[key, field]).query_async(conn).await,
+        _ => Err(RedisError::from(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            format!("Unknown redis command: {}", command),
+        ))),
+    }
 }
 
 pub async fn get_multi_str(
     conn: &mut Connection,
     key: &str,
     fields: &[usize],
-) -> Result<Vec<String>, actix_web::Error> {
+) -> Result<Vec<String>, RedisError> {
     if fields.len() == 1 {
-        let strs = conn
-            .hget(key, fields)
-            .await
-            .map_err(error::ErrorInternalServerError)?;
+        let strs = conn.hget(key, fields).await?;
         Ok(vec![strs])
     } else {
-        Ok(conn
-            .hget(key, fields)
-            .await
-            .map_err(error::ErrorInternalServerError)?
-        )
+        Ok(conn.hget(key, fields).await?)
     }
 }
 
-pub async fn get_vec<T>(
-    conn: &mut Connection,
-    key: &str,
-    field: &str,
-) -> actix_web::Result<T>
+pub async fn get_vec<T>(conn: &mut Connection, key: &str, field: &str) -> ServingResult<T>
 where
-    T: DeserializeOwned
+    T: DeserializeOwned,
 {
     let strs = get_str(conn, key, field, "hget").await?;
     let vecs = serde_json::from_str(&strs)?;
