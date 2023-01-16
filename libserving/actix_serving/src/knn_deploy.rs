@@ -1,28 +1,27 @@
 use std::collections::{HashMap, HashSet};
 
-use actix_web::{error, post, web, Responder};
+use actix_web::{post, web, Responder};
 use deadpool_redis::{Connection, Pool};
 use log::info;
 
 use crate::common::{Param, Recommendation};
+use crate::errors::{ServingError, ServingResult};
 use crate::redis_ops::{check_exists, get_multi_str, get_str, get_vec};
 
 #[post("/knn/recommend")]
 pub async fn knn_serving(
     param: web::Json<Param>,
     redis_pool: web::Data<Pool>,
-) -> actix_web::Result<impl Responder> {
+) -> ServingResult<impl Responder> {
     let Param { user, n_rec } = param.0;
-    let mut conn = redis_pool.get().await.map_err(|e| {
-        error::ErrorInternalServerError(format!("Failed to get redis pool connection: {}", e))
-    })?;
+    let mut conn = redis_pool.get().await?;
     info!("recommend {n_rec} items for user {user}");
 
-    if let Err(e) = check_exists(&mut conn, "user2id", &user, "hget").await {
-        return Err(error::ErrorBadRequest(e));
+    if (check_exists(&mut conn, "user2id", &user, "hget").await).is_err() {
+        return Err(ServingError::NotExist("request user"));
     }
-    if let Err(e) = check_exists(&mut conn, "model_name", "none", "get").await {
-        return Err(error::ErrorBadRequest(e));
+    if (check_exists(&mut conn, "model_name", "none", "get").await).is_err() {
+        return Err(ServingError::NotExist("model_name"));
     }
     let user_id = get_str(&mut conn, "user2id", &user, "hget").await?;
     let model_name = get_str(&mut conn, "model_name", "none", "get").await?;
@@ -32,10 +31,7 @@ pub async fn knn_serving(
     let recs = match model_name.as_str() {
         "UserCF" => rec_on_user_sims(&user_id, n_rec, &user_consumed, &mut conn).await?,
         "ItemCF" => rec_on_item_sims(n_rec, &user_consumed, &mut conn).await?,
-        _ => {
-            return Err(format!("Unknown knn model: {}", model_name))
-                .map_err(error::ErrorInternalServerError)
-        }
+        m => return Err(ServingError::UnknownModel(m.to_string())),
     };
     Ok(web::Json(Recommendation { rec_list: recs }))
 }
@@ -45,12 +41,10 @@ async fn rec_on_user_sims(
     n_rec: usize,
     user_consumed: &HashSet<usize>,
     conn: &mut Connection,
-) -> Result<Vec<String>, actix_web::Error> {
+) -> ServingResult<Vec<String>> {
     let mut id_sim_map: HashMap<usize, f32> = HashMap::new();
-    let k_sim_users: Vec<(usize, f32)> =
-        serde_json::from_str(&get_str(conn, "k_sims", user_id, "hget").await?)
-            .map_err(error::ErrorInternalServerError)?;
-
+    let k_sim_str = get_str(conn, "k_sims", user_id, "hget").await?;
+    let k_sim_users: Vec<(usize, f32)> = serde_json::from_str(&k_sim_str)?;
     for (v, sim) in k_sim_users {
         let v_consumed: Vec<usize> = get_vec(conn, "user_consumed", &v.to_string()).await?;
         for i in v_consumed {
@@ -61,19 +55,20 @@ async fn rec_on_user_sims(
         }
     }
     let item_ids = sort_by_sims(&id_sim_map, n_rec);
-    get_multi_str(conn, "id2item", &item_ids).await
+    get_multi_str(conn, "id2item", &item_ids)
+        .await
+        .map_err(ServingError::RedisError)
 }
 
 async fn rec_on_item_sims(
     n_rec: usize,
     user_consumed: &HashSet<usize>,
     conn: &mut Connection,
-) -> Result<Vec<String>, actix_web::Error> {
+) -> ServingResult<Vec<String>> {
     let mut id_sim_map: HashMap<usize, f32> = HashMap::new();
     for i in user_consumed {
-        let k_sim_items: Vec<(usize, f32)> =
-            serde_json::from_str(&get_str(conn, "k_sims", &i.to_string(), "hget").await?)
-                .map_err(error::ErrorInternalServerError)?;
+        let k_sim_str = get_str(conn, "k_sims", &i.to_string(), "hget").await?;
+        let k_sim_items: Vec<(usize, f32)> = serde_json::from_str(&k_sim_str)?;
         for (j, sim) in k_sim_items {
             if user_consumed.contains(&j) {
                 continue;
@@ -82,7 +77,9 @@ async fn rec_on_item_sims(
         }
     }
     let item_ids = sort_by_sims(&id_sim_map, n_rec);
-    get_multi_str(conn, "id2item", &item_ids).await
+    get_multi_str(conn, "id2item", &item_ids)
+        .await
+        .map_err(ServingError::RedisError)
 }
 
 fn sort_by_sims(map: &HashMap<usize, f32>, n_rec: usize) -> Vec<usize> {

@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use actix_web::error;
 use deadpool_redis::{redis::AsyncCommands, Connection};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::constants::TF_SEQ_MODELS;
+use crate::errors::{ServingError, ServingResult};
 use crate::redis_ops::get_str;
 
 pub struct Features {
@@ -20,15 +20,13 @@ pub struct Features {
     item_dense_values: Option<Vec<String>>,
 }
 
-pub fn build_features(
+pub(crate) fn build_features(
     data: &mut HashMap<String, Value>,
     raw_feats: &Features,
     user_id: &str,
     n_items: usize,
-) -> actix_web::Result<()> {
-    let user_id = user_id
-        .parse::<isize>()
-        .map_err(error::ErrorInternalServerError)?;
+) -> ServingResult<()> {
+    let user_id = user_id.parse::<isize>()?;
     data.insert(String::from("user_indices"), json!(vec![user_id; n_items]));
     data.insert(
         String::from("item_indices"),
@@ -92,7 +90,7 @@ fn merge_features<T>(
     user_feats: &str,
     item_feats: &[String],
     n_items: usize,
-) -> actix_web::Result<Value>
+) -> ServingResult<Value>
 where
     T: Copy + Clone + Default + DeserializeOwned + Serialize,
 {
@@ -102,8 +100,7 @@ where
     let item_values: Vec<Vec<T>> = item_feats
         .iter()
         .map(|i| Ok(serde_json::from_str(i))?)
-        .collect::<Result<Vec<Vec<_>>, _>>()
-        .map_err(error::ErrorInternalServerError)?;
+        .collect::<Result<Vec<Vec<_>>, _>>()?;
 
     let dim = user_col_index.len() + item_col_index.len();
     let mut features = vec![vec![T::default(); dim]; n_items];
@@ -122,7 +119,7 @@ fn construct_user_features<T>(
     user_col: &str,
     user_feats: &str,
     n_items: usize,
-) -> actix_web::Result<Value>
+) -> ServingResult<Value>
 where
     T: Copy + Clone + Default + DeserializeOwned + Serialize,
 {
@@ -140,7 +137,7 @@ fn construct_item_features<T>(
     item_col: &str,
     item_feats: &[String],
     n_items: usize,
-) -> actix_web::Result<Value>
+) -> ServingResult<Value>
 where
     T: Copy + Clone + Default + DeserializeOwned + Serialize,
 {
@@ -148,8 +145,7 @@ where
     let item_values: Vec<Vec<T>> = item_feats
         .iter()
         .map(|i| Ok(serde_json::from_str(i))?)
-        .collect::<Result<Vec<Vec<_>>, _>>()
-        .map_err(error::ErrorInternalServerError)?;
+        .collect::<Result<Vec<Vec<_>>, _>>()?;
     let mut features = vec![vec![T::default(); item_col_index.len()]; n_items];
     for item_id in 0..n_items {
         for (i, v) in item_col_index.iter().zip(item_values[item_id].iter()) {
@@ -159,10 +155,10 @@ where
     Ok(json!(features))
 }
 
-pub async fn get_raw_features(
+pub(crate) async fn get_raw_features(
     user_id: &str,
     conn: &mut Connection,
-) -> Result<Features, actix_web::Error> {
+) -> ServingResult<Features> {
     let (user_sparse_col, user_sparse_indices) =
         get_one_feat_from_redis(conn, "user_sparse_col_index", "user_sparse_values", user_id)
             .await?;
@@ -184,21 +180,15 @@ pub async fn get_raw_features(
     })
 }
 
-async fn feature_exists(conn: &mut Connection, key: &str) -> actix_web::Result<bool> {
-    conn.exists(key)
-        .await
-        .map_err(error::ErrorInternalServerError)
-}
-
 async fn get_one_feat_from_redis(
     conn: &mut Connection,
     index_name: &str,
     value_name: &str,
     id: &str,
-) -> actix_web::Result<(Option<String>, Option<String>)> {
+) -> ServingResult<(Option<String>, Option<String>)> {
     let mut index: Option<String> = None;
     let mut values: Option<String> = None;
-    if feature_exists(conn, index_name).await? {
+    if conn.exists(index_name).await? {
         index.replace(get_str(conn, index_name, "none", "get").await?);
         values.replace(get_str(conn, value_name, id, "hget").await?);
     }
@@ -209,47 +199,38 @@ async fn get_all_feats_from_redis(
     conn: &mut Connection,
     index_name: &str,
     value_name: &str,
-) -> actix_web::Result<(Option<String>, Option<Vec<String>>)> {
+) -> ServingResult<(Option<String>, Option<Vec<String>>)> {
     let mut index: Option<String> = None;
     let mut values: Option<Vec<String>> = None;
-    if feature_exists(conn, index_name).await? {
+    if conn.exists(index_name).await? {
         index.replace(get_str(conn, index_name, "none", "get").await?);
-        values.replace(
-            conn.lrange(value_name, 0, -1)
-                .await
-                .map_err(error::ErrorInternalServerError)?,
-        );
+        values.replace(conn.lrange(value_name, 0, -1).await?);
     }
     Ok((index, values))
 }
 
-pub async fn get_seq_feature(
+pub(crate) async fn get_seq_feature(
     conn: &mut Connection,
     model_name: &str,
-) -> actix_web::Result<Option<usize>> {
+) -> ServingResult<Option<usize>> {
     let max_seq_len: Option<usize> = if TF_SEQ_MODELS.contains(&model_name) {
-        if !feature_exists(conn, "max_seq_len").await? {
-            return Err(error::ErrorInternalServerError(format!(
-                "`max_seq_len` doesn't exist in redis, which is used in {model_name}"
-            )));
+        if !conn.exists("max_seq_len").await? {
+            eprintln!("{} uses sequence information", model_name);
+            return Err(ServingError::Other("`max_seq_len` doesn't exist in redis"));
         }
-        let seq_len: usize = conn
-            .get("max_seq_len")
-            .await
-            .map_err(error::ErrorInternalServerError)?;
-        Some(seq_len)
+        Some(conn.get("max_seq_len").await?)
     } else {
         None
     };
     Ok(max_seq_len)
 }
 
-pub fn build_last_interaction(
+pub(crate) fn build_last_interaction(
     data: &mut HashMap<String, Value>,
     max_seq_len: Option<usize>,
     n_items: usize,
     user_consumed: &[usize],
-) -> actix_web::Result<()> {
+) {
     if let Some(max_seq_len) = max_seq_len {
         let (u_interacted_len, dst_start, src_start) = if max_seq_len <= user_consumed.len() {
             (max_seq_len, 0, user_consumed.len() - max_seq_len)
@@ -267,5 +248,4 @@ pub fn build_last_interaction(
             json!(vec![u_interacted_len; n_items]),
         );
     }
-    Ok(())
 }

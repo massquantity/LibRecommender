@@ -4,3 +4,4 @@ pub mod constants;
 pub mod faiss;
 pub mod features;
 pub mod redis_ops;
+pub mod errors;
