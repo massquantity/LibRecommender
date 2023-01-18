@@ -1,6 +1,6 @@
 # User Guide
 
-The purpose of this guide is to illustrate some of the main features that LibRecommender provides. Example usages are all listed in [`examples`](https://github.com/massquantity/LibRecommender/tree/master/examples) folder. 
+The purpose of this guide is to illustrate some main features that LibRecommender provides. Example usages are all listed in [`examples`](https://github.com/massquantity/LibRecommender/tree/master/examples) folder. 
 
 This guide only demonstrates the data processing, feature engineering and model training parts. For how to serve a trained model in LibRecommender, see [Serving Guide](https://github.com/massquantity/LibRecommender/tree/master/doc/python_serving_guide.md) .
 
@@ -20,7 +20,7 @@ For example, using the `SVD` model with `rating` task:
 >>> svd.fit(..., metrics=["rmse", "mae", "r2"])
 ```
 
-The implicit data typically may only contains positive feedback, i.e. only has samples that labeled as 1. In this case negative sampling is needed to effectively train a model. We'll cover negative sampling issue in the [section below](#negative-sampling).
+The implicit data typically may only contain positive feedback, i.e. only has samples that labeled as 1. In this case negative sampling is needed to effectively train a model. We'll cover negative sampling issue in the [section below](#negative-sampling).
 
 By the way, some models such as `BPR` , `YouTubeRetrieval`, `YouTubeRanking`, `Item2Vec`, `DeepWalk`, `LightGCN` etc. , can only be used for `ranking` tasks since they are specially designed for that. 
 
@@ -61,7 +61,7 @@ Dense features are typically numerical features such as age, price, length, etc.
 <br>
 
 <div align="center">
- <img src="https://s3.ax1x.com/2020/11/16/DAq0PO.jpg">
+ <img src="https://raw.githubusercontent.com/massquantity/LibRecommender/master/doc/autoint_feature.jpg" alt="">
 </div>
 
 <br>
@@ -85,7 +85,7 @@ Often times categorical features can be multi-valued. For example, a movie may h
 Usually we can handle this kind of feature by using multi-hot encoding, so in LibRecommender they are called `multi_sparse` features. After some transformation, the data can become (just for illustration purpose):
 
 | item_id | movie_name                         | genre1    | genre2     | genre3  |
-| ------- | ---------------------------------- | --------- | ---------- | ------- |
+|---------|------------------------------------|-----------|------------|---------|
 | 1       | Toy Story (1995)                   | Animation | Children's | Comedy  |
 | 2       | Jumanji (1995)                     | Adventure | Children's | Fantasy |
 | 3       | Grumpier Old Men (1995)            | Comedy    | Romance    | missing |
@@ -110,7 +110,7 @@ So in general you should choose a strategy in parameter `multi_sparse_combiner` 
 >>> model = DeepFM(..., multi_sparse_combiner="sqrtn")  # other options: normal, sum, mean
 ```
 
-Note the `genre` feature above has different number of sub-features among all the samples. Some movie only has one genre, whereas others may have three. So the value "missing" is used to pad them into same length. However, when using `sum`, `mean` or `sqrtn` to combine these sub-features, the padding value should be excluded. Thus you can pass the `pad_val` parameter when building the data, and the model will do all the work. Otherwise the padding value will be included in the transformed features.
+Note the `genre` feature above has different number of sub-features among all the samples. Some movie only has one genre, whereas others may have three. So the value "missing" is used to pad them into same length. However, when using `sum`, `mean` or `sqrtn` to combine these sub-features, the padding value should be excluded. Thus, you can pass the `pad_val` parameter when building the data, and the model will do all the work. Otherwise, the padding value will be included in the transformed features.
 
 ```python
 >>> train_data, data_info = DatasetFeat.build_trainset(multi_sparse_col=[["genre1", "genre2", "genre3"]], pad_val=["missing"])
@@ -158,7 +158,7 @@ By default, the recommendation result returned by `model.recommend_user()` metho
 
 LibRecommender also supports random recommendation by setting `random_rec=True` (By default it is False). Of course, it's not completely random, but random sampling based on items' prediction scores. It's a trade-off between accuracy and diversity, and this is inspired by [ChatGPT](https://openai.com/blog/chatgpt/) :), because in ChatGPT the model also samples words based on predict probability to form answers.
 
-Finally, batch recommendation is also supported by simply pass a list to the `user` parameter. The returned result will be a dict, which has users as keys and `numpy.array` as values.
+Finally, batch recommendation is also supported by simply passing a list to the `user` parameter. The returned result will be a dict, which has users as keys and `numpy.array` as values.
 
 ```python
 >>> model.recommend_user(user=[1, 2, 3], n_rec=3, filter_consumed=True, random_rec=False)
@@ -171,7 +171,7 @@ Finally, batch recommendation is also supported by simply pass a list to the `us
 
 The standard process in LibRecommender is evaluating during training. However, for some complex models doing full evaluation on eval data can be very time-consuming, so you can specify some evaluation parameters to speed this up. 
 
-The default value of `eval_batch_size` is `2**15 = 32768`, and you can use a higher value if you have enough machine or GPU memory. 
+The default value of `eval_batch_size` is `2**15 = 32768`, and you can use a higher value if you have enough machine or GPU memory. On the contrary, if you encounter memory error during evaluation, try reducing `eval_batch_size`.
 
 The `eval_user_num` parameter controls how many users to use in evaluation. By default, it is `None`, which uses all the users in eval data. You can use a smaller value if the evaluation is slow, and this will sample `eval_user_num` users randomly from eval data.
 
@@ -192,11 +192,11 @@ The `eval_user_num` parameter controls how many users to use in evaluation. By d
 
 ## Negative Sampling
 
-For implicit data with only positive labels, negative sampling is typically needed for model training. There are some special cases, such as `UserCF`, `ItemCF`, `BPR`, `YouTubeRetrieval`, `RNN4Rec with bpr loss`, because these models do not need negative sampling during training. However, when evaluating these models using some metrics such as `cross_entropy loss`, `roc_auc`, `pr_auc`, negative labels are indeed needed. 
+For implicit data with only positive labels, negative sampling is typically needed for model training. There are some special cases, such as `UserCF`, `ItemCF`, `BPR`, `YouTubeRetrieval`, `RNN4Rec with bpr loss`, because these models do not need to do negative sampling during training. However, when evaluating these models using some metrics such as `cross_entropy loss`, `roc_auc`, `pr_auc`, negative labels are indeed needed. 
 
-For PyTorch-based models, only eval or test data needs negative sampling. These models includes `NGCF`, `LightGCN`, `GraphSage`, `GraphSageDGL`, `PinSage`, `PinSageDGL` , see [torch_ranking_example.py](https://github.com/massquantity/LibRecommender/blob/master/examples/torch_ranking_example.py) .
+For PyTorch-based models, **only eval or test data needs negative sampling**. These models includes `NGCF`, `LightGCN`, `GraphSage`, `GraphSageDGL`, `PinSage`, `PinSageDGL` , see [torch_ranking_example.py](https://github.com/massquantity/LibRecommender/blob/master/examples/torch_ranking_example.py) .
 
-For other models, doing negative sampling on all the data is recommended as long as the data is implicit and only contains positive labels.
+For other models, performing negative sampling on all the train, eval and test data is recommended as long as **your data is implicit and only contains positive labels**.
 
 ```python
 >>> train_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2020)
@@ -235,7 +235,7 @@ According to the [algorithm list](https://github.com/massquantity/LibRecommender
 >>> model.get_item_embedding(item=2)  # get item embedding for item 2
 ```
 
-One can also search for similar users/items based on embeddings. By default we use [nmslib](https://github.com/nmslib/nmslib) to do approximate similarity searching since it's generally fast, but some people may find it difficult to build and install the library, especially on Windows platform or Python >= 3.10. So one can fall back to numpy similarity calculation if nmslib is not available. 
+One can also search for similar users/items based on embeddings. By default, we use [nmslib](https://github.com/nmslib/nmslib) to do approximate similarity searching since it's generally fast, but some people may find it difficult to build and install the library, especially on Windows platform or Python >= 3.10. So one can fall back to numpy similarity calculation if nmslib is not available. 
 
 ```python
 >>> model = RNN4Rec(task="ranking", ...)
@@ -258,7 +258,7 @@ In general, we may want to save/load a model for two reasons:
 1. Save the model, then load it to make some predictions and recommendations.
 2. Save the model, then load it to retrain the model when we get some new data.
 
-The `save/load` API mainly deal with the first one, and the retrain problem is quite different, which will be covered in the [model retrain part](#model-retrain). When making predictions and recommendations, it may be unnecessary to save all the model variables. So one can pass `inference_only=True` to only save the essential model part.
+The `save/load` API mainly deal with the first one, and the retraining problem is quite different, which will be covered in the [model retrain part](#model-retrain). When making predictions and recommendations, it may be unnecessary to save all the model variables. So one can pass `inference_only=True` to only save the essential model part.
 
 After loading the model, one can also evaluate the model directly, see [save_load_example.py](https://github.com/massquantity/LibRecommender/blob/master/examples/save_load_example.py) for typical usages.
 
@@ -266,13 +266,13 @@ After loading the model, one can also evaluate the model directly, see [save_loa
 
 ## Practical Issues in Recommendation System
 
-Since the open source of LibRecommender, a lot of people have raised questions to us, either through Email or Github Issues. From our view, these questions can mainly be divided into three categories:
+Since the open source of LibRecommender, a lot of people have raised questions to us, either through Email or GitHub Issues. From our view, these questions can mainly be divided into three categories:
 
 + **Cold-Start problem**:  It is very common to encounter new users or items that doesn't exist in training data, so how can we make recommendations for them?
 
-+ **Changing-Feature problem**:  In real-world scenarios, users' features are very likely to change every time we make recommendations for them. For example, a user's location may change many times a day, and we may need to take this into account. This feature problem can actually be combined with the cold-start problem. For example, a user has appeared in training data, but his/her location doesn't exist in training data's `location` feature, so what do we do?
++ **Changing-Feature problem**:  In real-world scenarios, users' features are very likely to change every time we make recommendations for them. For example, a user's location may change many times a day, and we may need to take this into account. This feature issue can actually be combined with the cold-start issue. For example, a user has appeared in training data, but his/her location doesn't exist in training data's `location` feature, so what do we do?
 
-+ **Model-retrain problem**:  When we get some new data, we definitely want to retrain the old model with these new data, but this is actually not easy for some deep learning models. The reason lies in the new users/items that may appear in the new data. In deep learning models, embedding variables are usually used, and their shape are preassigned and fixed during and after training. The same problem also goes with new features. If we load the old model and want to train it with new users/items/features, these embedding shape must be expanded, which is not allowed in TensorFlow (at least to my knowledge). One workaround is to combine the new data with the old data, then retrain the model with all of the data. But it would be a waste of time and resources to retrain the whole data every time we get some new data, so what do we do?
++ **Model-retrain problem**:  When we get some new data, we definitely want to retrain the old model with these new data, but this is actually not easy for some deep learning models. The reason lies in the new users/items that may appear in the new data. In deep learning models, embedding variables are usually used, and their shape are preassigned and fixed during and after training. The same issue also goes with new features. If we load the old model and want to train it with new users/items/features, these embedding shape must be expanded, which is not allowed in TensorFlow (at least to my knowledge). One workaround is to combine the new data with the old data, then retrain the model with all the data. But it would be a waste of time and resources to retrain the whole data every time we get some new data, so what do we do?
 
 The next few sections will try to explain how we can handle these problems in LibRecommender. But first let us introduce the inner data structure inside the library, namely, the `DataInfo` object.
 
@@ -282,7 +282,7 @@ The `DataInfo` object saves almost all the useful information in the data. We ad
 
 When we are using a `feat` model, the `DataInfo` object will store the unique features of all the users/items in training data. If a user/item has different categories or values in training data (which may be unlikely if the data is clean :)), only the last one will be stored. For example, if in one sample a user's age is 20, and in another sample this user's age becomes 25, then only 25 will be kept. So here we basically assume the data is always sorted by time, and you should do so if it doesn't. 
 
-Therefore when you call `model.predict(user=..., item=...)` or `model.recommend_user(user=...)` for a `feat` model, the model will use the stored feature information in `DataInfo`. It is also possible to change the feature values when making predictions and recommendations. See [Changing Feature](#changing-feature) section.
+Therefore, when you call `model.predict(user=..., item=...)` or `model.recommend_user(user=...)` for a `feat` model, the model will use the stored feature information in `DataInfo`. It is also possible to change the feature values when making predictions and recommendations. See [Changing Feature](#changing-feature) section.
 
 
 
@@ -304,7 +304,7 @@ If you want to predict or recommend with specific features, the usage is pretty 
 >>> model.predict(user=1, item=110, feats={"sex": "F", "occupation": 2, "age": 23})
 ```
 
-There is no need to specify a feature belongs to user or item, because these information has already been stored in model's `DataInfo` object. Note if you misspelled some feature names, e.g. "sex" -> "sax", the model will simply ignore this feature. If you pass a feature category that doesn't appear in training data, e.g. "sex" -> "bisexual", then it will be ignored too.
+There is no need to specify a feature belongs to user or item, because this information has already been stored in model's `DataInfo` object. Note if you misspelled some feature names, e.g. "sex" -> "sax", the model will simply ignore this feature. If you pass a feature category that doesn't appear in training data, e.g. "sex" -> "bisexual", then it will be ignored too.
 
 If you want to predict on a whole dataset with features, you can use the `predict_data_with_feats` function. By setting `batch_size` to `None`, the model will treat all the data as one batch, which may cause memory issues: 
 
@@ -330,7 +330,7 @@ Note the three functions described above doesn't change the unique user/item fea
 
 The passed `data` argument is a `pandas.DataFrame` that contains the user/item information. Be careful with this assign operation if you are not sure if the features in `data` are useful.
 
-During evaluation, one can also evaluate directly on one data. By default it also won't update features in `DataInfo`, but you can choose `update_features=True` to achieve that. Also note that if your evaluation data is implicit and only contains positive label, then negative sampling is needed by passing `neg_sample=True` :
+During evaluation, one can also evaluate directly on one data. By default, it also won't update features in `DataInfo`, but you can choose `update_features=True` to achieve that. Also note that if your evaluation data is implicit and only contains positive label, then negative sampling is needed by passing `neg_sample=True` :
 
 ```python
 eval_result = evaluate(model, data, eval_batch_size=8192, k=10,
