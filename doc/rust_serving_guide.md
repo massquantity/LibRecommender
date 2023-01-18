@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This guide mainly describes how to serve a trained model in LibRecommender with [Rust](https://www.rust-lang.org/).  A Rust web server is typically much faster than its Python counterpart. In the [`libserving`](https://github.com/massquantity/LibRecommender/tree/master/libserving) module, we use [Actix](https://github.com/actix/actix-web), one of the fastest web frameworks in the world. The overall serving procedure in this guide resembles [Python Serving Guide](https://github.com/massquantity/LibRecommender/blob/master/doc/python_serving_guide.md), so you'll need a Redis too. If you are already familiar with Rust, then follow the steps below. Otherwise you can also use [Docker Compose](#serving-with-docker-compose).
+This guide mainly describes how to serve a trained model in LibRecommender with [Rust](https://www.rust-lang.org/).  A Rust web server is typically much faster than its Python counterpart. In the [`libserving`](https://github.com/massquantity/LibRecommender/tree/master/libserving) module, we use [Actix](https://github.com/actix/actix-web), one of the fastest web frameworks in the world. The overall serving procedure in this guide resembles [Python Serving Guide](https://github.com/massquantity/LibRecommender/blob/master/doc/python_serving_guide.md), so you'll need a Redis too. If you are already familiar with Rust, then follow the steps below. Otherwise, you can also use [Docker Compose](#serving-with-docker-compose).
 
 Users need to provide three environment variables before starting the server:
 
@@ -152,7 +152,7 @@ $ ./target/release/actix_serving
 
 ## Serving with Docker Compose
 
-In [docker-compose-rs.yml](https://github.com/massquantity/LibRecommender/blob/master/libserving/docker-compose-rs.yml) file, change the corresponding `MODEL_TYPE` environment variable. You may also need to change the volumes path if model is stored in other place. Also Redis is included, so you don't need a Redis server locally. But one should start the docker compose *before* saving data to Redis. For example in embed-based models:
+In [docker-compose-rs.yml](https://github.com/massquantity/LibRecommender/blob/master/libserving/docker-compose-rs.yml) file, change the corresponding `MODEL_TYPE` environment variable. You may also need to change the path of volumes if model is stored in other place. Also, Redis has already been included, so you don't need a Redis server locally. But one should start the docker compose *before* saving data to Redis. For example in embed-based models:
 
 ```bash
 $ cd LibRecommender/libserving

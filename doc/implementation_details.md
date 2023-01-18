@@ -6,7 +6,7 @@ In this section we describe some implementation details for [algorithms](https:/
 
 The traditional implementation of UserCF / ItemCF is pre-allocating a user-user or item-item similarity matrix, then computing similarities between all users/items and fill in the matrix. However, this can be problematic for big data, because allocating a full user-user or item-item matrix may use a lot of memory. For example, for only about 100 thousand items, a (100,000, 100,000) matrix of numpy float64 will consume approximately 70 GB memory. So in LibRecommender we mainly use [scipy sparse matrices](https://docs.scipy.org/doc/scipy/reference/sparse.html) to store similarity matrix and save memory.
 
-Furthermore, computing all the user-user or item-item similarities requires iterating all data in for loops, which can be extremely slow in pure Python, so we use Cython to accelerate this process. Also for the same purpose, we apply the [inverted index](https://en.wikipedia.org/wiki/Inverted_index) technic when computing similarities for better speed. The implementation is in [**_similarities.pyx**](https://github.com/massquantity/LibRecommender/blob/master/libreco/utils/_similarities.pyx), and users can choose whether to use forward index or inverted index by setting the `mode` parameter:
+Furthermore, computing all the user-user or item-item similarities requires iterating all data in for loops, which can be extremely slow in pure Python, so we use Cython with multi-threading to bypass the [Python GIL](https://wiki.python.org/moin/GlobalInterpreterLock). Also for the same purpose, we apply the [inverted index](https://en.wikipedia.org/wiki/Inverted_index) technic when computing similarities for better speed. The implementation is in [**_similarities.pyx**](https://github.com/massquantity/LibRecommender/blob/master/libreco/utils/_similarities.pyx), and users can choose whether to use forward index or inverted index by setting the `mode` parameter:
 
 ```python
 >>> model = UserCF(..., mode="invert") # or "forward", note that "forward" mode can be much slower than "invert" mode
@@ -41,7 +41,7 @@ Another caveat worth mentioning is the `num_sampled` parameter in [tf.nn.sampled
     	loss_type="sampled_softmax",  # or "nce"
         num_sampled_per_batch=None,  # "None" will use batch_size, or can be set to 1, 1000, 9999 ...
     	sampler="uniform",
-	)
+    )
 ```
 
 
@@ -66,11 +66,30 @@ At first glance it looks weird to have [WaveNet](https://arxiv.org/pdf/1609.0349
 
 
 
+## NGCF / LightGCN
+
+The [NGCF](https://arxiv.org/pdf/1905.08108.pdf) and [LightGCN](https://arxiv.org/pdf/2002.02126.pdf) paper used BPR (*Bayesian Personalized Ranking*) loss, but in LibRecommender one can also choose other losses by setting the `loss_type` parameter.
+
+```python
+>>> ngcf = NGCF(
+        "ranking",
+        data_info,
+        loss_type="cross_entropy",  # or "focal", "bpr", "max_margin"
+    )
+>>> lightgcn = LightGCN(
+        "ranking",
+        data_info,
+        loss_type="bpr",
+    )
+```
+
+
+
 ## PinSage
 
 In LibRecommender, there are two versions of PinSage implementation: PyTorch and DGL version. Since some users may find it difficult to install DGL on Windows platform (see [issue](https://github.com/dmlc/dgl/issues/3067)), we provide an additional PyTorch version. In general the DGL version is much faster, but the PyTorch version can have more control over sampling process.
 
-The [paper](https://arxiv.org/pdf/1806.01973.pdf) used max-margin loss on item-item inner product score. We extend this setting in our implementation. In recommender system scenario this is called "i2i", and the other form is "u2i", which is also commonly used and combines user features and item features to compute scores. The parameter for controlling this is `paradigm`. Max-margin loss belongs to pairwise loss, but we can also use other losses. In LibRecommender you can use `cross_entropy`, `focal`, `bpr` `max_margin` by setting the `loss_type` parameter.
+The [paper](https://arxiv.org/pdf/1806.01973.pdf) used max-margin loss on item-item inner product score. We extend this setting in our implementation. In recommender system scenario this is called "i2i", and the other form is "u2i", which is also commonly used and combines user features and item features to compute scores. The parameter for controlling this is `paradigm`. Max-margin loss belongs to pairwise loss, but we can also use other losses. In LibRecommender you can use `cross_entropy`, `focal`, `bpr`, `max_margin` by setting the `loss_type` parameter.
 
 Another important extension in LibRecommender is that users can choose which features to use freely, instead of using domain-specific features described in the paper. So you can use PinSage just like other feat models:
 

@@ -36,7 +36,7 @@ So during serving, one should start redis server first:
 $ redis-server
 ```
 
-Note that sometimes using redis in model serving can be error-prone. For example, you served a `DeepFM` model at first, and later on you decided to use another `pure` model, say `NCF`.  Since `DeepFM` is a `feat` model, some feature information may have been saved into redis. If you forget to remove these feature information before using `NCF`, the server may mistakenly load these information and eventually cause an error.
+Note that sometimes using redis in model serving can be error-prone. For example, you served a `DeepFM` model at first, and later on you decided to use another `pure` model, say `NCF`.  Since `DeepFM` is a `feat` model, some feature information may have been saved into redis. If you forget to remove these feature information before using `NCF`, the server may mistakenly load it and eventually cause an error.
 
 **Also in this guide we assume the following codes are all executed in `LibRecommender/libserving` folder**:
 
@@ -64,7 +64,7 @@ $ sudo docker pull tensorflow/serving:2.8.2
 
 ## Saving Format
 
-In `libserving`, the primary data serialization format is [`JSON`](<https://www.json.org/json-en.html>) rather than pickle, because pickle is relatively slow and it is declared in the official [pickle](<https://docs.python.org/3.6/library/pickle.html>) documentation:
+In `libserving`, the primary data serialization format is [`JSON`](<https://www.json.org/json-en.html>) rather than pickle, because pickle is relatively slow, and it is declared in the official [pickle](<https://docs.python.org/3.6/library/pickle.html>) documentation:
 
 > Warning: The `pickle` module is not secure against erroneous or maliciously constructed data. Never unpickle data received from an untrusted or unauthenticated source.
 
@@ -173,7 +173,7 @@ din/
         saved_model.pb
 ```
 
-We can inspect the saved `DIN` model by using `SavedModel CLI` described in [official doc](https://www.tensorflow.org/guide/saved_model#details_of_the_savedmodel_command_line_interface). By default it is bundled with TensorFlow. The following command will output:
+We can inspect the saved `DIN` model by using `SavedModel CLI` described in [official doc](https://www.tensorflow.org/guide/saved_model#details_of_the_savedmodel_command_line_interface). By default, it is bundled with TensorFlow. The following command will output:
 
 ```bash
 $ saved_model_cli show --dir tf_model/din/1 --all
