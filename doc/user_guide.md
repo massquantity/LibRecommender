@@ -158,7 +158,7 @@ By default, the recommendation result returned by `model.recommend_user()` metho
 
 LibRecommender also supports random recommendation by setting `random_rec=True` (By default it is False). Of course, it's not completely random, but random sampling based on items' prediction scores. It's a trade-off between accuracy and diversity, and this is inspired by [ChatGPT](https://openai.com/blog/chatgpt/) :), because in ChatGPT the model also samples words based on predict probability to form answers.
 
-Finally, batch recommendation is also supported by simply passing a list to the `user` parameter. The returned result will be a dict, which has users as keys and `numpy.array` as values.
+Finally, batch recommendation is also supported by simply passing a list to the `user` parameter. The returned result will be a dict, with users as keys and `numpy.array` as values.
 
 ```python
 >>> model.recommend_user(user=[1, 2, 3], n_rec=3, filter_consumed=True, random_rec=False)
@@ -192,7 +192,7 @@ The `eval_user_num` parameter controls how many users to use in evaluation. By d
 
 ## Negative Sampling
 
-For implicit data with only positive labels, negative sampling is typically needed for model training. There are some special cases, such as `UserCF`, `ItemCF`, `BPR`, `YouTubeRetrieval`, `RNN4Rec with bpr loss`, because these models do not need to do negative sampling during training. However, when evaluating these models using some metrics such as `cross_entropy loss`, `roc_auc`, `pr_auc`, negative labels are indeed needed. 
+For implicit data with only positive labels, negative sampling is typically used in model training. There are some special cases, such as `UserCF`, `ItemCF`, `BPR`, `YouTubeRetrieval`, `RNN4Rec with bpr loss`, because these models do not need to do negative sampling during training. However, when evaluating these models using some metrics such as `cross_entropy loss`, `roc_auc`, `pr_auc`, negative labels are indeed needed. 
 
 For PyTorch-based models, **only eval or test data needs negative sampling**. These models includes `NGCF`, `LightGCN`, `GraphSage`, `GraphSageDGL`, `PinSage`, `PinSageDGL` , see [torch_ranking_example.py](https://github.com/massquantity/LibRecommender/blob/master/examples/torch_ranking_example.py) .
 
@@ -203,7 +203,7 @@ For other models, performing negative sampling on all the train, eval and test d
 >>> test_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2222)
 ```
 
-In the future, we plan to remove this explicit negative sampling part before training. This requires encapsulating the sampling into the batch training process, so that users won't undertake the ambiguity above. Some other sampling techniques besides "random" will also be added.
+In the future, we plan to remove this explicit negative sampling part before training. This requires encapsulating the sampling process into the batch training, so that users won't undertake the ambiguity above. Some other sampling methods apart from "random" will also be added.
 
 
 
