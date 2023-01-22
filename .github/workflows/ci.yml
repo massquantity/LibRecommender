@@ -46,7 +46,7 @@ jobs:
       - name: Lint with flake8
         run: |
           python -m pip install flake8
-          flake8  --count --show-source --statistics --max-line-length=120 --ignore=E203,F811,F401,W503,W504 libreco/ tests/ examples/
+          flake8  --count --show-source --statistics --max-line-length=120 --ignore=E203,F811,F401,W503,W504 libreco/ libserving/ tests/ examples/
 
       - name: Test with pytest
         run: |
@@ -57,7 +57,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
-          flags: unittests
+          flags: CI
           name: python${{ matrix.python-version }}-test
           fail_ci_if_error: false
           verbose: true

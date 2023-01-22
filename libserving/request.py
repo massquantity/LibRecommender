@@ -27,7 +27,7 @@ def main():
     try:
         print(response.json())
     except json.JSONDecodeError:
-        print(f"Failed to decode response json")
+        print("Failed to decode response json")
 
 
 if __name__ == "__main__":
