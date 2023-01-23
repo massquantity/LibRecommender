@@ -162,7 +162,6 @@ $ python setup.py install
 ```
 
 
-
 #### Basic Dependencies for [`libreco`](https://github.com/massquantity/LibRecommender/tree/master/libreco):
 
 - Python >= 3.6
@@ -178,7 +177,9 @@ $ python setup.py install
 - [nmslib](https://github.com/nmslib/nmslib) (optional, see [User Guide](https://github.com/massquantity/LibRecommender/blob/master/doc/user_guide.md#embedding))
 - [DGL](https://github.com/dmlc/dgl) (optional, see [Implementation Details](https://github.com/massquantity/LibRecommender/blob/master/doc/implementation_details.md#pinsage))
 
-LibRecommender is tested under TensorFlow 1.15, 2.5, 2.8 and 2.10. If you encounter any problem during running, feel free to open an issue. If you are using Python 3.6, you also need to install [dataclasses](https://github.com/ericvsmith/dataclasses), since it is first included in Python 3.7.
+If you are using Python 3.6, you also need to install [dataclasses](https://github.com/ericvsmith/dataclasses), which was first introduced in Python 3.7.
+
+LibRecommender is tested under TensorFlow 1.15, 2.5, 2.8 and 2.10. If you encounter any problem during running, feel free to open an issue.
 
 **Known issue**: Sometimes one may encounter errors like `ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject`. In this case try upgrading numpy, and version 1.22.0 or higher is probably a safe option.
 
