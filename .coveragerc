@@ -1,3 +1,8 @@
+[run]
+parallel = False
+
+source = libreco
+
 [report]
 exclude_lines =
     pragma: no cover
@@ -6,3 +11,15 @@ exclude_lines =
     if __name__ == .__main__.:
     @(abc\.)?abstractmethod
     raise OSError.*
+
+precision = 2
+
+show_missing = True
+
+[html]
+directory = html-coverage-report
+
+title = LibRecommender Coverage Report
+
+[xml]
+output = coverage.xml
