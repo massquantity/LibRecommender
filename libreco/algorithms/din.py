@@ -7,7 +7,7 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import glorot_uniform
 
 from ..bases import ModelMeta, TfBase
 from ..data.sequence import get_user_last_interacted
@@ -164,27 +164,27 @@ class DIN(TfBase, metaclass=ModelMeta):
         self.user_feat = tf.get_variable(
             name="user_feat",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         self.item_feat = tf.get_variable(
             name="item_feat",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         if self.sparse:
             self.sparse_feat = tf.get_variable(
                 name="sparse_feat",
                 shape=[self.sparse_feature_size, self.embed_size],
-                initializer=tf_truncated_normal(0.0, 0.01),
+                initializer=glorot_uniform,
                 regularizer=self.reg,
             )
         if self.dense:
             self.dense_feat = tf.get_variable(
                 name="dense_feat",
                 shape=[self.dense_field_size, self.embed_size],
-                initializer=tf_truncated_normal(0.0, 0.01),
+                initializer=glorot_uniform,
                 regularizer=self.reg,
             )
 
@@ -297,11 +297,11 @@ class DIN(TfBase, metaclass=ModelMeta):
 
             batch_size = tf.shape(seq_dense_values)[0]
             dense_embed = tf.reshape(
-                self.dense_feat, [1, 1, self.dense_field_size, self.embed_size]
+                tf.gather(self.dense_feat, self.item_dense_col_indices),
+                [1, 1, item_dense_fields_num, self.embed_size],
             )
             # B * seq * F_dense * K
-            # Since dense_embeddings are same for all items,
-            # we can simply repeat it (batch * seq) times
+            # Since dense_embeddings are same for all items, we can simply repeat it (batch * seq) times
             seq_dense_embed = tf.tile(dense_embed, [batch_size, self.max_seq_len, 1, 1])
             seq_dense_embed = tf.multiply(seq_dense_embed, seq_dense_values)
             # B * seq * FK
