@@ -29,6 +29,7 @@ class GraphSageModel(nn.Module):
         self.item_embeds = nn.Embedding(data_info.n_items, embed_size)
         item_input_dim = (len(data_info.item_col) + 1) * embed_size
         self.item_proj = nn.Linear(item_input_dim, embed_size)
+        self.item_dense_col_indices = data_info.item_dense_col.index
         self.w_linears = nn.ModuleList(
             [nn.Linear(embed_size * 2, embed_size) for _ in range(num_layers)]
         )
@@ -36,6 +37,7 @@ class GraphSageModel(nn.Module):
             self.user_embeds = nn.Embedding(data_info.n_users, embed_size)
             user_input_dim = (len(data_info.user_col) + 1) * embed_size
             self.user_proj = nn.Linear(user_input_dim, embed_size)
+            self.user_dense_col_indices = data_info.user_dense_col.index
         self.sparse = check_sparse_indices(data_info)
         self.dense = check_dense_values(data_info)
         if self.sparse:
@@ -114,7 +116,10 @@ class GraphSageModel(nn.Module):
         if dense_values is not None:
             batch_size = dense_values.shape[0]
             # B * F_dense * K
-            dense_embeds = self.dense_embeds.repeat(batch_size, 1, 1)
+            index = (
+                self.user_dense_col_indices if is_user else self.item_dense_col_indices
+            )
+            dense_embeds = self.dense_embeds[index].repeat(batch_size, 1, 1)
             # B * F_dense * 1
             dense_vals = dense_values.unsqueeze(2)
             dense_feature = torch.mul(dense_embeds, dense_vals)
