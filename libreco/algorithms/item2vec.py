@@ -1,6 +1,6 @@
 """
 
-Reference: Oren Barkan and Noam Koenigstein. "Item2Vec: Neural Item Embedding for Collaborative Filtering"
+Reference: Oren Barkan and Noam Koenigstein. "Item2Vec: Neural Item Embedding for Collaborative Filtering"  # noqa: E501
            (https://arxiv.org/pdf/1603.04259.pdf)
 
 author: massquantity

@@ -1,6 +1,6 @@
 """
 
-Reference: Jiaxi Tang & Ke Wang. "Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding"
+Reference: Jiaxi Tang & Ke Wang. "Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding"  # noqa: E501
            (https://arxiv.org/pdf/1809.07426.pdf)
 
 author: massquantity

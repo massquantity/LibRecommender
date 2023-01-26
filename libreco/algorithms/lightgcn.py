@@ -1,6 +1,6 @@
 """
 
-Reference: Xiangnan He et al. "LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation"
+Reference: Xiangnan He et al. "LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation"  # noqa: E501
            (https://arxiv.org/pdf/2002.02126.pdf)
 
 author: massquantity

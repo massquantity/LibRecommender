@@ -301,7 +301,7 @@ class DIN(TfBase, metaclass=ModelMeta):
                 [1, 1, item_dense_fields_num, self.embed_size],
             )
             # B * seq * F_dense * K
-            # Since dense_embeddings are same for all items, we can simply repeat it (batch * seq) times
+            # Since dense_embeddings are same for all items, we can simply repeat it (batch * seq) times  # noqa: E501
             seq_dense_embed = tf.tile(dense_embed, [batch_size, self.max_seq_len, 1, 1])
             seq_dense_embed = tf.multiply(seq_dense_embed, seq_dense_values)
             # B * seq * FK

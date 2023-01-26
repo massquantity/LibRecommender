@@ -1,6 +1,6 @@
 """
 
-Reference: Weiping Song et al. "AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks"
+Reference: Weiping Song et al. "AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks"  # noqa: E501
            (https://arxiv.org/pdf/1810.11921.pdf)
 
 author: massquantity

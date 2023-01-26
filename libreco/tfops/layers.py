@@ -3,7 +3,7 @@ from functools import partial
 from .version import tf, TF_VERSION
 
 
-# It turns out that the position of `batch normalization` layer matters in neural networks, see discussions in:
+# It turns out that the position of `batch normalization` layer matters in neural networks, see discussions in:  # noqa: E501
 # https://stackoverflow.com/questions/39691902/ordering-of-batch-normalization-and-dropout
 # https://www.zhihu.com/question/283715823
 # Also according to the discussions, it is generally NOT recommended to use

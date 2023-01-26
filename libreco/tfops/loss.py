@@ -30,7 +30,7 @@ def choose_tf_loss(model, task, loss_type):
     return loss
 
 
-# focal loss for binary cross entropy based on [Lin et al., 2018](https://arxiv.org/pdf/1708.02002.pdf)
+# focal loss for binary cross entropy based on [Lin et al., 2018](https://arxiv.org/pdf/1708.02002.pdf)  # noqa: E501
 def focal_loss(labels, logits, alpha=0.25, gamma=2.0):
     weighting_factor = (labels * alpha) + ((1 - labels) * (1 - alpha))
     probs = tf.sigmoid(logits)

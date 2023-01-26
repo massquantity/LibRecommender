@@ -1,6 +1,6 @@
 """
 
-References: Yehuda Koren "Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model"
+References: Yehuda Koren "Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model"  # noqa: E501
             (https://dl.acm.org/citation.cfm?id=1401944)
 
 author: massquantity
