@@ -34,5 +34,6 @@ def save_to_json(path: str, data: dict):
 
 
 def check_path_exists(path):
+    assert isinstance(path, str) and path, f"invalid saving path: `{path}`"
     if not os.path.exists(path) or not os.path.isdir(path):
         os.makedirs(path)

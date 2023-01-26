@@ -1,9 +1,8 @@
 import os
-from typing import Union
 
 from scipy import sparse
 
-from libreco.algorithms import ItemCF, UserCF
+from libreco.bases import CfBase
 from .common import (
     check_path_exists,
     save_id_mapping,
@@ -13,7 +12,7 @@ from .common import (
 )
 
 
-def save_knn(path: str, model: Union[UserCF, ItemCF], k: int):
+def save_knn(path: str, model: CfBase, k: int):
     check_path_exists(path)
     save_model_name(path, model)
     save_id_mapping(path, model.data_info)

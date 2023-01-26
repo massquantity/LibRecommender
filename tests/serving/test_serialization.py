@@ -2,10 +2,10 @@ import json
 import os
 
 import pytest
-import tensorflow
 from tensorflow.core.protobuf.meta_graph_pb2 import MetaGraphDef
 
-from libreco.algorithms import ALS, DIN, ItemCF, NCF, UserCF
+from libreco.bases import CfBase, TfBase
+from libreco.tfops import tf
 from libserving.serialization import (
     embed2redis,
     knn2redis,
@@ -14,54 +14,29 @@ from libserving.serialization import (
     save_tf,
     tf2redis,
 )
-from tests.utils_path import SAVE_PATH, remove_path
+from tests.utils_path import SAVE_PATH
 
 
-def test_knn_serialization(knn_models, redis_client):
-    user_cf_model, item_cf_model = knn_models
-    # userCF
-    save_knn(SAVE_PATH, user_cf_model, k=10)
+@pytest.mark.parametrize("knn_model", ["UserCF", "ItemCF"], indirect=True)
+def test_knn_serialization(knn_model, redis_client):
+    assert isinstance(knn_model, CfBase)
+    save_knn(SAVE_PATH, knn_model, k=10)
     knn2redis(SAVE_PATH)
-    check_model_name(SAVE_PATH, user_cf_model, redis_client)
-    check_id_mapping(SAVE_PATH, user_cf_model, redis_client)
-    check_user_consumed(SAVE_PATH, user_cf_model, redis_client)
+    check_model_name(SAVE_PATH, knn_model, redis_client)
+    check_id_mapping(SAVE_PATH, knn_model, redis_client)
+    check_user_consumed(SAVE_PATH, knn_model, redis_client)
 
     sim_path = os.path.join(SAVE_PATH, "sim.json")
     with open(sim_path) as f:
         k_sims = json.load(f, object_hook=lambda d: {int(k): v for k, v in d.items()})
-    assert len(k_sims) == user_cf_model.n_users
+    model_num = (
+        knn_model.n_users if knn_model.model_name == "UserCF" else knn_model.n_items
+    )
+    assert len(k_sims) == model_num
     assert min(k_sims.keys()) == 0
-    assert max(k_sims.keys()) == user_cf_model.n_users - 1
+    assert max(k_sims.keys()) == model_num - 1
     k_sims_redis = load_from_redis(redis_client, name="k_sims", mode="hlist")
     assert k_sims == k_sims_redis
-
-    # itemCF
-    redis_client.flushdb()
-    save_knn(SAVE_PATH, item_cf_model, k=10)
-    knn2redis(SAVE_PATH)
-    check_model_name(SAVE_PATH, item_cf_model, redis_client)
-    check_id_mapping(SAVE_PATH, item_cf_model, redis_client)
-    check_user_consumed(SAVE_PATH, item_cf_model, redis_client)
-
-    sim_path = os.path.join(SAVE_PATH, "sim.json")
-    with open(sim_path) as f:
-        k_sims = json.load(f, object_hook=lambda d: {int(k): v for k, v in d.items()})
-    assert len(k_sims) == item_cf_model.n_items
-    assert min(k_sims.keys()) == 0
-    assert max(k_sims.keys()) == item_cf_model.n_items - 1
-    k_sims_redis = load_from_redis(redis_client, name="k_sims", mode="hlist")
-    assert k_sims == k_sims_redis
-
-
-@pytest.fixture
-def knn_models(prepare_pure_data):
-    _, train_data, _, data_info = prepare_pure_data
-    train_data.build_negative_samples(data_info, seed=2022)
-    user_cf_model = UserCF("ranking", data_info)
-    user_cf_model.fit(train_data, verbose=2)
-    item_cf_model = ItemCF("ranking", data_info)
-    item_cf_model.fit(train_data, verbose=2)
-    return user_cf_model, item_cf_model
 
 
 def test_embed_serialization(embed_model, redis_client):
@@ -83,69 +58,23 @@ def test_embed_serialization(embed_model, redis_client):
     assert user_embed == user_embed_redis
 
 
-@pytest.fixture
-def embed_model(prepare_pure_data):
-    _, train_data, _, data_info = prepare_pure_data
-    train_data.build_negative_samples(data_info, seed=2022)
-    model = ALS("ranking", data_info, n_epochs=1, use_cg=False, reg=0.1)
-    model.fit(train_data, verbose=2)
-    return model
-
-
-def test_tf_pure_serialization(ncf_model, redis_client):
-    tf = tensorflow.compat.v1
-    save_tf(SAVE_PATH, ncf_model, version=1)
+@pytest.mark.parametrize("tf_model", ["pure", "feat"], indirect=True)
+def test_tf_serialization(tf_model, redis_client):
+    assert isinstance(tf_model, TfBase)
+    save_tf(SAVE_PATH, tf_model, version=1)
     tf2redis(SAVE_PATH)
-    check_model_name(SAVE_PATH, ncf_model, redis_client)
-    check_id_mapping(SAVE_PATH, ncf_model, redis_client)
-    check_user_consumed(SAVE_PATH, ncf_model, redis_client)
-    check_features(SAVE_PATH, ncf_model, redis_client)
+    check_model_name(SAVE_PATH, tf_model, redis_client)
+    check_id_mapping(SAVE_PATH, tf_model, redis_client)
+    check_user_consumed(SAVE_PATH, tf_model, redis_client)
+    check_features(SAVE_PATH, tf_model, redis_client)
 
-    SAVE_MODEL_PATH = os.path.join(SAVE_PATH, "ncf", "1")
+    model_name = tf_model.model_name.lower()
+    SAVE_MODEL_PATH = os.path.join(SAVE_PATH, model_name, "1")
     with tf.Session(graph=tf.Graph()) as sess:
         loaded_model = tf.saved_model.load(
             sess, [tf.saved_model.tag_constants.SERVING], SAVE_MODEL_PATH
         )
     assert isinstance(loaded_model, MetaGraphDef)
-
-
-@pytest.fixture
-def ncf_model(prepare_pure_data):
-    tensorflow.compat.v1.reset_default_graph()
-    remove_path(SAVE_PATH)
-    _, train_data, _, data_info = prepare_pure_data
-    train_data.build_negative_samples(data_info, seed=2022)
-    model = NCF("ranking", data_info, n_epochs=1, batch_size=2048)
-    model.fit(train_data, verbose=2)
-    return model
-
-
-def test_tf_feat_serialization(din_model, redis_client):
-    tf = tensorflow.compat.v1
-    save_tf(SAVE_PATH, din_model, version=1)
-    tf2redis(SAVE_PATH)
-    check_model_name(SAVE_PATH, din_model, redis_client)
-    check_id_mapping(SAVE_PATH, din_model, redis_client)
-    check_user_consumed(SAVE_PATH, din_model, redis_client)
-    check_features(SAVE_PATH, din_model, redis_client)
-
-    SAVE_MODEL_PATH = os.path.join(SAVE_PATH, "din", "1")
-    with tf.Session(graph=tf.Graph()) as sess:
-        loaded_model = tf.saved_model.load(
-            sess, [tf.saved_model.tag_constants.SERVING], SAVE_MODEL_PATH
-        )
-    assert isinstance(loaded_model, MetaGraphDef)
-
-
-@pytest.fixture
-def din_model(prepare_feat_data):
-    tensorflow.compat.v1.reset_default_graph()
-    remove_path(SAVE_PATH)
-    _, train_data, _, data_info = prepare_feat_data
-    train_data.build_negative_samples(data_info, seed=2022)
-    model = DIN("ranking", data_info, n_epochs=1, batch_size=2048)
-    model.fit(train_data, verbose=2)
-    return model
 
 
 def check_model_name(path, model, redis_client):
