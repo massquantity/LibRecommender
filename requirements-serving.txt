@@ -1,9 +1,7 @@
-sanic>=22.3
+sanic>=20.12
 ujson
 requests
 pydantic
 aiohttp
-redis
-redis-py>=4.2.0
-faiss>=1.5.2
-TensorFlow Serving==2.8.2
+redis>=4.2.0
+faiss-cpu>=1.5.2
