@@ -196,6 +196,7 @@ The table below shows some compatible version combinations:
 
 #### Optional Dependencies for [`libserving`](https://github.com/massquantity/LibRecommender/tree/master/libserving):
 
++ Python >= 3.7
 + sanic >= 22.3
 + requests
 + aiohttp
