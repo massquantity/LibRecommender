@@ -1,7 +1,8 @@
-sanic>=20.12
+sanic>=22.3
 ujson
 requests
 pydantic
 aiohttp
 redis>=4.2.0
-faiss-cpu>=1.5.2
+faiss-cpu==1.7.2;python_version=='3.6'
+faiss-cpu>=1.5.2;python_version>'3.6'

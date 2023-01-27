@@ -33,7 +33,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip wheel setuptools
+          python -m pip install -U pip wheel setuptools
           python -m pip install -r requirements.txt
           python -m pip install nmslib
           python -m pip install dgl -f https://data.dgl.ai/wheels/repo.html
@@ -46,14 +46,34 @@ jobs:
       - name: Lint with flake8
         run: |
           python -m pip install flake8
-          flake8  --count --show-source --statistics --max-line-length=120 --ignore=E203,F811,F401,W503,W504 libreco/ libserving/ tests/ examples/
+          flake8 libreco/ libserving/ tests/ examples/
+
+      - name: Set up Redis
+        uses: shogo82148/actions-setup-redis@v1
+        with:
+          redis-version: '7.x'
+        if: matrix.python-version != '3.6'
+
+      - name: Test Redis
+        run: redis-cli ping
+        if: matrix.python-version != '3.6'
+
+      - name: Test for python3.6
+        run: |
+          python -m pip install pytest coverage
+          coverage run -m pytest tests/ --ignore="tests/serving"
+        if: matrix.python-version == '3.6'
 
       - name: Test with pytest and coverage
         run: |
-          python -m pip install -U pytest coverage
+          python -m pip install -r requirements-serving.txt
+          python -m pip install pytest coverage
+          bash tests/serving/setup_coverage.sh
           coverage --version
-          coverage run -m pytest tests/ --ignore="tests/serving" -v --durations=20 --color=yes
+          coverage run -m pytest tests/
+          coverage combine --append
           coverage xml
+        if: matrix.python-version != '3.6'
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -63,3 +83,4 @@ jobs:
           name: python${{ matrix.python-version }}-test
           fail_ci_if_error: false
           verbose: true
+        if: matrix.python-version != '3.6'

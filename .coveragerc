@@ -1,20 +1,32 @@
 [run]
-parallel = False
+parallel = True
 
-source = libreco
+concurrency = multiprocessing
+
+source =
+    libreco/
+    libserving/serialization/
+    libserving/sanic_serving/
 
 [report]
 exclude_lines =
     pragma: no cover
     raise AssertionError
     raise NotImplementedError
+    raise OSError.*
+    raise SanicException.*
+    except .*redis.*
+    except ValidationError.
+    def check_model_exists
+    if not path:
     if __name__ == .__main__.:
     @(abc\.)?abstractmethod
-    raise OSError.*
 
 precision = 2
 
 show_missing = True
+
+skip_empty = True
 
 [html]
 directory = html-coverage-report
