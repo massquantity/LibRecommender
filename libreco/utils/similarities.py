@@ -1,5 +1,5 @@
-import math
 import logging
+import math
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -8,11 +8,11 @@ from scipy.sparse.linalg import norm as spnorm
 try:
     from ._similarities import (
         forward_cosine,
-        invert_cosine,
-        forward_pearson,
-        invert_pearson,
         forward_jaccard,
+        forward_pearson,
+        invert_cosine,
         invert_jaccard,
+        invert_pearson,
     )
 except (ImportError, ModuleNotFoundError):
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"

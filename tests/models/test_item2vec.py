@@ -2,7 +2,6 @@ import pytest
 import tensorflow as tf
 
 from libreco.algorithms import Item2Vec
-
 from tests.utils_metrics import get_metrics
 from tests.utils_path import remove_path
 from tests.utils_pred import ptest_preds

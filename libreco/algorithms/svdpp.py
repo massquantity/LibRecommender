@@ -1,6 +1,6 @@
 """
 
-References: Yehuda Koren "Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model"  # noqa: E501
+References: Yehuda Koren "Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model"
             (https://dl.acm.org/citation.cfm?id=1401944)
 
 author: massquantity
@@ -9,10 +9,8 @@ author: massquantity
 import os
 
 import numpy as np
-from tensorflow.keras.initializers import (
-    zeros as tf_zeros,
-    truncated_normal as tf_truncated_normal,
-)
+from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase
 from ..data.sequence import sparse_tensor_interaction

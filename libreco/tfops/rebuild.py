@@ -2,8 +2,8 @@ import os
 
 import numpy as np
 
-from .version import tf
 from .variables import modify_variable_names
+from .version import tf
 
 
 def rebuild_tf_model(self, path, model_name, full_assign=False):

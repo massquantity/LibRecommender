@@ -9,12 +9,11 @@ from scipy.sparse import csr_matrix
 
 from libreco.data import DatasetPure
 from libreco.utils.similarities import (
-    cosine_sim,
-    pearson_sim,
-    jaccard_sim,
     _choose_blocks,
+    cosine_sim,
+    jaccard_sim,
+    pearson_sim,
 )
-
 
 raw_data = """
 user,item,label

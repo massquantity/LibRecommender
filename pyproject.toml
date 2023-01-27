@@ -1,0 +1,54 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel",
+    "Cython>=0.29.0,<3",
+    "numpy>=1.19.5",
+    "scipy>=1.2.1",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 88
+target-version = ["py36", "py38", "py310"]
+
+[tool.isort]
+atomic = true
+default_section = "THIRDPARTY"
+force_grid_wrap = 0
+include_trailing_comma = true
+known_first_party = ["libreco", "libserving"]
+known_third_party = "pytest"
+line_length = 88
+multi_line_output = 3
+profile = "black"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-v --durations=20 --color=yes"
+filterwarnings = [
+    "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning",
+    "ignore:distutils Version classes are deprecated. Use packaging.version instead:DeprecationWarning",
+    "ignore:The gensim.similarities.levenshtein submodule is disabled, because the optional Levenshtein package:UserWarning",
+    "ignore:.(tf.layers|layer|tf.nn).* is deprecated:UserWarning",
+    "ignore:User provided device_type of 'cuda', but CUDA is not available:UserWarning",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+show-source = true
+ignore = ["E501", "F401", "B008", "B010", "S101", "S104"]
+select = [
+    # pyflakes
+    "F",
+    # pycodestyle
+    "E",
+    "W",
+    # flake8-2020
+    "YTT",
+    # flake8-bugbear
+    "B",
+    # flake8-bandit
+    "S",
+]

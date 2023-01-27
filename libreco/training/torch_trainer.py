@@ -5,13 +5,8 @@ import torch
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 
-from .trainer import BaseTrainer
 from ..evaluation import print_metrics
-from ..graph import (
-    build_subgraphs,
-    compute_i2i_edge_scores,
-    compute_u2i_edge_scores,
-)
+from ..graph import build_subgraphs, compute_i2i_edge_scores, compute_u2i_edge_scores
 from ..sampling import (
     DataGenerator,
     PairwiseDataGenerator,
@@ -28,6 +23,7 @@ from ..torchops import (
     pairwise_focal_loss,
 )
 from ..utils.misc import colorize, time_block
+from .trainer import BaseTrainer
 
 
 class TorchTrainer(BaseTrainer):

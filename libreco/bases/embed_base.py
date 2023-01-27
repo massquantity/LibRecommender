@@ -4,7 +4,6 @@ from operator import itemgetter
 
 import numpy as np
 
-from .base import Base
 from ..prediction import predict_from_embedding
 from ..recommendation import cold_start_rec, construct_rec, recommend_from_embedding
 from ..utils.misc import colorize
@@ -17,6 +16,7 @@ from ..utils.save_load import (
     save_torch_state_dict,
 )
 from ..utils.validate import check_unknown_user
+from .base import Base
 
 
 class EmbedBase(Base):

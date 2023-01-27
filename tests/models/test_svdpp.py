@@ -2,7 +2,6 @@ import pytest
 import tensorflow as tf
 
 from libreco.algorithms import SVDpp
-
 from tests.utils_metrics import get_metrics
 from tests.utils_path import SAVE_PATH
 from tests.utils_pred import ptest_preds

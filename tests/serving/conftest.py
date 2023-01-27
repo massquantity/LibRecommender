@@ -6,7 +6,7 @@ import pytest
 import redis
 import tensorflow
 
-from libreco.algorithms import ALS, DIN, ItemCF, NCF, UserCF
+from libreco.algorithms import ALS, DIN, NCF, ItemCF, UserCF
 from libreco.data import DatasetFeat
 from tests.utils_path import SAVE_PATH, remove_path
 

@@ -10,10 +10,10 @@ import importlib
 
 import torch
 
-from .graphsage_dgl import GraphSageDGL
-from .torch_modules import PinSageDGLModel
 from ..bases import ModelMeta
 from ..graph import check_dgl
+from .graphsage_dgl import GraphSageDGL
+from .torch_modules import PinSageDGLModel
 
 
 @check_dgl

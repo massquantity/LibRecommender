@@ -2,7 +2,6 @@ import pytest
 import tensorflow as tf
 
 from libreco.algorithms import FM
-
 from tests.utils_metrics import get_metrics
 from tests.utils_multi_sparse_models import fit_multi_sparse
 from tests.utils_path import SAVE_PATH, remove_path

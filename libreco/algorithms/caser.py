@@ -1,17 +1,15 @@
 """
 
-Reference: Jiaxi Tang & Ke Wang. "Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding"  # noqa: E501
+Reference: Jiaxi Tang & Ke Wang. "Personalized Top-N Sequential Recommendation via Convolutional Sequence Embedding"
            (https://arxiv.org/pdf/1809.07426.pdf)
 
 author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import (
-    zeros as tf_zeros,
-    truncated_normal as tf_truncated_normal,
-    glorot_normal as tf_glorot_normal,
-)
+from tensorflow.keras.initializers import glorot_normal as tf_glorot_normal
+from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase, ModelMeta
 from ..data.sequence import get_user_last_interacted

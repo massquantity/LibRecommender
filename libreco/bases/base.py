@@ -1,7 +1,7 @@
 import abc
 import time
 
-from ..utils.constants import PURE_MODELS, FEAT_MODELS, SEQUENCE_MODELS
+from ..utils.constants import FEAT_MODELS, PURE_MODELS, SEQUENCE_MODELS
 from ..utils.misc import colorize
 
 

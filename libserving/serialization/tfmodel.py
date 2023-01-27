@@ -7,6 +7,7 @@ from libreco.data import DataInfo
 from libreco.data.data_info import EmptyFeature
 from libreco.tfops import tf
 from libreco.utils.misc import colorize
+
 from .common import (
     check_path_exists,
     save_id_mapping,

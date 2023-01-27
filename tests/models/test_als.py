@@ -4,7 +4,6 @@ import pytest
 
 from libreco.algorithms import ALS
 from libreco.algorithms.als import least_squares, least_squares_cg
-
 from libreco.evaluation import evaluate
 from tests.utils_metrics import get_metrics
 from tests.utils_path import SAVE_PATH, remove_path

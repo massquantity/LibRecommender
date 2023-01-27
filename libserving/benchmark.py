@@ -47,7 +47,7 @@ async def main_async(args):
 
 
 def get_reco_sync(url: str, data: dict):
-    resp = requests.post(url, json=data)
+    resp = requests.post(url, json=data, timeout=1)
     resp.raise_for_status()
     return resp.json()
 

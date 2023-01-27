@@ -19,7 +19,7 @@ def main():
     args = parse_args()
     url = f"http://{args.host}:{args.port}/{args.algo}/recommend"
     data = {"user": args.user, "n_rec": args.n_rec}
-    response = requests.post(url, json=data)
+    response = requests.post(url, json=data, timeout=1)
     if response.status_code != 200:
         print(f"Failed to get recommendation: {url}")
         print(response.text)

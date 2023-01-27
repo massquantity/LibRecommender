@@ -7,15 +7,15 @@ References:
         (https://stanford.edu/~rezab/classes/cme323/S15/notes/lec14.pdf)
     [2] Yifan Hu et al. Collaborative Filtering for Implicit Feedback Datasets
         (http://yifanhu.net/PUB/cf.pdf)
-    [3] Gábor Takács et al. Applications of the Conjugate Gradient Method for Implicit Feedback Collaborative Filtering  # noqa: E501
+    [3] Gábor Takács et al. Applications of the Conjugate Gradient Method for Implicit Feedback Collaborative Filtering
         (http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.379.6473&rep=rep1&type=pdf)
 
 author: massquantity
 
 """
+import logging
 import numbers
 import os
-import logging
 from functools import partial
 
 import numpy as np

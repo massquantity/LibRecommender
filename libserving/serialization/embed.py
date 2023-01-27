@@ -3,6 +3,7 @@ import os
 import numpy as np
 
 from libreco.bases import EmbedBase
+
 from .common import (
     check_path_exists,
     save_id_mapping,

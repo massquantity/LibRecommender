@@ -3,20 +3,20 @@ import itertools
 import numpy as np
 import pandas as pd
 
-from .data_info import DataInfo
-from .transformed import TransformedSet
 from ..feature import (
     col_name2index,
     construct_unique_feat,
-    get_user_item_sparse_indices,
-    merge_sparse_indices,
-    merge_sparse_col,
-    merge_offset,
     get_oov_pos,
-    multi_sparse_combine_info,
+    get_user_item_sparse_indices,
+    merge_offset,
+    merge_sparse_col,
+    merge_sparse_indices,
     multi_sparse_col_map,
+    multi_sparse_combine_info,
     recover_sparse_cols,
 )
+from .data_info import DataInfo
+from .transformed import TransformedSet
 
 
 class Dataset(object):

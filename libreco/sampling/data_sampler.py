@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
+from ..graph import pairs_from_dgl_graph
 from .batch_unit import PairwiseBatch, PointwiseBatch, PointwiseSepFeatBatch
 from .negatives import (
     neg_probs_from_frequency,
@@ -14,7 +15,6 @@ from .negatives import (
     pos_probs_from_frequency,
 )
 from .random_walks import pairs_from_random_walk
-from ..graph import pairs_from_dgl_graph
 
 
 class DataGenerator:

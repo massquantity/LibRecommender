@@ -1,5 +1,6 @@
 import numpy as np
 import tqdm
+
 from .sequence import sparse_user_interacted, user_interacted_seq
 
 

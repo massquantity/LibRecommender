@@ -1,7 +1,7 @@
-from .graphsage_module import GraphSageModel, GraphSageDGLModel
+from .graphsage_module import GraphSageDGLModel, GraphSageModel
 from .lightgcn_module import LightGCNModel
 from .ngcf_module import NGCFModel
-from .pinsage_module import PinSageModel, PinSageDGLModel
+from .pinsage_module import PinSageDGLModel, PinSageModel
 
 __all__ = [
     "GraphSageModel",
