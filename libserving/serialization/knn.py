@@ -3,6 +3,7 @@ import os
 from scipy import sparse
 
 from libreco.bases import CfBase
+
 from .common import (
     check_path_exists,
     save_id_mapping,

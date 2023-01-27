@@ -1,6 +1,6 @@
 import abc
 
-from ..data.data_generator import DataGenPure, DataGenFeat, DataGenSequence
+from ..data.data_generator import DataGenFeat, DataGenPure, DataGenSequence
 
 
 class BaseTrainer(abc.ABC):

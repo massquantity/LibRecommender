@@ -8,9 +8,9 @@ author: massquantity
 """
 import torch
 
-from .torch_modules import NGCFModel
 from ..bases import EmbedBase, ModelMeta
 from ..training import TorchTrainer
+from .torch_modules import NGCFModel
 
 
 class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):

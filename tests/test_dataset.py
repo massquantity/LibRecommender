@@ -8,10 +8,10 @@ import pytest
 from scipy.sparse import csr_matrix
 
 from libreco.data import (
-    DatasetPure,
-    DatasetFeat,
-    TransformedSet,
     DataInfo,
+    DatasetFeat,
+    DatasetPure,
+    TransformedSet,
     process_data,
 )
 from libreco.data.dataset import Dataset

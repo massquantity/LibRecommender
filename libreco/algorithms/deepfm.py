@@ -1,6 +1,6 @@
 """
 
-Reference: Huifeng Guo et al. "DeepFM: A Factorization-Machine based Neural Network for CTR Prediction"  # noqa: E501
+Reference: Huifeng Guo et al. "DeepFM: A Factorization-Machine based Neural Network for CTR Prediction"
            (https://arxiv.org/pdf/1703.04247.pdf)
 
 author: massquantity

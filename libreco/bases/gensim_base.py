@@ -4,11 +4,11 @@ import os
 import numpy as np
 from gensim.models import Word2Vec
 
-from .embed_base import EmbedBase
 from ..evaluation import print_metrics
 from ..recommendation import recommend_from_embedding
 from ..utils.misc import time_block
 from ..utils.save_load import save_default_recs, save_params
+from .embed_base import EmbedBase
 
 
 class GensimBase(EmbedBase):

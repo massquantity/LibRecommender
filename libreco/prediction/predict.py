@@ -9,7 +9,7 @@ from ..feature import (
     get_predict_indices_and_values,
 )
 from ..tfops import get_feed_dict
-from ..utils.validate import convert_id, check_unknown
+from ..utils.validate import check_unknown, convert_id
 
 
 def normalize_prediction(preds, model, cold_start, unknown_num, unknown_index):

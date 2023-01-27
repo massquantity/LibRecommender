@@ -13,11 +13,11 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from .torch_modules import GraphSageDGLModel
 from ..bases import EmbedBase, ModelMeta
 from ..graph import check_dgl
-from ..torchops import user_unique_to_tensor, item_unique_to_tensor
+from ..torchops import item_unique_to_tensor, user_unique_to_tensor
 from ..training import SageDGLTrainer
+from .torch_modules import GraphSageDGLModel
 
 
 @check_dgl
@@ -162,7 +162,7 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
         )
 
     def transform_blocks(self, nodes, target_nodes=None):
-        """# noqa: W605
+        """
         bipartite graph block: (items(nodes) -> sampled neighbor nodes)
         -------------
         |     / ... |
@@ -171,7 +171,7 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
         |    \  src |
         |     \ ... |
         -------------
-        """
+        """  # noqa: W605
         dgl = self._dgl
         blocks = []
         for _ in range(self.num_layers):

@@ -1,18 +1,13 @@
-from collections import namedtuple
 import inspect
 import json
 import os
+from collections import namedtuple
 
 import numpy as np
 import pandas as pd
 from numpy.random import default_rng
 
-from ..feature import (
-    interaction_consumed,
-    compute_sparse_feat_indices,
-    check_oov,
-)
-
+from ..feature import check_oov, compute_sparse_feat_indices, interaction_consumed
 
 Feature = namedtuple("Feature", ["name", "index"])
 EmptyFeature = Feature(name=[], index=[])

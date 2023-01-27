@@ -1,11 +1,10 @@
 from .configs import dropout_config, lr_decay_config, reg_config, sess_config
 from .features import get_feed_dict, multi_sparse_combine_embedding
-from .layers import dense_nn, conv_nn, max_pool, tf_rnn, tf_dense
+from .layers import conv_nn, dense_nn, max_pool, tf_dense, tf_rnn
 from .loss import choose_tf_loss
 from .rebuild import rebuild_tf_model
 from .variables import modify_variable_names, var_list_by_name
-from .version import tf, TF_VERSION
-
+from .version import TF_VERSION, tf
 
 __all__ = [
     "dropout_config",

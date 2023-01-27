@@ -6,7 +6,7 @@ def binary_cross_entropy_loss(logits, labels):
     return F.binary_cross_entropy_with_logits(logits, labels)
 
 
-# focal loss for binary cross entropy based on [Lin et al., 2018](https://arxiv.org/pdf/1708.02002.pdf)  # noqa: E501
+# focal loss for binary cross entropy based on [Lin et al., 2018](https://arxiv.org/pdf/1708.02002.pdf)
 def focal_loss(logits, labels, alpha=0.25, gamma=2.0, mean=True):
     weighting_factor = (labels * alpha) + ((1 - labels) * (1 - alpha))
     probs = torch.sigmoid(logits)

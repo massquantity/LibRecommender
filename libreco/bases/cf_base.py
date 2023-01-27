@@ -6,16 +6,18 @@ from itertools import islice, takewhile
 from operator import itemgetter
 
 import numpy as np
-from scipy.sparse import issparse, save_npz as save_sparse, load_npz as load_sparse
+from scipy.sparse import issparse
+from scipy.sparse import load_npz as load_sparse
+from scipy.sparse import save_npz as save_sparse
 
 from ..bases import Base
 from ..evaluation import print_metrics
 from ..recommendation import construct_rec, popular_recommendations
 from ..recommendation.ranking import filter_items
-from ..utils.misc import time_block, colorize
+from ..utils.misc import colorize, time_block
 from ..utils.save_load import load_params, save_params
 from ..utils.similarities import cosine_sim, jaccard_sim, pearson_sim
-from ..utils.validate import check_unknown_user, convert_id, check_unknown
+from ..utils.validate import check_unknown, check_unknown_user, convert_id
 
 
 class CfBase(Base):

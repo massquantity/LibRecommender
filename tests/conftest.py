@@ -1,10 +1,10 @@
 import os
 
 import numpy as np
-import pytest
 import pandas as pd
+import pytest
 
-from libreco.data import split_by_ratio_chrono, DatasetPure, DatasetFeat
+from libreco.data import DatasetFeat, DatasetPure, split_by_ratio_chrono
 from tests.utils_path import SAVE_PATH, remove_path
 
 

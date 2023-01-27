@@ -7,10 +7,8 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import (
-    zeros as tf_zeros,
-    truncated_normal as tf_truncated_normal,
-)
+from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase, ModelMeta
 from ..data.sequence import sparse_user_last_interacted

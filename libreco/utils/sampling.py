@@ -1,5 +1,6 @@
 from math import floor
-from random import random, seed as set_random_seed
+from random import random
+from random import seed as set_random_seed
 
 import numpy as np
 from tqdm import tqdm

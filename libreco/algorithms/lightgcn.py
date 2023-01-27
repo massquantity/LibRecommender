@@ -1,6 +1,6 @@
 """
 
-Reference: Xiangnan He et al. "LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation"  # noqa: E501
+Reference: Xiangnan He et al. "LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation"
            (https://arxiv.org/pdf/2002.02126.pdf)
 
 author: massquantity
@@ -8,9 +8,9 @@ author: massquantity
 """
 import torch
 
-from .torch_modules import LightGCNModel
 from ..bases import EmbedBase, ModelMeta
 from ..training import TorchTrainer
+from .torch_modules import LightGCNModel
 
 
 class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):

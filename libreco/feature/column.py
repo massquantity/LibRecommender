@@ -1,6 +1,6 @@
+import itertools
 from array import array
 from collections import defaultdict
-import itertools
 
 import numpy as np
 
@@ -168,7 +168,6 @@ def multi_sparse_combine_info(
     # ]
     # offset = np.cumsum(np.array([0] + unique_values))
     # offset = offset.tolist()[:-1] + sparse_last_offset
-
     # all_sparse_cols = data_class.sparse_col.name
     field_offset = [all_sparse_cols.index(field[0]) for field in multi_sparse_col]
     field_length = [len(col) for col in multi_sparse_col]

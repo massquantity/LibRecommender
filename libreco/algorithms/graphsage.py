@@ -10,15 +10,11 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from .torch_modules import GraphSageModel
 from ..bases import EmbedBase, ModelMeta
 from ..sampling import bipartite_neighbors
-from ..torchops import (
-    feat_to_tensor,
-    user_unique_to_tensor,
-    item_unique_to_tensor,
-)
+from ..torchops import feat_to_tensor, item_unique_to_tensor, user_unique_to_tensor
 from ..training import SageTrainer
+from .torch_modules import GraphSageModel
 
 
 class GraphSage(EmbedBase, metaclass=ModelMeta, backend="torch"):

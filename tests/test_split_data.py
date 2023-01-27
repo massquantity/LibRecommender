@@ -10,7 +10,6 @@ from libreco.data import (
     split_by_ratio_chrono,
 )
 
-
 raw_data = StringIO(
     """
 user,item,label,time

@@ -4,11 +4,10 @@ import pandas as pd
 import tensorflow as tf
 
 import libreco
-from libreco.algorithms import Caser, UserCF, ALS, BPR, RNN4Rec
-from libreco.data import split_by_ratio_chrono, DatasetPure
+from libreco.algorithms import ALS, BPR, Caser, RNN4Rec, UserCF
+from libreco.data import DatasetPure, split_by_ratio_chrono
 from libreco.tfops import TF_VERSION
 from libreco.utils.similarities import cosine_sim
-
 
 if __name__ == "__main__":
     print(f"tensorflow version: {TF_VERSION}")

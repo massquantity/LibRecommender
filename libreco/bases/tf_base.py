@@ -2,7 +2,6 @@ import os
 
 import numpy as np
 
-from .base import Base
 from ..prediction import predict_tf_feat
 from ..recommendation import cold_start_rec, construct_rec, recommend_tf_feat
 from ..tfops import modify_variable_names, sess_config, tf
@@ -15,6 +14,7 @@ from ..utils.save_load import (
     save_tf_variables,
 )
 from ..utils.validate import check_unknown_user
+from .base import Base
 
 
 class TfBase(Base):
