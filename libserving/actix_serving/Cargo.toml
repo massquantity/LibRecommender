@@ -20,7 +20,7 @@ reqwest = { version = "0.11", default-features = false, features = ["json", "rus
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
-tokio = { version = "1.23.0", features = ["full"] }
+tokio = { version = "1.23.1", features = ["full"] }
 walkdir = "2.3.2"
 
 [profile.release]
