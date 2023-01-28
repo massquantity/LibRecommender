@@ -45,7 +45,7 @@ def embed_model(prepare_pure_data):
 
 
 @pytest.fixture
-def tf_model(prepare_pure_data, prepare_feat_data, request):
+def tf_model(prepare_pure_data, request):
     tensorflow.compat.v1.reset_default_graph()
     remove_path(SAVE_PATH)
     if request.param == "pure":

@@ -75,9 +75,9 @@ jobs:
           python -m pip install -r requirements-serving.txt
           python -m pip install pytest coverage
           bash tests/serving/setup_coverage.sh
-          coverage --version
+          coverage --version && coverage erase
           coverage run -m pytest tests/
-          coverage combine --append
+          coverage combine && coverage report
           coverage xml
         if: matrix.python-version != '3.6'
 

@@ -2,6 +2,7 @@ import subprocess
 import time
 from pathlib import Path
 
+import redis
 import requests
 
 from libserving.serialization import embed2redis, save_embed, save_faiss_index
@@ -14,13 +15,12 @@ def test_embed_serving(embed_model):
     faiss_path = str(Path(__file__).parents[2] / "libserving" / "embed_model")
     save_faiss_index(faiss_path, embed_model, 40, 10)
 
-    subprocess.run(["pkill", "sanic"], check=False)
     subprocess.run(
         "sanic libserving.sanic_serving.embed_deploy:app --no-access-logs --workers 2 &",
         shell=True,
         check=True,
     )
-    time.sleep(3)  # wait for the server to start
+    time.sleep(2)  # wait for the server to start
 
     response = requests.post(
         "http://localhost:8000/embed/recommend", json={"user": 1, "n_rec": 1}, timeout=1
@@ -35,3 +35,7 @@ def test_embed_serving(embed_model):
 
     subprocess.run(["pkill", "sanic"], check=False)
     remove_path(faiss_path)
+    r = redis.Redis()
+    r.flushdb()
+    r.close()
+    time.sleep(1)
