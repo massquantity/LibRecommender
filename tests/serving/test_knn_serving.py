@@ -2,6 +2,7 @@ import subprocess
 import time
 
 import pytest
+import redis
 import requests
 
 from libreco.bases import CfBase
@@ -15,13 +16,12 @@ def test_knn_serving(knn_model):
     save_knn(SAVE_PATH, knn_model, k=10)
     knn2redis(SAVE_PATH)
 
-    subprocess.run(["pkill", "sanic"], check=False)
     subprocess.run(
         "sanic libserving.sanic_serving.knn_deploy:app --no-access-logs --workers 2 &",
         shell=True,
         check=True,
     )
-    time.sleep(3)  # wait for the server to start
+    time.sleep(2)  # wait for the server to start
 
     response = requests.post(
         "http://localhost:8000/knn/recommend", json={"user": 1, "n_rec": 1}, timeout=1
@@ -33,3 +33,7 @@ def test_knn_serving(knn_model):
     assert len(list(response.json().values())[0]) == 3
 
     subprocess.run(["pkill", "sanic"], check=False)
+    r = redis.Redis()
+    r.flushdb()
+    r.close()
+    time.sleep(1)
