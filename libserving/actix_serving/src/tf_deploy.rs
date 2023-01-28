@@ -4,15 +4,38 @@ use actix_web::{post, web, Responder};
 use deadpool_redis::{redis::AsyncCommands, Pool};
 use log::info;
 use serde_json::{json, Value};
+use tokio::sync::Semaphore;
 
 use crate::common::{Param, Prediction, Recommendation};
 use crate::errors::{ServingError, ServingResult};
 use crate::features::{build_features, build_last_interaction, get_raw_features, get_seq_feature};
 use crate::redis_ops::{check_exists, get_multi_str, get_str, get_vec};
 
+#[derive(Clone)]
+pub struct TfAppState {
+    client: reqwest::Client,
+    semaphore: std::sync::Arc<Semaphore>,
+}
+
+pub fn init_tf_state(model_type: &str) -> ServingResult<Option<TfAppState>> {
+    match model_type {
+        "tf" => {
+            let client = reqwest::Client::new();
+            let default_limit = num_cpus::get_physical() * 4;
+            let request_limit =
+                std::env::var("REQUEST_LIMIT").map_or(Ok(default_limit), |s| s.parse::<usize>())?;
+            info!("tf serving request limit: {request_limit}");
+            let semaphore = std::sync::Arc::new(Semaphore::new(request_limit));
+            Ok(Some(TfAppState { client, semaphore }))
+        }
+        _ => Ok(None),
+    }
+}
+
 #[post("/tf/recommend")]
 pub async fn tf_serving(
     param: web::Json<Param>,
+    state: web::Data<TfAppState>,
     redis_pool: web::Data<Pool>,
 ) -> ServingResult<impl Responder> {
     let Param { user, n_rec } = param.0;
@@ -32,7 +55,7 @@ pub async fn tf_serving(
     build_features(&mut all_data, &raw_feats, &user_id, n_items)?;
     let max_seq_len = get_seq_feature(&mut conn, &model_name).await?;
     build_last_interaction(&mut all_data, max_seq_len, n_items, &user_consumed);
-    let scores = request_tf_serving(&all_data, &model_name).await?;
+    let scores = request_tf_serving(&all_data, &model_name, state).await?;
     let item_ids = rank_items_by_score(&scores, n_rec, &user_consumed);
     let recs = get_multi_str(&mut conn, "id2item", &item_ids).await?;
     Ok(web::Json(Recommendation { rec_list: recs }))
@@ -41,6 +64,7 @@ pub async fn tf_serving(
 async fn request_tf_serving(
     data: &HashMap<String, Value>,
     model_name: &str,
+    state: web::Data<TfAppState>,
 ) -> Result<Vec<f32>, reqwest::Error> {
     let host = std::env::var("TF_SERVING_HOST").unwrap_or_else(|_| String::from("127.0.0.1"));
     let url = format!(
@@ -52,14 +76,12 @@ async fn request_tf_serving(
         "signature_name": "predict",
         "inputs": data,
     });
-    let resp = reqwest::Client::new()
-        .post(url)
-        .json(&req)
-        .send()
-        .await?
-        .json::<Prediction>()
-        .await?;
-    Ok(resp.outputs)
+    let permit = state.semaphore.acquire().await.unwrap();
+    let resp = state.client.post(url).json(&req).send().await?;
+    // early called destructor
+    drop(permit);
+    let preds = resp.json::<Prediction>().await?.outputs;
+    Ok(preds)
 }
 
 fn rank_items_by_score(scores: &[f32], n_rec: usize, user_consumed: &[usize]) -> Vec<usize> {

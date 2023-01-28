@@ -1,6 +1,6 @@
 [package]
 name = "actix_serving"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 description = "Online model serving for LibRecommender"
 
@@ -13,6 +13,7 @@ env_logger = "0.9.2"
 faiss = "0.11.0"
 futures = "0.3.25"
 log = "0.4.15"
+num_cpus = "1.0"
 # openssl = { version = "0.10", features = ["vendored"] }
 redis = { version = "0.22.1", features = ["connection-manager", "tokio-comp"] }
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }

@@ -183,7 +183,7 @@ dependencies = [
 
 [[package]]
 name = "actix_serving"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "actix-web",
  "deadpool-redis",
@@ -191,6 +191,7 @@ dependencies = [
  "faiss",
  "futures",
  "log",
+ "num_cpus",
  "redis",
  "reqwest",
  "serde",

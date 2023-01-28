@@ -5,6 +5,7 @@ use actix_web::{middleware::Logger, web, App, HttpServer};
 use actix_serving::embed_deploy::{init_embed_state, EmbedAppState};
 use actix_serving::errors::ServingError;
 use actix_serving::redis_ops;
+use actix_serving::tf_deploy::{init_tf_state, TfAppState};
 use actix_serving::{embed_serving, knn_serving, tf_serving};
 
 fn get_env() -> Result<(String, u16, usize, String), ServingError> {
@@ -26,6 +27,7 @@ async fn main() -> std::io::Result<()> {
 
     let model_type = std::env::var("MODEL_TYPE").expect("Failed to get model type from env");
     let embed_state: Option<web::Data<EmbedAppState>> = init_embed_state(&model_type)?;
+    let tf_state: Option<TfAppState> = init_tf_state(&model_type)?;
     // let redis = redis::Client::open(format!("redis://{}:6379", redis_host)).unwrap();
     let redis_pool = redis_ops::create_redis_pool(redis_host);
     HttpServer::new(move || {
@@ -48,7 +50,17 @@ async fn main() -> std::io::Result<()> {
                 app.app_data(web::Data::clone(index_state))
                     .service(embed_serving)
             }
-            "tf" => app.service(tf_serving),
+            "tf" => {
+                let client_state = match tf_state.borrow() {
+                    Some(client) => client,
+                    None => {
+                        eprintln!("Failed to get reqwest client in tf serving");
+                        std::process::exit(1)
+                    }
+                };
+                app.app_data(web::Data::new(client_state.clone()))
+                    .service(tf_serving)
+            }
             other => {
                 eprintln!("Unknown model type: `{other}`");
                 std::process::exit(1)
