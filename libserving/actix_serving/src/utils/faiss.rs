@@ -19,7 +19,7 @@ pub(crate) fn find_index_path(path: Option<String>) -> ServingResult<String> {
         let file_name = entry.file_name().to_string_lossy();
         if file_name.starts_with("faiss_index") && !entry.path().is_dir() {
             info!("Found faiss index in {}", entry.path().display());
-            return Ok(entry.path().to_string_lossy().to_string());
+            return Ok(entry.path().to_string_lossy().into_owned());
         }
     }
     Err(ServingError::NotFound("faiss index"))

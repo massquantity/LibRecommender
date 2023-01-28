@@ -1,7 +1,4 @@
-pub const KNN_MODELS: [&'static str; 2] = [
-    "UserCF",
-    "ItemCF",
-];
+pub const KNN_MODELS: [&'static str; 2] = ["UserCF", "ItemCF"];
 pub const EMBED_MODELS: [&'static str; 14] = [
     "SVD",
     "SVDpp",
@@ -18,7 +15,7 @@ pub const EMBED_MODELS: [&'static str; 14] = [
     "PinSage",
     "PinSageDGL",
 ];
-pub const TF_MODELS: [&'static str; 6]= [
+pub const TF_MODELS: [&'static str; 6] = [
     "WideDeep",
     "FM",
     "DeepFM",
@@ -26,7 +23,4 @@ pub const TF_MODELS: [&'static str; 6]= [
     "AutoInt",
     "DIN",
 ];
-pub const TF_SEQ_MODELS: [&'static str; 2] = [
-    "YouTubeRanking",
-    "DIN",
-];
+pub const TF_SEQ_MODELS: [&'static str; 2] = ["YouTubeRanking", "DIN"];
