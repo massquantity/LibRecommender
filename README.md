@@ -8,6 +8,7 @@
 [![python versions](https://img.shields.io/pypi/pyversions/LibRecommender?logo=python&logoColor=ffffba)](https://pypi.org/project/LibRecommender/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/860f0cb5339c41fba9bee5770d09be47)](https://www.codacy.com/gh/massquantity/LibRecommender/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=massquantity/LibRecommender&amp;utm_campaign=Badge_Grade)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v1.json)](https://github.com/charliermarsh/ruff)
 [![platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-%23ffdfba)](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-%23ffdfba)
 ![visitors](https://visitor-badge.glitch.me/badge?page_id=massquantity.LibRecommender&right_color=rgb(91,194,231))
 [![License](https://img.shields.io/github/license/massquantity/LibRecommender?color=ff69b4)](https://github.com/massquantity/LibRecommender/blob/master/LICENSE)
