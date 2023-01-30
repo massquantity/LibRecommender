@@ -2,6 +2,6 @@ include README.md
 include LICENSE
 include requirements.txt requirements-serving.txt
 recursive-include libreco *.c *.cpp *.pyx
-recursive-include serving *.py *.sh
+recursive-include libserving *.py *.sh
 recursive-exclude examples *
 recursive-exclude distributed *
