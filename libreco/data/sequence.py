@@ -1,5 +1,4 @@
-from math import floor
-from random import random
+import random
 
 import numpy as np
 
@@ -63,18 +62,18 @@ def sparse_user_last_interacted(n_users, user_consumed, recent_num=10):
     return indices, interacted_items
 
 
-def sample_item_with_tolerance(num, consumed_items, consumed_len, tolerance=5):
-    assert num > tolerance
-    sampled = []
-    first_len = num - tolerance
-    while len(sampled) < first_len:
-        i = floor(random() * consumed_len)
-        if consumed_items[i] not in sampled:
-            sampled.append(consumed_items[i])
-    for _ in range(tolerance):
-        i = floor(random() * consumed_len)
-        sampled.append(consumed_items[i])
-    return sampled
+# def sample_item_with_tolerance(num, consumed_items, consumed_len, tolerance=5):
+#    assert num > tolerance
+#    sampled = []
+#    first_len = num - tolerance
+#    while len(sampled) < first_len:
+#        i = floor(random() * consumed_len)
+#        if consumed_items[i] not in sampled:
+#            sampled.append(consumed_items[i])
+#    for _ in range(tolerance):
+#        i = floor(random() * consumed_len)
+#        sampled.append(consumed_items[i])
+#    return sampled
 
 
 def user_interacted_seq(
@@ -82,9 +81,10 @@ def user_interacted_seq(
     item_indices,
     user_consumed,
     pad_index,
-    mode=None,
-    num=None,
-    user_consumed_set=None,
+    mode,
+    num,
+    user_consumed_set,
+    np_rng,
 ):
     batch_size = len(user_indices)
     batch_interacted = np.full((batch_size, num), pad_index, dtype=np.int32)
@@ -93,39 +93,26 @@ def user_interacted_seq(
         consumed_items = user_consumed[u]
         consumed_len = len(consumed_items)
         consumed_set = user_consumed_set[u]
-        # If `i` is a negative item, then random sample some items
-        # from user's past interacted items.
-        # TODO: sample sequence from user past interactions
-        if i not in consumed_set:
-            if consumed_len >= num:
-                # `np.random.choice` is too slow,
-                # so here we use a custom sample function with
-                # some tolerance of duplicate items
-                chosen_items = sample_item_with_tolerance(
-                    num, consumed_items, consumed_len, 5
-                )
-                batch_interacted[j] = chosen_items
-                batch_interacted_len.append(float(num))
-            else:
-                batch_interacted[j, :consumed_len] = consumed_items
-                batch_interacted_len.append(float(consumed_len))
+        # If `i` is a negative item, sample sequence from user's past interaction
+        position = (
+            consumed_items.index(i)
+            if i in consumed_set
+            else random.randrange(0, consumed_len)
+        )
+        if position == 0:
+            # first item has no historical interaction, fill in with pad_index
+            batch_interacted_len.append(1.0)
+        elif position < num:
+            batch_interacted[j, -position:] = consumed_items[:position]
+            batch_interacted_len.append(float(position))
         else:
-            position = consumed_items.index(i)
-            if position == 0:
-                # first item, no historical interaction,
-                # assign to pad_index by default, and length is 1.
-                batch_interacted_len.append(1.0)
-            elif position < num:
-                batch_interacted[j, :position] = consumed_items[:position]
-                batch_interacted_len.append(float(position))
-            elif position >= num and mode == "recent":
+            if mode == "recent":
                 start_index = position - num
                 batch_interacted[j] = consumed_items[start_index:position]
-                batch_interacted_len.append(float(num))
-            elif position >= num and mode == "random":
-                chosen_items = np.random.choice(consumed_items, num, replace=False)
+            elif mode == "random":
+                chosen_items = np_rng.choice(consumed_items, num, replace=False)
                 batch_interacted[j] = chosen_items
-                batch_interacted_len.append(float(num))
+            batch_interacted_len.append(float(num))
 
     return batch_interacted, batch_interacted_len
 

@@ -1,6 +1,6 @@
 import itertools
-from array import array
-from collections import defaultdict
+import sys
+from collections import OrderedDict, defaultdict
 
 import numpy as np
 
@@ -214,12 +214,27 @@ def column_sparse_indices(
 
 
 def interaction_consumed(user_indices, item_indices):
-    user_consumed = defaultdict(lambda: array("I"))
-    item_consumed = defaultdict(lambda: array("I"))
+    user_consumed = defaultdict(list)
+    item_consumed = defaultdict(list)
     for u, i in zip(user_indices, item_indices):
+        if isinstance(u, np.integer):
+            u = u.item()
+        if isinstance(i, np.integer):
+            i = i.item()
         user_consumed[u].append(i)
         item_consumed[i].append(u)
-    return user_consumed, item_consumed
+    return remove_duplicates(user_consumed, item_consumed)
+
+
+def remove_duplicates(user_consumed, item_consumed):
+    # keys will preserve order in dict since Python3.7
+    if sys.version_info[:2] >= (3, 7):
+        dict_func = dict.fromkeys
+    else:
+        dict_func = OrderedDict.fromkeys
+    user_dedup = {u: list(dict_func(items)) for u, items in user_consumed.items()}
+    item_dedup = {i: list(dict_func(users)) for i, users in item_consumed.items()}
+    return user_dedup, item_dedup
 
 
 def multi_sparse_col_map(multi_sparse_col):

@@ -22,10 +22,10 @@ def save_id_mapping(path: str, data_info: DataInfo):
 
 def save_user_consumed(path: str, data_info: DataInfo):
     user_consumed_path = os.path.join(path, "user_consumed.json")
-    user_consumed = dict()
-    for u, items in data_info.user_consumed.items():
-        user_consumed[int(u)] = items.tolist()
-    save_to_json(user_consumed_path, user_consumed)
+    # user_consumed = dict()
+    # for u, items in data_info.user_consumed.items():
+    #    user_consumed[int(u)] = items.tolist()
+    save_to_json(user_consumed_path, data_info.user_consumed)
 
 
 def save_to_json(path: str, data: dict):
