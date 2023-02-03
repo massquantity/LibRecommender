@@ -144,11 +144,13 @@ If you have only one data, you can split the data in following ways:
 + `split_by_ratio_chrono`. For each user, assign certain ratio of items to test_data, where items are sorted by time first. In this case, data should contain a `time` column.
 + `split_by_num_chrono`. For each user, assign certain number of items to test_data, where items are sorted by time first. In this case, data should contain a `time` column.
 
-If your data size is small (less than 10,000 rows), the four `split_by_*` function may not be suitable. Since the number of interacted items for each user may be only one or two, and it's difficult to split the whole data. In this case `random_split` is more suitable.
-
-**Note that your data should not contain any missing value.**
-
 See [`split_data_example.py`](https://github.com/massquantity/LibRecommender/blob/master/examples/split_data_example.py) .
+
+**There are some caveats about the data:**
+
+1. Your data should not contain any missing value. Otherwise, it may lead to unexpected behavior.
+2. If your data size is small (less than 10,000 rows), the four `split_by_*` function may not be suitable. Since the number of interacted items for each user may be only one or two, which makes it difficult to split the whole data. In this case `random_split` is more suitable.
+3. Some data may contain duplicate samples, e.g., a user may have clicked an item multiple times. In this case the training and possible negative sampling will be done multiple times for same sample. If you don't want this, consider using functions such as `drop_duplicates` in Pandas before training.
 
 
 
