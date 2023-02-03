@@ -6,7 +6,7 @@ import pandas as pd
 
 from libreco.data import DatasetFeat
 from libreco.data.data_info import EmptyFeature, Feature
-from libreco.feature.column import recover_sparse_cols
+from libreco.feature.column import interaction_consumed, recover_sparse_cols
 from libreco.feature.unique_features import (
     get_dense_indices,
     get_dense_values,
@@ -95,3 +95,19 @@ def test_feature():
     new_data = data_info.get_indexed_interaction()
     assert new_data.user.notnull().all()
     assert new_data.item.notnull().all()
+
+
+def test_remove_duplicates():
+    user_indices = [1, 1, 1, 2, 2, 1, 2, 3, 2, 3]
+    item_indices = [11, 11, 999, 0, 11, 11, 999, 11, 999, 0]
+    user_consumed, item_consumed = interaction_consumed(user_indices, item_indices)
+    assert isinstance(user_consumed, dict)
+    assert isinstance(item_consumed, dict)
+    assert isinstance(user_consumed[1], list)
+    assert isinstance(item_consumed[11], list)
+    assert user_consumed[1] == [11, 999]
+    assert user_consumed[2] == [0, 11, 999]
+    assert user_consumed[3] == [11, 0]
+    assert item_consumed[11] == [1, 2, 3]
+    assert item_consumed[999] == [1, 2]
+    assert item_consumed[0] == [2, 3]

@@ -106,9 +106,7 @@ def test_dataset_feat(feat_train_data):
     assert len(data_info.col_name_mapping["user_dense_col"]) == 1
     assert len(data_info.col_name_mapping["item_sparse_col"]) == 3
     assert len(data_info.col_name_mapping["item_dense_col"]) == 0
-    # pprint.pprint(data_info.col_name_mapping)
-    with pytest.raises(IndexError):
-        _ = data_info.user_consumed[-999][0]
+
     assert data_info.user_sparse_col.name == ["sex", "occupation"]
     assert data_info.user_dense_col.name == ["age"]
     assert data_info.item_sparse_col.name == ["genre1", "genre2", "genre3"]
