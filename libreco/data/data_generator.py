@@ -87,6 +87,7 @@ class DataGenSequence(object):
         self.dense = dense
         self.mode = mode
         self.num = num
+        self.np_rng = data_info.np_rng
 
     def __iter__(self, batch_size):
         for i in tqdm.trange(0, self.data_size, batch_size, desc="train"):
@@ -99,6 +100,7 @@ class DataGenSequence(object):
                 self.mode,
                 self.num,
                 self.user_consumed_set,
+                self.np_rng,
             )
             pure_part = (
                 self.user_indices[batch_slice],

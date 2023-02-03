@@ -301,6 +301,7 @@ class PairwiseSamplingSeq(PairwiseSampling):
         self.seq_num = num
         self.n_items = data_info.n_items
         self.user_consumed = data_info.user_consumed
+        self.np_rng = data_info.np_rng
 
     def sample_batch(self, user_consumed_set, n_items, batch_size):
         # avoid circular import
@@ -321,6 +322,7 @@ class PairwiseSamplingSeq(PairwiseSampling):
                 self.seq_mode,
                 self.seq_num,
                 user_consumed_set,
+                self.np_rng,
             )
 
             batch_item_indices_neg = list()
