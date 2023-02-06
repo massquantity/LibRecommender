@@ -173,7 +173,7 @@ Finally, batch recommendation is also supported by simply passing a list to the 
 
 The standard process in LibRecommender is evaluating during training. However, for some complex models doing full evaluation on eval data can be very time-consuming, so you can specify some evaluation parameters to speed this up. 
 
-The default value of `eval_batch_size` is `2**15 = 32768`, and you can use a higher value if you have enough machine or GPU memory. On the contrary, if you encounter memory error during evaluation, try reducing `eval_batch_size`.
+The default value of `eval_batch_size` is 8192, and you can use a higher value if you have enough machine or GPU memory. On the contrary, if you encounter memory error during evaluation, try reducing `eval_batch_size`.
 
 The `eval_user_num` parameter controls how many users to use in evaluation. By default, it is `None`, which uses all the users in eval data. You can use a smaller value if the evaluation is slow, and this will sample `eval_user_num` users randomly from eval data.
 
@@ -185,7 +185,7 @@ The `eval_user_num` parameter controls how many users to use in evaluation. By d
         eval_data=eval_data,
         metrics=metrics,
     	k=10,  # parameter of metrics, e.g. recall at k, ndcg at k
-    	eval_batch_size=2**15,
+    	eval_batch_size=8192,
     	eval_user_num=100,
     )
 ```
