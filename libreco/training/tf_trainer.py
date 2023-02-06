@@ -145,6 +145,7 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
         batch_size,
         num_sampled_per_batch,
         sampler,
+        num_neg=None,
     ):
         super().__init__(
             model,
@@ -155,7 +156,7 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
             lr_decay,
             epsilon,
             batch_size,
-            1,
+            num_neg,
             num_sampled_per_batch,
             sampler,
         )
@@ -176,7 +177,7 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
             self.model.data_info,
             self.model.sparse,
             self.model.dense,
-            self.model.interaction_mode,
+            self.model.seq_mode,
             self.model.max_seq_len,
             self.model.n_items,
         )
@@ -444,7 +445,7 @@ class RNN4RecTrainer(TensorFlowTrainer):
             dataset=train_data,
             data_info=self.model.data_info,
             num_neg=self.num_neg,
-            mode=self.model.interaction_mode,
+            mode=self.model.seq_mode,
             num=self.model.max_seq_len,
         )
         for epoch in range(1, self.n_epochs + 1):

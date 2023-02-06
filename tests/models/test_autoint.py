@@ -41,7 +41,7 @@ def test_autoint(
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
-            _ = AutoInt(task, data_info, loss_type)
+            AutoInt(task, data_info, loss_type).fit(train_data)
     else:
         model = AutoInt(
             task=task,
@@ -83,3 +83,5 @@ def test_autoint_multi_sparse(prepare_multi_sparse_data):
     loaded_model, loaded_data_info = save_load_model(AutoInt, model, data_info)
     ptest_preds(loaded_model, task, pd_data, with_feats=True)
     ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=True)
+    with pytest.raises(RuntimeError):
+        loaded_model.fit(train_data)

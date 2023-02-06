@@ -7,7 +7,7 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import glorot_uniform
 
 from ..bases import ModelMeta, TfBase
 from ..data.sequence import get_user_last_interacted
@@ -19,11 +19,10 @@ from ..tfops import (
     tf,
     tf_dense,
 )
-from ..training import TensorFlowTrainer
 from ..utils.misc import count_params
 from ..utils.validate import (
     check_dense_values,
-    check_interaction_mode,
+    check_seq_mode,
     check_multi_sparse,
     check_sparse_indices,
     dense_field_size,
@@ -72,14 +71,20 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
 
         assert task == "ranking", "YouTube models is only suitable for ranking"
         self.all_args = locals()
+        self.loss_type = loss_type
         self.embed_size = embed_size
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
         self.reg = reg_config(reg)
+        self.batch_size = batch_size
+        self.num_neg = num_neg
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
         self.hidden_units = list(map(int, hidden_units.split(",")))
-        self.interaction_mode, self.max_seq_len = check_interaction_mode(
-            recent_num, random_num
-        )
+        self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
+        self.recent_seqs, self.recent_seq_lens = self._set_recent_seqs()
         self.seed = seed
         self.sparse = check_sparse_indices(data_info)
         self.dense = check_dense_values(data_info)
@@ -94,25 +99,8 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
             )
         if self.dense:
             self.dense_field_size = dense_field_size(data_info)
-        (
-            self.user_last_interacted,
-            self.last_interacted_len,
-        ) = self._set_last_interacted()
-        self._build_model()
-        if with_training:
-            self.trainer = TensorFlowTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                batch_size,
-                num_neg,
-            )
 
-    def _build_model(self):
+    def build_model(self):
         tf.set_random_seed(self.seed)
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
@@ -127,13 +115,13 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         user_features = tf.get_variable(
             name="user_features",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         item_features = tf.get_variable(
             name="item_features",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         user_embed = tf.nn.embedding_lookup(user_features, self.user_indices)
@@ -177,7 +165,7 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         sparse_features = tf.get_variable(
             name="sparse_features",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -213,7 +201,7 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         dense_features = tf.get_variable(
             name="dense_features",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -227,11 +215,11 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         )
         self.concat_embed.append(dense_embed)
 
-    def _set_last_interacted(self):
-        user_last_interacted, last_interacted_len = get_user_last_interacted(
+    def _set_recent_seqs(self):
+        recent_seqs, recent_seq_lens = get_user_last_interacted(
             self.n_users, self.user_consumed, self.n_items, self.max_seq_len
         )
         oov = np.full(self.max_seq_len, self.n_items, dtype=np.int32)
-        user_last_interacted = np.vstack([user_last_interacted, oov])
-        last_interacted_len = np.append(last_interacted_len, [1])
-        return user_last_interacted, last_interacted_len
+        recent_seqs = np.vstack([recent_seqs, oov])
+        recent_seq_lens = np.append(recent_seq_lens, [1])
+        return recent_seqs, recent_seq_lens

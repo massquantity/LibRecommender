@@ -10,19 +10,16 @@ import logging
 from functools import partial
 
 import numpy as np
-from tensorflow.keras.initializers import (
-    zeros as tf_zeros,
-    truncated_normal as tf_truncated_normal,
-)
+from tensorflow.keras.initializers import glorot_uniform
+from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase, ModelMeta
 from ..evaluation import print_metrics
 from ..recommendation import recommend_from_embedding
 from ..tfops import reg_config, sess_config, tf
-from ..training import BPRTrainer
+from ..training import get_trainer
 from ..utils.initializers import truncated_normal
 from ..utils.misc import time_block
-from ..utils.validate import check_has_sampled
 
 try:
     from ._bpr import bpr_update
@@ -59,37 +56,28 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         tf_sess_config=None,
         optimizer="adam",
         num_threads=1,
-        with_training=True,
     ):
         super().__init__(task, data_info, embed_size)
 
         assert task == "ranking", "BPR is only suitable for ranking"
         assert loss_type == "bpr", "BPR should use bpr loss"
         self.all_args = locals()
-        self.reg = reg_config(reg) if use_tf else reg
+        self.loss_type = loss_type
         self.n_epochs = n_epochs
         self.lr = lr
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
+        self.reg = reg_config(reg) if use_tf else reg
+        self.batch_size = batch_size
+        self.num_neg = num_neg
         self.use_tf = use_tf
         self.seed = seed
         self.optimizer = optimizer
         self.num_threads = num_threads
-        if with_training:
-            self._build_model()
-            if use_tf:
-                self.sess = sess_config(tf_sess_config)
-                self.tf_trainer = BPRTrainer(
-                    self,
-                    task,
-                    loss_type,
-                    n_epochs,
-                    lr,
-                    lr_decay,
-                    epsilon,
-                    batch_size,
-                    num_neg,
-                )
+        if use_tf:
+            self.sess = sess_config(tf_sess_config)
 
-    def _build_model(self):
+    def build_model(self):
         if self.use_tf:
             self._build_model_tf()
         else:
@@ -115,13 +103,13 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.user_embed_var = tf.get_variable(
             name="user_embed_var",
             shape=[self.n_users, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         self.item_embed_var = tf.get_variable(
             name="item_embed_var",
             shape=[self.n_items, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         self.item_bias_var = tf.get_variable(
@@ -157,15 +145,20 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs,
+        k=10,
+        eval_batch_size=8192,
+        eval_user_num=None,
     ):
-        k = kwargs.get("k", 10)
-        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
-        eval_user_num = kwargs.get("eval_user_num", None)
+        self.check_attribute(eval_data, k)
         self.show_start_time()
-        check_has_sampled(train_data, verbose)
+        # check_has_sampled(train_data, verbose)
+        if not self.model_built:
+            self.build_model()
+            self.model_built = True
         if self.use_tf:
-            self.tf_trainer.run(
+            if self.trainer is None:
+                self.trainer = get_trainer(self)
+            self.trainer.run(
                 train_data,
                 verbose,
                 shuffle,

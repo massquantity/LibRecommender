@@ -7,8 +7,7 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import glorot_normal as tf_glorot_normal
-from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import glorot_uniform
 from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase, ModelMeta
@@ -22,9 +21,8 @@ from ..tfops import (
     tf,
     tf_dense,
 )
-from ..training import TensorFlowTrainer
 from ..utils.misc import count_params
-from ..utils.validate import check_interaction_mode
+from ..utils.validate import check_seq_mode
 
 
 class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
@@ -53,40 +51,28 @@ class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         seed=42,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
         self.all_args = locals()
+        self.sess = sess_config(tf_sess_config)
+        self.loss_type = loss_type
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
         self.reg = reg_config(reg)
+        self.batch_size = batch_size
+        self.num_neg = num_neg
         self.dropout_rate = dropout_config(dropout_rate)
         self.use_bn = use_bn
         self.nh_filters = nh_filters
         self.nv_filters = nv_filters
         self.seed = seed
-        (self.interaction_mode, self.max_seq_len) = check_interaction_mode(
-            recent_num, random_num
-        )
-        (
-            self.user_last_interacted,
-            self.last_interacted_len,
-        ) = self._set_last_interacted()
-        if with_training:
-            self._build_model()
-            self.sess = sess_config(tf_sess_config)
-            self.trainer = TensorFlowTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                batch_size,
-                num_neg,
-            )
+        self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
+        self.recent_seqs, self.recent_seq_lens = self._set_recent_seqs()
 
-    def _build_model(self):
+    def build_model(self):
         tf.set_random_seed(self.seed)
         self._build_placeholders()
         self._build_variables()
@@ -114,7 +100,7 @@ class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.user_feat = tf.get_variable(
             name="user_feat",
             shape=[self.n_users, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -127,7 +113,7 @@ class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.item_weights = tf.get_variable(
             name="item_weights",
             shape=[self.n_items, self.embed_size * 2],
-            initializer=tf_truncated_normal(0.0, 0.02),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -135,7 +121,7 @@ class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.input_embed = tf.get_variable(
             name="input_embed",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=tf_glorot_normal,
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -186,17 +172,17 @@ class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         convs_out = tf_dense(units=self.embed_size, activation=tf.nn.relu)(convs_out)
         self.user_vector = tf.concat([user_repr, convs_out], axis=1)
 
-    def _set_last_interacted(self):
-        user_last_interacted, last_interacted_len = get_user_last_interacted(
+    def _set_recent_seqs(self):
+        recent_seqs, recent_seq_lens = get_user_last_interacted(
             self.n_users, self.user_consumed, self.n_items, self.max_seq_len
         )
-        return user_last_interacted, last_interacted_len.astype(np.int64)
+        return recent_seqs, recent_seq_lens.astype(np.int64)
 
     def set_embeddings(self):
         feed_dict = {
             self.user_indices: np.arange(self.n_users),
-            self.user_interacted_seq: self.user_last_interacted,
-            self.user_interacted_len: self.last_interacted_len,
+            self.user_interacted_seq: self.recent_seqs,
+            self.user_interacted_len: self.recent_seq_lens,
         }
         user_vector = self.sess.run(self.user_vector, feed_dict)
         item_weights = self.sess.run(self.item_weights)

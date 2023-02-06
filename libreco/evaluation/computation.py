@@ -120,8 +120,8 @@ def predict_tf_feat(model, transformed_data, batch_slice):
             item_indices=item_indices,
             sparse_indices=sparse_indices,
             dense_values=dense_values,
-            user_interacted_seq=model.user_last_interacted[user_indices],
-            user_interacted_len=model.last_interacted_len[user_indices],
+            user_interacted_seq=model.recent_seqs[user_indices],
+            user_interacted_len=model.recent_seq_lens[user_indices],
             is_training=False,
         )
     else:

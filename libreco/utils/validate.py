@@ -55,7 +55,7 @@ def check_has_sampled(data, verbose):
         raise NotSamplingError(f"{colorize(exception_str, 'red')}")
 
 
-def check_interaction_mode(recent_num, random_num):
+def check_seq_mode(recent_num, random_num):
     if recent_num is not None:
         assert isinstance(recent_num, int), "recent_num must be integer"
         mode = "recent"
@@ -108,7 +108,7 @@ def check_multi_sparse(data_info, multi_sparse_combiner):
     if data_info.multi_sparse_combine_info and multi_sparse_combiner is not None:
         if multi_sparse_combiner not in ("normal", "sum", "mean", "sqrtn"):
             raise ValueError(
-                f"unsupported multi_sparse_combiner type: " f"{multi_sparse_combiner}"
+                f"unsupported multi_sparse_combiner type: {multi_sparse_combiner}"
             )
         else:
             combiner = multi_sparse_combiner

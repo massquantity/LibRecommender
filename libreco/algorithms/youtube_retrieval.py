@@ -7,11 +7,10 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import glorot_uniform
 from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase, ModelMeta
-from ..data.sequence import sparse_user_last_interacted
 from ..tfops import (
     dense_nn,
     dropout_config,
@@ -20,11 +19,10 @@ from ..tfops import (
     sess_config,
     tf,
 )
-from ..training import YoutubeRetrievalTrainer
 from ..utils.misc import count_params
 from ..utils.validate import (
     check_dense_values,
-    check_interaction_mode,
+    check_seq_mode,
     check_multi_sparse,
     check_sparse_indices,
     dense_field_size,
@@ -48,41 +46,48 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self,
         task="ranking",
         data_info=None,
+        loss_type="sampled_softmax",
         embed_size=16,
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
         epsilon=1e-5,
+        hidden_units="128,64",
         reg=None,
         batch_size=256,
-        num_sampled_per_batch=None,
         use_bn=True,
         dropout_rate=None,
-        hidden_units="128,64",
-        loss_type="sampled_softmax",
+        num_sampled_per_batch=None,
+        sampler="uniform",
         recent_num=10,
         random_num=None,
         multi_sparse_combiner="sqrtn",
-        sampler="uniform",
         seed=42,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
-        assert task == "ranking", "YouTube models is only suitable for ranking"
+        assert task == "ranking", "YouTube-type models is only suitable for ranking"
         if len(data_info.item_col) > 0:
-            raise ValueError("The YouTuBeRetrieval model assumes no item features.")
+            raise ValueError("The `YouTuBeRetrieval` model assumes no item features.")
         self.all_args = locals()
+        self.loss_type = loss_type
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
+        self.hidden_units = list(map(int, hidden_units.split(","))) + [self.embed_size]
         self.reg = reg_config(reg)
+        self.batch_size = batch_size
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
-        self.hidden_units = list(map(int, hidden_units.split(","))) + [self.embed_size]
+        self.num_sampled_per_batch = num_sampled_per_batch
+        self.sampler = sampler
         self.seed = seed
-        self.interaction_mode, self.max_seq_len = check_interaction_mode(
-            recent_num, random_num
-        )
+        self.sess = sess_config(tf_sess_config)
+        self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
+        self.recent_seq_indices, self.recent_seq_values = self._set_recent_seqs()
         self.sparse = check_sparse_indices(data_info)
         self.dense = check_dense_values(data_info)
         if self.sparse:
@@ -96,29 +101,8 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             )
         if self.dense:
             self.dense_field_size = dense_field_size(data_info)
-        (
-            self.last_interacted_indices,
-            self.last_interacted_values,
-        ) = sparse_user_last_interacted(
-            self.n_users, self.user_consumed, self.max_seq_len
-        )
-        if with_training:
-            self._build_model()
-            self.sess = sess_config(tf_sess_config)
-            self.trainer = YoutubeRetrievalTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                batch_size,
-                num_sampled_per_batch,
-                sampler,
-            )
 
-    def _build_model(self):
+    def build_model(self):
         tf.set_random_seed(self.seed)
         # item_indices actually serve as labels in YouTuBeRetrieval model
         self.item_indices = tf.placeholder(tf.int64, shape=[None])
@@ -150,7 +134,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         item_interaction_features = tf.get_variable(
             name="item_interaction_features",
             shape=[self.n_items, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         sparse_item_interaction = tf.SparseTensor(
@@ -174,7 +158,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         sparse_features = tf.get_variable(
             name="sparse_features",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -210,7 +194,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         dense_features = tf.get_variable(
             name="dense_features",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -228,7 +212,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             name="nce_weights",
             # n_classes, embed_size
             shape=[self.n_items, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         self.nce_biases = tf.get_variable(
@@ -239,10 +223,29 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             trainable=True,
         )
 
+    def _set_recent_seqs(self):
+        interacted_indices = []
+        interacted_items = []
+        for u in range(self.n_users):
+            u_consumed_items = self.user_consumed[u]
+            u_items_len = len(u_consumed_items)
+            if u_items_len < self.max_seq_len:
+                interacted_indices.extend([u] * u_items_len)
+                interacted_items.extend(u_consumed_items)
+            else:
+                interacted_indices.extend([u] * self.max_seq_len)
+                interacted_items.extend(u_consumed_items[-self.max_seq_len:])
+
+        interacted_indices = np.array(interacted_indices).reshape(-1, 1)
+        indices = np.concatenate(
+            [interacted_indices, np.zeros_like(interacted_indices)], axis=1
+        )
+        return indices, interacted_items
+
     def set_embeddings(self):
         feed_dict = {
-            self.item_interaction_indices: self.last_interacted_indices,
-            self.item_interaction_values: self.last_interacted_values,
+            self.item_interaction_indices: self.recent_seq_indices,
+            self.item_interaction_values: self.recent_seq_values,
             self.modified_batch_size: self.n_users,
             self.is_training: False,
         }

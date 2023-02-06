@@ -91,14 +91,14 @@ class PinSage(GraphSage, metaclass=ModelMeta, backend="torch"):
             raise ValueError(f"unsupported `loss_type`: {self.loss_type}")
 
     def build_model(self):
-        return PinSageModel(
+        self.torch_model = PinSageModel(
             self.paradigm,
             self.data_info,
             self.embed_size,
             self.batch_size,
             self.num_layers,
             self.dropout_rate,
-        )
+        ).to(self.device)
 
     def sample_neighbors(self, items, item_indices=None, items_pos=None):
         nodes = items

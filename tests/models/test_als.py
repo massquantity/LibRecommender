@@ -13,27 +13,28 @@ from tests.utils_save_load import save_load_model
 
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
-@pytest.mark.parametrize("reg, alpha", [(None, 5), (0.001, 10), (0.1, 100)])
+@pytest.mark.parametrize(
+    "reg, alpha", [(1, 5), (-1.0, 5), (None, 5), (0, 5), (0.001, 10), (0.1, 100)]
+)
 def test_als(prepare_pure_data, task, reg, alpha):
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
         train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
 
-    model = ALS(
-        task=task,
-        data_info=data_info,
-        embed_size=16,
-        n_epochs=2,
-        reg=reg,
-        alpha=alpha,
-        lower_upper_bound=[1, 5],
-    )
-
-    if not reg:
-        with pytest.raises(AssertionError):
-            _ = model.fit(train_data)
+    if reg in (1, -1.0, None, 0):
+        with pytest.raises(ValueError):
+            _ = ALS(task=task, data_info=data_info, reg=reg)
     else:
+        model = ALS(
+            task=task,
+            data_info=data_info,
+            embed_size=16,
+            n_epochs=2,
+            reg=reg,
+            alpha=alpha,
+            lower_upper_bound=[1, 5],
+        )
         model.fit(
             train_data,
             verbose=2,

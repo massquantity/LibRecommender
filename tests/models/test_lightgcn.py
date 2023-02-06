@@ -17,6 +17,7 @@ from tests.utils_save_load import save_load_model
         ("cross_entropy", "random", 0),
         ("focal", None, 1),
         ("focal", "unconsumed", 3),
+        ("focal", "popular", 3),
         ("bpr", "popular", 3),
         ("max_margin", "random", 2),
         ("max_margin", None, 2),
@@ -101,5 +102,7 @@ def test_lightgcn(
         loaded_model, loaded_data_info = save_load_model(LightGCN, model, data_info)
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
         ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
+        with pytest.raises(RuntimeError):
+            loaded_model.fit(train_data)
         model.save("not_existed_path", "lightgcn2")
         remove_path("not_existed_path")

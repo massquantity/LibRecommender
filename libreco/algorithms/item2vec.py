@@ -39,8 +39,6 @@ class Item2Vec(GensimBase):
         )
         assert task == "ranking", "Item2Vec is only suitable for ranking"
         self.all_args = locals()
-        if with_training:
-            self.data = self.get_data()
 
     def get_data(self):
         return ItemCorpus(self.user_consumed)

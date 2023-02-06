@@ -6,8 +6,10 @@ from .tf_trainer import (
     YoutubeRetrievalTrainer,
 )
 from .torch_trainer import SageDGLTrainer, SageTrainer, TorchTrainer
+from .trainer import get_trainer
 
 __all__ = [
+    "get_trainer",
     "BPRTrainer",
     "RNN4RecTrainer",
     "SageDGLTrainer",

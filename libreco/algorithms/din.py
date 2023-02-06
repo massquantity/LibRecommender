@@ -19,11 +19,10 @@ from ..tfops import (
     tf,
     tf_dense,
 )
-from ..training import TensorFlowTrainer
 from ..utils.misc import count_params
 from ..utils.validate import (
     check_dense_values,
-    check_interaction_mode,
+    check_seq_mode,
     check_multi_sparse,
     check_sparse_indices,
     dense_field_size,
@@ -62,20 +61,25 @@ class DIN(TfBase, metaclass=ModelMeta):
         seed=42,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
         self.all_args = locals()
+        self.loss_type = loss_type
         self.embed_size = embed_size
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
         self.reg = reg_config(reg)
+        self.batch_size = batch_size
+        self.num_neg = num_neg
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
         self.hidden_units = list(map(int, hidden_units.split(",")))
         self.use_tf_attention = use_tf_attention
-        (self.interaction_mode, self.max_seq_len) = check_interaction_mode(
-            recent_num, random_num
-        )
+        self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
+        self.recent_seqs, self.recent_seq_lens = self._set_recent_seqs()
         self.seed = seed
         self.sparse = check_sparse_indices(data_info)
         self.dense = check_dense_values(data_info)
@@ -98,26 +102,8 @@ class DIN(TfBase, metaclass=ModelMeta):
         if self.item_dense:
             # item dense col indices in all dense cols
             self.item_dense_col_indices = data_info.item_dense_col.index
-        (
-            self.user_last_interacted,
-            self.last_interacted_len,
-        ) = self._set_last_interacted()
-        self._build_model()
-        if with_training:
-            self.trainer = TensorFlowTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                batch_size,
-                num_neg,
-            )
 
-    def _build_model(self):
-        self.graph_built = True
+    def build_model(self):
         tf.set_random_seed(self.seed)
         self.concat_embed, self.item_embed, self.seq_embed = [], [], []
         self._build_placeholders()
@@ -367,11 +353,11 @@ class DIN(TfBase, metaclass=ModelMeta):
             pooled_outputs = attention_scores @ keys
             return pooled_outputs
 
-    def _set_last_interacted(self):
-        user_last_interacted, last_interacted_len = get_user_last_interacted(
+    def _set_recent_seqs(self):
+        recent_seqs, recent_seq_lens = get_user_last_interacted(
             self.n_users, self.user_consumed, self.n_items, self.max_seq_len
         )
         oov = np.full(self.max_seq_len, self.n_items, dtype=np.int32)
-        user_last_interacted = np.vstack([user_last_interacted, oov])
-        last_interacted_len = np.append(last_interacted_len, [1])
-        return user_last_interacted, last_interacted_len
+        recent_seqs = np.vstack([recent_seqs, oov])
+        recent_seq_lens = np.append(recent_seq_lens, [1])
+        return recent_seqs, recent_seq_lens

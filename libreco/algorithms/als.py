@@ -1,5 +1,3 @@
-#!/usr/bin/python
-# -*- coding: UTF-8 -*-
 """
 
 References:
@@ -14,7 +12,6 @@ author: massquantity
 
 """
 import logging
-import numbers
 import os
 from functools import partial
 
@@ -26,7 +23,6 @@ from ..recommendation import recommend_from_embedding
 from ..utils.initializers import truncated_normal
 from ..utils.misc import time_block
 from ..utils.save_load import save_default_recs, save_params
-from ..utils.validate import check_has_sampled
 
 try:
     from ._als import als_update
@@ -50,21 +46,18 @@ class ALS(EmbedBase):
         n_threads=1,
         seed=42,
         lower_upper_bound=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
         self.all_args = locals()
         self.n_epochs = n_epochs
-        self.reg = reg
+        self.reg = self._check_reg(reg)
         self.alpha = alpha
         self.use_cg = use_cg
         self.n_threads = n_threads
         self.seed = seed
-        if with_training:
-            self._build_model()
 
-    def _build_model(self):
+    def build_model(self):
         np.random.seed(self.seed)
         self.user_embed = truncated_normal(
             shape=[self.n_users, self.embed_size], mean=0.0, scale=0.03
@@ -80,17 +73,17 @@ class ALS(EmbedBase):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs,
+        k=10,
+        eval_batch_size=8192,
+        eval_user_num=None,
     ):
-        k = kwargs.get("k", 10)
-        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
-        eval_user_num = kwargs.get("eval_user_num", None)
+        self.check_attribute(eval_data, k)
         self.show_start_time()
-        assert isinstance(self.reg, numbers.Real), "`reg` must be float"
+        self.build_model()
         user_interaction = train_data.sparse_interaction  # sparse.csr_matrix
         item_interaction = user_interaction.T.tocsr()
         if self.task == "ranking":
-            check_has_sampled(train_data, verbose)
+            # check_has_sampled(train_data, verbose)
             user_interaction.data = user_interaction.data * self.alpha + 1
             item_interaction.data = item_interaction.data * self.alpha + 1
 
@@ -124,7 +117,6 @@ class ALS(EmbedBase):
                     seed=self.seed,
                 )
                 print("=" * 30)
-        self.set_embeddings()
         self.assign_embedding_oov()
         self.default_recs = recommend_from_embedding(
             task=self.task,
@@ -137,6 +129,12 @@ class ALS(EmbedBase):
             random_rec=False,
         ).flatten()
 
+    @staticmethod
+    def _check_reg(reg):
+        if not isinstance(reg, float) or reg <= 0.0:
+            raise ValueError(f"`reg` must be float and positive, got {reg}")
+        return reg
+
     def save(self, path, model_name, **kwargs):
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
@@ -148,7 +146,7 @@ class ALS(EmbedBase):
             variable_path, user_embed=self.user_embed, item_embed=self.item_embed
         )
 
-    def set_embeddings(self):
+    def set_embeddings(self):  # pragma: no cover
         pass
 
     def rebuild_model(self, path, model_name):

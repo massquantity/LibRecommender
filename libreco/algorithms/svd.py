@@ -7,12 +7,11 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import glorot_uniform
 from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase, ModelMeta
 from ..tfops import reg_config, sess_config, tf
-from ..training import TensorFlowTrainer
 
 
 class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
@@ -35,29 +34,22 @@ class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         seed=42,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
         self.all_args = locals()
+        self.sess = sess_config(tf_sess_config)
+        self.loss_type = loss_type
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
         self.reg = reg_config(reg)
+        self.batch_size = batch_size
+        self.num_neg = num_neg
         self.seed = seed
-        if with_training:
-            self._build_model()
-            self.sess = sess_config(tf_sess_config)
-            self.trainer = TensorFlowTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                batch_size,
-                num_neg,
-            )
 
-    def _build_model(self):
+    def build_model(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
@@ -77,13 +69,13 @@ class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.pu_var = tf.get_variable(
             name="pu_var",
             shape=[self.n_users, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.05),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         self.qi_var = tf.get_variable(
             name="qi_var",
             shape=[self.n_items, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.05),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 

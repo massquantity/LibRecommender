@@ -43,7 +43,7 @@ def test_caser(
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
-            _ = Caser(task, data_info, loss_type)
+            Caser(task, data_info, loss_type).fit(train_data)
     else:
         model = Caser(
             task=task,

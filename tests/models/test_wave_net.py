@@ -47,7 +47,7 @@ def test_wave_net(
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
-            _ = WaveNet(task, data_info, loss_type)
+            WaveNet(task, data_info, loss_type).fit(train_data)
     else:
         model = WaveNet(
             task=task,

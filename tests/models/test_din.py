@@ -52,7 +52,7 @@ def test_din(
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
-            _ = DIN(task, data_info, loss_type)
+            DIN(task, data_info, loss_type).fit(train_data)
     else:
         model = DIN(
             task=task,
@@ -95,6 +95,8 @@ def test_din_multi_sparse(prepare_multi_sparse_data):
     loaded_model, loaded_data_info = save_load_model(DIN, model, data_info)
     ptest_preds(loaded_model, task, pd_data, with_feats=True)
     ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=True)
+    with pytest.raises(RuntimeError):
+        loaded_model.fit(train_data)
 
 
 def test_item_dense_feature():

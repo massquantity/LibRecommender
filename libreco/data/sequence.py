@@ -2,8 +2,6 @@ import random
 
 import numpy as np
 
-from ..tfops import tf
-
 
 def sparse_user_interacted(
     user_indices, item_indices, user_consumed, mode=None, num=None
@@ -35,31 +33,6 @@ def sparse_user_interacted(
         [interacted_indices, np.zeros_like(interacted_indices)], axis=1
     )
     return indices, interacted_items, len(user_indices)
-
-
-# used in YoutubeRetrieval
-def sparse_user_last_interacted(n_users, user_consumed, recent_num=10):
-    assert isinstance(recent_num, int), "recent_num must be integer"
-    interacted_indices = []
-    interacted_items = []
-    for u in range(n_users):
-        u_consumed_items = user_consumed[u]
-        u_items_len = len(u_consumed_items)
-        if u_items_len < recent_num:
-            interacted_indices.extend([u] * u_items_len)
-            interacted_items.extend(u_consumed_items)
-        else:
-            interacted_indices.extend([u] * recent_num)
-            interacted_items.extend(u_consumed_items[-recent_num:])
-
-    assert len(interacted_indices) == len(
-        interacted_items
-    ), "length of indices and values doesn't match"
-    interacted_indices = np.asarray(interacted_indices).reshape(-1, 1)
-    indices = np.concatenate(
-        [interacted_indices, np.zeros_like(interacted_indices)], axis=1
-    )
-    return indices, interacted_items
 
 
 # def sample_item_with_tolerance(num, consumed_items, consumed_len, tolerance=5):
@@ -125,61 +98,10 @@ def get_user_last_interacted(n_users, user_consumed, pad_index, recent_num=10):
         u_consumed_items = user_consumed[u]
         u_items_len = len(u_consumed_items)
         if u_items_len < recent_num:
-            u_last_interacted[u, :u_items_len] = u_consumed_items
+            u_last_interacted[u, -u_items_len:] = u_consumed_items
             interacted_len.append(float(u_items_len))
         else:
             u_last_interacted[u] = u_consumed_items[-recent_num:]
             interacted_len.append(float(recent_num))
 
     return u_last_interacted, np.asarray(interacted_len)
-
-
-# used in SVD++
-def sparse_tensor_interaction(data, recent_num=None, random_sample_rate=None):
-    sparse_data = data.sparse_interaction.tocoo()
-    row = sparse_data.row.reshape(-1, 1)
-    indices = np.concatenate([row, np.zeros_like(row)], axis=1)
-    values = sparse_data.col
-
-    # user_interacted_num = np.diff(data.sparse_interaction.indptr)
-    if recent_num is not None:
-        indices, values = user_recent_interact(recent_num, indices, values)
-    elif random_sample_rate is not None:
-        indices, values = random_sample(random_sample_rate, indices, values)
-
-    sparse_tensor = tf.SparseTensor(
-        indices=indices, values=values, dense_shape=sparse_data.shape
-    )
-    return sparse_tensor
-
-
-def random_sample(sample_rate, indices, values):
-    assert 0.0 < sample_rate < 1.0, "sample_rate must be in (0.0, 1.0)"
-    total_length = len(values)
-    sample_num = int(total_length * sample_rate)
-    sampled_indices = np.random.choice(
-        range(total_length), size=sample_num, replace=False
-    )
-    indices = indices[sampled_indices]
-    values = values[sampled_indices]
-    return indices, values
-
-
-def user_recent_interact(num, indices, values):
-    assert isinstance(num, int), "recent_interact_num must be int"
-    users, user_position, user_counts = np.unique(
-        indices[:, 0], return_inverse=True, return_counts=True
-    )
-    user_split_indices = np.split(
-        np.argsort(user_position, kind="mergesort"), np.cumsum(user_counts)[:-1]
-    )
-
-    n_users = len(users)
-    recent_indices = list()
-    for u in range(n_users):
-        # assume user interactions have already been sorted by time.
-        u_data = user_split_indices[u][-num:]
-        recent_indices.extend(u_data)
-    indices = indices[recent_indices]
-    values = values[recent_indices]
-    return indices, values

@@ -6,12 +6,11 @@ Reference: Xiangnan He et al. "Neural Collaborative Filtering"
 author: massquantity
 
 """
-from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import glorot_uniform
 
 from ..bases import ModelMeta, TfBase
 from ..prediction import normalize_prediction
 from ..tfops import dense_nn, dropout_config, reg_config, tf, tf_dense
-from ..training import TensorFlowTrainer
 from ..utils.validate import check_unknown, convert_id
 
 
@@ -35,48 +34,28 @@ class NCF(TfBase, metaclass=ModelMeta):
         use_bn=True,
         dropout_rate=None,
         hidden_units="128,64,32",
-        batch_sampling=False,
         seed=42,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
         self.all_args = locals()
-        self.task = task
-        self.data_info = data_info
         self.loss_type = loss_type
         self.embed_size = embed_size
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
+        self.epsilon = epsilon
         self.reg = reg_config(reg)
         self.batch_size = batch_size
-        self.batch_sampling = batch_sampling
         self.num_neg = num_neg
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
         self.hidden_units = list(map(int, hidden_units.split(",")))
-        self.n_users = data_info.n_users
-        self.n_items = data_info.n_items
         self.seed = seed
-        self.user_consumed = data_info.user_consumed
-        self._build_model()
-        if with_training:
-            self.trainer = TensorFlowTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                batch_size,
-                num_neg,
-            )
 
-    def _build_model(self):
+    def build_model(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
@@ -85,25 +64,25 @@ class NCF(TfBase, metaclass=ModelMeta):
         user_gmf = tf.get_variable(
             name="user_gmf",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         item_gmf = tf.get_variable(
             name="item_gmf",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         user_mlp = tf.get_variable(
             name="user_mlp",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         item_mlp = tf.get_variable(
             name="item_mlp",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -148,7 +127,6 @@ class NCF(TfBase, metaclass=ModelMeta):
         inner_id=False,
         filter_consumed=True,
         random_rec=False,
-
     ):
         assert user_feats is None and item_data is None, "NCF can't use features."
         return super().recommend_user(

@@ -49,10 +49,8 @@ def test_deepwalk(
 
         # test save and load model
         loaded_model, loaded_data_info = save_load_model(DeepWalk, model, data_info)
-        with pytest.raises(AssertionError):
+        with pytest.raises(RuntimeError):
             loaded_model.fit(train_data)
-        with pytest.raises(AssertionError):
-            loaded_model.rebuild_model(path="deepwalk_path", model_name="deepwalk2")
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
         ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
         model.save("not_existed_path", "deepwalk2")

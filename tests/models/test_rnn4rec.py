@@ -47,7 +47,7 @@ def test_rnn4rec(
 
     if task == "ranking" and loss_type not in ("cross_entropy", "bpr", "focal"):
         with pytest.raises(ValueError):
-            _ = RNN4Rec(task, data_info, loss_type)
+            RNN4Rec(task, data_info, loss_type).fit(train_data)
     else:
         model = RNN4Rec(
             task=task,
@@ -81,3 +81,5 @@ def test_rnn4rec(
         loaded_model, loaded_data_info = save_load_model(RNN4Rec, model, data_info)
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
         ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
+        with pytest.raises(RuntimeError):
+            loaded_model.fit(train_data)
