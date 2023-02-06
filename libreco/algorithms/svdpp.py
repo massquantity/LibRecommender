@@ -6,18 +6,12 @@ References: Yehuda Koren "Factorization Meets the Neighborhood: a Multifaceted C
 author: massquantity
 
 """
-import os
-
 import numpy as np
-from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import glorot_uniform
 from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase
-from ..data.sequence import sparse_tensor_interaction
-from ..recommendation import recommend_from_embedding
-from ..tfops import modify_variable_names, reg_config, sess_config, tf
-from ..training import TensorFlowTrainer
-from ..utils.save_load import load_params
+from ..tfops import rebuild_tf_model, reg_config, sess_config, tf
 
 
 class SVDpp(EmbedBase):
@@ -38,15 +32,14 @@ class SVDpp(EmbedBase):
         batch_size=256,
         num_neg=1,
         seed=42,
-        recent_num=None,
-        random_sample_rate=None,
+        recent_num=30,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
         self.all_args = locals()
+        self.sess = sess_config(tf_sess_config)
         self.loss_type = loss_type
         self.n_epochs = n_epochs
         self.lr = lr
@@ -55,14 +48,12 @@ class SVDpp(EmbedBase):
         self.reg = reg_config(reg)
         self.batch_size = batch_size
         self.num_neg = num_neg
-        self.seed = seed
         self.recent_num = recent_num
-        self.random_sample_rate = random_sample_rate
-        self.sess = sess_config(tf_sess_config)
-        self.trainer = None
-        self.with_training = with_training
+        self.seed = seed
+        self.sparse_interaction = None
 
-    def _build_model(self, sparse_implicit_interaction):
+    def build_model(self):
+        tf.set_random_seed(self.seed)
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
@@ -82,25 +73,25 @@ class SVDpp(EmbedBase):
         self.pu_var = tf.get_variable(
             name="pu_var",
             shape=[self.n_users, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         self.qi_var = tf.get_variable(
             name="qi_var",
             shape=[self.n_items, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
         yj_var = tf.get_variable(
             name="yj_var",
             shape=[self.n_items, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         uj = tf.nn.safe_embedding_lookup_sparse(
             yj_var,
-            sparse_implicit_interaction,
+            self.sparse_interaction,
             sparse_weights=None,
             combiner="sqrtn",
             default_id=None,
@@ -126,52 +117,9 @@ class SVDpp(EmbedBase):
         metrics=None,
         **kwargs,
     ):
-        k = kwargs.get("k", 10)
-        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
-        eval_user_num = kwargs.get("eval_user_num", None)
-        self.show_start_time()
-        # check_has_sampled(train_data, verbose)
-        if self.with_training:
-            sparse_implicit_interaction = sparse_tensor_interaction(
-                data=train_data,
-                random_sample_rate=self.random_sample_rate,
-                recent_num=self.recent_num,
-            )
-            self._build_model(sparse_implicit_interaction)
-            self.trainer = TensorFlowTrainer(
-                self,
-                self.task,
-                self.loss_type,
-                self.n_epochs,
-                self.lr,
-                self.lr_decay,
-                self.epsilon,
-                self.batch_size,
-                self.num_neg,
-            )
-            self.with_training = False
-        self.trainer.run(
-            train_data,
-            verbose,
-            shuffle,
-            eval_data,
-            metrics,
-            k,
-            eval_batch_size,
-            eval_user_num,
-        )
-        self.set_embeddings()
-        self.assign_embedding_oov()
-        self.default_recs = recommend_from_embedding(
-            task=self.task,
-            user_ids=[self.n_users],
-            n_rec=min(2000, self.n_items),
-            data_info=self.data_info,
-            user_embed=self.user_embed,
-            item_embed=self.item_embed,
-            filter_consumed=False,
-            random_rec=False,
-        ).flatten()
+        if self.sparse_interaction is None:
+            self.sparse_interaction = self._set_sparse_interaction()
+        super().fit(train_data, verbose, shuffle, eval_data, metrics, **kwargs)
 
     def set_embeddings(self):
         bu, bi, puj, qi = self.sess.run(
@@ -184,87 +132,24 @@ class SVDpp(EmbedBase):
         self.user_embed = np.hstack([puj, user_bias])
         self.item_embed = np.hstack([qi, item_bias])
 
-    def rebuild_model(self, path, model_name, full_assign=False, train_data=None):
-        if train_data is None:
-            raise ValueError(
-                "SVDpp model must provide train_data when rebuilding graph"
-            )
-
-        sparse_implicit_interaction = sparse_tensor_interaction(
-            data=train_data,
-            recent_num=self.recent_num,
-            random_sample_rate=self.random_sample_rate,
+    def _set_sparse_interaction(self):
+        assert self.recent_num is None or (
+            isinstance(self.recent_num, int) and self.recent_num > 0
+        ), "`recent_num` must be None or positive int"
+        indices = []
+        values = []
+        for u in range(self.n_users):
+            items = self.user_consumed[u]
+            u_data = items if self.recent_num is None else items[-self.recent_num:]
+            indices.extend([u] * len(u_data))
+            values.extend(u_data)
+        indices = np.array(indices)[:, None]
+        indices = np.concatenate([indices, np.zeros_like(indices)], axis=1)
+        sparse_interaction = tf.SparseTensor(
+            indices=indices, values=values, dense_shape=(self.n_users, self.n_items)
         )
-        self._build_model(sparse_implicit_interaction)
+        return sparse_interaction
 
-        hparams = load_params(SVDpp, path, self.data_info, model_name)
-        self.trainer = TensorFlowTrainer(
-            self,
-            hparams["task"],
-            hparams["loss_type"],
-            hparams["n_epochs"],
-            hparams["lr"],
-            hparams["lr_decay"],
-            hparams["epsilon"],
-            hparams["batch_size"],
-            hparams["num_neg"],
-        )
-        # self.trainer._build_train_ops()
-        self.with_training = False
-
-        variable_path = os.path.join(path, f"{model_name}_tf_variables.npz")
-        variables = np.load(variable_path)
-        variables = dict(variables.items())
-        (
-            user_variables,
-            item_variables,
-            _,
-            _,
-            manual_variables,
-        ) = modify_variable_names(self, trainable=True)
-
-        update_ops = []
-        for v in tf.trainable_variables():
-            if user_variables is not None and v.name in user_variables:
-                # no need to remove oov values
-                old_var = variables[v.name]
-                user_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
-                update_ops.append(v.scatter_update(user_op))
-
-            if item_variables is not None and v.name in item_variables:
-                old_var = variables[v.name]
-                item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
-                update_ops.append(v.scatter_update(item_op))
-
-        if full_assign:
-            (
-                optimizer_user_variables,
-                optimizer_item_variables,
-                _,
-                _,
-                _,
-            ) = modify_variable_names(self, trainable=False)
-
-            other_variables = [
-                v for v in tf.global_variables() if v.name not in manual_variables
-            ]
-            for v in other_variables:
-                if (
-                    optimizer_user_variables is not None
-                    and v.name in optimizer_user_variables
-                ):
-                    old_var = variables[v.name]
-                    user_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
-                    update_ops.append(v.scatter_update(user_op))
-                elif (
-                    optimizer_item_variables is not None
-                    and v.name in optimizer_item_variables
-                ):
-                    old_var = variables[v.name]
-                    item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
-                    update_ops.append(v.scatter_update(item_op))
-                else:
-                    old_var = variables[v.name]
-                    update_ops.append(v.assign(old_var))
-
-        self.sess.run(update_ops)
+    def rebuild_model(self, path, model_name, full_assign=False):
+        self.sparse_interaction = self._set_sparse_interaction()
+        rebuild_tf_model(self, path, model_name, full_assign)
