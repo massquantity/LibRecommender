@@ -6,7 +6,7 @@ Reference: Weiping Song et al. "AutoInt: Automatic Feature Interaction Learning 
 author: massquantity
 
 """
-from tensorflow.keras.initializers import truncated_normal
+from tensorflow.keras.initializers import glorot_uniform
 
 from ..bases import ModelMeta, TfBase
 from ..tfops import (
@@ -16,7 +16,6 @@ from ..tfops import (
     tf,
     tf_dense,
 )
-from ..training import TensorFlowTrainer
 from ..utils.validate import (
     check_dense_values,
     check_multi_sparse,
@@ -40,9 +39,6 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         data_info=None,
         loss_type="cross_entropy",
         embed_size=16,
-        att_embed_size=None,
-        num_heads=2,
-        use_residual=True,
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
@@ -53,24 +49,33 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         use_bn=True,
         dropout_rate=None,
         hidden_units="128,64,32",
+        att_embed_size=None,
+        num_heads=2,
+        use_residual=True,
         multi_sparse_combiner="sqrtn",
         seed=42,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
         self.all_args = locals()
+        self.loss_type = loss_type
         self.embed_size = embed_size
-        # 'att_embed_size' also decides the num of attention layer
-        self.att_embed_size, self.att_layer_num = self._att_config(att_embed_size)
-        self.num_heads = num_heads
-        self.use_residual = use_residual
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
         self.reg = reg_config(reg)
+        self.batch_size = batch_size
+        self.num_neg = num_neg
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
         self.hidden_units = list(map(int, hidden_units.split(",")))
+        # `att_embed_size` also decides the num of attention layer
+        self.att_embed_size, self.att_layer_num = self._att_config(att_embed_size)
+        self.num_heads = num_heads
+        self.use_residual = use_residual
         self.seed = seed
         self.sparse = check_sparse_indices(data_info)
         self.dense = check_dense_values(data_info)
@@ -85,21 +90,8 @@ class AutoInt(TfBase, metaclass=ModelMeta):
             )
         if self.dense:
             self.dense_field_size = dense_field_size(data_info)
-        self._build_model()
-        if with_training:
-            self.trainer = TensorFlowTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                batch_size,
-                num_neg,
-            )
 
-    def _build_model(self):
+    def build_model(self):
         tf.set_random_seed(self.seed)
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
@@ -126,13 +118,13 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         user_feat = tf.get_variable(
             name="user_feat",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         item_feat = tf.get_variable(
             name="item_feat",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -152,7 +144,7 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         sparse_feat = tf.get_variable(
             name="sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -184,7 +176,7 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         dense_feat = tf.get_variable(
             name="dense_feat",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -203,26 +195,26 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         queries = tf_dense(
             units=multi_embed_size,
             activation=None,
-            kernel_initializer=truncated_normal(0.0, 0.01),
+            kernel_initializer=glorot_uniform,
             use_bias=False,
         )(inputs)
         keys = tf_dense(
             units=multi_embed_size,
             activation=None,
-            kernel_initializer=truncated_normal(0.0, 0.01),
+            kernel_initializer=glorot_uniform,
             use_bias=False,
         )(inputs)
         values = tf_dense(
             units=multi_embed_size,
             activation=None,
-            kernel_initializer=truncated_normal(0.0, 0.01),
+            kernel_initializer=glorot_uniform,
             use_bias=False,
         )(inputs)
         if self.use_residual:
             residual = tf_dense(
                 units=multi_embed_size,
                 activation=None,
-                kernel_initializer=truncated_normal(0.0, 0.01),
+                kernel_initializer=glorot_uniform,
                 use_bias=False,
             )(inputs)
 

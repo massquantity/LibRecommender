@@ -184,5 +184,7 @@ def test_pinsage(
         loaded_model, loaded_data_info = save_load_model(GraphSageDGL, model, data_info)
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
         ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
+        with pytest.raises(RuntimeError):
+            loaded_model.fit(train_data)
         model.save("not_existed_path", "graphsage2")
         remove_path("not_existed_path")

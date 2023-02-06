@@ -34,7 +34,7 @@ def test_fm(
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
-            _ = FM(task, data_info, loss_type)
+            FM(task, data_info, loss_type).fit(train_data)
     else:
         model = FM(
             task=task,

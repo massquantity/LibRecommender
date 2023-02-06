@@ -72,16 +72,17 @@ def test_youtube_retrieval(
         train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
 
-    if task == "rating" or (
-        task == "ranking" and loss_type not in ("nce", "sampled_softmax")
-    ):
-        # noinspection PyTypeChecker
-        with pytest.raises((AssertionError, ValueError)):
-            _ = YouTubeRetrieval(task, data_info, loss_type=loss_type)
+    if task == "rating":
+        with pytest.raises(AssertionError):
+            _ = YouTubeRetrieval(task, data_info, loss_type)
+    elif task == "ranking" and loss_type not in ("nce", "sampled_softmax"):
+        with pytest.raises(ValueError):
+            YouTubeRetrieval(task, data_info, loss_type).fit(train_data)
     else:
         model = YouTubeRetrieval(
             task=task,
             data_info=data_info,
+            loss_type=loss_type,
             embed_size=4,
             n_epochs=1,
             lr=1e-4,
@@ -91,7 +92,6 @@ def test_youtube_retrieval(
             use_bn=use_bn,
             dropout_rate=dropout_rate,
             num_sampled_per_batch=num_sampled_per_batch,
-            loss_type=loss_type,
             recent_num=recent_num,
             random_num=random_num,
             tf_sess_config=None,
@@ -132,6 +132,7 @@ def test_youtube_retrieval_multi_sparse():
     model = YouTubeRetrieval(
         task=task,
         data_info=data_info,
+        loss_type="sampled_softmax",
         embed_size=16,
         n_epochs=1,
         lr=1e-4,
@@ -141,7 +142,6 @@ def test_youtube_retrieval_multi_sparse():
         use_bn=True,
         dropout_rate=None,
         num_sampled_per_batch=None,
-        loss_type="sampled_softmax",
         tf_sess_config=None,
     )
     model.fit(

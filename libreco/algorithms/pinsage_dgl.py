@@ -92,14 +92,15 @@ class PinSageDGL(GraphSageDGL, metaclass=ModelMeta, backend="torch"):
         self.termination_prob = termination_prob
 
     def build_model(self):
-        return PinSageDGLModel(
+        self.hetero_g = self.build_hetero_graph()
+        self.torch_model = PinSageDGLModel(
             self.paradigm,
             self.data_info,
             self.embed_size,
             self.batch_size,
             self.num_layers,
             self.dropout_rate,
-        )
+        ).to(self.device)
 
     def sample_frontier(self, nodes):
         sampler = self._dgl.sampling.PinSAGESampler(

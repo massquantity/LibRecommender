@@ -9,7 +9,6 @@ author: massquantity
 import torch
 
 from ..bases import EmbedBase, ModelMeta
-from ..training import TorchTrainer
 from .torch_modules import NGCFModel
 
 
@@ -36,45 +35,39 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
         seed=42,
         device=torch.device("cpu"),
         lower_upper_bound=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
         self.all_args = locals()
         self.loss_type = loss_type
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
+        self.amsgrad = amsgrad
+        self.reg = reg
+        self.batch_size = batch_size
+        self.num_neg = num_neg
         self.node_dropout = node_dropout
         self.message_dropout = message_dropout
         self.hidden_units = list(eval(hidden_units))
+        self.margin = margin
+        self.sampler = sampler
         self.seed = seed
         self.device = device
         self._check_params()
-        if with_training:
-            self.torch_model = NGCFModel(
-                self.n_users,
-                self.n_items,
-                self.embed_size,
-                self.hidden_units,
-                self.node_dropout,
-                self.message_dropout,
-                self.user_consumed,
-                self.device,
-            )
-            self.trainer = TorchTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                amsgrad,
-                reg,
-                batch_size,
-                num_neg,
-                margin,
-                sampler,
-                device,
-            )
+
+    def build_model(self):
+        self.torch_model = NGCFModel(
+            self.n_users,
+            self.n_items,
+            self.embed_size,
+            self.hidden_units,
+            self.node_dropout,
+            self.message_dropout,
+            self.user_consumed,
+            self.device,
+        )
 
     def _check_params(self):
         if self.task != "ranking":

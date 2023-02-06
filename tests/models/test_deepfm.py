@@ -33,7 +33,7 @@ def test_deepfm(
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
-            _ = DeepFM(task, data_info, loss_type)
+            DeepFM(task, data_info, loss_type).fit(train_data)
     else:
         model = DeepFM(
             task=task,

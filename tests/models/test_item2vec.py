@@ -42,10 +42,8 @@ def test_item2vec(prepare_pure_data, task, norm_embed, window_size):
 
         # test save and load model
         loaded_model, loaded_data_info = save_load_model(Item2Vec, model, data_info)
-        with pytest.raises(AssertionError):
+        with pytest.raises(RuntimeError):
             loaded_model.fit(train_data)
-        with pytest.raises(AssertionError):
-            loaded_model.rebuild_model(path="item2vec_path", model_name="item2vec2")
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
         ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
         model.save("not_existed_path", "item2vec2")

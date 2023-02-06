@@ -117,4 +117,4 @@ class ItemCF(CfBase):
         self.topk_sim = top_k
 
     def rebuild_model(self, path, model_name, **kwargs):
-        raise NotImplementedError(f"{self.model_name} doesn't support model retraining")
+        raise NotImplementedError("`ItemCF` doesn't support model retraining")

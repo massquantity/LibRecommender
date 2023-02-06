@@ -40,7 +40,7 @@ def test_ncf(
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
-            _ = NCF(task, data_info, loss_type)
+            NCF(task, data_info, loss_type).fit(train_data)
     else:
         model = NCF(
             task=task,

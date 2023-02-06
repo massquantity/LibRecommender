@@ -37,7 +37,7 @@ def test_wide_deep(
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
-            _ = WideDeep(task, data_info, loss_type)
+            WideDeep(task, data_info, loss_type).fit(train_data)
     elif lr == 0.01:
         with pytest.raises(AssertionError):
             _ = WideDeep(task, data_info, loss_type, lr=lr)

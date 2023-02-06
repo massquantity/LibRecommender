@@ -37,16 +37,21 @@ class GensimBase(EmbedBase):
     def get_data(self):
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def build_model(self):
-        raise NotImplementedError
-
-    def fit(self, train_data, verbose=1, eval_data=None, metrics=None, **kwargs):
-        k = kwargs.get("k", 10)
-        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
-        eval_user_num = kwargs.get("eval_user_num", None)
-        self.check_data()
+    def fit(
+        self,
+        train_data,
+        verbose=1,
+        shuffle=True,
+        eval_data=None,
+        metrics=None,
+        k=10,
+        eval_batch_size=8192,
+        eval_user_num=None,
+    ):
+        self.check_attribute(eval_data, k)
         self.show_start_time()
+        if self.data is None:
+            self.data = self.get_data()
         if self.gensim_model is None:
             self.gensim_model = self.build_model()
         with time_block("gensim word2vec training", verbose):
@@ -115,12 +120,7 @@ class GensimBase(EmbedBase):
             self.gensim_model.save(model_path)
 
     def rebuild_model(self, path, model_name):
-        self.check_data()
+        self.data = self.get_data()
         model_path = os.path.join(path, f"{model_name}_gensim.pkl")
         self.gensim_model = Word2Vec.load(model_path)
         self.gensim_model.build_vocab(self.data, update=True)
-
-    def check_data(self):
-        assert (
-            hasattr(self, "data") and self.data is not None
-        ), "loaded model doesn't support retraining, use `rebuild_model` instead."

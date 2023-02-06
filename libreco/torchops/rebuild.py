@@ -7,6 +7,12 @@ from ..utils.validate import sparse_feat_size
 
 @torch.no_grad()
 def rebuild_torch_model(self, path, model_name):
+    from ..training import get_trainer
+
+    self.model_built = True
+    self.build_model()
+    self.trainer = get_trainer(self)
+
     model_state_dict, optimizer_state_dict = load_torch_state_dict(
         path, model_name, self.device
     )

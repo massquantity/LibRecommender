@@ -13,7 +13,6 @@ from tqdm import tqdm
 from ..bases import EmbedBase, ModelMeta
 from ..sampling import bipartite_neighbors
 from ..torchops import feat_to_tensor, item_unique_to_tensor, user_unique_to_tensor
-from ..training import SageTrainer
 from .torch_modules import GraphSageModel
 
 
@@ -52,38 +51,28 @@ class GraphSage(EmbedBase, metaclass=ModelMeta, backend="torch"):
 
         self.all_args = locals()
         self.loss_type = loss_type
-        self.batch_size = batch_size
         self.paradigm = paradigm
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
+        self.amsgrad = amsgrad
+        self.reg = reg
+        self.batch_size = batch_size
+        self.num_neg = num_neg
         self.dropout_rate = dropout_rate
         self.remove_edges = remove_edges
         self.num_layers = num_layers
         self.num_neighbors = num_neighbors
+        self.num_walks = num_walks
+        self.sample_walk_len = sample_walk_len
+        self.margin = margin
+        self.sampler = sampler
+        self.start_node = start_node
+        self.focus_start = focus_start
         self.seed = seed
         self.device = device
         self._check_params()
-        if with_training:
-            self.torch_model = self.build_model().to(device)
-            self.trainer = SageTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                amsgrad,
-                reg,
-                batch_size,
-                num_neg,
-                paradigm,
-                num_walks,
-                sample_walk_len,
-                margin,
-                sampler,
-                start_node,
-                focus_start,
-                device,
-            )
 
     def _check_params(self):
         if self.task != "ranking":
@@ -94,14 +83,14 @@ class GraphSage(EmbedBase, metaclass=ModelMeta, backend="torch"):
             raise ValueError(f"unsupported `loss_type`: {self.loss_type}")
 
     def build_model(self):
-        return GraphSageModel(
+        self.torch_model = GraphSageModel(
             self.paradigm,
             self.data_info,
             self.embed_size,
             self.batch_size,
             self.num_layers,
             self.dropout_rate,
-        )
+        ).to(self.device)
 
     def get_user_repr(self, users, sparse_indices, dense_values):
         user_feats = feat_to_tensor(users, sparse_indices, dense_values, self.device)

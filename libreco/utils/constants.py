@@ -51,6 +51,23 @@ TF_FEAT_MODELS = (
     "DIN",
 )
 
+TF_TRAIN_MODELS = (
+    "SVD",
+    "SVDpp",
+    "NCF",
+    "BPR",
+    "WideDeep",
+    "FM",
+    "DeepFM",
+    "YouTubeRetrieval",
+    "YouTubeRanking",
+    "AutoInt",
+    "DIN",
+    "RNN4Rec",
+    "Caser",
+    "WaveNet",
+)
+
 EMBEDDING_MODELS = (
     "SVD",
     "SVDpp",

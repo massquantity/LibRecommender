@@ -27,7 +27,7 @@ def test_svd(prepare_pure_data, task, loss_type, reg, num_neg):
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
-            _ = SVD(task, data_info, loss_type)
+            SVD(task, data_info, loss_type).fit(train_data)
     else:
         model = SVD(
             task=task,

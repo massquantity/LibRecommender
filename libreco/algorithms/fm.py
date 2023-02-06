@@ -9,7 +9,7 @@ References:
 author: massquantity
 
 """
-from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import glorot_uniform
 
 from ..bases import ModelMeta, TfBase
 from ..tfops import (
@@ -19,7 +19,6 @@ from ..tfops import (
     tf,
     tf_dense,
 )
-from ..training import TensorFlowTrainer
 from ..utils.misc import count_params
 from ..utils.validate import (
     check_dense_values,
@@ -62,14 +61,19 @@ class FM(TfBase, metaclass=ModelMeta):
         seed=42,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
         self.all_args = locals()
+        self.loss_type = loss_type
         self.embed_size = embed_size
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
         self.reg = reg_config(reg)
         self.batch_size = batch_size
+        self.num_neg = num_neg
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
         self.seed = seed
@@ -86,21 +90,8 @@ class FM(TfBase, metaclass=ModelMeta):
             )
         if self.dense:
             self.dense_field_size = dense_field_size(data_info)
-        self._build_model()
-        if with_training:
-            self.trainer = TensorFlowTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                batch_size,
-                num_neg,
-            )
 
-    def _build_model(self):
+    def build_model(self):
         tf.set_random_seed(self.seed)
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
@@ -139,25 +130,25 @@ class FM(TfBase, metaclass=ModelMeta):
         linear_user_feat = tf.get_variable(
             name="linear_user_feat",
             shape=[self.n_users + 1, 1],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         linear_item_feat = tf.get_variable(
             name="linear_item_feat",
             shape=[self.n_items + 1, 1],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         pairwise_user_feat = tf.get_variable(
             name="pairwise_user_feat",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         pairwise_item_feat = tf.get_variable(
             name="pairwise_item_feat",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -182,13 +173,13 @@ class FM(TfBase, metaclass=ModelMeta):
         linear_sparse_feat = tf.get_variable(
             name="linear_sparse_feat",
             shape=[self.sparse_feature_size],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         pairwise_sparse_feat = tf.get_variable(
             name="pairwise_sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -234,13 +225,13 @@ class FM(TfBase, metaclass=ModelMeta):
         linear_dense_feat = tf.get_variable(
             name="linear_dense_feat",
             shape=[self.dense_field_size],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         pairwise_dense_feat = tf.get_variable(
             name="pairwise_dense_feat",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.03),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 

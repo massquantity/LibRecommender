@@ -16,7 +16,6 @@ from tqdm import tqdm
 from ..bases import EmbedBase, ModelMeta
 from ..graph import check_dgl
 from ..torchops import item_unique_to_tensor, user_unique_to_tensor
-from ..training import SageDGLTrainer
 from .torch_modules import GraphSageDGLModel
 
 
@@ -63,41 +62,29 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
 
         self.all_args = locals()
         self.loss_type = loss_type
-        self.batch_size = batch_size
         self.paradigm = paradigm
         self.aggregator_type = aggregator_type
+        self.n_epochs = n_epochs
+        self.lr = lr
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
+        self.amsgrad = amsgrad
+        self.reg = reg
+        self.batch_size = batch_size
+        self.num_neg = num_neg
         self.dropout_rate = dropout_rate
         self.remove_edges = remove_edges
         self.num_layers = num_layers
         self.num_neighbors = num_neighbors
+        self.num_walks = num_walks
+        self.sample_walk_len = sample_walk_len
+        self.margin = margin
+        self.sampler = sampler
+        self.start_node = start_node
+        self.focus_start = focus_start
         self.seed = seed
         self.device = device
         self._check_params()
-        if with_training:
-            self.homo_g = self.build_homo_graph()
-            self.hetero_g = self.build_hetero_graph()
-            self.torch_model = self.build_model().to(device)
-            self.trainer = SageDGLTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                lr,
-                lr_decay,
-                epsilon,
-                amsgrad,
-                reg,
-                batch_size,
-                num_neg,
-                paradigm,
-                num_walks,
-                sample_walk_len,
-                margin,
-                sampler,
-                start_node,
-                focus_start,
-                device,
-            )
 
     def _check_params(self):
         if self.task != "ranking":
@@ -143,7 +130,9 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
         return self._dgl.heterograph(graph_data, num_nodes)
 
     def build_model(self):
-        return GraphSageDGLModel(
+        self.homo_g = self.build_homo_graph()
+        self.hetero_g = self.build_hetero_graph()
+        self.torch_model = GraphSageDGLModel(
             self.paradigm,
             self.data_info,
             self.embed_size,
@@ -151,7 +140,7 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
             self.num_layers,
             self.dropout_rate,
             self.aggregator_type,
-        )
+        ).to(self.device)
 
     def sample_frontier(self, nodes):
         return self._dgl.sampling.sample_neighbors(
@@ -162,7 +151,7 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
         )
 
     def transform_blocks(self, nodes, target_nodes=None):
-        """
+        r"""
         bipartite graph block: (items(nodes) -> sampled neighbor nodes)
         -------------
         |     / ... |

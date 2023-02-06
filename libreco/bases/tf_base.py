@@ -1,3 +1,4 @@
+import abc
 import os
 
 import numpy as np
@@ -5,6 +6,7 @@ import numpy as np
 from ..prediction import predict_tf_feat
 from ..recommendation import cold_start_rec, construct_rec, recommend_tf_feat
 from ..tfops import modify_variable_names, sess_config, tf
+from ..training import get_trainer
 from ..utils.save_load import (
     load_tf_model,
     load_tf_variables,
@@ -19,9 +21,15 @@ from .base import Base
 
 class TfBase(Base):
     def __init__(self, task, data_info, lower_upper_bound, tf_sess_config):
-        Base.__init__(self, task, data_info, lower_upper_bound)
+        super().__init__(task, data_info, lower_upper_bound)
         self.sess = sess_config(tf_sess_config)
+        self.model_built = False
         self.trainer = None
+        self.loaded = False
+
+    @abc.abstractmethod
+    def build_model(self):
+        raise NotImplementedError
 
     def fit(
         self,
@@ -30,13 +38,24 @@ class TfBase(Base):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs,
+        k=10,
+        eval_batch_size=8192,
+        eval_user_num=None,
     ):
-        k = kwargs.get("k", 10)
-        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
-        eval_user_num = kwargs.get("eval_user_num", None)
-        assert k <= self.n_items, f"eval `k` {k} exceeds num of items {self.n_items}"
+        if self.loaded:
+            raise RuntimeError(
+                "Loaded model doesn't support retraining, use `rebuild_model` instead. "
+                "Or constructing a new model from scratch."
+            )
+        if eval_data is not None and k > self.n_items:
+            raise ValueError(f"eval `k` {k} exceeds num of items {self.n_items}")
+
         self.show_start_time()
+        if not self.model_built:
+            self.build_model()
+            self.model_built = True
+        if self.trainer is None:
+            self.trainer = get_trainer(self)
         self.trainer.run(
             train_data,
             verbose,

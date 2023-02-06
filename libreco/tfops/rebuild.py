@@ -7,6 +7,12 @@ from .version import tf
 
 
 def rebuild_tf_model(self, path, model_name, full_assign=False):
+    from ..training import get_trainer
+
+    self.model_built = True
+    self.build_model()
+    self.trainer = get_trainer(self)
+
     variable_path = os.path.join(path, f"{model_name}_tf_variables.npz")
     variables = np.load(variable_path)
     variables = dict(variables.items())

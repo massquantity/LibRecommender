@@ -30,7 +30,6 @@ class DeepWalk(GensimBase):
         n_threads=0,
         seed=42,
         lower_upper_bound=None,
-        with_training=True,
     ):
         super().__init__(
             task,
@@ -47,9 +46,6 @@ class DeepWalk(GensimBase):
         self.all_args = locals()
         self.n_walks = n_walks
         self.walk_length = walk_length
-        if with_training:
-            self.graph = self._build_graph()
-            self.data = self.get_data()
 
     def _build_graph(self):
         graph = defaultdict(list)
@@ -59,7 +55,8 @@ class DeepWalk(GensimBase):
         return graph
 
     def get_data(self):
-        return ItemCorpus(self.graph, self.n_items, self.n_walks, self.walk_length)
+        graph = self._build_graph()
+        return ItemCorpus(graph, self.n_items, self.n_walks, self.walk_length)
 
     def build_model(self):
         model = Word2Vec(

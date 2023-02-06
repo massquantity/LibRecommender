@@ -117,9 +117,9 @@ def recommend_tf_feat(
     }
     if model.model_category == "sequence":
         u_last_interacted = np.repeat(
-            model.user_last_interacted[user_ids], model.n_items, axis=0
+            model.recent_seqs[user_ids], model.n_items, axis=0
         )
-        u_interacted_len = np.repeat(model.last_interacted_len[user_ids], model.n_items)
+        u_interacted_len = np.repeat(model.recent_seq_lens[user_ids], model.n_items)
         params["user_interacted_seq"] = u_last_interacted
         params["user_interacted_len"] = u_interacted_len
 

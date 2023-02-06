@@ -6,7 +6,7 @@ Reference: Heng-Tze Cheng et al. "Wide & Deep Learning for Recommender Systems"
 author: massquantity
 
 """
-from tensorflow.keras.initializers import truncated_normal as tf_truncated_normal
+from tensorflow.keras.initializers import glorot_uniform
 
 from ..bases import ModelMeta, TfBase
 from ..tfops import (
@@ -17,7 +17,6 @@ from ..tfops import (
     tf,
     tf_dense,
 )
-from ..training import WideDeepTrainer
 from ..utils.misc import count_params
 from ..utils.validate import (
     check_dense_values,
@@ -67,8 +66,15 @@ class WideDeep(TfBase, metaclass=ModelMeta):
         super().__init__(task, data_info, lower_upper_bound, tf_sess_config)
 
         self.all_args = locals()
+        self.loss_type = loss_type
         self.embed_size = embed_size
+        self.n_epochs = n_epochs
+        self.lr = self.check_lr(lr)
+        self.lr_decay = lr_decay
+        self.epsilon = epsilon
         self.reg = reg_config(reg)
+        self.batch_size = batch_size
+        self.num_neg = num_neg
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
         self.hidden_units = list(map(int, hidden_units.split(",")))
@@ -86,21 +92,8 @@ class WideDeep(TfBase, metaclass=ModelMeta):
             )
         if self.dense:
             self.dense_field_size = dense_field_size(data_info)
-        self._build_model()
-        if with_training:
-            self.trainer = WideDeepTrainer(
-                self,
-                task,
-                loss_type,
-                n_epochs,
-                self.check_lr(lr),
-                lr_decay,
-                epsilon,
-                batch_size,
-                num_neg,
-            )
 
-    def _build_model(self):
+    def build_model(self):
         tf.set_random_seed(self.seed)
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
@@ -135,25 +128,25 @@ class WideDeep(TfBase, metaclass=ModelMeta):
         wide_user_feat = tf.get_variable(
             name="wide_user_feat",
             shape=[self.n_users + 1, 1],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         wide_item_feat = tf.get_variable(
             name="wide_item_feat",
             shape=[self.n_items + 1, 1],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         deep_user_feat = tf.get_variable(
             name="deep_user_feat",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         deep_item_feat = tf.get_variable(
             name="deep_item_feat",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -173,13 +166,13 @@ class WideDeep(TfBase, metaclass=ModelMeta):
         wide_sparse_feat = tf.get_variable(
             name="wide_sparse_feat",
             shape=[self.sparse_feature_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         deep_sparse_feat = tf.get_variable(
             name="deep_sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 
@@ -228,13 +221,13 @@ class WideDeep(TfBase, metaclass=ModelMeta):
         wide_dense_feat = tf.get_variable(
             name="wide_dense_feat",
             shape=[self.dense_field_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
         deep_dense_feat = tf.get_variable(
             name="deep_dense_feat",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=tf_truncated_normal(0.0, 0.01),
+            initializer=glorot_uniform,
             regularizer=self.reg,
         )
 

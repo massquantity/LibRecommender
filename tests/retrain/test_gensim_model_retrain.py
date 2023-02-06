@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pandas as pd
@@ -11,11 +10,9 @@ from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 
 
-def test_torchmodel_retrain_pure():
-    data_path = os.path.join(
-        str(Path(os.path.realpath(__file__)).parent.parent),
-        "sample_data",
-        "sample_movielens_rating.dat",
+def test_gensim_model_retrain_pure():
+    data_path = (
+        Path(__file__).parents[1].joinpath("sample_data", "sample_movielens_rating.dat")
     )
     all_data = pd.read_csv(
         data_path, sep="::", names=["user", "item", "label", "time"], engine="python"
@@ -33,11 +30,26 @@ def test_torchmodel_retrain_pure():
 
 def retrain(model_name, train_data, eval_data, data_info, all_data):
     if model_name == "item2vec":
-        model = Item2Vec("ranking", data_info, embed_size=16, norm_embed=False,
-                         window_size=5, n_epochs=2, n_threads=0)
+        model = Item2Vec(
+            "ranking",
+            data_info,
+            embed_size=16,
+            norm_embed=False,
+            window_size=5,
+            n_epochs=2,
+            n_threads=0,
+        )
     else:
-        model = DeepWalk("ranking", data_info, embed_size=16, norm_embed=False,
-                         n_walks=10, walk_length=3, window_size=5, n_epochs=2)
+        model = DeepWalk(
+            "ranking",
+            data_info,
+            embed_size=16,
+            norm_embed=False,
+            n_walks=10,
+            walk_length=3,
+            window_size=5,
+            n_epochs=2,
+        )
 
     model.fit(
         train_data,
@@ -67,9 +79,7 @@ def retrain(model_name, train_data, eval_data, data_info, all_data):
     )
 
     data_info.save(path=SAVE_PATH, model_name=model_name)
-    model.save(
-        path=SAVE_PATH, model_name=model_name, manual=True, inference_only=False
-    )
+    model.save(path=SAVE_PATH, model_name=model_name, manual=True, inference_only=False)
 
     # ========================== load and retrain =============================
     new_data_info = DataInfo.load(SAVE_PATH, model_name=model_name)
@@ -89,11 +99,26 @@ def retrain(model_name, train_data, eval_data, data_info, all_data):
     eval_data.build_negative_samples(new_data_info, seed=2222)
 
     if model_name == "item2vec":
-        new_model = Item2Vec("ranking", new_data_info, embed_size=16, norm_embed=False,
-                             window_size=5, n_epochs=2, n_threads=0)
+        new_model = Item2Vec(
+            "ranking",
+            new_data_info,
+            embed_size=16,
+            norm_embed=False,
+            window_size=5,
+            n_epochs=2,
+            n_threads=0,
+        )
     else:
-        new_model = DeepWalk("ranking", new_data_info, embed_size=16, norm_embed=False,
-                             n_walks=10, walk_length=3, window_size=5, n_epochs=2)
+        new_model = DeepWalk(
+            "ranking",
+            new_data_info,
+            embed_size=16,
+            norm_embed=False,
+            n_walks=10,
+            walk_length=3,
+            window_size=5,
+            n_epochs=2,
+        )
 
     new_model.rebuild_model(path=SAVE_PATH, model_name=model_name)
     new_model.fit(

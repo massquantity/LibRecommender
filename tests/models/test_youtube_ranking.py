@@ -43,12 +43,12 @@ def test_youtube_ranking(
         train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
 
-    if task == "rating" or (
-        task == "ranking" and loss_type not in ("cross_entropy", "focal")
-    ):
-        # noinspection PyTypeChecker
-        with pytest.raises((AssertionError, ValueError)):
+    if task == "rating":
+        with pytest.raises(AssertionError):
             _ = YouTubeRanking(task, data_info, loss_type)
+    elif task == "ranking" and loss_type not in ("cross_entropy", "focal"):
+        with pytest.raises(ValueError):
+            YouTubeRanking(task, data_info, loss_type).fit(train_data)
     else:
         model = YouTubeRanking(
             task=task,

@@ -67,10 +67,16 @@ class CfBase(Base):
             caution_str = "Warning: jaccard is not suitable for explicit data"
             print(f"{colorize(caution_str, 'red')}")
 
-    def fit(self, train_data, verbose=1, eval_data=None, metrics=None, **kwargs):
-        k = kwargs.get("k", 10)
-        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
-        eval_user_num = kwargs.get("eval_user_num", None)
+    def fit(
+        self,
+        train_data,
+        verbose=1,
+        eval_data=None,
+        metrics=None,
+        k=10,
+        eval_batch_size=8192,
+        eval_user_num=None,
+    ):
         self.show_start_time()
         self.user_interaction = train_data.sparse_interaction
         self.item_interaction = self.user_interaction.T.tocsr()
@@ -252,7 +258,7 @@ class CfBase(Base):
 
     @classmethod
     def load(cls, path, model_name, data_info, **kwargs):
-        hparams = load_params(cls, path, data_info, model_name)
+        hparams = load_params(path, data_info, model_name)
         model = cls(**hparams)
         model_path = os.path.join(path, model_name)
         model.sim_matrix = load_sparse(f"{model_path}_sim_matrix.npz")

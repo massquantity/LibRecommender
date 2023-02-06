@@ -6,6 +6,7 @@ import numpy as np
 
 from ..prediction import predict_from_embedding
 from ..recommendation import cold_start_rec, construct_rec, recommend_from_embedding
+from ..training import get_trainer
 from ..utils.misc import colorize
 from ..utils.save_load import (
     load_default_recs,
@@ -33,6 +34,22 @@ class EmbedBase(Base):
         self.item_norm = None
         self.sim_type = None
         self.approximate = False
+        self.model_built = False
+        self.trainer = None
+        self.loaded = False
+
+    @abc.abstractmethod
+    def build_model(self):
+        raise NotImplementedError
+
+    def check_attribute(self, eval_data, k):
+        if hasattr(self, "loaded") and self.loaded:
+            raise RuntimeError(
+                "Loaded model doesn't support retraining, use `rebuild_model` instead. "
+                "Or constructing a new model from scratch."
+            )
+        if eval_data is not None and k > self.n_items:
+            raise ValueError(f"eval `k` {k} exceeds num of items {self.n_items}")
 
     def fit(
         self,
@@ -41,17 +58,17 @@ class EmbedBase(Base):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs,
+        k=10,
+        eval_batch_size=8192,
+        eval_user_num=None,
     ):
-        assert (
-            self.trainer is not None
-        ), "loaded model doesn't support retraining, use `rebuild_model` instead."
-        k = kwargs.get("k", 10)
-        eval_batch_size = kwargs.get("eval_batch_size", 2**15)
-        eval_user_num = kwargs.get("eval_user_num", None)
-        assert k <= self.n_items, f"eval `k` {k} exceeds num of items {self.n_items}"
+        self.check_attribute(eval_data, k)
         self.show_start_time()
-        # self._check_has_sampled(train_data, verbose)
+        if not self.model_built:
+            self.build_model()
+            self.model_built = True
+        if self.trainer is None:
+            self.trainer = get_trainer(self)
         self.trainer.run(
             train_data,
             verbose,
@@ -150,8 +167,9 @@ class EmbedBase(Base):
     def load(cls, path, model_name, data_info, **kwargs):
         variable_path = os.path.join(path, f"{model_name}.npz")
         variables = np.load(variable_path)
-        hparams = load_params(cls, path, data_info, model_name)
+        hparams = load_params(path, data_info, model_name)
         model = cls(**hparams)
+        model.loaded = True
         model.default_recs = load_default_recs(path, model_name)
         setattr(model, "user_embed", variables["user_embed"])
         setattr(model, "item_embed", variables["item_embed"])

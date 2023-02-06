@@ -74,11 +74,15 @@ def test_bpr(prepare_pure_data, task, loss_type, reg, num_neg, use_tf, optimizer
             )
             ptest_preds(model, task, pd_data, with_feats=False)
             ptest_recommends(model, data_info, pd_data, with_feats=False)
+            with pytest.raises(ValueError):
+                model.fit(train_data, eval_data=eval_data, k=10000)
 
             # test save and load model
             loaded_model, loaded_data_info = save_load_model(BPR, model, data_info)
             ptest_preds(loaded_model, task, pd_data, with_feats=False)
             ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
+            with pytest.raises(RuntimeError):
+                loaded_model.fit(train_data)
             model.save("not_existed_path", "bpr2")
             remove_path("not_existed_path")
 
