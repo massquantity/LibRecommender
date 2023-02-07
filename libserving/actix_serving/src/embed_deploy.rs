@@ -6,32 +6,13 @@ use actix_web::{post, web, Responder};
 use deadpool_redis::Pool;
 use faiss::index::{IndexImpl, SearchResult};
 use faiss::{read_index, Index};
-use log::info;
 
 use crate::common::{Param, Recommendation};
 use crate::errors::{ServingError, ServingResult};
 use crate::faiss::find_index_path;
 use crate::redis_ops::{check_exists, get_multi_str, get_str, get_vec};
 
-pub struct EmbedAppState {
-    faiss_index: Mutex<RefCell<IndexImpl>>,
-}
-
-// pub fn init_embed_state(model_type: &str) -> std::io::Result<Option<web::Data<EmbedAppState>>> {
-//    let faiss_index = if model_type == "embed" {
-//        load_faiss_index()
-//    } else {
-//        index_factory(16, "Flat", MetricType::InnerProduct)
-//            .map_err(|e| std::io::Error::new(ErrorKind::Other, e.to_string()))?
-//    };
-//    if model_type == "embed" {
-//        Ok(Some(web::Data::new(EmbedAppState {
-//            faiss_index: Mutex::new(RefCell::new(faiss_index)),
-//        })))
-//    } else {
-//        Ok(None)
-//    }
-// }
+pub type EmbedAppState = Mutex<RefCell<IndexImpl>>;
 
 pub fn init_embed_state(model_type: &str) -> ServingResult<Option<web::Data<EmbedAppState>>> {
     match model_type {
@@ -39,11 +20,7 @@ pub fn init_embed_state(model_type: &str) -> ServingResult<Option<web::Data<Embe
             let index_path = find_index_path(None)?;
             read_index(index_path)
                 .map_err(ServingError::FaissError)
-                .map(|index| {
-                    Some(web::Data::new(EmbedAppState {
-                        faiss_index: Mutex::new(RefCell::new(index)),
-                    }))
-                })
+                .map(|index| Some(web::Data::new(Mutex::new(RefCell::new(index)))))
         }
         _ => Ok(None),
     }
@@ -57,7 +34,7 @@ pub async fn embed_serving(
 ) -> ServingResult<impl Responder> {
     let Param { user, n_rec } = param.0;
     let mut conn = redis_pool.get().await?;
-    info!("recommend {n_rec} items for user {user}");
+    log::info!("recommend {n_rec} items for user {user}");
 
     if (check_exists(&mut conn, "user2id", &user, "hget").await).is_err() {
         return Err(ServingError::NotExist("request user"));
@@ -79,8 +56,8 @@ async fn rec_on_sim_embeds(
     let user_consumed: Vec<usize> = serde_json::from_str(consumed_str)?;
     let user_consumed_set: HashSet<usize> = HashSet::from_iter(user_consumed);
     let candidate_num = n_rec + user_consumed_set.len();
-    let faiss_index: MutexGuard<RefCell<IndexImpl>> = state.faiss_index.lock().unwrap();
-    let mut borrowed_index: RefMut<IndexImpl> = (*faiss_index).borrow_mut();
+    let faiss_index: MutexGuard<RefCell<IndexImpl>> = state.lock().unwrap();
+    let mut borrowed_index: RefMut<IndexImpl> = faiss_index.borrow_mut();
     if user_embed.len() != borrowed_index.d() as usize {
         return Err(ServingError::Other(
             "`user_embed` dimension != `item_embed` dimension, \

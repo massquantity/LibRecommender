@@ -99,7 +99,7 @@ where
     let user_values: Vec<T> = serde_json::from_str(user_feats)?;
     let item_values: Vec<Vec<T>> = item_feats
         .iter()
-        .map(|i| Ok(serde_json::from_str(i))?)
+        .map(|i| serde_json::from_str(i))
         .collect::<Result<Vec<Vec<_>>, _>>()?;
 
     let dim = user_col_index.len() + item_col_index.len();

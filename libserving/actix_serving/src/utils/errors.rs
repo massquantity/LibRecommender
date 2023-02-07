@@ -5,30 +5,34 @@ pub type ServingResult<T> = std::result::Result<T, ServingError>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum ServingError {
+    #[error("error: failed to get environment variable `{1}`")]
+    EnvError(#[source] std::env::VarError, &'static str),
+    #[error("faiss error: {0}")]
+    FaissError(#[source] faiss::error::Error),
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
+    #[error(transparent)]
+    JsonParseError(#[from] serde_json::Error),
     #[error("error: `{0}` doesn't exist in redis")]
     NotExist(&'static str),
     #[error("error: `{0}` not found")]
     NotFound(&'static str),
-    #[error("error: unknown model `{0}`")]
-    UnknownModel(String),
-    #[error("error: redis error, {0}")]
-    RedisError(#[from] redis::RedisError),
-    #[error("error: failed to get redis pool, {0}")]
-    RedisPoolError(#[from] deadpool_redis::PoolError),
-    #[error(transparent)]
-    JsonParseError(#[from] serde_json::Error),
-    #[error(transparent)]
-    ParseError(#[from] std::num::ParseIntError),
-    #[error("faiss error: {0}")]
-    FaissError(#[source] faiss::error::Error),
-    #[error("error: failed to get prediction from tf serving, {0}")]
-    TfServingError(#[from] reqwest::Error),
-    #[error("error: failed to get environment variable `{1}`")]
-    EnvError(#[source] std::env::VarError, &'static str),
-    #[error("error: request timeout")]
-    Timeout,
     #[error("error: {0}")]
     Other(&'static str),
+    #[error(transparent)]
+    ParseError(#[from] std::num::ParseIntError),
+    #[error("error: redis error, {0}")]
+    RedisError(#[from] redis::RedisError),
+    #[error("error: failed to create redis pool, {0}")]
+    RedisCreatePoolError(#[from] deadpool_redis::CreatePoolError),
+    #[error("error: failed to get redis pool, {0}")]
+    RedisGetPoolError(#[from] deadpool_redis::PoolError),
+    #[error("error: failed to get prediction from tf serving, {0}")]
+    TfServingError(#[from] reqwest::Error),
+    #[error("error: request timeout")]
+    Timeout,
+    #[error("error: unknown model `{0}`")]
+    UnknownModel(String),
 }
 
 impl actix_web::error::ResponseError for ServingError {
