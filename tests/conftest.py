@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -10,11 +10,7 @@ from tests.utils_path import SAVE_PATH, remove_path
 
 @pytest.fixture
 def prepare_pure_data():
-    data_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "sample_data",
-        "sample_movielens_rating.dat",
-    )
+    data_path = Path(__file__).parent / "sample_data" / "sample_movielens_rating.dat"
     pd_data = pd.read_csv(
         data_path, sep="::", names=["user", "item", "label", "time"], engine="python"
     )
@@ -59,11 +55,7 @@ def prepare_multi_sparse_data(read_feat_data):
 
 @pytest.fixture
 def read_feat_data():
-    data_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "sample_data",
-        "sample_movielens_merged.csv",
-    )
+    data_path = Path(__file__).parent / "sample_data" / "sample_movielens_merged.csv"
     pd_data = pd.read_csv(data_path, sep=",", header=0)
     pd_data["item_dense_feat"] = np.random.randn(len(pd_data), 1)
     return pd_data, split_by_ratio_chrono(pd_data, test_size=0.2)
