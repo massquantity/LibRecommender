@@ -2,7 +2,6 @@ use std::collections::{HashMap, HashSet};
 
 use actix_web::{post, web, Responder};
 use deadpool_redis::{Connection, Pool};
-use log::info;
 
 use crate::common::{Param, Recommendation};
 use crate::errors::{ServingError, ServingResult};
@@ -15,7 +14,7 @@ pub async fn knn_serving(
 ) -> ServingResult<impl Responder> {
     let Param { user, n_rec } = param.0;
     let mut conn = redis_pool.get().await?;
-    info!("recommend {n_rec} items for user {user}");
+    log::info!("recommend {n_rec} items for user {user}");
 
     if (check_exists(&mut conn, "user2id", &user, "hget").await).is_err() {
         return Err(ServingError::NotExist("request user"));
@@ -51,7 +50,10 @@ async fn rec_on_user_sims(
             if user_consumed.contains(&i) {
                 continue;
             }
-            id_sim_map.entry(i).and_modify(|s| *s += sim).or_insert(sim);
+            id_sim_map
+                .entry(i)
+                .and_modify(|s| *s += sim)
+                .or_insert(sim);
         }
     }
     let item_ids = sort_by_sims(&id_sim_map, n_rec);
@@ -73,7 +75,10 @@ async fn rec_on_item_sims(
             if user_consumed.contains(&j) {
                 continue;
             }
-            id_sim_map.entry(j).and_modify(|s| *s += sim).or_insert(sim);
+            id_sim_map
+                .entry(j)
+                .and_modify(|s| *s += sim)
+                .or_insert(sim);
         }
     }
     let item_ids = sort_by_sims(&id_sim_map, n_rec);

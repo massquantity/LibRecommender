@@ -2,7 +2,6 @@ use std::collections::{HashMap, HashSet};
 
 use actix_web::{post, web, Responder};
 use deadpool_redis::{redis::AsyncCommands, Pool};
-use log::info;
 use serde_json::{json, Value};
 use tokio::sync::Semaphore;
 
@@ -17,16 +16,16 @@ pub struct TfAppState {
     semaphore: std::sync::Arc<Semaphore>,
 }
 
-pub fn init_tf_state(model_type: &str) -> ServingResult<Option<TfAppState>> {
+pub fn init_tf_state(model_type: &str) -> ServingResult<Option<web::Data<TfAppState>>> {
     match model_type {
         "tf" => {
             let client = reqwest::Client::new();
             let default_limit = num_cpus::get_physical() * 4;
             let request_limit =
                 std::env::var("REQUEST_LIMIT").map_or(Ok(default_limit), |s| s.parse::<usize>())?;
-            info!("tf serving request limit: {request_limit}");
+            log::debug!("tf serving request limit: {request_limit}");
             let semaphore = std::sync::Arc::new(Semaphore::new(request_limit));
-            Ok(Some(TfAppState { client, semaphore }))
+            Ok(Some(web::Data::new(TfAppState { client, semaphore })))
         }
         _ => Ok(None),
     }
@@ -40,7 +39,7 @@ pub async fn tf_serving(
 ) -> ServingResult<impl Responder> {
     let Param { user, n_rec } = param.0;
     let mut conn = redis_pool.get().await?;
-    info!("recommend {n_rec} items for user {user}");
+    log::info!("recommend {n_rec} items for user {user}");
 
     if (check_exists(&mut conn, "user2id", &user, "hget").await).is_err() {
         return Err(ServingError::NotExist("request user"));
@@ -86,7 +85,10 @@ async fn request_tf_serving(
 
 fn rank_items_by_score(scores: &[f32], n_rec: usize, user_consumed: &[usize]) -> Vec<usize> {
     let user_consumed_set: HashSet<&usize> = HashSet::from_iter(user_consumed);
-    let mut rank_items = scores.iter().enumerate().collect::<Vec<(usize, &f32)>>();
+    let mut rank_items = scores
+        .iter()
+        .enumerate()
+        .collect::<Vec<(usize, &f32)>>();
     rank_items.sort_unstable_by(|&(_, a), &(_, b)| a.partial_cmp(b).unwrap().reverse());
     rank_items
         .into_iter()

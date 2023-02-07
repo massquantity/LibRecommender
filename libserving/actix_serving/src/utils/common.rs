@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Param {
     pub user: String,
     pub n_rec: usize,
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Recommendation {
     pub rec_list: Vec<String>,
 }
