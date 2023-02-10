@@ -5,3 +5,4 @@ recursive-include libreco *.c *.cpp *.pyx
 recursive-include libserving *.py *.sh
 recursive-exclude examples *
 recursive-exclude distributed *
+recursive-exclude tests *

@@ -18,7 +18,6 @@ exclude_lines =
     raise SanicException.*
     except .*redis.*
     except ValidationError.
-    def check_model_exists
     if not path:
     if __name__ == .__main__.:
     @(abc\.)?abstractmethod
