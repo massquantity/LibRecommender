@@ -88,7 +88,7 @@ def save_tf_serving_model(path: str, model: TfBase, version: int):
     print(f"{colorize('Done tf exporting!', 'green', highlight=True)}")
 
 
-def check_model_exists(export_path: str):
+def check_model_exists(export_path: str):  # pragma: no cover
     answered = False
     while not answered:
         print_str = (
