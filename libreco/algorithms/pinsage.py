@@ -44,9 +44,8 @@ class PinSage(GraphSage, metaclass=ModelMeta, backend="torch"):
         start_node="random",
         focus_start=False,
         seed=42,
-        device=torch.device("cpu"),
+        device="cuda",
         lower_upper_bound=None,
-        with_training=True,
     ):
         super().__init__(
             task,
@@ -75,7 +74,6 @@ class PinSage(GraphSage, metaclass=ModelMeta, backend="torch"):
             seed,
             device,
             lower_upper_bound,
-            with_training,
         )
         self.all_args = locals()
         self.num_walks = num_walks
