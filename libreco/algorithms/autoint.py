@@ -36,10 +36,10 @@ class AutoInt(TfBase, metaclass=ModelMeta):
     def __init__(
         self,
         task,
-        data_info=None,
+        data_info,
         loss_type="cross_entropy",
         embed_size=16,
-        n_epochs=20,
+        n_epochs=10,
         lr=0.001,
         lr_decay=False,
         epsilon=1e-5,
@@ -48,8 +48,7 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         num_neg=1,
         use_bn=True,
         dropout_rate=None,
-        hidden_units="128,64,32",
-        att_embed_size=None,
+        att_embed_size=(8, 8, 8),
         num_heads=2,
         use_residual=True,
         multi_sparse_combiner="sqrtn",
@@ -71,7 +70,6 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         self.num_neg = num_neg
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
-        self.hidden_units = list(map(int, hidden_units.split(",")))
         # `att_embed_size` also decides the num of attention layer
         self.att_embed_size, self.att_layer_num = self._att_config(att_embed_size)
         self.num_heads = num_heads

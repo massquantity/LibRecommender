@@ -19,6 +19,7 @@ from ..tfops import (
     sess_config,
     tf,
 )
+from ..torchops import hidden_units_config
 from ..utils.misc import count_params
 from ..utils.validate import (
     check_dense_values,
@@ -52,11 +53,11 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         lr=0.001,
         lr_decay=False,
         epsilon=1e-5,
-        hidden_units="128,64",
         reg=None,
         batch_size=256,
         use_bn=True,
         dropout_rate=None,
+        hidden_units=(128, 64),
         num_sampled_per_batch=None,
         sampler="uniform",
         recent_num=10,
@@ -77,7 +78,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.lr = lr
         self.lr_decay = lr_decay
         self.epsilon = epsilon
-        self.hidden_units = list(map(int, hidden_units.split(","))) + [self.embed_size]
+        self.hidden_units = hidden_units_config(hidden_units) + [self.embed_size]
         self.reg = reg_config(reg)
         self.batch_size = batch_size
         self.use_bn = use_bn

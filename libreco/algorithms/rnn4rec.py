@@ -13,6 +13,7 @@ from tensorflow.keras.initializers import zeros as tf_zeros
 from ..bases import EmbedBase, ModelMeta
 from ..data.sequence import get_user_last_interacted
 from ..tfops import dropout_config, reg_config, sess_config, tf, tf_dense, tf_rnn
+from ..torchops import hidden_units_config
 from ..utils.misc import count_params
 from ..utils.validate import check_seq_mode
 
@@ -25,17 +26,17 @@ class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         task,
         data_info=None,
         loss_type="cross_entropy",
-        rnn_type="lstm",
+        rnn_type="gru",
         embed_size=16,
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
         epsilon=1e-5,
-        hidden_units="16",
         reg=None,
         batch_size=256,
         num_neg=1,
         dropout_rate=None,
+        hidden_units=16,
         use_layer_norm=False,
         recent_num=10,
         random_num=None,
@@ -53,7 +54,7 @@ class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.lr = lr
         self.lr_decay = lr_decay
         self.epsilon = epsilon
-        self.hidden_units = list(map(int, hidden_units.split(",")))
+        self.hidden_units = hidden_units_config(hidden_units)
         self.reg = reg_config(reg)
         self.batch_size = batch_size
         self.num_neg = num_neg

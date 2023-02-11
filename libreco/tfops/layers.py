@@ -1,5 +1,7 @@
 from functools import partial
 
+import numpy as np
+
 from .version import TF_VERSION, tf
 
 
@@ -20,6 +22,8 @@ def dense_nn(
 ):
     if activation is None:
         activation = tf.identity
+    if np.isscalar(hidden_units):
+        hidden_units = [hidden_units]
 
     with tf.variable_scope(name):
         if use_bn:
