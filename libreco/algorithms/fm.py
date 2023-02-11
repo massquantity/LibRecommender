@@ -45,7 +45,7 @@ class FM(TfBase, metaclass=ModelMeta):
     def __init__(
         self,
         task,
-        data_info=None,
+        data_info,
         loss_type="cross_entropy",
         embed_size=16,
         n_epochs=20,

@@ -19,7 +19,7 @@ from tests.utils_save_load import save_load_model
 )
 @pytest.mark.parametrize(
     "lr_decay, reg, num_neg, use_bn, dropout_rate, hidden_units",
-    [(False, None, 1, False, None, "128,64,32"), (True, 0.001, 3, True, 0.5, "1,1,1")],
+    [(False, None, 1, False, None, (128, 64, 32)), (True, 0.001, 3, True, 0.5, 1)],
 )
 def test_ncf(
     prepare_pure_data,

@@ -9,6 +9,7 @@ author: massquantity
 import torch
 
 from ..bases import EmbedBase, ModelMeta
+from ..torchops import device_config
 from .torch_modules import LightGCNModel
 
 
@@ -32,7 +33,7 @@ class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
         margin=1.0,
         sampler="random",
         seed=42,
-        device=torch.device("cpu"),
+        device="cuda",
         lower_upper_bound=None,
         with_training=True,
     ):
@@ -53,7 +54,7 @@ class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
         self.margin = margin
         self.sampler = sampler
         self.seed = seed
-        self.device = device
+        self.device = device_config(device)
         self._check_params()
 
     def build_model(self):

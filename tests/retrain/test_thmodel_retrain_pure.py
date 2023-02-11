@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 
 import pandas as pd
-import torch
 
 from libreco.algorithms import NGCF
 from libreco.data import DataInfo, DatasetPure, split_by_ratio_chrono
@@ -43,8 +42,8 @@ def test_torchmodel_retrain_pure():
         num_neg=1,
         node_dropout=0.2,
         message_dropout=0.2,
-        hidden_units="64,64,64",
-        device=torch.device("cpu"),
+        hidden_units=(64, 64, 64),
+        device="cuda",
     )
     model.fit(
         train_data,
@@ -109,8 +108,8 @@ def test_torchmodel_retrain_pure():
         num_neg=1,
         node_dropout=0.2,
         message_dropout=0.2,
-        hidden_units="64,64,64",
-        device=torch.device("cpu"),
+        hidden_units=(64, 64, 64),
+        device="cuda",
     )
     new_model.rebuild_model(path=SAVE_PATH, model_name="ngcf_model")
     new_model.fit(

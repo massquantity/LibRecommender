@@ -9,6 +9,7 @@ author: massquantity
 import torch
 
 from ..bases import EmbedBase, ModelMeta
+from ..torchops import device_config, hidden_units_config
 from .torch_modules import NGCFModel
 
 
@@ -29,11 +30,11 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
         num_neg=1,
         node_dropout=0.0,
         message_dropout=0.0,
-        hidden_units="64,64,64",
+        hidden_units=(64, 64, 64),
         margin=1.0,
         sampler="random",
         seed=42,
-        device=torch.device("cpu"),
+        device="cuda",
         lower_upper_bound=None,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
@@ -50,11 +51,11 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
         self.num_neg = num_neg
         self.node_dropout = node_dropout
         self.message_dropout = message_dropout
-        self.hidden_units = list(eval(hidden_units))
+        self.hidden_units = hidden_units_config(hidden_units)
         self.margin = margin
         self.sampler = sampler
         self.seed = seed
-        self.device = device
+        self.device = device_config(device)
         self._check_params()
 
     def build_model(self):

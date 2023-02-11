@@ -19,15 +19,24 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "lr, lr_decay, reg, num_neg, use_bn, dropout_rate",
+    "lr, lr_decay, reg, num_neg, use_bn, dropout_rate, hidden_units",
     [
-        ({"wide": 0.01, "deep": 3e-4}, False, None, 1, False, None),
-        (None, True, 0.001, 3, True, 0.5),
-        (0.01, True, 0.001, 3, True, 0.5),
+        ({"wide": 0.01, "deep": 3e-4}, False, None, 1, False, None, 1),
+        (None, True, 0.001, 3, True, 0.5, (32, 16)),
+        (0.01, True, 0.001, 3, True, 0.5, 1),
     ],
 )
 def test_wide_deep(
-    prepare_feat_data, task, loss_type, lr, lr_decay, reg, num_neg, use_bn, dropout_rate
+    prepare_feat_data,
+    task,
+    loss_type,
+    lr,
+    lr_decay,
+    reg,
+    num_neg,
+    use_bn,
+    dropout_rate,
+    hidden_units,
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_feat_data
@@ -55,6 +64,7 @@ def test_wide_deep(
             num_neg=num_neg,
             use_bn=use_bn,
             dropout_rate=dropout_rate,
+            hidden_units=hidden_units,
             tf_sess_config=None,
         )
         model.fit(

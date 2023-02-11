@@ -19,6 +19,7 @@ from ..tfops import (
     tf,
     tf_dense,
 )
+from ..torchops import hidden_units_config
 from ..utils.misc import count_params
 from ..utils.validate import (
     check_dense_values,
@@ -53,7 +54,7 @@ class DIN(TfBase, metaclass=ModelMeta):
         num_neg=1,
         use_bn=True,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         recent_num=10,
         random_num=None,
         use_tf_attention=False,
@@ -76,7 +77,7 @@ class DIN(TfBase, metaclass=ModelMeta):
         self.num_neg = num_neg
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
-        self.hidden_units = list(map(int, hidden_units.split(",")))
+        self.hidden_units = hidden_units_config(hidden_units)
         self.use_tf_attention = use_tf_attention
         self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
         self.recent_seqs, self.recent_seq_lens = self._set_recent_seqs()

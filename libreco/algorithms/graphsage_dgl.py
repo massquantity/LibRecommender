@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 from ..bases import EmbedBase, ModelMeta
 from ..graph import check_dgl
-from ..torchops import item_unique_to_tensor, user_unique_to_tensor
+from ..torchops import device_config, item_unique_to_tensor, user_unique_to_tensor
 from .torch_modules import GraphSageDGLModel
 
 
@@ -54,9 +54,8 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
         start_node="random",
         focus_start=False,
         seed=42,
-        device=torch.device("cpu"),
+        device="cuda",
         lower_upper_bound=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
@@ -83,7 +82,7 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
         self.start_node = start_node
         self.focus_start = focus_start
         self.seed = seed
-        self.device = device
+        self.device = device_config(device)
         self._check_params()
 
     def _check_params(self):

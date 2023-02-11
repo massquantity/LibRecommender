@@ -1,3 +1,4 @@
+from .configs import device_config, hidden_units_config
 from .features import feat_to_tensor, item_unique_to_tensor, user_unique_to_tensor
 from .loss import (
     binary_cross_entropy_loss,
@@ -14,6 +15,8 @@ __all__ = [
     "binary_cross_entropy_loss",
     "bpr_loss",
     "compute_pair_scores",
+    "device_config",
+    "hidden_units_config",
     "feat_to_tensor",
     "focal_loss",
     "item_unique_to_tensor",

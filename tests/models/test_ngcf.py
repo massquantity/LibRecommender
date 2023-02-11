@@ -25,8 +25,11 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "reg, node_dropout, message_dropout, lr_decay, epsilon, amsgrad",
-    [(0.0, 0.0, 0.0, False, 1e-8, False), (0.01, 0.2, 0.2, True, 4e-5, True)],
+    "reg, node_dropout, message_dropout, lr_decay, epsilon, amsgrad, hidden_units, device",
+    [
+        (0.0, 0.0, 0.0, False, 1e-8, False, 1, "cpu"),
+        (0.01, 0.2, 0.2, True, 4e-5, True, (16, 16), "cuda"),
+    ],
 )
 def test_ngcf(
     prepare_pure_data,
@@ -40,6 +43,8 @@ def test_ngcf(
     lr_decay,
     epsilon,
     amsgrad,
+    hidden_units,
+    device,
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data
@@ -87,6 +92,8 @@ def test_ngcf(
             message_dropout=message_dropout,
             num_neg=num_neg,
             sampler=sampler,
+            hidden_units=hidden_units,
+            device=device,
         )
         model.fit(
             train_data,

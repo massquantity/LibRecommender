@@ -11,6 +11,7 @@ from tensorflow.keras.initializers import glorot_uniform
 from ..bases import ModelMeta, TfBase
 from ..prediction import normalize_prediction
 from ..tfops import dense_nn, dropout_config, reg_config, tf, tf_dense
+from ..torchops import hidden_units_config
 from ..utils.validate import check_unknown, convert_id
 
 
@@ -33,7 +34,7 @@ class NCF(TfBase, metaclass=ModelMeta):
         num_neg=1,
         use_bn=True,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         seed=42,
         lower_upper_bound=None,
         tf_sess_config=None,
@@ -52,7 +53,7 @@ class NCF(TfBase, metaclass=ModelMeta):
         self.num_neg = num_neg
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
-        self.hidden_units = list(map(int, hidden_units.split(",")))
+        self.hidden_units = hidden_units_config(hidden_units)
         self.seed = seed
 
     def build_model(self):

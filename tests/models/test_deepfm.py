@@ -19,11 +19,24 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "lr_decay, reg, num_neg, use_bn, dropout_rate",
-    [(False, None, 1, False, None), (True, 0.001, 3, True, 0.5)],
+    "lr_decay, reg, num_neg, use_bn, dropout_rate, hidden_units",
+    [
+        (False, None, 1, False, None, 32),
+        (True, 0.001, 3, True, 0.5, (1, 1)),
+        (False, None, 1, False, None, "64,64"),
+        (True, 0.001, 3, True, 0.5, [1, 2, "4"]),
+    ],
 )
 def test_deepfm(
-    prepare_feat_data, task, loss_type, lr_decay, reg, num_neg, use_bn, dropout_rate
+    prepare_feat_data,
+    task,
+    loss_type,
+    lr_decay,
+    reg,
+    num_neg,
+    use_bn,
+    dropout_rate,
+    hidden_units,
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_feat_data
@@ -34,6 +47,9 @@ def test_deepfm(
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
             DeepFM(task, data_info, loss_type).fit(train_data)
+    elif hidden_units in ("64,64", [1, 2, "4"]):
+        with pytest.raises(ValueError):
+            _ = DeepFM(task, data_info, hidden_units=hidden_units)
     else:
         model = DeepFM(
             task=task,
@@ -48,6 +64,7 @@ def test_deepfm(
             num_neg=num_neg,
             use_bn=use_bn,
             dropout_rate=dropout_rate,
+            hidden_units=hidden_units,
             tf_sess_config=None,
         )
         model.fit(
