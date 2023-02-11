@@ -22,8 +22,8 @@ from tests.utils_save_load import save_load_model
     "rnn_type, lr_decay, reg, num_neg, dropout_rate, "
     "hidden_units, use_layer_norm, recent_num",
     [
-        ("lstm", False, None, 1, None, "16", False, 10),
-        ("gru", True, 0.001, 3, 0.5, "32,16", True, 6),
+        ("lstm", False, None, 1, None, 1, False, 10),
+        ("gru", True, 0.001, 3, 0.5, (32, 16), True, 6),
     ],
 )
 def test_rnn4rec(

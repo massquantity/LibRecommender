@@ -27,8 +27,8 @@ from tests.utils_save_load import save_load_model
     "lr_decay, reg, num_neg, use_bn, dropout_rate, hidden_units, "
     "recent_num, use_tf_attention",
     [
-        (False, None, 1, False, None, "128,64,32", 10, False),
-        (True, 0.001, 3, True, 0.5, "1,1,1", 6, True),
+        (False, None, 1, False, None, (64, 32), 10, False),
+        (True, 0.001, 3, True, 0.5, 1, 6, True),
     ],
 )
 def test_din(

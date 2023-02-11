@@ -46,11 +46,13 @@ def prepare_youtube_retrieval_data(multi_sparse=False):
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize(
-    "lr_decay, reg, use_bn, dropout_rate, recent_num, random_num",
+    "lr_decay, reg, use_bn, dropout_rate, recent_num, random_num, hidden_units",
     [
-        (False, None, False, None, 10, None),
-        (True, 0.001, True, 0.5, None, 10),
-        (True, 0.001, False, None, None, None),
+        (False, None, False, None, 10, None, 1),
+        (True, 0.001, True, 0.5, None, 10, [16, 16]),
+        (True, 0.001, False, None, None, None, (4, 4, 4)),
+        (False, None, False, None, 10, None, "64,64"),
+        (True, 0.001, True, 0.5, None, 10, [1, 2, 4.22]),
     ],
 )
 @pytest.mark.parametrize("num_sampled_per_batch", [None, 1, 64])
@@ -65,6 +67,7 @@ def test_youtube_retrieval(
     loss_type,
     recent_num,
     random_num,
+    hidden_units,
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_youtube_retrieval_data()
@@ -78,6 +81,9 @@ def test_youtube_retrieval(
     elif task == "ranking" and loss_type not in ("nce", "sampled_softmax"):
         with pytest.raises(ValueError):
             YouTubeRetrieval(task, data_info, loss_type).fit(train_data)
+    elif hidden_units in ("64,64", [1, 2, 4.22]):
+        with pytest.raises(ValueError):
+            YouTubeRetrieval(task, data_info, hidden_units=hidden_units)
     else:
         model = YouTubeRetrieval(
             task=task,
@@ -91,6 +97,7 @@ def test_youtube_retrieval(
             batch_size=2048,
             use_bn=use_bn,
             dropout_rate=dropout_rate,
+            hidden_units=hidden_units,
             num_sampled_per_batch=num_sampled_per_batch,
             recent_num=recent_num,
             random_num=random_num,
