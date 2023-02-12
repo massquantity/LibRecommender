@@ -7,8 +7,6 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import glorot_uniform
-from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase, ModelMeta
 from ..tfops import reg_config, sess_config, tf
@@ -57,25 +55,25 @@ class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.bu_var = tf.get_variable(
             name="bu_var",
             shape=[self.n_users],
-            initializer=tf_zeros,
+            initializer=tf.zeros_initializer(),
             regularizer=self.reg,
         )
         self.bi_var = tf.get_variable(
             name="bi_var",
             shape=[self.n_items],
-            initializer=tf_zeros,
+            initializer=tf.zeros_initializer(),
             regularizer=self.reg,
         )
         self.pu_var = tf.get_variable(
             name="pu_var",
             shape=[self.n_users, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         self.qi_var = tf.get_variable(
             name="qi_var",
             shape=[self.n_items, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 

@@ -116,13 +116,13 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         user_feat = tf.get_variable(
             name="user_feat",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         item_feat = tf.get_variable(
             name="item_feat",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -142,7 +142,7 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         sparse_feat = tf.get_variable(
             name="sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -174,7 +174,7 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         dense_feat = tf.get_variable(
             name="dense_feat",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -193,26 +193,26 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         queries = tf_dense(
             units=multi_embed_size,
             activation=None,
-            kernel_initializer=glorot_uniform,
+            kernel_initializer=tf.glorot_uniform_initializer(),
             use_bias=False,
         )(inputs)
         keys = tf_dense(
             units=multi_embed_size,
             activation=None,
-            kernel_initializer=glorot_uniform,
+            kernel_initializer=tf.glorot_uniform_initializer(),
             use_bias=False,
         )(inputs)
         values = tf_dense(
             units=multi_embed_size,
             activation=None,
-            kernel_initializer=glorot_uniform,
+            kernel_initializer=tf.glorot_uniform_initializer(),
             use_bias=False,
         )(inputs)
         if self.use_residual:
             residual = tf_dense(
                 units=multi_embed_size,
                 activation=None,
-                kernel_initializer=glorot_uniform,
+                kernel_initializer=tf.glorot_uniform_initializer(),
                 use_bias=False,
             )(inputs)
 

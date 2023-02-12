@@ -27,24 +27,22 @@ def dense_nn(
 
     with tf.variable_scope(name):
         if use_bn:
-            batch_norm = tf.keras.layers.BatchNormalization()
-            net = batch_norm(net, training=is_training)
+            net = tf.layers.batch_normalization(net, training=is_training)
         for i, units in enumerate(hidden_units, start=1):
             layer_name = name + "_layer" + str(i)
             net = tf_dense(units, activation=None, name=layer_name)(net)
             if use_bn:
-                batch_norm = tf.keras.layers.BatchNormalization()
                 if bn_after_activation:
                     net = activation(net)
-                    net = batch_norm(net, training=is_training)
+                    net = tf.layers.batch_normalization(net, training=is_training)
                 else:
-                    net = batch_norm(net, training=is_training)
+                    net = tf.layers.batch_normalization(net, training=is_training)
                     net = activation(net)
             else:
                 net = activation(net)
 
             if dropout_rate:
-                net = tf.keras.layers.Dropout(dropout_rate)(net, training=is_training)
+                net = tf.layers.dropout(net, dropout_rate, training=is_training)
 
     return net
 

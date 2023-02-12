@@ -128,25 +128,25 @@ class WideDeep(TfBase, metaclass=ModelMeta):
         wide_user_feat = tf.get_variable(
             name="wide_user_feat",
             shape=[self.n_users + 1, 1],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         wide_item_feat = tf.get_variable(
             name="wide_item_feat",
             shape=[self.n_items + 1, 1],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         deep_user_feat = tf.get_variable(
             name="deep_user_feat",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         deep_item_feat = tf.get_variable(
             name="deep_item_feat",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -166,13 +166,13 @@ class WideDeep(TfBase, metaclass=ModelMeta):
         wide_sparse_feat = tf.get_variable(
             name="wide_sparse_feat",
             shape=[self.sparse_feature_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         deep_sparse_feat = tf.get_variable(
             name="deep_sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -221,13 +221,13 @@ class WideDeep(TfBase, metaclass=ModelMeta):
         wide_dense_feat = tf.get_variable(
             name="wide_dense_feat",
             shape=[self.dense_field_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         deep_dense_feat = tf.get_variable(
             name="deep_dense_feat",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
