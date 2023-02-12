@@ -31,7 +31,7 @@ class ALS(EmbedBase):
     ----------
     task : {'rating', 'ranking'}
         Recommendation task. See :ref:`Task`.
-    data_info : `DataInfo` object
+    data_info : :class:`~libreco.data.DataInfo` object
           Object that contains useful information for training and inference.
     embed_size : int, default: 16
         Vector size of embeddings.
@@ -109,14 +109,14 @@ class ALS(EmbedBase):
 
         Parameters
         ----------
-        train_data : `TransformedSet` object
+        train_data : :class:`~libreco.data.TransformedSet` object
             Data object used for training.
         verbose : int, default: 1
             Print verbosity. If `eval_data` is provided, setting it to higher than 1
             will print evaluation metrics during training.
         shuffle : bool, default: True
             Whether to shuffle the training data.
-        eval_data : `TransformedSet` object, default: None
+        eval_data : :class:`~libreco.data.TransformedSet` object, default: None
             Data object used for evaluating.
         metrics : list or None, default: None
             List of metrics for evaluating.

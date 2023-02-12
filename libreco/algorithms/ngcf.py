@@ -10,13 +10,13 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
     """*Neural Graph Collaborative Filtering* algorithm.
 
     .. WARNING::
-        + NGCF can only be used in ``ranking`` task.
+        NGCF can only be used in ``ranking`` task.
 
     Parameters
     ----------
     task : {'ranking'}
         Recommendation task. See :ref:`Task`.
-    data_info : `DataInfo` object
+    data_info : :class:`~libreco.data.DataInfo` object
         Object that contains useful information for training and inference.
     loss_type : {'cross_entropy', 'focal', 'bpr', 'max_margin'}, default: 'cross_entropy'
         Loss for model training.

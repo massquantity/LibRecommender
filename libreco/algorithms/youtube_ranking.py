@@ -33,13 +33,13 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         based on the original paper.
 
     .. WARNING::
-        + YouTubeRanking can only be used in `ranking` task.
+        YouTubeRanking can only be used in `ranking` task.
 
     Parameters
     ----------
     task : {'ranking'}
         Recommendation task. See :ref:`Task`.
-    data_info : `DataInfo` object
+    data_info : :class:`~libreco.data.DataInfo` object
         Object that contains useful information for training and inference.
     loss_type : {'cross_entropy', 'focal'}, default: 'cross_entropy'
         Loss for model training.

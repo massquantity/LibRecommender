@@ -13,7 +13,7 @@ class Base(abc.ABC):
     ----------
     task : {'rating', 'ranking'}
         Recommendation task. See :ref:`Task`.
-    data_info : `DataInfo` object
+    data_info : :class:`~libreco.data.DataInfo` object
         Object that contains useful information for training and inference.
     lower_upper_bound : list or tuple, default: None
         Lower and upper score bound for rating task.
@@ -50,7 +50,7 @@ class Base(abc.ABC):
 
         Parameters
         ----------
-        train_data : `TransformedSet` object
+        train_data : :class:`~libreco.data.TransformedSet` object
             Data object used for training.
         """
         raise NotImplementedError
@@ -120,7 +120,7 @@ class Base(abc.ABC):
             File folder path to save model.
         model_name : str
             Name of the saved model file.
-        data_info : `DataInfo` object
+        data_info : :class:`~libreco.data.DataInfo` object
             Object that contains some useful information.
 
         Returns

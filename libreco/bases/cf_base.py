@@ -28,7 +28,7 @@ class CfBase(Base):
     ----------
     task : {'rating', 'ranking'}
         Recommendation task. See :ref:`Task`.
-    data_info : `DataInfo` object
+    data_info : :class:`~libreco.data.DataInfo` object
         Object that contains useful information for training and inference.
     cf_type : {'user_cf', 'item_cf'}
         Specific CF type.
@@ -113,12 +113,12 @@ class CfBase(Base):
 
         Parameters
         ----------
-        train_data : `TransformedSet` object
+        train_data : :class:`~libreco.data.TransformedSet` object
             Data object used for training.
         verbose : int, default: 1
             Print verbosity. If `eval_data` is provided, setting it to higher than 1
             will print evaluation metrics during training.
-        eval_data : `TransformedSet` object, default: None
+        eval_data : :class:`~libreco.data.TransformedSet` object, default: None
             Data object used for evaluating.
         metrics : list or None, default: None
             List of metrics for evaluating.

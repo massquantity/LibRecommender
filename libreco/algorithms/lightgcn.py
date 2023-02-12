@@ -10,13 +10,13 @@ class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
     """*LightGCN* algorithm.
 
     .. WARNING::
-        + LightGCN can only be used in ``ranking`` task.
+        LightGCN can only be used in ``ranking`` task.
 
     Parameters
     ----------
     task : {'ranking'}
         Recommendation task. See :ref:`Task`.
-    data_info : `DataInfo` object
+    data_info : :class:`~libreco.data.DataInfo` object
         Object that contains useful information for training and inference.
     loss_type : {'cross_entropy', 'focal', 'bpr', 'max_margin'}, default: 'bpr'
         Loss for model training.

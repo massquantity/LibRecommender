@@ -15,7 +15,7 @@ class ItemCF(CfBase):
     ----------
     task : {'rating', 'ranking'}
         Recommendation task. See :ref:`Task`.
-    data_info : `DataInfo` object
+    data_info : :class:`~libreco.data.DataInfo` object
         Object that contains useful information for training and inference.
     sim_type : {'cosine', 'pearson', 'jaccard'}, default: 'cosine'
         Types for computing similarities.

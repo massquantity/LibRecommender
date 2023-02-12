@@ -13,13 +13,13 @@ class DeepWalk(GensimBase):
     """*DeepWalk* algorithm.
 
     .. WARNING::
-        + DeepWalk can only use in ``ranking`` task.
+        DeepWalk can only use in ``ranking`` task.
 
     Parameters
     ----------
     task : {'ranking'}
         Recommendation task. See :ref:`Task`.
-    data_info : `DataInfo` object
+    data_info : :class:`~libreco.data.DataInfo` object
         Object that contains useful information for training and inference.
     embed_size: int, default: 16
         Vector size of embeddings.

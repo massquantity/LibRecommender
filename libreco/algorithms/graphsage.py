@@ -21,7 +21,7 @@ class GraphSage(EmbedBase, metaclass=ModelMeta, backend="torch"):
         This algorithm is implemented in PyTorch.
 
     .. WARNING::
-        + GraphSage can only be used in ``ranking`` task.
+        GraphSage can only be used in ``ranking`` task.
 
     .. versionadded:: 0.12.0
 
@@ -29,7 +29,7 @@ class GraphSage(EmbedBase, metaclass=ModelMeta, backend="torch"):
     ----------
     task : {'ranking'}
         Recommendation task. See :ref:`Task`.
-    data_info : `DataInfo` object
+    data_info : :class:`~libreco.data.DataInfo` object
         Object that contains useful information for training and inference.
     loss_type : {'cross_entropy', 'focal', 'bpr', 'max_margin'}, default: 'cross_entropy'
         Loss for model training.

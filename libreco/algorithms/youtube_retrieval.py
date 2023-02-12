@@ -32,13 +32,13 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         phase based on the original paper.
 
     .. WARNING::
-        + YouTubeRetrieval can only be used in `ranking` task.
+        YouTubeRetrieval can only be used in `ranking` task.
 
     Parameters
     ----------
     task : {'ranking'}
         Recommendation task. See :ref:`Task`.
-    data_info : `DataInfo` object
+    data_info : :class:`~libreco.data.DataInfo` object
         Object that contains useful information for training and inference.
     loss_type : {'sampled_softmax', 'nce'}, default: 'sampled_softmax'
         Loss for model training.
