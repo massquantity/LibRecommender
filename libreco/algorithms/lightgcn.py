@@ -1,11 +1,4 @@
-"""
-
-Reference: Xiangnan He et al. "LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation"
-           (https://arxiv.org/pdf/2002.02126.pdf)
-
-author: massquantity
-
-"""
+"""Implementation of LightGCN."""
 import torch
 
 from ..bases import EmbedBase, ModelMeta
@@ -14,6 +7,69 @@ from .torch_modules import LightGCNModel
 
 
 class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
+    """*LightGCN* algorithm.
+
+    .. WARNING::
+        LightGCN can only be used in ``ranking`` task.
+
+    Parameters
+    ----------
+    task : {'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : :class:`~libreco.data.DataInfo` object
+        Object that contains useful information for training and inference.
+    loss_type : {'cross_entropy', 'focal', 'bpr', 'max_margin'}, default: 'bpr'
+        Loss for model training.
+    embed_size: int, default: 16
+        Vector size of embeddings.
+    n_epochs: int, default: 10
+        Number of epochs for training.
+    lr : float, default 0.001
+        Learning rate for training.
+    lr_decay : bool, default: False
+        Whether to use learning rate decay.
+    epsilon : float, default: 1e-8
+        A small constant added to the denominator to improve numerical stability in
+        Adam optimizer.
+    amsgrad : bool, default: False
+        Whether to use the AMSGrad variant from the paper
+        `On the Convergence of Adam and Beyond <https://openreview.net/forum?id=ryQu7f-RZ>`_.
+    reg : float or None, default: None
+        Regularization parameter, must be non-negative or None.
+    batch_size : int, default: 256
+        Batch size for training.
+    num_neg : int, default: 1
+        Number of negative samples for each positive sample.
+    dropout_rate : float, default: 0.0
+        Probability of a node being dropped. 0.0 means dropout is not used.
+    n_layers : int, default: 3
+        Number of GCN layer.
+    margin : float, default: 1.0
+        Margin used in `max_margin` loss.
+    sampler : {'random', 'unconsumed', 'popular'}, default: 'random'
+        Negative sampling strategy.
+
+        - ``'random'`` means random sampling.
+        - ``'unconsumed'`` samples items that the target user did not consume before.
+        - ``'popular'`` has a higher probability to sample popular items as negative samples.
+
+    seed : int, default: 42
+        Random seed.
+    device : {'cpu', 'cuda'}, default: 'cuda'
+        Refer to `torch.device <https://pytorch.org/docs/stable/tensor_attributes.html#torch.device>`_.
+
+        .. versionchanged:: 1.0.0
+           Accept str type ``'cpu'`` or ``'cuda'``, instead of ``torch.device(...)``.
+
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+
+    References
+    ----------
+    *Xiangnan He et al.* `LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation
+    <https://arxiv.org/pdf/2002.02126.pdf>`_.
+    """
+
     def __init__(
         self,
         task,

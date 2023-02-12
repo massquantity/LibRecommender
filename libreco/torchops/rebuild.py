@@ -1,3 +1,4 @@
+"""Rebuild PyTorch models."""
 import torch
 from torch import nn
 
@@ -5,8 +6,21 @@ from ..utils.save_load import load_torch_state_dict
 from ..utils.validate import sparse_feat_size
 
 
+# noinspection PyIncorrectDocstring
 @torch.no_grad()
 def rebuild_torch_model(self, path, model_name):
+    """Assign the saved model variables to the newly initialized model.
+
+    This method is used before retraining the new model, in order to avoid training
+    from scratch every time we get some new data.
+
+    Parameters
+    ----------
+    path : str
+        File folder path for the saved model variables.
+    model_name : str
+        Name of the saved model file.
+    """
     from ..training import get_trainer
 
     self.model_built = True

@@ -1,16 +1,4 @@
-"""
-
-References:
-    [1] Haoming Li et al. Matrix Completion via Alternating Least Square(ALS)
-        (https://stanford.edu/~rezab/classes/cme323/S15/notes/lec14.pdf)
-    [2] Yifan Hu et al. Collaborative Filtering for Implicit Feedback Datasets
-        (http://yifanhu.net/PUB/cf.pdf)
-    [3] Gábor Takács et al. Applications of the Conjugate Gradient Method for Implicit Feedback Collaborative Filtering
-        (http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.379.6473&rep=rep1&type=pdf)
-
-author: massquantity
-
-"""
+"""Implementation of Alternating Least Squares."""
 import logging
 import os
 from functools import partial
@@ -34,12 +22,52 @@ except ImportError:
 
 
 class ALS(EmbedBase):
+    """*Alternating Least Squares* algorithm.
+
+    One can use conjugate gradient optimization and set more `n_threads`
+    to accelerate training.
+
+    Parameters
+    ----------
+    task : {'rating', 'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : :class:`~libreco.data.DataInfo` object
+          Object that contains useful information for training and inference.
+    embed_size : int, default: 16
+        Vector size of embeddings.
+    n_epochs : int, default: 10
+        Number of epochs for training.
+    reg : float or None, default: None
+        Regularization parameter, must be non-negative or None.
+    alpha : int, default: 10
+        Parameter used for increasing confidence level, only applied for `ranking` task.
+    use_cg : bool, default: True
+        Whether to use *conjugate gradient* optimization. See `reference <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.379.6473&rep=rep1&type=pdf>`_.
+    n_threads : int, default: 1
+        Number of threads to use.
+    seed : int, default: 42
+        Random seed.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+
+    References
+    ----------
+    [1] *Haoming Li et al.* `Matrix Completion via Alternating Least Square(ALS)
+    <https://stanford.edu/~rezab/classes/cme323/S15/notes/lec14.pdf>`_.
+
+    [2] *Yifan Hu et al.* `Collaborative Filtering for Implicit Feedback Datasets
+    <http://yifanhu.net/PUB/cf.pdf>`_.
+
+    [3] *Gábor Takács et al.* `Applications of the Conjugate Gradient Method for Implicit Feedback Collaborative Filtering
+    <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.379.6473&rep=rep1&type=pdf>`_.
+    """
+
     def __init__(
         self,
         task,
-        data_info=None,
+        data_info,
         embed_size=16,
-        n_epochs=20,
+        n_epochs=10,
         reg=None,
         alpha=10,
         use_cg=True,
@@ -77,6 +105,29 @@ class ALS(EmbedBase):
         eval_batch_size=8192,
         eval_user_num=None,
     ):
+        """Fit ALS model on the training data.
+
+        Parameters
+        ----------
+        train_data : :class:`~libreco.data.TransformedSet` object
+            Data object used for training.
+        verbose : int, default: 1
+            Print verbosity. If `eval_data` is provided, setting it to higher than 1
+            will print evaluation metrics during training.
+        shuffle : bool, default: True
+            Whether to shuffle the training data.
+        eval_data : :class:`~libreco.data.TransformedSet` object, default: None
+            Data object used for evaluating.
+        metrics : list or None, default: None
+            List of metrics for evaluating.
+        k : int, default: 10
+            Parameter of metrics, e.g. recall at k, ndcg at k
+        eval_batch_size : int, default: 8192
+            Batch size for evaluating.
+        eval_user_num : int or None, default: None
+            Number of users for evaluating. Setting it to a positive number will sample
+            users randomly from eval data.
+        """
         self.check_attribute(eval_data, k)
         self.show_start_time()
         self.build_model()
@@ -136,6 +187,15 @@ class ALS(EmbedBase):
         return reg
 
     def save(self, path, model_name, **kwargs):
+        """Save model for inference or retraining.
+
+        Parameters
+        ----------
+        path : str
+            File folder path to save model.
+        model_name : str
+            Name of the saved model file.
+        """
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
@@ -150,6 +210,15 @@ class ALS(EmbedBase):
         pass
 
     def rebuild_model(self, path, model_name):
+        """Reconstruct model for retraining.
+
+        Parameters
+        ----------
+        path : str
+            File folder path for saved model.
+        model_name : str
+            Name of the saved model file.
+        """
         variable_path = os.path.join(path, f"{model_name}.npz")
         variables = np.load(variable_path)
         # remove oov values
@@ -160,6 +229,7 @@ class ALS(EmbedBase):
 
 
 def least_squares(sparse_interaction, X, Y, reg, embed_size, num, mode):
+    """Least squares optimization showcase for ALS."""
     indices = sparse_interaction.indices
     indptr = sparse_interaction.indptr
     data = sparse_interaction.data
@@ -189,6 +259,7 @@ def least_squares(sparse_interaction, X, Y, reg, embed_size, num, mode):
 
 # O(f^3) * m
 def least_squares_cg(sparse_interaction, X, Y, reg, embed_size, num, mode, cg_steps=3):
+    """Conjugate Gradient optimization showcase for ALS."""
     indices = sparse_interaction.indices
     indptr = sparse_interaction.indptr
     data = sparse_interaction.data

@@ -1,3 +1,4 @@
+"""Rebuild TensorFlow models."""
 import os
 
 import numpy as np
@@ -6,7 +7,22 @@ from .variables import modify_variable_names
 from .version import tf
 
 
-def rebuild_tf_model(self, path, model_name, full_assign=False):
+# noinspection PyIncorrectDocstring
+def rebuild_tf_model(self, path, model_name, full_assign=True):
+    """Assign the saved model variables to the newly initialized model.
+
+    This method is used before retraining the new model, in order to avoid training
+    from scratch every time we get some new data.
+
+    Parameters
+    ----------
+    path : str
+        File folder path for the saved model variables.
+    model_name : str
+        Name of the saved model file.
+    full_assign : bool, default: True
+        Whether to also restore the variables of Adam optimizer.
+    """
     from ..training import get_trainer
 
     self.model_built = True

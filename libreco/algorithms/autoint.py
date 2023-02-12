@@ -1,13 +1,4 @@
-"""
-
-Reference: Weiping Song et al. "AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks"
-           (https://arxiv.org/pdf/1810.11921.pdf)
-
-author: massquantity
-
-"""
-from tensorflow.keras.initializers import glorot_uniform
-
+"""Implementation of AutoInt."""
 from ..bases import ModelMeta, TfBase
 from ..tfops import (
     dropout_config,
@@ -28,6 +19,62 @@ from ..utils.validate import (
 
 
 class AutoInt(TfBase, metaclass=ModelMeta):
+    """AutoInt algorithm.
+
+    Parameters
+    ----------
+    task : {'rating', 'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : :class:`~libreco.data.DataInfo` object
+        Object that contains useful information for training and inference.
+    loss_type : {'cross_entropy', 'focal'}, default: 'cross_entropy'
+        Loss for model training.
+    embed_size: int, default: 16
+        Vector size of embeddings.
+    n_epochs: int, default: 10
+        Number of epochs for training.
+    lr : float, default 0.001
+        Learning rate for training.
+    lr_decay : bool, default: False
+        Whether to use learning rate decay.
+    epsilon : float, default: 1e-5
+        A small constant added to the denominator to improve numerical stability in
+        Adam optimizer.
+        According to the `official comment <https://github.com/tensorflow/tensorflow/blob/v1.15.0/tensorflow/python/training/adam.py#L64>`_,
+        default value of `1e-8` for `epsilon` is generally not good, so here we choose `1e-5`.
+        Users can try tuning this hyperparameter if the training is unstable.
+    reg : float or None, default: None
+        Regularization parameter, must be non-negative or None.
+    batch_size : int, default: 256
+        Batch size for training.
+    num_neg : int, default: 1
+        Number of negative samples for each positive sample, only used in `ranking` task.
+    use_bn : bool, default: True
+        Whether to use batch normalization.
+    dropout_rate : float or None, default: None
+        Probability of an element to be zeroed. If it is None, dropout is not used.
+    att_embed_size : int or list or tuple, default: (8, 8, 8)
+        Embedding size in each attention layer. If it is `int`, one layer is used.
+    num_heads : int, default: 2
+        Number of heads in multi-head attention.
+    use_residual : bool, default: True
+        Whether to use residual layer.
+    multi_sparse_combiner : {'normal', 'mean', 'sum', 'sqrtn'}, default: 'sqrtn'
+        Options for combining `multi_sparse` features.
+    seed : int, default: 42
+        Random seed.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+    tf_sess_config : dict or None, default: None
+        Optional TensorFlow session config, see `ConfigProto options
+        <https://github.com/tensorflow/tensorflow/blob/v2.10.0/tensorflow/core/protobuf/config.proto#L431>`_.
+
+    References
+    ----------
+    *Weiping Song et al.* `AutoInt: Automatic Feature Interaction Learning via Self-Attentive Neural Networks
+    <https://arxiv.org/pdf/1810.11921.pdf>`_.
+    """
+
     user_variables = ["user_feat"]
     item_variables = ["item_feat"]
     sparse_variables = ["sparse_feat"]

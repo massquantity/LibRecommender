@@ -1,11 +1,4 @@
-"""
-
-Reference: Aaron van den Oord et al. "WaveNet: A Generative Model for Raw Audio"
-           (https://arxiv.org/pdf/1609.03499.pdf)
-
-author: massquantity
-
-"""
+"""Implementation of WaveNet."""
 import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
@@ -24,6 +17,65 @@ from ..utils.validate import check_seq_mode
 
 
 class WaveNet(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
+    """*WaveNet* algorithm.
+
+    Parameters
+    ----------
+    task : {'rating', 'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : :class:`~libreco.data.DataInfo` object
+        Object that contains useful information for training and inference.
+    loss_type : {'cross_entropy', 'focal'}, default: 'cross_entropy'
+        Loss for model training.
+    embed_size: int, default: 16
+        Vector size of embeddings.
+    n_epochs: int, default: 10
+        Number of epochs for training.
+    lr : float, default 0.001
+        Learning rate for training.
+    lr_decay : bool, default: False
+        Whether to use learning rate decay.
+    epsilon : float, default: 1e-5
+        A small constant added to the denominator to improve numerical stability in
+        Adam optimizer.
+        According to the `official comment <https://github.com/tensorflow/tensorflow/blob/v1.15.0/tensorflow/python/training/adam.py#L64>`_,
+        default value of `1e-8` for `epsilon` is generally not good, so here we choose `1e-5`.
+        Users can try tuning this hyperparameter if the training is unstable.
+    reg : float or None, default: None
+        Regularization parameter, must be non-negative or None.
+    batch_size : int, default: 256
+        Batch size for training.
+    num_neg : int, default: 1
+        Number of negative samples for each positive sample, only used in `ranking` task.
+    use_bn : bool, default: True
+        Whether to use batch normalization.
+    dropout_rate : float or None, default: None
+        Probability of an element to be zeroed. If it is None, dropout is not used.
+    n_filters : int, default: 16
+        Number of output filters in each CNN layer.
+    n_blocks : int, default: 1
+        Number of CNN blocks.
+    n_layers_per_block : int, default: 4
+        Number of CNN layers in each block.
+    recent_num : int or None, default: 10
+        Number of recent items to use in user behavior sequence.
+    random_num : int or None, default: None
+        Number of random sampled items to use in user behavior sequence.
+        If `recent_num` is not None, `random_num` is not considered.
+    seed : int, default: 42
+        Random seed.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+    tf_sess_config : dict or None, default: None
+        Optional TensorFlow session config, see `ConfigProto options
+        <https://github.com/tensorflow/tensorflow/blob/v2.10.0/tensorflow/core/protobuf/config.proto#L431>`_.
+
+    References
+    ----------
+    *Aaron van den Oord et al.* `WaveNet: A Generative Model for Raw Audio
+    <https://arxiv.org/pdf/1609.03499.pdf>`_.
+    """
+
     user_variables = ["user_feat"]
     item_variables = ["item_weights", "item_biases", "input_embed"]
 

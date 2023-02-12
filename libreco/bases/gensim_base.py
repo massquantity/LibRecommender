@@ -120,6 +120,18 @@ class GensimBase(EmbedBase):
             self.gensim_model.save(model_path)
 
     def rebuild_model(self, path, model_name):
+        """Assign the saved model variables to the newly initialized model.
+
+        This method is used before retraining the new model, in order to avoid training
+        from scratch every time we get some new data.
+
+        Parameters
+        ----------
+        path : str
+            File folder path for the saved model variables.
+        model_name : str
+            Name of the saved model file.
+        """
         self.data = self.get_data()
         model_path = os.path.join(path, f"{model_name}_gensim.pkl")
         self.gensim_model = Word2Vec.load(model_path)

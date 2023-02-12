@@ -1,3 +1,4 @@
+"""Classes for Transforming and Building Data."""
 import itertools
 
 import numpy as np
@@ -20,13 +21,10 @@ from .transformed import TransformedSet
 
 
 class Dataset(object):
-    """Base class for loading dataset.
-
-    Warning: This class should not be used directly. Use derived class instead.
-    """
+    """Base class for loading dataset."""
 
     @classmethod
-    def load_builtin(cls, name="ml-1m") -> pd.DataFrame:  # todo
+    def load_builtin(cls, name="ml-1m") -> pd.DataFrame:  # pragma: no cover
         pass
 
     @staticmethod
@@ -37,13 +35,22 @@ class Dataset(object):
             assert "label" in data.columns, "train data should contain label column"
 
     @classmethod
-    def _check_subclass(cls):
+    def _check_subclass(cls):  # pragma: no cover
         if not issubclass(cls, Dataset):
             raise NameError("Please use 'DatasetPure' or 'DatasetFeat' to call method")
 
 
+# noinspection PyTypeChecker
 class DatasetPure(Dataset):
-    """A derived class from :class:`Dataset`, used for pure collaborative filtering."""
+    """Dataset class used for building pure collaborative filtering data.
+
+    Examples
+    --------
+    >>> from libreco.data import DatasetPure
+    >>> train_data, data_info = DatasetPure.build_trainset(train_data)
+    >>> eval_data = DatasetPure.build_evalset(eval_data)
+    >>> test_data = DatasetPure.build_testset(test_data)
+    """
 
     user_unique_vals = None
     item_unique_vals = None
@@ -60,35 +67,33 @@ class DatasetPure(Dataset):
         shuffle=False,
         seed=42,
     ):
-        """Build transformed pure train_data from original data.
+        """Build transformed pure train data and data_info from original data.
 
         Parameters
         ----------
-        train_data : `pandas.DataFrame`
+        train_data : pandas.DataFrame
             Data must at least contains three columns,
-            i.e. `user`, `item`, `label`.
-        revolution : bool, optional
+            i.e. ``user``, ``item``, ``label``.
+        revolution : bool, default: False
             Whether to retrain model with new data.
-        data_info : `DataInfo`
-            `DataInfo` object that contains past data information.
-        merge_behavior : bool, optional
+        data_info : DataInfo or None, default: None
+            Object that contains past data information.
+        merge_behavior : bool, default: True
             Whether to merge the user behavior in old and new data.
-        popular_nums : int, optional
-            NUmber of popular items to store.
-        shuffle : bool, optional
+        popular_nums : int, default: 100
+            Number of popular items in train data to store.
+        shuffle : bool, default: False
             Whether to fully shuffle data.
-        seed: int, optional
-            random seed.
+        seed: int, default: 42
+            Random seed.
 
         Returns
         -------
-        trainset : `TransformedSet` object
-            Data object used for training.
-        data_info : `DataInfo` object
-            Object that contains some useful information
-            for training and predicting
+        trainset : :class:`~libreco.data.TransformedSet`
+            Transformed Data object used for training.
+        data_info : :class:`~libreco.data.DataInfo`
+            Object that contains some useful information.
         """
-
         cls._check_subclass()
         cls._check_col_names(train_data, mode="train")
 
@@ -153,31 +158,51 @@ class DatasetPure(Dataset):
     def build_evalset(
         cls, eval_data, revolution=False, data_info=None, shuffle=False, seed=42
     ):
+        """Build transformed pure eval data from original data.
+
+        Parameters
+        ----------
+        eval_data : pandas.DataFrame
+            Data must at least contains two columns, i.e. `user`, `item`.
+        revolution : bool, default: False
+            Whether to retrain model with new data.
+        data_info : DataInfo or None, default: None
+            Object that contains past data information.
+        shuffle : bool, default: False
+            Whether to fully shuffle data.
+        seed: int, default: 42
+            Random seed.
+
+        Returns
+        -------
+        evalset : :class:`~libreco.data.TransformedSet`
+            Transformed Data object used for evaluating.
+        """
         return cls.build_testset(eval_data, revolution, data_info, shuffle, seed)
 
     @classmethod
     def build_testset(
         cls, test_data, revolution=False, data_info=None, shuffle=False, seed=42
     ):
-        """Build transformed pure eval_data or test_data from original data.
+        """Build transformed pure test data from original data.
 
         Parameters
         ----------
-        test_data : `pandas.DataFrame`
+        test_data : pandas.DataFrame
             Data must at least contains two columns, i.e. `user`, `item`.
-        revolution : bool, optional
+        revolution : bool, default: False
             Whether to retrain model with new data.
-        data_info : `DataInfo`
-            `DataInfo` object that contains past data information.
-        shuffle : bool, optional
+        data_info : DataInfo or None, default: None
+            Object that contains past data information.
+        shuffle : bool, default: False
             Whether to fully shuffle data.
-        seed: int, optional
-            random seed.
+        seed: int, default: 42
+            Random seed.
 
         Returns
         -------
-        testset : `TransformedSet` object
-            Data object used for evaluation and test.
+        testset : :class:`~libreco.data.TransformedSet`
+            Transformed Data object used for testing.
         """
         if not revolution and not cls.train_called:
             raise RuntimeError(
@@ -224,8 +249,17 @@ class DatasetPure(Dataset):
         return test_transformed
 
 
+# noinspection PyTypeChecker
 class DatasetFeat(Dataset):
-    """A derived class from :class:`Dataset`, used for data that contains features."""
+    """Dataset class used for building data contains features.
+
+    Examples
+    --------
+    >>> from libreco.data import DatasetFeat
+    >>> train_data, data_info = DatasetFeat.build_trainset(train_data)
+    >>> eval_data = DatasetFeat.build_evalset(eval_data)
+    >>> test_data = DatasetFeat.build_testset(test_data)
+    """
 
     user_unique_vals = None
     item_unique_vals = None
@@ -266,56 +300,54 @@ class DatasetFeat(Dataset):
         shuffle=False,
         seed=42,
     ):
-        """Build transformed feat train_data from original data.
+        """Build transformed feat train data and data_info from original data.
 
         Parameters
         ----------
-        train_data : `pandas.DataFrame`
+        train_data : pandas.DataFrame
             Data must at least contains three columns,
-            i.e. `user`, `item`, `label`.
-        user_col : list of str
+            i.e. ``user``, ``item``, ``label``.
+        user_col : list of str or None, default: None
             List of user feature column names.
-        item_col : list of str
+        item_col : list of str or None, default: None
             List of item feature column names.
-        sparse_col : list of str
+        sparse_col : list of str or None, default: None
             List of sparse feature columns names.
-        multi_sparse_col : nested lists of str
+        multi_sparse_col : nested lists of str or None, default: None
             Nested lists of multi_sparse feature columns names.
-            For example, [["a", "b", "c"], ["d", "e"]]
-        dense_col : list of str, optional
+            For example, ``[["a", "b", "c"], ["d", "e"]]``
+        dense_col : list of str or None, default: None
             List of dense feature column names.
-        revolution : bool, optional
+        revolution : bool, default: False
             Whether to retrain model with new data.
-        data_info : `DataInfo`
-            `DataInfo` object that contains past data information.
-        merge_behavior : bool, optional
+        data_info : DataInfo or None, default: None
+            Object that contains past data information.
+        merge_behavior : bool, default: True
             Whether to merge the user behavior in old and new data.
-        unique_feat : bool, optional
+        unique_feat : bool, default: False
             Whether the features of users and items are unique in train data.
-        popular_nums : int, optional
+        popular_nums : int, default: 100
             Number of popular items to store.
-        pad_val : str or list, optional
+        pad_val : int or str or list, default: "missing"
             Padding value in multi_sparse columns.
             To ensure same length of all samples.
-        shuffle : bool, optional
+        shuffle : bool, default: False
             Whether to fully shuffle data.
-        seed: int, optional
-            random seed.
+        seed: int, default: 42
+            Random seed.
 
         Returns
         -------
-        trainset : `TransformedSet` object
-            Data object used for training.
-        data_info : `DataInfo` object
-            Object that contains some useful information
-            for training and predicting
+        trainset : :class:`~libreco.data.TransformedSet`
+            Transformed Data object used for training.
+        data_info : :class:`~libreco.data.DataInfo`
+            Object that contains some useful information.
         """
-
         cls._check_subclass()
         cls._check_col_names(train_data, mode="train")
 
         if revolution:
-            train_transformed, data_info = rebuild_feature_data(
+            train_transformed, data_info = _rebuild_feature_data(
                 train_data, data_info, merge_behavior, popular_nums
             )
         else:
@@ -323,8 +355,8 @@ class DatasetFeat(Dataset):
             # cls._set_sparse_unique_vals(train_data, pad_val)
             cls.user_unique_vals = np.sort(train_data["user"].unique())
             cls.item_unique_vals = np.sort(train_data["item"].unique())
-            cls.sparse_unique_vals = get_sparse_unique_vals(cls.sparse_col, train_data)
-            cls.multi_sparse_unique_vals = get_multi_sparse_unique_vals(
+            cls.sparse_unique_vals = _get_sparse_unique_vals(cls.sparse_col, train_data)
+            cls.multi_sparse_unique_vals = _get_multi_sparse_unique_vals(
                 cls.multi_sparse_col, train_data, pad_val
             )
             if shuffle:
@@ -454,33 +486,52 @@ class DatasetFeat(Dataset):
     def build_evalset(
         cls, eval_data, revolution=False, data_info=None, shuffle=False, seed=42
     ):
+        """Build transformed feat eval data from original data.
+
+        Parameters
+        ----------
+        eval_data : pandas.DataFrame
+            Data must at least contains two columns, i.e. `user`, `item`.
+        revolution : bool, default: False
+            Whether to retrain model with new data.
+        data_info : DataInfo or None, default: None
+            Object that contains past data information.
+        shuffle : bool, default: False
+            Whether to fully shuffle data.
+        seed: int, default: 42
+            Random seed.
+
+        Returns
+        -------
+        evalset : :class:`~libreco.data.TransformedSet`
+            Transformed Data object used for evaluating.
+        """
         return cls.build_testset(eval_data, revolution, data_info, shuffle, seed)
 
     @classmethod
     def build_testset(
         cls, test_data, revolution=False, data_info=None, shuffle=False, seed=42
     ):
-        """Build transformed feat eval_data or test_data from original data.
+        """Build transformed feat test data from original data.
 
         Parameters
         ----------
-        test_data : `pandas.DataFrame`
+        test_data : pandas.DataFrame
             Data must at least contains two columns, i.e. `user`, `item`.
-        revolution : bool, optional
+        revolution : bool, default: False
             Whether to retrain model with new data.
-        data_info : `DataInfo`
-            `DataInfo` object that contains past data information.
-        shuffle : bool, optional
+        data_info : DataInfo or None, default: None
+            Object that contains past data information.
+        shuffle : bool, default: False
             Whether to fully shuffle data.
-        seed: int, optional
-            random seed.
+        seed: int, default: 42
+            Random seed.
 
         Returns
         -------
-        testset : `TransformedSet` object
-            Data object used for evaluation and test.
+        testset : :class:`~libreco.data.TransformedSet`
+            Transformed Data object used for testing.
         """
-
         if not revolution and not cls.train_called:
             raise RuntimeError(
                 "must first build trainset before building evalset or testset"
@@ -582,7 +633,7 @@ class DatasetFeat(Dataset):
         return test_transformed
 
 
-def get_sparse_unique_vals(sparse_col, train_data):
+def _get_sparse_unique_vals(sparse_col, train_data):
     if sparse_col:
         sparse_unique_vals = dict()
         for col in sparse_col:
@@ -592,7 +643,7 @@ def get_sparse_unique_vals(sparse_col, train_data):
     return sparse_unique_vals
 
 
-def get_multi_sparse_unique_vals(multi_sparse_col, train_data, pad_val):
+def _get_multi_sparse_unique_vals(multi_sparse_col, train_data, pad_val):
     if multi_sparse_col:
         multi_sparse_unique_vals = dict()
         if not isinstance(pad_val, (list, tuple)):
@@ -613,7 +664,7 @@ def get_multi_sparse_unique_vals(multi_sparse_col, train_data, pad_val):
     return multi_sparse_unique_vals
 
 
-def rebuild_feature_data(train_data, data_info, merge_behavior, popular_nums):
+def _rebuild_feature_data(train_data, data_info, merge_behavior, popular_nums):
     assert isinstance(
         data_info, DataInfo
     ), "The passed data_info is not a DataInfo object."

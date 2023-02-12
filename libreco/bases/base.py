@@ -1,3 +1,4 @@
+"""Recommendation model base class."""
 import abc
 import time
 
@@ -10,17 +11,17 @@ class Base(abc.ABC):
 
     Parameters
     ----------
-    task : str
-        Specific task, either rating or ranking.
-    data_info : `DataInfo` object
-        Object that contains useful information for training and predicting.
-    lower_upper_bound : list or tuple, optional
+    task : {'rating', 'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : :class:`~libreco.data.DataInfo` object
+        Object that contains useful information for training and inference.
+    lower_upper_bound : list or tuple, default: None
         Lower and upper score bound for rating task.
     """
 
     def __init__(self, task, data_info, lower_upper_bound=None):
         self.model_name = self.__class__.__name__
-        self.model_category = self.get_model_category()
+        self.model_category = self._get_model_category()
         self.task = task
         self.data_info = data_info
         self.n_users = data_info.n_users
@@ -45,11 +46,11 @@ class Base(abc.ABC):
 
     @abc.abstractmethod
     def fit(self, train_data, **kwargs):
-        """Train model on the training data.
+        """Fit model on the training data.
 
         Parameters
         ----------
-        train_data : `TransformedSet` object
+        train_data : :class:`~libreco.data.TransformedSet` object
             Data object used for training.
         """
         raise NotImplementedError
@@ -67,7 +68,7 @@ class Base(abc.ABC):
 
         Returns
         -------
-        prediction : float or array_like
+        prediction : float or numpy.ndarray
             Predicted scores for each user-item pair.
         """
         raise NotImplementedError
@@ -85,38 +86,51 @@ class Base(abc.ABC):
 
         Returns
         -------
-        result : dict
-            Recommendation result that has user ids as keys
-            and array-like recommended items as values.
+        recommendation : dict of {Union[int, str, array_like] : numpy.ndarray}
+            Recommendation result with user ids as keys
+            and array_like recommended items as values.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
     def save(self, path, model_name, **kwargs):
-        """save model for inference or retraining.
+        """Save model for inference or retraining.
 
         Parameters
         ----------
         path : str
-            file folder path to save model.
+            File folder path to save model.
         model_name : str
-            name of the saved model file.
+            Name of the saved model file.
+
+        See Also
+        --------
+        load
         """
         raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
     def load(cls, path, model_name, data_info, **kwargs):
-        """load saved model for inference.
+        """Load saved model for inference.
 
         Parameters
         ----------
         path : str
-            file folder path to save model.
+            File folder path to save model.
         model_name : str
-            name of the saved model file.
-        data_info : `DataInfo` object
+            Name of the saved model file.
+        data_info : :class:`~libreco.data.DataInfo` object
             Object that contains some useful information.
+
+        Returns
+        -------
+        model : type(cls)
+            Loaded model.
+
+        See Also
+        --------
+        save
         """
         raise NotImplementedError
 
@@ -125,7 +139,7 @@ class Base(abc.ABC):
         start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         print(f"Training start time: {colorize(start_time, 'magenta')}")
 
-    def get_model_category(self):
+    def _get_model_category(self):
         if self.model_name in SEQUENCE_MODELS:
             return "sequence"
         elif self.model_name in FEAT_MODELS:

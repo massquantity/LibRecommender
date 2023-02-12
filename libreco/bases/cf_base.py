@@ -1,3 +1,4 @@
+"""CF model base class."""
 import abc
 import os
 import random
@@ -21,11 +22,42 @@ from ..utils.validate import check_unknown, check_unknown_user, convert_id
 
 
 class CfBase(Base):
+    """Base class for CF models.
+
+    Parameters
+    ----------
+    task : {'rating', 'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : :class:`~libreco.data.DataInfo` object
+        Object that contains useful information for training and inference.
+    cf_type : {'user_cf', 'item_cf'}
+        Specific CF type.
+    sim_type : {'cosine', 'pearson', 'jaccard'}, default: 'cosine'
+        Types for computing similarities.
+    k_sim : int, default: 20
+        Number of similar items to use.
+    store_top_k : bool, default: True
+        Whether to store top k similar users after training.
+    block_size : int or None, default: None
+        Block size for computing similarity matrix. Large block size makes computation
+        faster, but may cause memory issue.
+    num_threads : int, default: 1
+        Number of threads to use.
+    min_common : int, default: 1
+        Number of minimum common users to consider when computing similarities.
+    mode : {'forward', 'invert'}, default: 'invert'
+        Whether to use forward index or invert index.
+    seed : int, default: 42
+        Random seed.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+    """
+
     def __init__(
         self,
         task,
         data_info,
-        cf_type=None,
+        cf_type,
         sim_type="cosine",
         k_sim=20,
         store_top_k=True,
@@ -77,6 +109,27 @@ class CfBase(Base):
         eval_batch_size=8192,
         eval_user_num=None,
     ):
+        """Fit CF model on the training data.
+
+        Parameters
+        ----------
+        train_data : :class:`~libreco.data.TransformedSet` object
+            Data object used for training.
+        verbose : int, default: 1
+            Print verbosity. If `eval_data` is provided, setting it to higher than 1
+            will print evaluation metrics during training.
+        eval_data : :class:`~libreco.data.TransformedSet` object, default: None
+            Data object used for evaluating.
+        metrics : list or None, default: None
+            List of metrics for evaluating.
+        k : int, default: 10
+            Parameter of metrics, e.g. recall at k, ndcg at k
+        eval_batch_size : int, default: 8192
+            Batch size for evaluating.
+        eval_user_num : int or None, default: None
+            Number of users for evaluating. Setting it to a positive number will sample
+            users randomly from eval data.
+        """
         self.show_start_time()
         self.user_interaction = train_data.sparse_interaction
         self.item_interaction = self.user_interaction.T.tocsr()
@@ -197,6 +250,30 @@ class CfBase(Base):
         filter_consumed=True,
         random_rec=False,
     ):
+        """Recommend a list of items for given user(s).
+
+        Parameters
+        ----------
+        user : int or str or array_like
+            User id or batch of user ids to recommend.
+        n_rec : int
+            Number of recommendations to return.
+        cold_start : {'popular'}, default: 'popular'
+            Cold start strategy, CF models can only use 'popular' strategy.
+        inner_id : bool, default: False
+            Whether to use inner_id defined in `libreco`. For library users inner_id
+            may never be used.
+        filter_consumed : bool, default: True
+            Whether to filter out items that a user has previously consumed.
+        random_rec : bool, default: False
+            Whether to choose items for recommendation based on their prediction scores.
+
+        Returns
+        -------
+        recommendation : dict[Union[int, str, array_like], numpy.ndarray]
+            Recommendation result with user ids as keys
+            and array_like recommended items as values.
+        """
         result_recs = dict()
         user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
         if unknown_users:

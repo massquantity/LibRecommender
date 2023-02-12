@@ -10,8 +10,6 @@ import logging
 from functools import partial
 
 import numpy as np
-from tensorflow.keras.initializers import glorot_uniform
-from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase, ModelMeta
 from ..evaluation import print_metrics
@@ -30,8 +28,61 @@ except (ImportError, ModuleNotFoundError):
 
 
 class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
-    """
-    BPR is only suitable for ranking task
+    """*Bayesian Personalized Ranking* algorithm.
+
+    *BPR* is implemented in both TensorFlow and Cython.
+
+    .. WARNING::
+        + BPR can only be used in ``ranking`` task.
+        + BPR can only use ``bpr`` loss in ``loss_type``.
+
+    Parameters
+    ----------
+    task : {'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : :class:`~libreco.data.DataInfo` object
+        Object that contains useful information for training and inference.
+    loss_type : {'bpr'}
+        Loss for model training.
+    embed_size: int, default: 16
+        Vector size of embeddings.
+    n_epochs: int, default: 10
+        Number of epochs for training.
+    lr : float, default 0.001
+        Learning rate for training.
+    lr_decay : bool, default: False
+        Whether to use learning rate decay.
+    epsilon : float, default: 1e-5
+        A small constant added to the denominator to improve numerical stability in
+        Adam optimizer.
+        According to the `official comment <https://github.com/tensorflow/tensorflow/blob/v1.15.0/tensorflow/python/training/adam.py#L64>`_,
+        default value of `1e-8` for `epsilon` is generally not good, so here we choose `1e-5`.
+        Users can try tuning this hyperparameter if the training is unstable.
+    reg : float or None, default: None
+        Regularization parameter, must be non-negative or None.
+    batch_size : int, default: 256
+        Batch size for training.
+    num_neg : int, default: 1
+        Number of negative samples for each positive sample, only used in `ranking` task.
+    use_tf : bool, default: True
+        Whether to use TensorFlow or Cython version. The TensorFlow version is more
+        accurate, whereas the Cython version is faster.
+    seed : int, default: 42
+        Random seed.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+    tf_sess_config : dict or None, default: None
+        Optional TensorFlow session config, see `ConfigProto options
+        <https://github.com/tensorflow/tensorflow/blob/v2.10.0/tensorflow/core/protobuf/config.proto#L431>`_.
+    optimizer : {'sgd', 'momentum', 'adam'}, default: 'adam'
+        Optimizer used in Cython version.
+    num_threads : int, default: 1
+        Number of threads used in Cython version.
+
+    References
+    ----------
+    *Steffen Rendle et al.* `BPR: Bayesian Personalized Ranking from Implicit Feedback
+    <https://arxiv.org/ftp/arxiv/papers/1205/1205.2618.pdf>`_.
     """
 
     user_variables = ["user_embed_var"]
@@ -103,19 +154,19 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.user_embed_var = tf.get_variable(
             name="user_embed_var",
             shape=[self.n_users, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         self.item_embed_var = tf.get_variable(
             name="item_embed_var",
             shape=[self.n_items, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         self.item_bias_var = tf.get_variable(
             name="item_bias_var",
             shape=[self.n_items],
-            initializer=tf_zeros,
+            initializer=tf.zeros_initializer(),
             regularizer=self.reg,
         )
 
@@ -149,6 +200,29 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         eval_batch_size=8192,
         eval_user_num=None,
     ):
+        """Fit BPR model on the training data.
+
+        Parameters
+        ----------
+        train_data : :class:`~libreco.data.TransformedSet` object
+            Data object used for training.
+        verbose : int, default: 1
+            Print verbosity. If `eval_data` is provided, setting it to higher than 1
+            will print evaluation metrics during training.
+        shuffle : bool, default: True
+            Whether to shuffle the training data.
+        eval_data : :class:`~libreco.data.TransformedSet` object, default: None
+            Data object used for evaluating.
+        metrics : list or None, default: None
+            List of metrics for evaluating.
+        k : int, default: 10
+            Parameter of metrics, e.g. recall at k, ndcg at k
+        eval_batch_size : int, default: 8192
+            Batch size for evaluating.
+        eval_user_num : int or None, default: None
+            Number of users for evaluating. Setting it to a positive number will sample
+            users randomly from eval data.
+        """
         self.check_attribute(eval_data, k)
         self.show_start_time()
         # check_has_sampled(train_data, verbose)
