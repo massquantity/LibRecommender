@@ -7,8 +7,6 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import glorot_uniform
-from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase, ModelMeta
 from ..tfops import (
@@ -135,7 +133,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         item_interaction_features = tf.get_variable(
             name="item_interaction_features",
             shape=[self.n_items, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         sparse_item_interaction = tf.SparseTensor(
@@ -159,7 +157,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         sparse_features = tf.get_variable(
             name="sparse_features",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -195,7 +193,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         dense_features = tf.get_variable(
             name="dense_features",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -213,13 +211,13 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             name="nce_weights",
             # n_classes, embed_size
             shape=[self.n_items, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         self.nce_biases = tf.get_variable(
             name="nce_biases",
             shape=[self.n_items],
-            initializer=tf_zeros,
+            initializer=tf.zeros_initializer(),
             regularizer=self.reg,
             trainable=True,
         )

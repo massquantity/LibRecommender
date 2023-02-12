@@ -7,8 +7,6 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import glorot_uniform
-from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase, ModelMeta
 from ..data.sequence import get_user_last_interacted
@@ -52,7 +50,6 @@ class WaveNet(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         seed=42,
         lower_upper_bound=None,
         tf_sess_config=None,
-        with_training=True,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
@@ -103,7 +100,7 @@ class WaveNet(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.user_feat = tf.get_variable(
             name="user_feat",
             shape=[self.n_users, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -111,12 +108,12 @@ class WaveNet(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.item_biases = tf.get_variable(
             name="item_biases",
             shape=[self.n_items],
-            initializer=tf_zeros,
+            initializer=tf.zeros_initializer(),
         )
         self.item_weights = tf.get_variable(
             name="item_weights",
             shape=[self.n_items, self.embed_size * 2],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -124,7 +121,7 @@ class WaveNet(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.input_embed = tf.get_variable(
             name="input_embed",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 

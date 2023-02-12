@@ -117,8 +117,9 @@ class FM(TfBase, metaclass=ModelMeta):
         # For original FM, just add K dim together:
         # pairwise_term = 0.5 * tf.reduce_sum(pairwise_term, axis=1)
         if self.use_bn:
-            batch_norm = tf.keras.layers.BatchNormalization()
-            pairwise_term = batch_norm(pairwise_term, training=self.is_training)
+            pairwise_term = tf.layers.batch_normalization(
+                pairwise_term, training=self.is_training
+            )
         pairwise_term = tf_dense(units=1, activation=tf.nn.elu)(pairwise_term)
         self.output = tf.squeeze(tf.add(linear_term, pairwise_term))
         count_params()
@@ -130,25 +131,25 @@ class FM(TfBase, metaclass=ModelMeta):
         linear_user_feat = tf.get_variable(
             name="linear_user_feat",
             shape=[self.n_users + 1, 1],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         linear_item_feat = tf.get_variable(
             name="linear_item_feat",
             shape=[self.n_items + 1, 1],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         pairwise_user_feat = tf.get_variable(
             name="pairwise_user_feat",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         pairwise_item_feat = tf.get_variable(
             name="pairwise_item_feat",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -173,13 +174,13 @@ class FM(TfBase, metaclass=ModelMeta):
         linear_sparse_feat = tf.get_variable(
             name="linear_sparse_feat",
             shape=[self.sparse_feature_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         pairwise_sparse_feat = tf.get_variable(
             name="pairwise_sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -225,13 +226,13 @@ class FM(TfBase, metaclass=ModelMeta):
         linear_dense_feat = tf.get_variable(
             name="linear_dense_feat",
             shape=[self.dense_field_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         pairwise_dense_feat = tf.get_variable(
             name="pairwise_dense_feat",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 

@@ -65,25 +65,25 @@ class NCF(TfBase, metaclass=ModelMeta):
         user_gmf = tf.get_variable(
             name="user_gmf",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         item_gmf = tf.get_variable(
             name="item_gmf",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         user_mlp = tf.get_variable(
             name="user_mlp",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         item_mlp = tf.get_variable(
             name="item_mlp",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 

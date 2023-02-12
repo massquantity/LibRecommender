@@ -7,7 +7,6 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import glorot_uniform
 
 from ..bases import ModelMeta, TfBase
 from ..data.sequence import get_user_last_interacted
@@ -115,13 +114,13 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         user_features = tf.get_variable(
             name="user_features",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         item_features = tf.get_variable(
             name="item_features",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         user_embed = tf.nn.embedding_lookup(user_features, self.user_indices)
@@ -165,7 +164,7 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         sparse_features = tf.get_variable(
             name="sparse_features",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -201,7 +200,7 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         dense_features = tf.get_variable(
             name="dense_features",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 

@@ -7,8 +7,6 @@ author: massquantity
 
 """
 import numpy as np
-from tensorflow.keras.initializers import glorot_uniform
-from tensorflow.keras.initializers import zeros as tf_zeros
 
 from ..bases import EmbedBase, ModelMeta
 from ..data.sequence import get_user_last_interacted
@@ -113,13 +111,13 @@ class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.item_biases = tf.get_variable(
             name="item_biases",
             shape=[self.n_items],
-            initializer=tf_zeros,
+            initializer=tf.zeros_initializer(),
             regularizer=self.reg,
         )
         self.item_weights = tf.get_variable(
             name="item_weights",
             shape=[self.n_items, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -127,7 +125,7 @@ class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.input_embed = tf.get_variable(
             name="input_embed",
             shape=[self.n_items + 1, self.hidden_units[0]],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 

@@ -127,25 +127,25 @@ class DeepFM(TfBase, metaclass=ModelMeta):
         linear_user_feat = tf.get_variable(
             name="linear_user_feat",
             shape=[self.n_users + 1, 1],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         linear_item_feat = tf.get_variable(
             name="linear_item_feat",
             shape=[self.n_items + 1, 1],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         embed_user_feat = tf.get_variable(
             name="embed_user_feat",
             shape=[self.n_users + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         embed_item_feat = tf.get_variable(
             name="embed_item_feat",
             shape=[self.n_items + 1, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -172,13 +172,13 @@ class DeepFM(TfBase, metaclass=ModelMeta):
         linear_sparse_feat = tf.get_variable(
             name="linear_sparse_feat",
             shape=[self.sparse_feature_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         embed_sparse_feat = tf.get_variable(
             name="embed_sparse_feat",
             shape=[self.sparse_feature_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
@@ -228,13 +228,13 @@ class DeepFM(TfBase, metaclass=ModelMeta):
         linear_dense_feat = tf.get_variable(
             name="linear_dense_feat",
             shape=[self.dense_field_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
         embed_dense_feat = tf.get_variable(
             name="embed_dense_feat",
             shape=[self.dense_field_size, self.embed_size],
-            initializer=glorot_uniform,
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
