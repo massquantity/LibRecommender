@@ -1,3 +1,4 @@
+"""Utility Functions for Evaluating Data."""
 import math
 import numbers
 
@@ -176,6 +177,39 @@ def evaluate(
     update_features=False,
     seed=42,
 ):
+    """Evaluate the model on specific data and metrics.
+
+    Parameters
+    ----------
+    model : Base
+        Model for evaluation.
+    data : pandas.DataFrame or TransformedSet
+        Data to evaluate.
+    eval_batch_size : int, default: 8192
+        Batch size used in evaluation.
+    metrics : list or None, default: None
+        List of metrics for evaluating.
+    k : int, default: 10
+        Parameter of metrics, e.g. recall at k, ndcg at k
+    sample_user_num : int, default: 2048
+        Number of users for evaluating. Setting it to a positive number will sample
+        users randomly from eval data.
+    neg_sample : bool, default: False
+        Whether to do negative sampling when evaluating.
+    update_features : bool, default: False
+        Whether to update model's ``data_info`` from features in data.
+    seed : int, default: 42
+        Random seed.
+
+    Returns
+    -------
+    results : dict of {str : float}
+        Evaluation results for the model and data.
+
+    Examples
+    --------
+    >>> eval_result = evaluate(model, data, metrics=["roc_auc", "precision", "recall"])
+    """
     if isinstance(data, pd.DataFrame):
         data = build_eval_transformed_data(
             model, data, neg_sample, update_features, seed

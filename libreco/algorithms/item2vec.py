@@ -1,11 +1,4 @@
-"""
-
-Reference: Oren Barkan and Noam Koenigstein. "Item2Vec: Neural Item Embedding for Collaborative Filtering"
-           (https://arxiv.org/pdf/1603.04259.pdf)
-
-author: massquantity
-
-"""
+"""Implementation of Item2Vec."""
 from gensim.models import Word2Vec
 from tqdm import tqdm
 
@@ -13,6 +6,38 @@ from ..bases import GensimBase
 
 
 class Item2Vec(GensimBase):
+    """*Item2Vec* algorithm.
+
+    .. WARNING::
+        + Item2Vec can only use in ``ranking`` task.
+
+    Parameters
+    ----------
+    task : {'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : `DataInfo` object
+        Object that contains useful information for training and inference.
+    embed_size: int, default: 16
+        Vector size of embeddings.
+    norm_embed : bool, default: False
+        Whether to normalize output embeddings.
+    window_size : int, default: 5
+        Maximum item distance within a sequence during training.
+    n_epochs: int, default: 10
+        Number of epochs for training.
+    n_threads : int, default: 0
+        Number of threads to use, `0` will use all cores.
+    seed : int, default: 42
+        Random seed.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+
+    References
+    ----------
+    *Oren Barkan and Noam Koenigstein.* `Item2Vec: Neural Item Embedding for Collaborative Filtering
+    <https://arxiv.org/pdf/1603.04259.pdf>`_.
+    """
+
     def __init__(
         self,
         task,
@@ -24,7 +49,6 @@ class Item2Vec(GensimBase):
         n_threads=0,
         seed=42,
         lower_upper_bound=None,
-        with_training=True,
     ):
         super().__init__(
             task,
@@ -41,7 +65,7 @@ class Item2Vec(GensimBase):
         self.all_args = locals()
 
     def get_data(self):
-        return ItemCorpus(self.user_consumed)
+        return _ItemCorpus(self.user_consumed)
 
     def build_model(self):
         model = Word2Vec(
@@ -59,7 +83,7 @@ class Item2Vec(GensimBase):
         return model
 
 
-class ItemCorpus:
+class _ItemCorpus:
     def __init__(self, user_consumed):
         self.item_seqs = user_consumed.values()
         self.i = 0

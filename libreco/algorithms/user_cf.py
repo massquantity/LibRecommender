@@ -1,3 +1,4 @@
+"""Implementation of UserCF."""
 from collections import defaultdict
 from itertools import islice
 from operator import itemgetter
@@ -11,6 +12,35 @@ from ..utils.misc import colorize
 
 
 class UserCF(CfBase):
+    """*User Collaborative Filtering* algorithm.
+
+    Parameters
+    ----------
+    task : {'rating', 'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : `DataInfo` object
+        Object that contains useful information for training and inference.
+    sim_type : {'cosine', 'pearson', 'jaccard'}, default: 'cosine'
+        Types for computing similarities.
+    k_sim : int, default: 20
+        Number of similar items to use.
+    store_top_k : bool, default: True
+        Whether to store top k similar users after training.
+    block_size : int or None, default: None
+        Block size for computing similarity matrix. Large block size makes computation
+        faster, but may cause memory issue.
+    num_threads : int, default: 1
+        Number of threads to use.
+    min_common : int, default: 1
+        Number of minimum common users to consider when computing similarities.
+    mode : {'forward', 'invert'}, default: 'invert'
+        Whether to use forward index or invert index.
+    seed : int, default: 42
+        Random seed.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+    """
+
     def __init__(
         self,
         task,
@@ -42,6 +72,25 @@ class UserCF(CfBase):
         self.all_args = locals()
 
     def predict(self, user, item, cold_start="popular", inner_id=False):
+        """Make prediction(s) on given user(s) and item(s).
+
+        Parameters
+        ----------
+        user : int or str or array_like
+            User id or batch of user ids.
+        item : int or str or array_like
+            Item id or batch of item ids.
+        cold_start : {'popular'}, default: 'popular'
+            Cold start strategy, ItemCF can only use 'popular' strategy.
+        inner_id : bool, default: False
+            Whether to use inner_id defined in `libreco`. For library users inner_id
+            may never be used.
+
+        Returns
+        -------
+        prediction : float or numpy.ndarray
+            Predicted scores for each user-item pair.
+        """
         user_arr, item_arr = self.pre_predict_check(user, item, inner_id, cold_start)
         preds = []
         sim_matrix = self.sim_matrix
@@ -69,7 +118,6 @@ class UserCF(CfBase):
             preds.append(pred)
         return preds[0] if len(user_arr) == 1 else preds
 
-    # all the items returned by this function will be inner_ids
     def recommend_one(self, user_id, n_rec, filter_consumed, random_rec):
         user_slice = slice(
             self.sim_matrix.indptr[user_id], self.sim_matrix.indptr[user_id + 1]

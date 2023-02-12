@@ -1,3 +1,4 @@
+"""Utility Functions for Splitting Data."""
 import math
 
 import numpy as np
@@ -6,14 +7,53 @@ from sklearn.model_selection import train_test_split
 
 def random_split(
     data,
+    shuffle=True,
     test_size=None,
     multi_ratios=None,
-    shuffle=True,
     filter_unknown=True,
     pad_unknown=False,
     pad_val=None,
     seed=42,
 ):
+    """Split the data randomly.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        The data to split.
+    shuffle : bool, default: True
+        Whether to shuffle data when splitting.
+    test_size : float or None, default: None
+        Test data ratio.
+    multi_ratios : list or tuple or None, default: None
+        Ratios for splitting data in multiple parts. If ``test_size`` is not None,
+        ``multi_ratios`` will be ignored.
+    filter_unknown : bool, default: True
+        Whether to filter out users and items that don't appear in the train data
+        from eval and test data. Since models can only recommend items in the train data.
+    pad_unknown : bool, default: False
+        Fill the unknown users/items with ``pad_val``. If ``filter_unknown`` is True,
+        this parameter will be ignored.
+    pad_val : any, default: None
+        Pad value used in ``pad_unknown``.
+    seed : int, default: 42
+        Random seed.
+
+    Returns
+    -------
+    multiple data : list of pandas.DataFrame
+        The split data.
+
+    Raises
+    ------
+    ValueError
+        If neither `test_size` nor `multi_ratio` is provided.
+
+    Examples
+    --------
+    >>> train, test = random_split(data, test_size=0.2)
+    >>> train_data, eval_data, test_data = random_split(data, multi_ratios=[0.8, 0.1, 0.1])
+    """
     ratios, n_splits = _check_and_convert_ratio(test_size, multi_ratios)
     if not isinstance(ratios, list):
         ratios = list(ratios)
@@ -91,6 +131,50 @@ def split_by_ratio(
     pad_val=None,
     seed=42,
 ):
+    """Assign certain ratio of items to test data for each user.
+
+    .. NOTE::
+        If a user's total # of interacted items is less than 3, these items will all been
+        assigned to train data.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        The data to split.
+    order : bool, default: True
+        Whether to preserve order for user's item sequence.
+    shuffle : bool, default: False
+        Whether to shuffle data after splitting.
+    test_size : float or None, default: None
+        Test data ratio.
+    multi_ratios : list or tuple or None, default: None
+        Ratios for splitting data in multiple parts. If ``test_size`` is not None,
+        ``multi_ratios`` will be ignored.
+    filter_unknown : bool, default: True
+        Whether to filter out users and items that don't appear in the train data
+        from eval and test data. Since models can only recommend items in the train data.
+    pad_unknown : bool, default: False
+        Fill the unknown users/items with ``pad_val``. If ``filter_unknown`` is True,
+        this parameter will be ignored.
+    pad_val : any, default: None
+        Pad value used in ``pad_unknown``.
+    seed : int, default: 42
+        Random seed.
+
+    Returns
+    -------
+    multiple data : list of pandas.DataFrame
+        The split data.
+
+    Raises
+    ------
+    ValueError
+        If neither `test_size` nor `multi_ratio` is provided.
+
+    See Also
+    --------
+    split_by_ratio_chrono
+    """
     np.random.seed(seed)
     assert "user" in data.columns, "data must contains user column"
     ratios, n_splits = _check_and_convert_ratio(test_size, multi_ratios)
@@ -137,6 +221,47 @@ def split_by_num(
     pad_val=None,
     seed=42,
 ):
+    """Assign a certain number of items to test data for each user.
+
+    .. NOTE::
+        If a user's total # of interacted items is less than 3, these items will all been
+        assigned to train data.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        The data to split.
+    order : bool, default: True
+        Whether to preserve order for user's item sequence.
+    shuffle : bool, default: False
+        Whether to shuffle data after splitting.
+    test_size : float or None, default: None
+        Test data ratio.
+    filter_unknown : bool, default: True
+        Whether to filter out users and items that don't appear in the train data
+        from eval and test data. Since models can only recommend items in the train data.
+    pad_unknown : bool, default: False
+        Fill the unknown users/items with ``pad_val``. If ``filter_unknown`` is True,
+        this parameter will be ignored.
+    pad_val : any, default: None
+        Pad value used in ``pad_unknown``.
+    seed : int, default: 42
+        Random seed.
+
+    Returns
+    -------
+    multiple data : list of pandas.DataFrame
+        The split data.
+
+    Raises
+    ------
+    ValueError
+        If neither `test_size` nor `multi_ratio` is provided.
+
+    See Also
+    --------
+    split_by_num_chrono
+    """
     np.random.seed(seed)
     assert "user" in data.columns, "data must contains user column"
     assert isinstance(test_size, int), "test_size must be int value"
@@ -176,6 +301,41 @@ def split_by_num(
 def split_by_ratio_chrono(
     data, order=True, shuffle=False, test_size=None, multi_ratios=None, seed=42
 ):
+    """Assign a certain ratio of items to test data for each user, where items are sorted by time first.
+
+    .. IMPORTANT::
+        data should contain a **time** column.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        The data to split.
+    order : bool, default: True
+        Whether to preserve order for user's item sequence.
+    shuffle : bool, default: False
+        Whether to shuffle data after splitting.
+    test_size : float or None, default: None
+        Test data ratio.
+    multi_ratios : list or tuple or None, default: None
+        Ratios for splitting data in multiple parts. If ``test_size`` is not None,
+        ``multi_ratios`` will be ignored.
+    seed : int, default: 42
+        Random seed.
+
+    Returns
+    -------
+    multiple data : list of pandas.DataFrame
+        The split data.
+
+    Raises
+    ------
+    ValueError
+        If neither `test_size` nor `multi_ratio` is provided.
+
+    See Also
+    --------
+    split_by_ratio
+    """
     assert all(
         ["user" in data.columns, "time" in data.columns]
     ), "data must contains user and time column"
@@ -186,6 +346,38 @@ def split_by_ratio_chrono(
 
 
 def split_by_num_chrono(data, order=True, shuffle=False, test_size=1, seed=42):
+    """Assign a certain number of items to test data for each user, where items are sorted by time first.
+
+    .. IMPORTANT::
+        data should contain a **time** column.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        The data to split.
+    order : bool, default: True
+        Whether to preserve order for user's item sequence.
+    shuffle : bool, default: False
+        Whether to shuffle data after splitting.
+    test_size : float or None, default: None
+        Test data ratio.
+    seed : int, default: 42
+        Random seed.
+
+    Returns
+    -------
+    multiple data : list of pandas.DataFrame
+        The split data.
+
+    Raises
+    ------
+    ValueError
+        If neither `test_size` nor `multi_ratio` is provided.
+
+    See Also
+    --------
+    split_by_num
+    """
     assert all(
         ["user" in data.columns, "time" in data.columns]
     ), "data must contains user and time column"

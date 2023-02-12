@@ -1,11 +1,4 @@
-"""
-
-Reference: William L. Hamilton et al. "Inductive Representation Learning on Large Graphs"
-           (https://arxiv.org/abs/1706.02216)
-
-author: massquantity
-
-"""
+"""Implementation of GraphSageDGL."""
 import importlib
 import itertools
 
@@ -21,6 +14,111 @@ from .torch_modules import GraphSageDGLModel
 
 @check_dgl
 class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
+    """*GraphSageDGL* algorithm.
+
+    .. NOTE::
+        This algorithm is implemented in `DGL <https://github.com/dmlc/dgl>`_.
+
+    .. WARNING::
+        + GraphSageDGL can only be used in ``ranking`` task.
+
+    .. versionadded:: 0.12.0
+
+    Parameters
+    ----------
+    task : {'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : `DataInfo` object
+        Object that contains useful information for training and inference.
+    loss_type : {'cross_entropy', 'focal', 'bpr', 'max_margin'}, default: 'cross_entropy'
+        Loss for model training.
+    paradigm : {'u2i', 'i2i'}, default: 'i2i'
+        Choice for features in model.
+
+        - ``'u2i'`` will combine user features and item features.
+        - ``'i2i'`` will only use item features, this is the setting in the original paper.
+
+    aggregator_type : {'mean', 'gcn', 'pool', 'lstm'}, default: 'mean'
+        Aggregator type to use in GraphSage. Refer to `SAGEConv
+        <https://docs.dgl.ai/en/latest/generated/dgl.nn.pytorch.conv.SAGEConv.html>`_ in DGL.
+    embed_size: int, default: 16
+        Vector size of embeddings.
+    n_epochs: int, default: 10
+        Number of epochs for training.
+    lr : float, default 0.001
+        Learning rate for training.
+    lr_decay : bool, default: False
+        Whether to use learning rate decay.
+    epsilon : float, default: 1e-8
+        A small constant added to the denominator to improve numerical stability in
+        Adam optimizer.
+    amsgrad : bool, default: False
+        Whether to use the AMSGrad variant from the paper
+        `On the Convergence of Adam and Beyond <https://openreview.net/forum?id=ryQu7f-RZ>`_.
+    reg : float or None, default: None
+        Regularization parameter, must be non-negative or None.
+    batch_size : int, default: 256
+        Batch size for training.
+    num_neg : int, default: 1
+        Number of negative samples for each positive sample.
+    dropout_rate : float, default: 0.0
+        Probability of a node being dropped. 0.0 means dropout is not used.
+    remove_edges : bool, default: False
+        Whether to remove edges between target node and its positive pair nodes
+        when target node's sampled neighbor nodes contain positive pair nodes.
+        This only applies in 'i2i' paradigm.
+    num_layers : int, default: 2
+        Number of GCN layers.
+    num_neighbors : int, default: 3
+        Number of sampled neighbors in each layer
+    num_walks : int, default: 10
+        Number of random walks to sample positive item pairs. This only applies in
+        'i2i' paradigm.
+    sample_walk_len : int, default: 5
+        Length of each random walk to sample positive item pairs.
+    margin : float, default: 1.0
+        Margin used in `max_margin` loss.
+    sampler : {'random', 'unconsumed', 'popular', 'out-batch'}, default: 'random'
+        Negative sampling strategy. The ``'u2i'`` paradigm can use ``'random'``, ``'unconsumed'``,
+        ``'popular'``, and the ``'i2i'`` paradigm can use ``'random'``, ``'out-batch'``, ``'popular'``.
+
+        - ``'random'`` means random sampling.
+        - ``'unconsumed'`` samples items that the target user did not consume before.
+          This can't be used in ``'i2i'`` since it has no users.
+        - ``'popular'`` has a higher probability to sample popular items as negative samples.
+        - ``'out-batch'`` samples items that didn't appear in the batch.
+          This can only be used in ``'i2i'`` paradigm.
+
+    start_node : {'random', 'unpopular'}, default: 'random'
+        Strategy for choosing start nodes in random walks. ``'unpopular'`` will place a higher
+        probability on unpopular items, which may increase diversity but hurt metrics.
+        This only applies in ``'i2i'`` paradigm.
+    focus_start : bool, default: False
+        Whether to keep the start nodes in random walk sampling. The purpose of the
+        parameter ``start_node`` and ``focus_start`` is oversampling unpopular items.
+        If you set ``start_node='popular'`` and ``focus_start=True``, unpopular items will
+        be kept in positive samples, which may increase diversity.
+    seed : int, default: 42
+        Random seed.
+    device : {'cpu', 'cuda'}, default: 'cuda'
+        Refer to `torch.device <https://pytorch.org/docs/stable/tensor_attributes.html#torch.device>`_.
+
+        .. versionchanged:: 1.0.0
+           Accept str type ``'cpu'`` or ``'cuda'``, instead of ``torch.device(...)``.
+
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+
+    See Also
+    --------
+    GraphSage
+
+    References
+    ----------
+    *William L. Hamilton et al.* `Inductive Representation Learning on Large Graphs
+    <https://arxiv.org/abs/1706.02216>`_.
+    """
+
     def __new__(cls, *args, **kwargs):
         if cls.dgl_error is not None:
             raise cls.dgl_error
@@ -149,9 +247,9 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
             edge_dir="in",
         )
 
-    def transform_blocks(self, nodes, target_nodes=None):
-        r"""
-        bipartite graph block: (items(nodes) -> sampled neighbor nodes)
+    def transform_blocks(self, nodes, target_nodes=None):  # noqa: D400, D415
+        r"""Bipartite graph block: items(nodes) -> sampled neighbor nodes
+
         -------------
         |     / ... |
         |    /  src |
@@ -159,7 +257,7 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
         |    \  src |
         |     \ ... |
         -------------
-        """  # noqa: W605
+        """
         dgl = self._dgl
         blocks = []
         for _ in range(self.num_layers):

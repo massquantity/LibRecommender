@@ -1,3 +1,4 @@
+"""Class for Storing Various Data Information."""
 import inspect
 import json
 import os
@@ -91,14 +92,17 @@ class DataInfo(object):
 
     @property
     def global_mean(self):
+        """Mean value of all labels in `rating` task."""
         return self.interaction_data.label.mean()
 
     @property
     def min_max_rating(self):
+        """Min and max value of all labels in `rating` task."""
         return self.interaction_data.label.min(), self.interaction_data.label.max()
 
     @property
     def sparse_col(self):
+        """Sparse column name to index mapping."""
         if not self.col_name_mapping or not self.col_name_mapping["sparse_col"]:
             return EmptyFeature
         return Feature(
@@ -108,6 +112,7 @@ class DataInfo(object):
 
     @property
     def dense_col(self):
+        """Dense column name to index mapping."""
         if not self.col_name_mapping or not self.col_name_mapping["dense_col"]:
             return EmptyFeature
         return Feature(
@@ -117,6 +122,7 @@ class DataInfo(object):
 
     @property
     def user_sparse_col(self):
+        """User sparse column name to index mapping."""
         if not self.col_name_mapping or not self.col_name_mapping["user_sparse_col"]:
             return EmptyFeature
         return Feature(
@@ -126,6 +132,7 @@ class DataInfo(object):
 
     @property
     def user_dense_col(self):
+        """User dense column name to index mapping."""
         if not self.col_name_mapping or not self.col_name_mapping["user_dense_col"]:
             return EmptyFeature
         return Feature(
@@ -135,6 +142,7 @@ class DataInfo(object):
 
     @property
     def item_sparse_col(self):
+        """Item sparse column name to index mapping."""
         if not self.col_name_mapping or not self.col_name_mapping["item_sparse_col"]:
             return EmptyFeature
         return Feature(
@@ -144,6 +152,7 @@ class DataInfo(object):
 
     @property
     def item_dense_col(self):
+        """Item dense column name to index mapping."""
         if not self.col_name_mapping or not self.col_name_mapping["item_dense_col"]:
             return EmptyFeature
         return Feature(
@@ -153,6 +162,7 @@ class DataInfo(object):
 
     @property
     def user_col(self):
+        """All the user column names, including sparse and dense."""
         if not self.col_name_mapping:
             return []
         # will be sorted by key
@@ -164,6 +174,7 @@ class DataInfo(object):
 
     @property
     def item_col(self):
+        """All the item column names, including sparse and dense."""
         if not self.col_name_mapping:
             return []
         # will be sorted by key
@@ -175,47 +186,55 @@ class DataInfo(object):
 
     @property
     def n_users(self):
+        """Number of users in train data."""
         if self._n_users is None:
             self._n_users = len(self.user_unique_vals)
         return self._n_users
 
     @property
     def n_items(self):
+        """Number of items in train data."""
         if self._n_items is None:
             self._n_items = len(self.item_unique_vals)
         return self._n_items
 
     @property
     def user2id(self):
+        """User original id to inner id mapping."""
         if self._user2id is None:
             self._user2id = dict(zip(self.user_unique_vals, range(self.n_users)))
         return self._user2id
 
     @property
     def item2id(self):
+        """Item original id to inner id mapping."""
         if self._item2id is None:
             self._item2id = dict(zip(self.item_unique_vals, range(self.n_items)))
         return self._item2id
 
     @property
     def id2user(self):
+        """User inner id to original id mapping."""
         if self._id2user is None:
             self._id2user = {j: user for user, j in self.user2id.items()}
         return self._id2user
 
     @property
     def id2item(self):
+        """User inner id to original id mapping."""
         if self._id2item is None:
             self._id2item = {j: item for item, j in self.item2id.items()}
         return self._id2item
 
     @property
     def data_size(self):
+        """Train data size."""
         if self._data_size is None:
             self._data_size = len(self.interaction_data)
         return self._data_size
 
     def __repr__(self):
+        r"""Output train data information: \"n_users, n_items, data density\"."""
         n_users = self.n_users
         n_items = self.n_items
         n_labels = len(self.interaction_data)
@@ -425,10 +444,24 @@ class DataInfo(object):
                     self.item_dense_unique[row_idx, feat_idx] = data[col].to_numpy()
 
     def assign_user_features(self, user_data):
+        """Assign user features to this ``data_info`` object from ``user_data``.
+
+        Parameters
+        ----------
+        user_data : pandas.DataFrame
+            Data contains new user features.
+        """
         self.assign_sparse_features(user_data, "user")
         self.assign_dense_features(user_data, "user")
 
     def assign_item_features(self, item_data):
+        """Assign item features to this ``data_info`` object from ``item_data``.
+
+        Parameters
+        ----------
+        item_data : pandas.DataFrame
+            Data contains new item features.
+        """
         self.assign_sparse_features(item_data, "item")
         self.assign_dense_features(item_data, "item")
 
@@ -501,6 +534,15 @@ class DataInfo(object):
         self.all_args["item_indices"] = item_indices
 
     def save(self, path, model_name):
+        """Save :class:`DataInfo` Object.
+
+        Parameters
+        ----------
+        path : str
+            File folder path to save :class:`DataInfo`.
+        model_name : str
+            Name of the saved file.
+        """
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
@@ -543,6 +585,15 @@ class DataInfo(object):
 
     @classmethod
     def load(cls, path, model_name):
+        """Load saved :class:`DataInfo`.
+
+        Parameters
+        ----------
+        path : str
+            File folder path to save :class:`DataInfo`.
+        model_name : str
+            Name of the saved file.
+        """
         if not os.path.exists(path):
             raise OSError(f"file folder {path} doesn't exists...")
 
@@ -563,7 +614,8 @@ class DataInfo(object):
                     info[arg], columns=["user", "item", "label"]
                 )
             elif arg == "multi_sparse_combine_info":
-                hparams[arg] = MultiSparseInfo(*info[arg])
+                # numpy can save MultiSparseInfo in 0-d array.
+                hparams[arg] = info[arg].item()
             elif arg.startswith("unique_"):
                 if "sparse_unique_vals" not in hparams:
                     hparams["sparse_unique_vals"] = dict()

@@ -1,11 +1,4 @@
-"""
-
-References: Yehuda Koren "Matrix Factorization Techniques for Recommender Systems"
-            (https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf)
-
-author: massquantity
-
-"""
+"""Implementation of SVD."""
 import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
@@ -13,6 +6,50 @@ from ..tfops import reg_config, sess_config, tf
 
 
 class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
+    """*Singular Value Decomposition* algorithm.
+
+    Parameters
+    ----------
+    task : {'rating', 'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : `DataInfo` object
+        Object that contains useful information for training and inference.
+    loss_type : {'cross_entropy', 'focal'}, default: 'cross_entropy'
+        Loss for model training.
+    embed_size: int, default: 16
+        Vector size of embeddings.
+    n_epochs: int, default: 10
+        Number of epochs for training.
+    lr : float, default 0.001
+        Learning rate for training.
+    lr_decay : bool, default: False
+        Whether to use learning rate decay.
+    epsilon : float, default: 1e-5
+        A small constant added to the denominator to improve numerical stability in
+        Adam optimizer.
+        According to the `official comment <https://github.com/tensorflow/tensorflow/blob/v1.15.0/tensorflow/python/training/adam.py#L64>`_,
+        default value of `1e-8` for `epsilon` is generally not good, so here we choose `1e-5`.
+        Users can try tuning this hyperparameter if the training is unstable.
+    reg : float or None, default: None
+        Regularization parameter, must be non-negative or None.
+    batch_size : int, default: 256
+        Batch size for training.
+    num_neg : int, default: 1
+        Number of negative samples for each positive sample, only used in `ranking` task.
+    seed : int, default: 42
+        Random seed.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+    tf_sess_config : dict or None, default: None
+        Optional TensorFlow session config, see `ConfigProto options
+        <https://github.com/tensorflow/tensorflow/blob/v2.10.0/tensorflow/core/protobuf/config.proto#L431>`_.
+
+    References
+    ----------
+    *Yehuda Koren* `Matrix Factorization Techniques for Recommender Systems
+    <https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf>`_.
+    """
+
     user_variables = ["bu_var", "pu_var"]
     item_variables = ["bi_var", "qi_var"]
 

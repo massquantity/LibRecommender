@@ -1,13 +1,4 @@
-"""
-
-Reference: Heng-Tze Cheng et al. "Wide & Deep Learning for Recommender Systems"
-           (https://arxiv.org/pdf/1606.07792.pdf)
-
-author: massquantity
-
-"""
-from tensorflow.keras.initializers import glorot_uniform
-
+"""Implementation of Wide & Deep."""
 from ..bases import ModelMeta, TfBase
 from ..tfops import (
     dense_nn,
@@ -31,10 +22,68 @@ from ..utils.validate import (
 
 
 class WideDeep(TfBase, metaclass=ModelMeta):
-    """
-    According to the original paper, the Wide part used
-    FTRL with L1 regularization as the optimizer, so we'll also adopt it here.
-    Note this may not be suitable for your specific task.
+    """*Wide & Deep* algorithm.
+
+    Parameters
+    ----------
+    task : {'rating', 'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : `DataInfo` object
+        Object that contains useful information for training and inference.
+    loss_type : {'cross_entropy', 'focal'}, default: 'cross_entropy'
+        Loss for model training.
+    embed_size: int, default: 16
+        Vector size of embeddings.
+    n_epochs: int, default: 10
+        Number of epochs for training.
+    lr : dict, default: {"wide": 0.01, "deep": 1e-4}
+        Learning rate for training. The parameter should be a dict that contains
+        learning rate of wide and deep parts.
+    lr_decay : bool, default: False
+        Whether to use learning rate decay.
+    epsilon : float, default: 1e-5
+        A small constant added to the denominator to improve numerical stability in
+        Adam optimizer.
+        According to the `official comment <https://github.com/tensorflow/tensorflow/blob/v1.15.0/tensorflow/python/training/adam.py#L64>`_,
+        default value of `1e-8` for `epsilon` is generally not good, so here we choose `1e-5`.
+        Users can try tuning this hyperparameter if the training is unstable.
+    reg : float or None, default: None
+        Regularization parameter, must be non-negative or None.
+    batch_size : int, default: 256
+        Batch size for training.
+    num_neg : int, default: 1
+        Number of negative samples for each positive sample, only used in `ranking` task.
+    use_bn : bool, default: True
+        Whether to use batch normalization.
+    dropout_rate : float or None, default: None
+        Probability of an element to be zeroed. If it is None, dropout is not used.
+    hidden_units : int or list or tuple, default: (128, 64, 32)
+        Number of layers and corresponding layer size in MLP.
+
+        .. versionchanged:: 1.0.0
+           Accept type of ``int``, ``list`` or ``tuple``, instead of ``str``.
+
+    multi_sparse_combiner : {'normal', 'mean', 'sum', 'sqrtn'}, default: 'sqrtn'
+        Options for combining `multi_sparse` features.
+    seed : int, default: 42
+        Random seed.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+    tf_sess_config : dict or None, default: None
+        Optional TensorFlow session config, see `ConfigProto options
+        <https://github.com/tensorflow/tensorflow/blob/v2.10.0/tensorflow/core/protobuf/config.proto#L431>`_.
+
+    Notes
+    -----
+    According to the original paper, the Wide part uses FTRL with L1 regularization
+    as the optimizer, so we'll also adopt it here. Note this may not be suitable for
+    your specific task.
+
+    References
+    ----------
+    *Heng-Tze Cheng et al.* `Wide & Deep Learning for Recommender Systems
+    <https://arxiv.org/pdf/1606.07792.pdf>`_.
+
     """
 
     user_variables = ["wide_user_feat", "deep_user_feat"]

@@ -1,3 +1,4 @@
+"""Embed model base class."""
 import abc
 import os
 from operator import itemgetter
@@ -21,6 +22,22 @@ from .base import Base
 
 
 class EmbedBase(Base):
+    """Base class for embed models.
+
+    Models that can generate user and item embeddings.
+
+    Parameters
+    ----------
+    task : {'rating', 'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : `DataInfo` object
+        Object that contains useful information for training and inference.
+    embed_size: int
+        Vector size of embeddings.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+    """
+
     def __init__(self, task, data_info, embed_size, lower_upper_bound=None):
         super().__init__(task, data_info, lower_upper_bound)
         self.user_embed = None
@@ -62,6 +79,34 @@ class EmbedBase(Base):
         eval_batch_size=8192,
         eval_user_num=None,
     ):
+        """Fit embed model on the training data.
+
+        Parameters
+        ----------
+        train_data : `TransformedSet` object
+            Data object used for training.
+        verbose : int, default: 1
+            Print verbosity. If `eval_data` is provided, setting it to higher than 1
+            will print evaluation metrics during training.
+        shuffle : bool, default: True
+            Whether to shuffle the training data.
+        eval_data : `TransformedSet` object, default: None
+            Data object used for evaluating.
+        metrics : list or None, default: None
+            List of metrics for evaluating.
+        k : int, default: 10
+            Parameter of metrics, e.g. recall at k, ndcg at k
+        eval_batch_size : int, default: 8192
+            Batch size for evaluating.
+        eval_user_num : int or None, default: None
+            Number of users for evaluating. Setting it to a positive number will sample
+            users randomly from eval data.
+
+        Raises
+        ------
+        RuntimeError
+            If :py:func:`fit` is called from a loaded model(:py:func:`load`).
+        """
         self.check_attribute(eval_data, k)
         self.show_start_time()
         if not self.model_built:
@@ -93,6 +138,30 @@ class EmbedBase(Base):
         ).flatten()
 
     def predict(self, user, item, cold_start="average", inner_id=False):
+        """Make prediction(s) on given user(s) and item(s).
+
+        Parameters
+        ----------
+        user : int or str or array_like
+            User id or batch of user ids.
+        item : int or str or array_like
+            Item id or batch of item ids.
+        cold_start : {'popular', 'average'}, default: 'average'
+            Cold start strategy.
+
+            - 'popular' will sample from popular items.
+            - 'average' will use the average of all the user/item embeddings as the
+              representation of the cold-start user/item.
+
+        inner_id : bool, default: False
+            Whether to use inner_id defined in `libreco`. For library users inner_id
+            may never be used.
+
+        Returns
+        -------
+        prediction : float or numpy.ndarray
+            Predicted scores for each user-item pair.
+        """
         return predict_from_embedding(self, user, item, cold_start, inner_id)
 
     def recommend_user(
@@ -104,6 +173,35 @@ class EmbedBase(Base):
         filter_consumed=True,
         random_rec=False,
     ):
+        """Recommend a list of items for given user(s).
+
+        Parameters
+        ----------
+        user : int or str or array_like
+            User id or batch of user ids to recommend.
+        n_rec : int
+            Number of recommendations to return.
+        cold_start : {'popular', 'average'}, default: 'average'
+            Cold start strategy.
+
+            - 'popular' will sample from popular items.
+            - 'average' will use the average of all the user/item embeddings as the
+              representation of the cold-start user/item.
+
+        inner_id : bool, default: False
+            Whether to use inner_id defined in `libreco`. For library users inner_id
+            may never be used.
+        filter_consumed : bool, default: True
+            Whether to filter out items that a user has previously consumed.
+        random_rec : bool, default: False
+            Whether to choose items for recommendation based on their prediction scores.
+
+        Returns
+        -------
+        recommendation : dict of {Union[int, str, array_like] : numpy.ndarray}
+            Recommendation result with user ids as keys
+            and array_like recommended items as values.
+        """
         result_recs = dict()
         user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
         if unknown_users:
@@ -146,6 +244,22 @@ class EmbedBase(Base):
                 setattr(self, v_name, new_embed)
 
     def save(self, path, model_name, inference_only=False, **kwargs):
+        """Save embed model for inference or retraining.
+
+        Parameters
+        ----------
+        path : str
+            File folder path to save model.
+        model_name : str
+            Name of the saved model file.
+        inference_only : bool, default: False
+            Whether to save model only for inference. If it is True, only embeddings
+            will be saved. Otherwise, model variables will be saved.
+
+        See Also
+        --------
+        load
+        """
         if not os.path.isdir(path):
             print(f"file folder {path} doesn't exists, creating a new one...")
             os.makedirs(path)
@@ -165,6 +279,26 @@ class EmbedBase(Base):
 
     @classmethod
     def load(cls, path, model_name, data_info, **kwargs):
+        """Load saved embed model for inference.
+
+        Parameters
+        ----------
+        path : str
+            File folder path to save model.
+        model_name : str
+            Name of the saved model file.
+        data_info : `DataInfo` object
+            Object that contains some useful information.
+
+        Returns
+        -------
+        model : type(cls)
+            Loaded embed model.
+
+        See Also
+        --------
+        save
+        """
         variable_path = os.path.join(path, f"{model_name}.npz")
         variables = np.load(variable_path)
         hparams = load_params(path, data_info, model_name)
@@ -186,6 +320,25 @@ class EmbedBase(Base):
         return self.data_info.item2id[item]
 
     def get_user_embedding(self, user=None):
+        """Get user embedding(s) from the model.
+
+        Parameters
+        ----------
+        user : int or str or None
+            Query user id. If it is None, all user embeddings will be returned.
+
+        Returns
+        -------
+        user_embedding : numpy.ndarray
+            Returned user embeddings.
+
+        Raises
+        ------
+        ValueError
+            If the user does not appear in the training data.
+        AssertionError
+            If the model has not been trained.
+        """
         assert (
             self.user_embed is not None
         ), "call `model.fit()` before getting user embeddings"
@@ -195,6 +348,25 @@ class EmbedBase(Base):
         return self.user_embed[user_id, : self.embed_size]
 
     def get_item_embedding(self, item=None):
+        """Get item embedding(s) from the model.
+
+        Parameters
+        ----------
+        item : int or str or None
+            Query item id. If it is None, all item embeddings will be returned.
+
+        Returns
+        -------
+        item_embedding : numpy.ndarray
+            Returned item embeddings.
+
+        Raises
+        ------
+        ValueError
+            If the item does not appear in the training data.
+        AssertionError
+            If the model has not been trained.
+        """
         assert (
             self.item_embed is not None
         ), "call `model.fit()` before getting item embeddings"
@@ -206,6 +378,33 @@ class EmbedBase(Base):
     def init_knn(
         self, approximate, sim_type, M=100, ef_construction=200, ef_search=200
     ):
+        """Initialize k-nearest-search model.
+
+        Parameters
+        ----------
+        approximate : bool
+            Whether to use approximate nearest neighbor search.
+            If it is True, `nmslib <https://github.com/nmslib/nmslib>`_ must be installed.
+            The `HNSW` method in `nmslib` is used.
+        sim_type : {'cosine', 'inner-product'}
+            Similarity space type.
+        M : int, default: 100
+            Parameter in `HNSW`, refer to `nmslib doc
+            <https://github.com/nmslib/nmslib/blob/master/manual/methods.md>`_.
+        ef_construction : int, default: 200
+            Parameter in `HNSW`, refer to `nmslib doc
+            <https://github.com/nmslib/nmslib/blob/master/manual/methods.md>`_.
+        ef_search : int, default: 200
+            Parameter in `HNSW`, refer to `nmslib doc
+            <https://github.com/nmslib/nmslib/blob/master/manual/methods.md>`_.
+
+        Raises
+        ------
+        ValueError
+            If sim_type is not one of ('cosine', 'inner-product').
+        ModuleNotFoundError
+            If `approximate=True` and `nmslib` is not installed.
+        """
         if sim_type == "cosine":
             space = "cosinesimil"
         elif sim_type == "inner-product":
@@ -251,6 +450,20 @@ class EmbedBase(Base):
         self.sim_type = sim_type
 
     def search_knn_users(self, user, k):
+        """Search most similar k users.
+
+        Parameters
+        ----------
+        user : int or str
+            Query user id.
+        k : int
+            Number of similar users.
+
+        Returns
+        -------
+        similar users : list
+            A list of k similar users.
+        """
         query = self.get_user_embedding(user)
         if self.approximate:
             ids, _ = self.user_index.knnQuery(query, k)
@@ -267,6 +480,20 @@ class EmbedBase(Base):
         return [self.data_info.id2user[i[0]] for i in sorted_result]
 
     def search_knn_items(self, item, k):
+        """Search most similar k items.
+
+        Parameters
+        ----------
+        item : int or str
+            Query item id.
+        k : int
+            Number of similar items.
+
+        Returns
+        -------
+        similar items : list
+            A list of k similar items.
+        """
         query = self.get_item_embedding(item)
         if self.approximate:
             ids, _ = self.item_index.knnQuery(query, k)

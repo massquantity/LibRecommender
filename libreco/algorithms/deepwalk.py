@@ -1,11 +1,4 @@
-"""
-
-Reference: Bryan Perozzi et al. "DeepWalk: Online Learning of Social Representations"
-           (https://arxiv.org/pdf/1403.6652.pdf)
-
-author: massquantity
-
-"""
+"""Implementation of DeepWalk."""
 import random
 from collections import defaultdict
 
@@ -17,6 +10,42 @@ from ..bases import GensimBase
 
 
 class DeepWalk(GensimBase):
+    """*DeepWalk* algorithm.
+
+    .. WARNING::
+        + DeepWalk can only use in ``ranking`` task.
+
+    Parameters
+    ----------
+    task : {'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : `DataInfo` object
+        Object that contains useful information for training and inference.
+    embed_size: int, default: 16
+        Vector size of embeddings.
+    norm_embed : bool, default: False
+        Whether to normalize output embeddings.
+    n_walks : int, default: 10
+        Number of walks for every item.
+    walk_length : int, default: 10
+        Length of each walk.
+    window_size : int, default: 5
+        Maximum item distance within a sequence during training.
+    n_epochs: int, default: 10
+        Number of epochs for training.
+    n_threads : int, default: 0
+        Number of threads to use, `0` will use all cores.
+    seed : int, default: 42
+        Random seed.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+
+    References
+    ----------
+    *Bryan Perozzi et al.* `DeepWalk: Online Learning of Social Representations
+    <https://arxiv.org/pdf/1403.6652.pdf>`_.
+    """
+
     def __init__(
         self,
         task,
@@ -56,7 +85,7 @@ class DeepWalk(GensimBase):
 
     def get_data(self):
         graph = self._build_graph()
-        return ItemCorpus(graph, self.n_items, self.n_walks, self.walk_length)
+        return _ItemCorpus(graph, self.n_items, self.n_walks, self.walk_length)
 
     def build_model(self):
         model = Word2Vec(
@@ -73,7 +102,7 @@ class DeepWalk(GensimBase):
         return model
 
 
-class ItemCorpus:
+class _ItemCorpus:
     def __init__(self, graph, n_items, n_walks, walk_length):
         self.graph = graph
         self.n_items = n_items
