@@ -3,6 +3,8 @@ import inspect
 import json
 import os
 from collections import namedtuple
+from dataclasses import dataclass
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -11,14 +13,90 @@ from numpy.random import default_rng
 from ..feature import check_oov, compute_sparse_feat_indices, interaction_consumed
 
 Feature = namedtuple("Feature", ["name", "index"])
+
 EmptyFeature = Feature(name=[], index=[])
 
-MultiSparseInfo = namedtuple(
-    "MultiSparseInfo", ["field_offset", "field_len", "feat_oov"]
-)
+
+# noinspection PyUnresolvedReferences
+@dataclass
+class MultiSparseInfo:
+    """:class:`dataclass` object for storing Multi-sparse features information.
+
+    A group of multi-sparse features are considered a "field".
+    e.g. ["genre1", "genre2", "genre3"] form a field "genre".
+    So this object contains fields' offset, field's length and fields' oov.
+    Since features belong to the same field share one oov.
+
+    Attributes
+    ----------
+    field_offset : list of int
+        All multi-sparse fields' offset in all expanded sparse features.
+    field_len: list of int
+        All multi-sparse fields' sizes.
+    feat_oov: numpy.ndarray
+        All multi-sparse fields' oov.
+    """
+
+    __slots__ = ("field_offset", "field_len", "feat_oov")
+
+    field_offset: Iterable[int]
+    field_len: Iterable[int]
+    feat_oov: np.ndarray
 
 
-class DataInfo(object):
+class DataInfo:
+    """Object for storing and updating indices and features information.
+
+    Parameters
+    ----------
+    col_name_mapping : dict of {dict : int} or None, default: None
+        Column name to index mapping, which has the format: ``{column_family_name: {column_name: index}}``.
+        If no such family, the default format would be: {column_family_name: {[]: []}
+    interaction_data : pandas.DataFrame or None, default: None
+        Data contains ``user``, ``item`` and ``label`` columns
+    user_sparse_unique : numpy.ndarray or None, default: None
+        Unique sparse features for all users in train data.
+    user_dense_unique : numpy.ndarray or None, default: None
+        Unique dense features for all users in train data.
+    item_sparse_unique : numpy.ndarray or None, default: None
+        Unique sparse features for all items in train data.
+    item_dense_unique : numpy.ndarray or None, default: None
+        Unique dense features for all items in train data.
+    user_indices : numpy.ndarray or None, default: None
+        Mapped inner user indices from train data.
+    item_indices : numpy.ndarray or None, default: None
+        Mapped inner item indices from train data.
+    user_unique_vals : numpy.ndarray or None, default: None
+        All the unique users in train data.
+    item_unique_vals : numpy.ndarray or None, default: None
+        All the unique items in train data.
+    sparse_unique_vals : dict of {str : numpy.ndarray} or None, default: None
+        All sparse features' unique values.
+    sparse_offset : numpy.ndarray or None, default: None
+        Offset for each sparse feature in all sparse values. Often used in the ``embedding`` layer.
+    sparse_oov : numpy.ndarray or None, default: None
+        Out-of-vocabulary place for each sparse feature. Often used in cold-start.
+    multi_sparse_unique_vals : dict of {str : numpy.ndarray} or None, default: None
+        All multi-sparse features' unique values.
+    multi_sparse_combine_info : MultiSparseInfo or None, default: None
+        Multi-sparse field information.
+
+    Attributes
+    ----------
+    col_name_mapping : dict of {dict : int} or None
+        See Parameters
+    user_consumed : dict of {int, list}
+        Every users' consumed items in train data.
+    item_consumed : dict of {int, list}
+        Every items' consumed users in train data.
+    popular_items : list
+        A number of popular items in train data. Often used in cold-start.
+
+    See Also
+    --------
+    MultiSparseInfo
+    """
+
     def __init__(
         self,
         col_name_mapping=None,
