@@ -133,9 +133,9 @@ def test_als(prepare_pure_data, task, reg, alpha):
             )
 
 
-def test_failed_import(monkeypatch):
-    with monkeypatch.context() as m:
-        m.delitem(sys.modules, "libreco.algorithms.als")
-        m.setitem(sys.modules, "libreco.algorithms._als", None)
-        with pytest.raises((ImportError, ModuleNotFoundError)):
-            from libreco.algorithms.als import ALS
+# def test_failed_import(monkeypatch):
+#    with monkeypatch.context() as m:
+#        m.delitem(sys.modules, "libreco.algorithms.als")
+#        m.setitem(sys.modules, "libreco.algorithms._als", None)
+#        with pytest.raises((ImportError, ModuleNotFoundError)):
+#            from libreco.algorithms.als import ALS

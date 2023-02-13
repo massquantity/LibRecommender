@@ -5,20 +5,8 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import norm as spnorm
 
-try:
-    from ._similarities import (
-        forward_cosine,
-        forward_jaccard,
-        forward_pearson,
-        invert_cosine,
-        invert_jaccard,
-        invert_pearson,
-    )
-except (ImportError, ModuleNotFoundError):
-    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-    logging.basicConfig(format=LOG_FORMAT)
-    logging.warning("Similarity cython version is not available")
-    raise
+LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+logging.basicConfig(format=LOG_FORMAT)
 
 
 def _choose_blocks(num, b_size=None):
@@ -51,6 +39,12 @@ def cosine_sim(
     min_common=1,
     mode="invert",
 ):
+    try:
+        from ._similarities import forward_cosine, invert_cosine
+    except (ImportError, ModuleNotFoundError):
+        logging.warning("Similarity cython `cosine` is not available")
+        raise
+
     block_size, block_num = _choose_blocks(num_x, block_size)
     n_x, n_y = num_x, num_y
 
@@ -102,6 +96,12 @@ def pearson_sim(
     min_common=1,
     mode="invert",
 ):
+    try:
+        from ._similarities import forward_pearson, invert_pearson
+    except (ImportError, ModuleNotFoundError):
+        logging.warning("Similarity cython `pearson` is not available")
+        raise
+
     block_size, block_num = _choose_blocks(num_x, block_size)
     n_x, n_y = num_x, num_y
 
@@ -156,6 +156,12 @@ def jaccard_sim(
     min_common=1,
     mode="invert",
 ):
+    try:
+        from ._similarities import forward_jaccard, invert_jaccard
+    except (ImportError, ModuleNotFoundError):
+        logging.warning("Similarity cython `jaccard` is not available")
+        raise
+
     block_size, block_num = _choose_blocks(num_x, block_size)
     n_x, n_y = num_x, num_y
 

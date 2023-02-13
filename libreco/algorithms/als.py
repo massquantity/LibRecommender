@@ -12,13 +12,8 @@ from ..utils.initializers import truncated_normal
 from ..utils.misc import time_block
 from ..utils.save_load import save_default_recs, save_params
 
-try:
-    from ._als import als_update
-except ImportError:
-    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-    logging.basicConfig(format=LOG_FORMAT)
-    logging.warning("Als cython version is not available")
-    raise
+LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class ALS(EmbedBase):
@@ -128,6 +123,12 @@ class ALS(EmbedBase):
             Number of users for evaluating. Setting it to a positive number will sample
             users randomly from eval data.
         """
+        try:
+            from ._als import als_update
+        except (ImportError, ModuleNotFoundError):
+            logging.warning("Als cython version is not available")
+            raise
+
         self.check_attribute(eval_data, k)
         self.show_start_time()
         self.build_model()

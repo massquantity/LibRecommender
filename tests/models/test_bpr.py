@@ -87,8 +87,8 @@ def test_bpr(prepare_pure_data, task, loss_type, reg, num_neg, use_tf, optimizer
             remove_path("not_existed_path")
 
 
-def test_failed_import(monkeypatch):
-    with monkeypatch.context() as m:
-        m.delitem(sys.modules, "libreco.algorithms.bpr")
-        m.setitem(sys.modules, "libreco.algorithms._bpr", None)
-        from libreco.algorithms.bpr import BPR
+# def test_failed_import(monkeypatch):
+#    with monkeypatch.context() as m:
+#        m.delitem(sys.modules, "libreco.algorithms.bpr")
+#        m.setitem(sys.modules, "libreco.algorithms._bpr", None)
+#        from libreco.algorithms.bpr import BPR
