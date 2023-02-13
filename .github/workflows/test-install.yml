@@ -28,13 +28,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip wheel setuptools
           python -m pip install -r requirements.txt
-          python -m pip install nmslib
-          python -m pip install dgl -f https://data.dgl.ai/wheels/repo.html
           python -m pip install -e .
-
-      - name: Install dataclasses for python3.6
-        run: python -m pip install dataclasses
-        if: matrix.python-version == '3.6'
 
       - name: Test install
         run: python -c "import dgl; import nmslib; import libreco; print(libreco.__version__)"

@@ -24,11 +24,11 @@ with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
 
 
 # get the dependencies and installs
-with open(os.path.join(here, "requirements.txt"), encoding="utf-8") as f:
-    all_reqs = f.read().split("\n")
+# with open(os.path.join(here, "requirements.txt"), encoding="utf-8") as f:
+#    all_reqs = f.read().split("\n")
 
 
-install_requires = [x.strip() for x in all_reqs]
+# install_requires = [x.strip() for x in all_reqs]
 
 
 def extract_gcc_binaries():
@@ -147,9 +147,8 @@ setup(
         "Data Mining",
     ],
     packages=find_packages(exclude=["test*", "examples"]),
-    setup_requires=["Cython>=0.29"],
+    setup_requires=["Cython>=0.29,<3"],
     include_package_data=True,
     ext_modules=cythonize(extensions),
     cmdclass={"build_ext": build_ext},
-    install_requires=install_requires,
 )

@@ -34,23 +34,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install -U pip wheel setuptools
-          python -m pip install -r requirements.txt
-          python -m pip install nmslib
-          python -m pip install dgl -f https://data.dgl.ai/wheels/repo.html
+          python -m pip install -r requirements-ci.txt
           python -m pip install -e .
-
-      - name: Install dataclasses for python3.6
-        run: python -m pip install dataclasses
-        if: matrix.python-version == '3.6'
 
       - name: Lint with flake8
         run: |
-          python -m pip install flake8
           flake8 libreco/ libserving/ tests/ examples/
 
       - name: Lint with ruff
         run: |
-          python -m pip install ruff
           ruff --format=github libreco/ libserving/ tests/ examples/
         if: matrix.python-version != '3.6'
 
@@ -73,7 +65,6 @@ jobs:
       - name: Test with pytest and coverage
         run: |
           python -m pip install -r requirements-serving.txt
-          python -m pip install pytest coverage
           bash tests/serving/setup_coverage.sh
           coverage --version && coverage erase
           coverage run -m pytest tests/

@@ -17,7 +17,7 @@ exclude_lines =
     raise ValueError
     raise SanicException.*
     except .*redis.*
-    except (ImportError, ModuleNotFoundError):
+    except \(ImportError, ModuleNotFoundError\):
     except ValidationError.
     if not path:
     if __name__ == .__main__.:
