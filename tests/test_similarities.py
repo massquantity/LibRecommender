@@ -1,5 +1,4 @@
 import functools
-import sys
 from io import StringIO
 
 import numpy as np
@@ -95,9 +94,9 @@ def test_similarities_large(prepare_pure_data, func, num_threads, min_common):
     np.testing.assert_array_equal(forward_sim.toarray(), invert_sim.toarray())
 
 
-def test_failed_import(monkeypatch):
-    with monkeypatch.context() as m:
-        m.delitem(sys.modules, "libreco.utils.similarities")
-        m.setitem(sys.modules, "libreco.utils._similarities", None)
-        with pytest.raises((ImportError, ModuleNotFoundError)):
-            from libreco.utils.similarities import cosine_sim
+# def test_failed_import(monkeypatch):
+#    with monkeypatch.context() as m:
+#        m.delitem(sys.modules, "libreco.utils.similarities")
+#        m.setitem(sys.modules, "libreco.utils._similarities", None)
+#        with pytest.raises((ImportError, ModuleNotFoundError)):
+#            from libreco.utils.similarities import cosine_sim

@@ -1,11 +1,4 @@
-"""
-
-References: Steffen Rendle et al. "BPR: Bayesian Personalized Ranking from Implicit Feedback"
-            (https://arxiv.org/ftp/arxiv/papers/1205/1205.2618.pdf)
-
-author: massquantity
-
-"""
+"""Implementation of Bayesian Personalized Ranking."""
 import logging
 from functools import partial
 
@@ -19,12 +12,8 @@ from ..training import get_trainer
 from ..utils.initializers import truncated_normal
 from ..utils.misc import time_block
 
-try:
-    from ._bpr import bpr_update
-except (ImportError, ModuleNotFoundError):
-    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-    logging.basicConfig(format=LOG_FORMAT)
-    logging.warning("BPR cython version is not available")
+LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
+logging.basicConfig(format=LOG_FORMAT)
 
 
 class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
@@ -277,6 +266,12 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         eval_batch_size=None,
         eval_user_num=None,
     ):
+        try:
+            from ._bpr import bpr_update
+        except (ImportError, ModuleNotFoundError):
+            logging.warning("BPR cython version is not available")
+            raise
+
         if self.optimizer == "sgd":
             trainer = partial(bpr_update)
 
