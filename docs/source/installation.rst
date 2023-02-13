@@ -27,6 +27,12 @@ Dependencies
     for ``training`` and  `libserving <https://github.com/massquantity/LibRecommender/tree/master/libserving>`_
     for ``serving``. If one only wants to train a model, dependencies for `libserving` are not needed.
 
+.. Attention::
+
+    The following dependencies will **NOT** be installed along with LibRecommender to
+    avoid messing up your local dependencies. Make sure your dependencies meet the version requirements.
+
+
 Dependencies for libreco:
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -43,7 +49,9 @@ Dependencies for libreco:
 + `nmslib <https://github.com/nmslib/nmslib>`_ (optional, see :doc:`user_guide/embedding`)
 + `DGL <https://github.com/dmlc/dgl>`_ (optional, see :ref:`Implementation Details <pinsage>`)
 
-If you are using Python 3.6, you also need to install `dataclasses <https://github.com/ericvsmith/dataclasses>`_, which was first introduced in Python 3.7.
+.. NOTE::
+
+    If you are using Python 3.6, you also need to install `dataclasses <https://github.com/ericvsmith/dataclasses>`_, which was first introduced in Python 3.7.
 
 **Known issue**: Sometimes one may encounter errors like
 ``ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject.``
