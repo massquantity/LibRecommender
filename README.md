@@ -159,7 +159,7 @@ To build from source, you 'll first need [Cython](<https://cython.org/>) and [Nu
 $ # pip install numpy cython
 $ git clone https://github.com/massquantity/LibRecommender.git
 $ cd LibRecommender
-$ python setup.py install
+$ pip install .
 ```
 
 

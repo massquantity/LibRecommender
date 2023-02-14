@@ -1,4 +1,3 @@
-from codecs import open
 import glob
 import logging
 import os
@@ -6,29 +5,9 @@ import platform
 import sys
 
 import numpy as np
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, Extension
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
-
-
-NAME = "LibRecommender"
-VERSION = "0.12.6"
-
-
-here = os.path.abspath(os.path.dirname(__file__))
-
-
-# Get the long description from README.md
-with open(os.path.join(here, "README.md"), encoding="utf-8") as f:
-    long_description = f.read()
-
-
-# get the dependencies and installs
-# with open(os.path.join(here, "requirements.txt"), encoding="utf-8") as f:
-#    all_reqs = f.read().split("\n")
-
-
-# install_requires = [x.strip() for x in all_reqs]
 
 
 def extract_gcc_binaries():
@@ -113,42 +92,7 @@ extensions = [
 
 
 setup(
-    name=NAME,
-    author="massquantity",
-    author_email="jinxin_madie@163.com",
-    description=(
-        "A collaborative-filtering and content-based recommender system "
-        "for both explicit and implicit datasets."
-    ),
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    version=VERSION,
-    url="https://github.com/massquantity/LibRecommender",
-    license="MIT",
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "Intended Audience :: Education",
-        "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Cython",
-    ],
-    keywords=[
-        "Matrix Factorization",
-        "Collaborative Filtering",
-        "Content-Based",
-        "Recommender System",
-        "Deep Learning",
-        "Data Mining",
-    ],
-    packages=find_packages(exclude=["test*", "examples"]),
-    setup_requires=["Cython>=0.29,<3"],
-    include_package_data=True,
+    # packages=find_packages(exclude=["test*", "examples"]),
     ext_modules=cythonize(extensions),
     cmdclass={"build_ext": build_ext},
 )
