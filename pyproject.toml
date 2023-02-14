@@ -1,12 +1,55 @@
 [build-system]
 requires = [
-    "setuptools>=42",
+    "setuptools>=54.0.0",
     "wheel",
     "Cython>=0.29.0,<3",
     "numpy>=1.19.5",
     "scipy>=1.2.1",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "LibRecommender"
+dynamic = ["version"]
+description = "Versatile end-to-end recommender system."
+authors = [
+    { name = "massquantity", email = "jinxin_madie@163.com" },
+]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.6"
+keywords = ["Collaborative Filtering", "Recommender System"]
+classifiers= [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Cython",
+]
+dependencies = [
+    "gensim >= 4.0.0",
+    "tqdm",
+]
+
+[project.urls]
+repository = "https://github.com/massquantity/LibRecommender"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "libreco.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["libreco*", "libserving*"]
+namespaces = false
 
 [tool.black]
 line-length = 88
@@ -22,6 +65,11 @@ known_third_party = "pytest"
 line_length = 88
 multi_line_output = 3
 profile = "black"
+
+[tool.pydocstyle]
+add-ignore = ["D102"]
+add-select = ["D212", "D402", "D415", "D416", "D417"]
+convention = "numpy"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
