@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=61.0.0",
+    "setuptools>=54.0.0",
     "wheel",
     "Cython>=0.29.0,<3",
     "numpy>=1.19.5",
@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "LibRecommender"
-version = "0.12.6"
+dynamic = ["version"]
 description = "Versatile end-to-end recommender system."
 authors = [
     { name = "massquantity", email = "jinxin_madie@163.com" },
@@ -18,7 +18,6 @@ authors = [
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.6"
-# dynamic = ["readme", "version"]
 keywords = ["Collaborative Filtering", "Recommender System"]
 classifiers= [
     "Development Status :: 4 - Beta",
@@ -43,6 +42,9 @@ repository = "https://github.com/massquantity/LibRecommender"
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "libreco.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["."]

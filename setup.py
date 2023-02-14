@@ -5,9 +5,9 @@ import platform
 import sys
 
 import numpy as np
-from setuptools import setup, Extension
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
+from setuptools import Extension, find_packages, setup
 
 
 def extract_gcc_binaries():
@@ -92,7 +92,14 @@ extensions = [
 
 
 setup(
-    # packages=find_packages(exclude=["test*", "examples"]),
+    name="LibRecommender",
+    version="0.12.6",
+    packages=find_packages(
+        where=".",
+        include=["libreco*", "libserving*"],
+        exclude=["test*", "examples"],
+    ),
+    include_package_data=True,
     ext_modules=cythonize(extensions),
     cmdclass={"build_ext": build_ext},
 )
