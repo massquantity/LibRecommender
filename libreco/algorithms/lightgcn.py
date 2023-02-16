@@ -9,7 +9,7 @@ from .torch_modules import LightGCNModel
 class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
     """*LightGCN* algorithm.
 
-    .. WARNING::
+    .. CAUTION::
         LightGCN can only be used in ``ranking`` task.
 
     Parameters

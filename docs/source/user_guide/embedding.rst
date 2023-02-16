@@ -26,7 +26,7 @@ So one can fall back to numpy similarity calculation if nmslib is not available.
    >>> model.search_knn_users(user=1, k=3)
    >>> model.search_knn_items(item=2, k=3)
 
-Before searching, one should call :class:`~libreco.bases.EmbedBase.init_knn` to initialize the index.
+Before searching, one should call :func:`~libreco.bases.EmbedBase.init_knn` to initialize the index.
 Set ``approximate=True`` if you can use nmslib, otherwise set ``approximate=False``.
 The ``sim_type`` parameter should either be ``cosine`` or ``inner-product``.
 

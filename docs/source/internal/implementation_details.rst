@@ -88,13 +88,13 @@ But of course you can change to the value you want.
 
 .. code-block:: python3
 
-    >>> model = YouTubeRetrieval(
-            task,
-            data_info,
-            loss_type="sampled_softmax",  # or "nce"
-            num_sampled_per_batch=None,  # "None" will use batch_size, or can be set to 1, 1000, 9999 ...
-            sampler="uniform",
-        )
+    model = YouTubeRetrieval(
+        task,
+        data_info,
+        loss_type="sampled_softmax",  # or "nce"
+        num_sampled_per_batch=None,  # "None" will use batch_size, or can be set to 1, 1000, 9999 ...
+        sampler="uniform",
+    )
 
 
 RNN4Rec / GRU4Rec
@@ -125,16 +125,16 @@ also choose other losses by setting the ``loss_type`` parameter.
 
 .. code-block:: python3
 
-    >>> ngcf = NGCF(
-            "ranking",
-            data_info,
-            loss_type="cross_entropy",  # or "focal", "bpr", "max_margin"
-        )
-    >>> lightgcn = LightGCN(
-            "ranking",
-            data_info,
-            loss_type="bpr",
-        )
+    ngcf = NGCF(
+        "ranking",
+        data_info,
+        loss_type="cross_entropy",  # or "focal", "bpr", "max_margin"
+    )
+    lightgcn = LightGCN(
+        "ranking",
+        data_info,
+        loss_type="bpr",
+    )
 
 
 .. _pinsage:
@@ -152,6 +152,7 @@ The `paper <https://arxiv.org/pdf/1806.01973.pdf>`__ used max-margin loss on ite
 product score. We extend this setting in our implementation. In recommender system scenario
 this is called "i2i", and the other form is "u2i", which is also commonly used and combines
 user features and item features to compute scores. The parameter for controlling this is ``paradigm``.
+
 Max-margin loss belongs to pairwise loss, but we can also use other losses. In LibRecommender
 you can use ``cross_entropy``, ``focal``, ``bpr``, ``max_margin`` by setting the ``loss_type`` parameter.
 

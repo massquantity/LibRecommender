@@ -44,7 +44,7 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
         Node dropout probability. 0.0 means node dropout is not used.
     message_dropout : float, default: 0.0
         Message dropout probability. 0.0 means message dropout is not used.
-    hidden_units : int or list or tuple, default: (64, 64, 64)
+    hidden_units : int, list of int or tuple of (int,), default: (64, 64, 64)
         Number of layers and corresponding layer size in embedding propagation.
     margin : float, default: 1.0
         Margin used in `max_margin` loss.

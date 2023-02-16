@@ -183,7 +183,7 @@ def evaluate(
     ----------
     model : Base
         Model for evaluation.
-    data : pandas.DataFrame or TransformedSet
+    data : pandas.DataFrame or :class:`~libreco.data.TransformedSet`
         Data to evaluate.
     eval_batch_size : int, default: 8192
         Batch size used in evaluation.

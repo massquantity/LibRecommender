@@ -14,7 +14,7 @@ class PinSage(GraphSage, metaclass=ModelMeta, backend="torch"):
     .. NOTE::
         This algorithm is implemented in PyTorch.
 
-    .. WARNING::
+    .. CAUTION::
         PinSage can only be used in ``ranking`` task.
 
     .. versionadded:: 0.12.0

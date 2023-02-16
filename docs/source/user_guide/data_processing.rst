@@ -16,7 +16,7 @@ If you have only one data, you can split the data in following ways:
 
 .. SeeAlso::
 
-    `split_data_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/split_data_example.py>`_.
+    `split_data_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/split_data_example.py>`_
 
 .. CAUTION::
     **Some caveats about the data:**
@@ -48,7 +48,7 @@ In this case, negative sampling is needed to effectively train a model.
 
 By the way, some models such as ``BPR`` , ``YouTubeRetrieval``, ``YouTubeRanking``, ``Item2Vec``, ``DeepWalk``, ``LightGCN`` etc. ,
 can only be used for ``ranking`` tasks since they are specially designed for that.
-Errors will be raised if one use them for ``rating`` task.
+Errors might be raised if one use them for ``rating`` task.
 
 Negative Sampling
 -----------------
@@ -56,6 +56,7 @@ Negative Sampling
 For implicit data with only positive labels, negative sampling is typically used in model training.
 There are some special cases, such as ``UserCF``, ``ItemCF``, ``BPR``, ``YouTubeRetrieval``, ``RNN4Rec with bpr loss``,
 where these models do not need to do negative sampling during training.
+
 However, when evaluating these models using some metrics such as ``cross_entropy loss``, ``roc_auc``, ``pr_auc``,
 negative labels are indeed needed.
 
@@ -68,4 +69,9 @@ For other models, performing negative sampling on all the train, eval and test d
    >>> train_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2020)
    >>> test_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2222)
 
-In the future, we plan to remove this explicit negative sampling part before training. This requires encapsulating the sampling process into the batch training, so that users won't undertake the ambiguity above. Some other sampling methods apart from ``random`` will also be added.
+.. admonition:: TODO
+
+    In the future, we plan to remove this explicit negative sampling part before training.
+    This requires encapsulating the sampling process into the batch training,
+    so that users won't undertake the ambiguity above. Some other sampling methods
+    apart from ``random`` will also be added.

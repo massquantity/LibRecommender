@@ -43,11 +43,12 @@ the APIs remain the same, and you can just refer to the examples above.
 Loss
 ----
 
-LibRecommender provides some options on loss type for ``ranking`` task.
+LibRecommender provides some options on loss type for ``ranking`` :ref:`task <Task>`.
 The default loss type for ``ranking`` is cross entropy loss. Since version ``0.10.0``,
 focal loss was added into the library. First introduced in `Lin et al., 2018 <https://arxiv.org/pdf/1708.02002.pdf>`_,
 focal loss down-weights well-classified examples and focuses on hard examples to get better
 training performance, and here is the `implementation <https://github.com/massquantity/LibRecommender/blob/master/libreco/tfops/loss.py#L34>`_.
+
 In order to choose which loss to use, simply set the ``loss_type`` parameter:
 
 .. code-block:: python3
@@ -55,13 +56,19 @@ In order to choose which loss to use, simply set the ``loss_type`` parameter:
    >>> model = Caser(task="ranking", loss_type="cross_entropy", ...)
    >>> model = Caser(task="ranking", loss_type="focal", ...)
 
-There are some special cases. Some algorithms are hard to assign explicit loss type,
-including ``UserCF``, ``ItemCF``, ``ALS``, ``Item2Vec``, ``DeepWalk``,
-so they don't have ``loss_type`` parameter. As its name suggests, ``BPR`` can only use ``bpr`` loss.
+There are some special cases:
 
-The ``YouTubeRetrieval`` algorithm is also different, its ``loss_type`` is either
-``sampled_softmax`` or ``nce``. Finally, with ``RNN4Rec`` algorithm, one can choose three ``loss_type``,
-i.e. ``cross_entropy``, ``focal``, ``bpr``.
++ Some algorithms are hard to assign explicit loss type,
+  including ``UserCF``, ``ItemCF``, ``ALS``, ``Item2Vec``, ``DeepWalk``,
+  so they don't have ``loss_type`` parameter.
+
++ As its name suggests, ``BPR`` can only use ``bpr`` loss.
+
++ The ``YouTubeRetrieval`` algorithm is also different, its ``loss_type`` is either
+  ``sampled_softmax`` or ``nce``.
+
++ Finally, with ``RNN4Rec`` algorithm, one can choose three ``loss_type``,
+  i.e. ``cross_entropy``, ``focal``, ``bpr``.
 
 We are aware that these loss restrictions are hard to remember at once, so this leaves room
-for further improvement.
+for further improvements:)
