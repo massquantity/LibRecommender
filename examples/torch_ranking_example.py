@@ -1,7 +1,6 @@
 import time
 
 import pandas as pd
-import torch
 
 from libreco.data import split_by_ratio_chrono, DatasetPure, DatasetFeat
 from libreco.algorithms import (
@@ -43,6 +42,7 @@ if __name__ == "__main__":
         "ndcg",
     ]
 
+    print("\n", "=" * 30, "NGCF", "=" * 30)
     ngcf = NGCF(
         "ranking",
         data_info,
@@ -50,14 +50,14 @@ if __name__ == "__main__":
         embed_size=16,
         n_epochs=2,
         lr=3e-4,
-        lr_decay=None,
+        lr_decay=False,
         reg=0.0,
         batch_size=2048,
         num_neg=1,
         node_dropout=0.0,
         message_dropout=0.0,
-        hidden_units="64,64,64",
-        device=torch.device("cpu"),
+        hidden_units=(64, 64, 64),
+        device="cuda",
     )
     ngcf.fit(
         train_data,
@@ -70,6 +70,7 @@ if __name__ == "__main__":
     print("recommendation: ", ngcf.recommend_user(user=1, n_rec=7))
     print("batch recommendation: ", ngcf.recommend_user(user=[1, 2, 3], n_rec=7))
 
+    print("\n", "=" * 30, "LightGCN", "=" * 30)
     lightgcn = LightGCN(
         "ranking",
         data_info,
@@ -77,13 +78,13 @@ if __name__ == "__main__":
         embed_size=16,
         n_epochs=2,
         lr=3e-4,
-        lr_decay=None,
+        lr_decay=False,
         reg=0.0,
         batch_size=2048,
         num_neg=1,
         dropout_rate=0.0,
         n_layers=3,
-        device=torch.device("cpu"),
+        device="cuda",
     )
     lightgcn.fit(
         train_data,
@@ -116,6 +117,7 @@ if __name__ == "__main__":
         data_info, item_gen_mode="random", num_neg=1, seed=2222
     )
 
+    print("\n", "=" * 30, "GraphSage", "=" * 30)
     graphsage = GraphSage(
         "ranking",
         data_info,
@@ -150,6 +152,7 @@ if __name__ == "__main__":
     print("recommendation: ", graphsage.recommend_user(user=1, n_rec=7))
     print("batch recommendation: ", graphsage.recommend_user(user=[1, 2, 3], n_rec=7))
 
+    print("\n", "=" * 30, "GraphSageDGL", "=" * 30)
     graphsage_dgl = GraphSageDGL(
         "ranking",
         data_info,
@@ -185,6 +188,7 @@ if __name__ == "__main__":
     print("prediction: ", graphsage_dgl.predict(user=1, item=2333))
     print("recommendation: ", graphsage_dgl.recommend_user(user=1, n_rec=7))
 
+    print("\n", "=" * 30, "PinSage", "=" * 30)
     pinsage = PinSage(
         "ranking",
         data_info,
@@ -222,6 +226,7 @@ if __name__ == "__main__":
     print("recommendation: ", pinsage.recommend_user(user=1, n_rec=7))
     print("batch recommendation: ", pinsage.recommend_user(user=[1, 2, 3], n_rec=7))
 
+    print("\n", "=" * 30, "PinSageDGL", "=" * 30)
     pinsage_dgl = PinSageDGL(
         "ranking",
         data_info,

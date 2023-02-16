@@ -76,7 +76,7 @@ if __name__ == "__main__":
         num_neg=1,
         use_bn=True,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         tf_sess_config=None,
     )
     ncf.fit(
@@ -97,8 +97,8 @@ if __name__ == "__main__":
         embed_size=16,
         n_epochs=2,
         lr=0.001,
-        lr_decay=None,
-        hidden_units="16,16",
+        lr_decay=False,
+        hidden_units=(16, 16),
         reg=None,
         batch_size=256,
         num_neg=1,

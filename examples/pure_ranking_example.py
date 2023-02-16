@@ -107,7 +107,7 @@ if __name__ == "__main__":
         num_neg=1,
         use_bn=True,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         tf_sess_config=None,
     )
     ncf.fit(
@@ -153,14 +153,15 @@ if __name__ == "__main__":
         batch_size=256,
         num_neg=1,
         use_tf=True,
+        optimizer="adam",
+        num_threads=4,
     )
     bpr.fit(
         train_data,
         verbose=2,
-        num_threads=4,
+        shuffle=True,
         eval_data=eval_data,
         metrics=metrics,
-        optimizer="adam",
     )
 
     reset_state("RNN4Rec")
@@ -172,8 +173,8 @@ if __name__ == "__main__":
         embed_size=16,
         n_epochs=2,
         lr=0.001,
-        lr_decay=None,
-        hidden_units="16,16",
+        lr_decay=False,
+        hidden_units=(16, 16),
         reg=None,
         batch_size=2048,
         num_neg=1,
@@ -199,7 +200,7 @@ if __name__ == "__main__":
         embed_size=16,
         n_epochs=2,
         lr=1e-4,
-        lr_decay=None,
+        lr_decay=False,
         reg=None,
         batch_size=2048,
         num_neg=1,
@@ -228,7 +229,7 @@ if __name__ == "__main__":
         embed_size=16,
         n_epochs=2,
         lr=1e-4,
-        lr_decay=None,
+        lr_decay=False,
         reg=None,
         batch_size=2048,
         num_neg=1,

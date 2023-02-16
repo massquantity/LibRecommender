@@ -106,6 +106,7 @@ setup(
     license=metadata["license"]["text"],
     url=metadata["urls"]["repository"],
     long_description=readme,
+    long_description_content_type="text/markdown",
     classifiers=metadata["classifiers"],
     keywords=metadata["keywords"],
     packages=find_packages(

@@ -16,15 +16,18 @@
 
 ## Overview
 
-**LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation. The main features are:
+**LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation process. It contains a training ([libreco](https://github.com/massquantity/LibRecommender/tree/master/libreco)) and serving ([libserving](https://github.com/massquantity/LibRecommender/tree/master/libserving)) module to let users quickly train and deploy different kinds of recommendation models.
 
-+ Implemented a number of popular recommendation algorithms such as FM, DIN, LightGCN etc. See [full algorithm list](#references).
+**The main features are:**
+
++ Implements a number of popular recommendation algorithms such as FM, DIN, LightGCN etc. See [full algorithm list](#references).
 + A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features. New features can be added on the fly.
 + Low memory usage, automatically convert categorical and multi-value categorical features to sparse representation.
-+ Support training for both explicit and implicit datasets, and negative sampling can be used for implicit dataset.
-+ Provide end-to-end workflow, i.e. data handling / preprocessing -> model training -> evaluate -> serving.
++ Support training for both explicit and implicit datasets, as well as negative sampling on implicit data.
++ Provide end-to-end workflow, i.e. data handling / preprocessing -> model training -> evaluate -> save/load -> serving.
 + Support cold-start prediction and recommendation.
-+ Provide unified and friendly API for all algorithms. Easy to retrain model with new users/items.
++ Provide unified and friendly API for all algorithms. 
++ Easy to retrain model with new users/items from new data.
 
 
 
@@ -36,7 +39,7 @@
 import numpy as np
 import pandas as pd
 from libreco.data import random_split, DatasetPure
-from libreco.algorithms import SVDpp  # pure data, algorithm SVD++
+from libreco.algorithms import LightGCN  # pure data, algorithm LightGCN
 from libreco.evaluation import evaluate
 
 data = pd.read_csv("examples/sample_data/sample_movielens_rating.dat", sep="::",
@@ -48,28 +51,48 @@ train_data, eval_data, test_data = random_split(data, multi_ratios=[0.8, 0.1, 0.
 train_data, data_info = DatasetPure.build_trainset(train_data)
 eval_data = DatasetPure.build_evalset(eval_data)
 test_data = DatasetPure.build_testset(test_data)
-print(data_info)   # n_users: 5894, n_items: 3253, data sparsity: 0.4172 %
 
-svdpp = SVDpp(task="rating", data_info=data_info, embed_size=16, n_epochs=3, lr=0.001,
-              reg=None, batch_size=256)
-# monitor metrics on eval_data during training
-svdpp.fit(train_data, verbose=2, eval_data=eval_data, metrics=["rmse", "mae", "r2"])
+# sample negative items for each record
+train_data.build_negative_samples(data_info)
+eval_data.build_negative_samples(data_info)
+test_data.build_negative_samples(data_info)
+print(data_info)  # n_users: 5894, n_items: 3253, data sparsity: 0.4172 %
+
+lightgcn = LightGCN(
+    task="ranking",
+    data_info=data_info,
+    loss_type="bpr",
+    embed_size=16,
+    n_epochs=3,
+    lr=1e-3,
+    batch_size=2048,
+    num_neg=1,
+    device="cuda",
+)
+# monitor metrics on eval data during training
+lightgcn.fit(
+    train_data,
+    verbose=2,
+    eval_data=eval_data,
+    metrics=["loss", "roc_auc", "precision", "recall", "ndcg"],
+)
 
 # do final evaluation on test data
-print("evaluate_result: ", evaluate(model=svdpp, data=test_data,
-                                    metrics=["rmse", "mae"]))
+evaluate(
+    model=lightgcn,
+    data=test_data,
+    metrics=["loss", "roc_auc", "precision", "recall", "ndcg"],
+)
+
 # predict preference of user 2211 to item 110
-print("prediction: ", svdpp.predict(user=2211, item=110))
+lightgcn.predict(user=2211, item=110)
 # recommend 7 items for user 2211
-print("recommendation: ", svdpp.recommend_user(user=2211, n_rec=7))
+lightgcn.recommend_user(user=2211, n_rec=7)
 
 # cold-start prediction
-print("cold prediction: ", svdpp.predict(user="ccc", item="not item",
-                                         cold_start="average"))
+lightgcn.predict(user="ccc", item="not item", cold_start="average")
 # cold-start recommendation
-print("cold recommendation: ", svdpp.recommend_user(user="are we good?",
-                                                    n_rec=7,
-                                                    cold_start="popular"))
+lightgcn.recommend_user(user="are we good?", n_rec=7, cold_start="popular")
 ```
 
 #### _include features example_ : 
@@ -81,8 +104,6 @@ from libreco.data import split_by_ratio_chrono, DatasetFeat
 from libreco.algorithms import YouTubeRanking  # feat data, algorithm YouTubeRanking
 
 data = pd.read_csv("examples/sample_data/sample_movielens_merged.csv", sep=",", header=0)
-data["label"] = 1  # convert to implicit data and do negative sampling afterwards
-
 # split into train and test data based on time
 train_data, test_data = split_by_ratio_chrono(data, test_size=0.2)
 
@@ -96,33 +117,40 @@ train_data, data_info = DatasetFeat.build_trainset(
     train_data, user_col, item_col, sparse_col, dense_col
 )
 test_data = DatasetFeat.build_testset(test_data)
-train_data.build_negative_samples(data_info)  # sample negative items for each record
+
+# sample negative items for each record
+train_data.build_negative_samples(data_info)  
 test_data.build_negative_samples(data_info)
 print(data_info)  # n_users: 5962, n_items: 3226, data sparsity: 0.4185 %
 
-ytb_ranking = YouTubeRanking(task="ranking", data_info=data_info, embed_size=16,
-                             n_epochs=3, lr=1e-4, batch_size=512, use_bn=True,
-                             hidden_units="128,64,32")
-ytb_ranking.fit(train_data, verbose=2, shuffle=True, eval_data=test_data,
-                metrics=["loss", "roc_auc", "precision", "recall", "map", "ndcg"])
+ytb_ranking = YouTubeRanking(
+    task="ranking",
+    data_info=data_info,
+    embed_size=16,
+    n_epochs=3,
+    lr=1e-4,
+    batch_size=512,
+    use_bn=True,
+    hidden_units=(128, 64, 32),
+)
+ytb_ranking.fit(
+    train_data,
+    verbose=2,
+    shuffle=True,
+    eval_data=test_data,
+    metrics=["loss", "roc_auc", "precision", "recall", "map", "ndcg"],
+)
 
 # predict preference of user 2211 to item 110
-print("prediction: ", ytb_ranking.predict(user=2211, item=110))
+ytb_ranking.predict(user=2211, item=110)
 # recommend 7 items for user 2211
-print("recommendation(id, probability): ", ytb_ranking.recommend_user(user=2211, n_rec=7))
+ytb_ranking.recommend_user(user=2211, n_rec=7)
 
 # cold-start prediction
-print("cold prediction: ", ytb_ranking.predict(user="ccc", item="not item",
-                                               cold_start="average"))
+ytb_ranking.predict(user="ccc", item="not item", cold_start="average")
 # cold-start recommendation
-print("cold recommendation: ", ytb_ranking.recommend_user(user="are we good?",
-                                                          n_rec=7,
-                                                          cold_start="popular"))
+ytb_ranking.recommend_user(user="are we good?", n_rec=7, cold_start="popular")
 ```
-
-### For more examples and usages, see [User Guide](https://github.com/massquantity/LibRecommender/tree/master/doc/user_guide.md)
-
-
 
 ## Data Format
 
@@ -139,9 +167,11 @@ Besides, if you want to use some other meta features (e.g., age, sex, category e
 
 
 
-## Serving
+## Documentation
 
-For how to serve a trained model in LibRecommender, see [Serving Guide](https://github.com/massquantity/LibRecommender/tree/master/doc/python_serving_guide.md) .
+The tutorials and API documentation are hosted on [librecommender.readthedocs.io](https://librecommender.readthedocs.io/en/stable/).
+
+The example scripts are under [examples/](https://github.com/massquantity/LibRecommender/tree/master/examples) folder.
 
 
 
@@ -153,10 +183,9 @@ From pypi : &nbsp;
 $ pip install LibRecommender
 ```
 
-To build from source, you 'll first need [Cython](<https://cython.org/>) and [Numpy](<https://numpy.org/>):
+Build from source:
 
 ```shell
-$ # pip install numpy cython
 $ git clone https://github.com/massquantity/LibRecommender.git
 $ cd LibRecommender
 $ pip install .
@@ -169,7 +198,6 @@ $ pip install .
 - TensorFlow >= 1.15
 - PyTorch >= 1.10
 - Numpy >= 1.19.5
-- Cython >= 0.29.0
 - Pandas >= 1.0.0
 - Scipy >= 1.2.1
 - scikit-learn >= 0.20.0
