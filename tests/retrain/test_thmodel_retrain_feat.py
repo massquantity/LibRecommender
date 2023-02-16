@@ -115,12 +115,10 @@ def test_torchmodel_retrain_feat():
     train_data_orig, eval_data_orig = split_by_ratio_chrono(
         second_half_data, test_size=0.2
     )
-    train_data, new_data_info = DatasetFeat.build_trainset(
-        train_data_orig, revolution=True, data_info=new_data_info, merge_behavior=True
+    train_data = DatasetFeat.merge_trainset(
+        train_data_orig, new_data_info, merge_behavior=True
     )
-    eval_data = DatasetFeat.build_evalset(
-        eval_data_orig, revolution=True, data_info=new_data_info
-    )
+    eval_data = DatasetFeat.merge_evalset(eval_data_orig, new_data_info)
     # train_data.build_negative_samples(new_data_info, seed=2022)
     eval_data.build_negative_samples(new_data_info, seed=2222)
 

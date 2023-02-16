@@ -5,6 +5,10 @@ import pytest
 from libreco.algorithms import ALS, LightGCN
 
 
+@pytest.mark.skipif(
+    sys.version_info[:2] >= (3, 10),
+    reason="Python3.10 or higher can't use `nmslib` yet",
+)
 def test_knn_embed(prepare_pure_data, monkeypatch):
     _, train_data, eval_data, data_info = prepare_pure_data
     train_data.build_negative_samples(data_info, seed=2022)

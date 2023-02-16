@@ -14,7 +14,6 @@ from libreco.data import (
     TransformedSet,
     process_data,
 )
-from libreco.data.dataset import Dataset
 
 sparse_col = ["sex", "occupation", "genre1", "genre2", "genre3"]
 dense_col = ["age"]
@@ -79,7 +78,7 @@ def test_dataset_pure(pure_train_data):
 
     with pytest.raises(ValueError):
         data_without_item = pd_data.drop(columns="item")
-        Dataset._check_col_names(data_without_item, "train")
+        DatasetPure._check_col_names(data_without_item, "train")
 
     with pytest.raises(RuntimeError):
         DatasetPure.train_called = False
