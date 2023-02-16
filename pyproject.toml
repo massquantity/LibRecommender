@@ -11,7 +11,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "LibRecommender"
-version = "0.12.6"
+version = "1.0.0"
 description = "Versatile end-to-end recommender system."
 authors = [
     { name = "massquantity", email = "jinxin_madie@163.com" },
@@ -21,7 +21,7 @@ license = { text = "MIT" }
 requires-python = ">=3.6"
 keywords = ["Collaborative Filtering", "Recommender System"]
 classifiers= [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Education",
     "Intended Audience :: Science/Research",
@@ -39,6 +39,7 @@ dependencies = [
 ]
 
 [project.urls]
+documentation = "https://librecommender.readthedocs.io/en/stable/"
 repository = "https://github.com/massquantity/LibRecommender"
 
 [tool.setuptools]
