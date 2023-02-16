@@ -6,8 +6,6 @@ from libreco.algorithms import YouTubeRanking
 
 if __name__ == "__main__":
     data = pd.read_csv("sample_data/sample_movielens_merged.csv", sep=",", header=0)
-    # convert to implicit data and do negative sampling afterwards
-    data["label"] = 1
 
     # split into train and test data based on time
     train_data, test_data = split_by_ratio_chrono(data, test_size=0.2)
@@ -36,7 +34,7 @@ if __name__ == "__main__":
         lr=1e-4,
         batch_size=512,
         use_bn=True,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
     )
     ytb_ranking.fit(
         train_data,
@@ -46,9 +44,9 @@ if __name__ == "__main__":
         metrics=["loss", "roc_auc", "precision", "recall", "map", "ndcg"],
     )
 
-    # predict preference of user 1 to item 2333
+    # predict preference of user 2211 to item 110
     print("prediction: ", ytb_ranking.predict(user=2211, item=110))
-    # recommend 7 items for user 1
+    # recommend 7 items for user 2211
     print("recommendation: ", ytb_ranking.recommend_user(user=2211, n_rec=7))
 
     # cold-start prediction

@@ -81,7 +81,7 @@ if __name__ == "__main__":
         num_neg=1,
         use_bn=False,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         tf_sess_config=None,
         multi_sparse_combiner="normal",  # specify multi_sparse combiner
     )

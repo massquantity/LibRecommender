@@ -48,7 +48,7 @@ if __name__ == "__main__":
         num_neg=1,
         use_bn=False,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         tf_sess_config=None,
     )
     deepfm.fit(
@@ -82,10 +82,8 @@ if __name__ == "__main__":
     second_half_data = all_data[(len(all_data) // 2) :]
     train, test = split_by_ratio_chrono(second_half_data, test_size=0.2)
 
-    train_data, data_info = DatasetFeat.build_trainset(
-        train, revolution=True, data_info=data_info, merge_behavior=True
-    )
-    test_data = DatasetFeat.build_testset(test, revolution=True, data_info=data_info)
+    train_data = DatasetFeat.merge_trainset(train, data_info, merge_behavior=True)
+    test_data = DatasetFeat.merge_testset(test, data_info)
     print("new data_info: ", data_info)
     train_data.build_negative_samples(data_info, item_gen_mode="random", seed=2020)
     test_data.build_negative_samples(data_info, item_gen_mode="random", seed=2222)
@@ -104,7 +102,7 @@ if __name__ == "__main__":
         num_neg=1,
         use_bn=False,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         tf_sess_config=None,
     )
 

@@ -39,7 +39,7 @@ if __name__ == "__main__":
         num_neg=1,
         use_bn=False,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         tf_sess_config=None,
     )
     deepfm.fit(
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         ],
         eval_batch_size=8192,
         k=10,
-        sample_user_num=2048,
+        eval_user_num=2048,
     )
 
     print("prediction: ", deepfm.predict(user=2211, item=110))

@@ -90,7 +90,7 @@ if __name__ == "__main__":
         num_neg=1,
         use_bn=False,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         tf_sess_config=None,
     )
     wd.fit(
@@ -117,7 +117,7 @@ if __name__ == "__main__":
         num_neg=1,
         use_bn=False,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         tf_sess_config=None,
     )
     deepfm.fit(
@@ -147,7 +147,6 @@ if __name__ == "__main__":
         num_neg=1,
         use_bn=False,
         dropout_rate=None,
-        hidden_units="128,64,32",
         tf_sess_config=None,
     )
     autoint.fit(
@@ -175,7 +174,7 @@ if __name__ == "__main__":
         num_neg=1,
         use_bn=False,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         tf_sess_config=None,
         use_tf_attention=True,
     )
@@ -203,7 +202,7 @@ if __name__ == "__main__":
         num_neg=1,
         use_bn=False,
         dropout_rate=None,
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         tf_sess_config=None,
     )
     ytb_ranking.fit(
@@ -253,7 +252,7 @@ if __name__ == "__main__":
         use_bn=False,
         dropout_rate=None,
         loss_type="sampled_softmax",
-        hidden_units="128,64,32",
+        hidden_units=(128, 64, 32),
         sampler="uniform",
         tf_sess_config=None,
     )
