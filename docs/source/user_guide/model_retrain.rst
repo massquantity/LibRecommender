@@ -28,11 +28,11 @@ The problem with this solution is that we can not use TensorFlow's default metho
 `tf.train.Saver <https://www.tensorflow.org/api_docs/python/tf/compat/v1/train/Saver>`_ or
 `tf.saved_model <https://tensorflow.google.cn/versions/r1.15/api_docs/python/tf/saved_model>`_,
 as well as PyTorch's default method such as `load_state_dict <https://pytorch.org/docs/stable/generated/torch.nn.Module.html?highlight=load_state_dict#torch.nn.Module.load_state_dict>`_
-to save the deep learning models, since it can only load to the exact same model with same shapes.
+, since these can only load to the exact same model with same shapes.
 
-Things becomes even more desperate if we also want to save and restore the optimizers' variables,
-e.g. the first and second moment in Adam optimizer. Since these variables are used as state in optimizers.
-Failing to keep them means losing the previous training state.
+Things become even more desperate if we also want to save and restore the optimizers' variables,
+e.g. the first and second moment in Adam optimizer. Since these variables are used as states in optimizers,
+failing to keep them means losing the previous training state.
 
 Solution in LibRecommender
 --------------------------
@@ -51,15 +51,29 @@ the model, which is OK if you are certain that there will be no new user/item in
    :name: model_retrain_example.py
    :lines: 72-74
 
-Before retraining the model, we also should build the new data. Since the old ``data_info``
-already exists, we just need to update some information to the ``data_info`` by passing ``revolution=True``.
-During recommendation, we always want to filter some items that a user has consumed,
+Before retraining the model, the new data should also be transformed. Since the old ``data_info``
+already exists, we need to merge new information with the old one,
+especially those new users/items/features from new data. This achieved by calling
+:meth:`~libreco.data.dataset.DatasetFeat.merge_trainset`,
+:meth:`~libreco.data.dataset.DatasetFeat.merge_evalset`,
+:meth:`~libreco.data.dataset.DatasetFeat.merge_testset`
+functions.
+
+During recommendation, we usually want to filter some items that a user has previously consumed,
 which are also stored in :class:`~libreco.data.DataInfo` object. So if you want to combine the user-consumed
 information in old data with that in new data, you can pass ``merge_behavior=True``:
 
+.. _retrain_data:
+
 .. code-block:: python3
 
-   >>> train_data, data_info = DatasetFeat.build_trainset(train, revolution=True, data_info=data_info, merge_behavior=True)
+   >>> train_data = DatasetFeat.merge_trainset(train, data_info, merge_behavior=True)
+
+Finally, loading the old variables and assigning them to the new model requires only one function :meth:`~libreco.algorithms.DeepFM.rebuild_model`:
+
+.. code-block:: python3
+
+   >>> model.rebuild_model(path="model_path", model_name="deepfm_model", full_assign=True)
 
 .. SeeAlso::
 

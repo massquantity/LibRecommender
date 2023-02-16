@@ -5,6 +5,10 @@ LibRecommender
    :target: https://github.com/massquantity/LibRecommender/actions/workflows/wheels.yml
    :alt: Build status
 
+.. image:: https://readthedocs.org/projects/librecommender/badge/?version=stable
+    :target: https://librecommender.readthedocs.io/en/stable/?badge=stable
+    :alt: Documentation Status
+
 .. image:: https://github.com/massquantity/LibRecommender/actions/workflows/ci.yml/badge.svg
    :target: https://github.com/massquantity/LibRecommender/actions/workflows/ci.yml
    :alt: CI status

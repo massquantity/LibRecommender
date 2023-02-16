@@ -19,9 +19,10 @@ Unlike flask, a sanic server can run in production directly, and the typical com
 
 Refer to `Running Sanic <https://sanic.dev/en/guide/deployment/running.html>`_ for more details.
 
-.. Tip::
+.. admonition:: Rust
+   :class: rust
 
-    Beyond Python, one can also use Rust to serve a model. See :doc:`rust`.
+   Beyond Python, one can also use Rust to serve a model. See :doc:`rust`.
 
 -----------
 
@@ -50,11 +51,16 @@ So during serving, one should start redis server first:
 
     $ redis-server
 
-Note that sometimes using redis in model serving can be error-prone. For example,
-you served a ``DeepFM`` model at first, and later on you decided to use another ``pure`` model,
-say ``NCF``.  Since ``DeepFM`` is a ``feat`` model, some feature information may have been
-saved into redis. If you forget to remove these feature information before using ``NCF``,
-the server may mistakenly load it and eventually causing an error.
+
+.. Error::
+
+    Note that sometimes using redis in model serving can be error-prone:
+
+    For example, you served a ``DeepFM`` model at first, and later on you decided to use
+    another ``pure`` model, say ``NCF``.  Since ``DeepFM`` is a ``feat`` model,
+    some feature information may have been saved into redis. If you forget to remove
+    these feature information before using ``NCF``, the server may mistakenly load it
+    and eventually causing an error.
 
 .. Attention::
 
@@ -272,13 +278,13 @@ The above result shows this ``DIN`` model needs 6 inputs, i.e. ``user_indices``,
 ``sparse_indices``, ``dense_values``, ``user_interacted_seq``, ``user_interacted_len``.
 But this only applies to ``DIN`` and other models may have different inputs.
 
-For ``NCF`` model, only ``user_indices`` and ``item_indices`` are needed since it's a
-collaborative-filtering algorithm.
++ For ``NCF`` model, only ``user_indices`` and ``item_indices`` are needed since it's a
+  collaborative-filtering algorithm.
 
-For ``WideDeep``,  ``FM``,  ``DeepFM``, ``AutoInt``, since they don't use behavior sequence
-information, 4 inputs are needed: ``user_indices``, ``item_indices``, ``sparse_indices``, ``dense_values``.
++ For ``WideDeep``,  ``FM``,  ``DeepFM``, ``AutoInt``, since they don't use behavior sequence
+  information, 4 inputs are needed: ``user_indices``, ``item_indices``, ``sparse_indices``, ``dense_values``.
 
-Finally, ``YouTubeRanking`` has same inputs as ``DIN``. They both use behavior sequence information.
++ Finally, ``YouTubeRanking`` has same inputs as ``DIN``. They both use behavior sequence information.
 
 However, these are just general cases. Suppose your data doesn't have any sparse feature,
 then it would be a mistake to feed the ``sparse_indices`` input, so these matters should

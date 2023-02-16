@@ -4,9 +4,18 @@ Feature Engineering
 ``Sparse`` and ``Dense`` features
 +++++++++++++++++++++++++++++++++
 
-Sparse features are typically categorical features such as sex, location, year, etc. These features are projected into low dimension vectors by using an embedding layer, and this is by far the most common way of handling these kinds of features.
+Sparse features are typically categorical features such as sex, location, year, etc.
+These features are projected into low dimension vectors by using an embedding layer,
+and this is by far the most common way of handling these kinds of features.
 
-Dense features are typically numerical features such as age, price, length, etc. Unfortunately, there is no common way of handling these features, so in LibRecommender we mainly use the method described in the `AutoInt <https://arxiv.org/pdf/1810.11921.pdf>`_ paper. Specifically, every dense feature are also projected into low dimension vectors through an embedding layer, then the vectors are multiplied by the dense feature value itself. In this way, the authors of the paper argued that sparse and dense features can have interactions in models such as FM, DeepFM and of course, AutoInt.
+Dense features are typically numerical features such as age, price, length, etc.
+Unfortunately, there is no common way of handling these features, so in LibRecommender
+we mainly use the method described in the `AutoInt <https://arxiv.org/pdf/1810.11921.pdf>`_ paper.
+
+Specifically, every dense feature are also projected into low dimension vectors through
+an embedding layer, then the vectors are multiplied by the dense feature value itself.
+In this way, the authors of the paper argued that sparse and dense features can have
+interactions in models such as FM, DeepFM and of course, AutoInt.
 
 .. image:: /_static/autoint_feature.jpg
    :align: center
@@ -92,7 +101,9 @@ be included in the transformed features.
 
 Although here we use "missing" as the padding value, this is not always appropriate.
 It is fine with ``str`` type, but with numerical features, a value with corresponding type should be used.
-e.g. 0 or -999.99. Also be aware that the ``pad_val`` parameter is a list and should have
+e.g. 0 or -999.99.
+
+Also be aware that the ``pad_val`` parameter is a list and should have
 the same length as the number of ``multi_sparse`` features, and the reason for this is obvious.
 So all in all an example script is enough to illustrate the usage of ``multi_sparse`` features,
 see `multi_sparse_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/multi_sparse_example.py>`_.
@@ -116,7 +127,7 @@ into account. This feature issue can actually be combined with the cold-start is
 a user has appeared in training data, but his/her location doesn't exist in training data's ``location``
 feature.
 
-How do we handle these changing feature problems? Fortunately, LibRecommender can handle them elegantly.
+How do we handle these changing feature problems? Fortunately, LibRecommender can deal with them elegantly.
 
 If you want to predict or recommend with specific features, the usage is pretty straightforward.
 For prediction, just pass the ``feats`` argument, which only accepts ``dict`` or ``pands.Series`` type:
@@ -143,7 +154,7 @@ which may cause memory issues:
 To make recommendation for one user, we can pass the user features to ``user_feats`` argument.
 It actually doesn't make much sense to change the item features when making recommendation for
 only one user, but we provide an ``item_data`` argument anyway, which can change the item features.
-The type of ``item_data`` must be ``pandas.DataFrame`` . We assume one may want to change the
+The type of ``item_data`` must be :class:`pandas.DataFrame` . We assume one may want to change the
 features of multiple items, since it nearly makes no difference to the recommendation
 result if only one item's features have been changed.
 
@@ -165,3 +176,7 @@ the features in ``DataInfo``, then you can use ``assign_user_features`` and ``as
 
 The passed ``data`` argument is a ``pandas.DataFrame`` that contains the user/item information.
 Be careful with this assign operation if you are not sure if the features in ``data`` are useful.
+
+.. SeeAlso::
+
+    `changing_feature_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/changing_feature_example.py>`_

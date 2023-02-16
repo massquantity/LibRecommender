@@ -34,26 +34,18 @@ users randomly from eval data.
 Evaluate After Training
 -----------------------
 
-After the training, one can use the :class:`~libreco.evaluation.evaluate` function to evaluate on test data directly.
+After the training, one can use the :func:`~libreco.evaluation.evaluate` function to
+evaluate on test data directly.
 
 By default, it also won't update features stored in :class:`~libreco.data.DataInfo`,
 but you can choose ``update_features=True`` to achieve that.
-Also note if your evaluation data **is implicit and only contains positive label**,
+Also note if your evaluation data(typically in :class:`pandas.DataFrame` format) **is implicit and only contains positive label**,
 then negative sampling is needed by passing ``neg_sample=True``:
 
-.. code-block:: python3
-
-    eval_result = evaluate(
-        model,
-        data,
-        eval_batch_size=8192,
-        k=10,
-        metrics=["roc_auc", "precision", "ndcg"],
-        sample_user_num=2048,
-        neg_sample=True,
-        update_features=False,
-        seed=2222,
-    )
+.. literalinclude:: ../../../examples/save_load_example.py
+   :caption: From file `examples/save_load_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/save_load_example.py>`_
+   :name: save_load_example.py
+   :lines: 89-101
 
 Save/Load Model
 ---------------

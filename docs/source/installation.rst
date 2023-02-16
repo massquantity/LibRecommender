@@ -7,14 +7,25 @@ From `pypi <https://pypi.org/project/LibRecommender/>`_ :
 
     $ pip install LibRecommender
 
-To build from source, you will first need `Cython <https://cython.org/>`_ and `Numpy <https://numpy.org/>`_:
+Build from source:
 
 .. code-block:: bash
 
-    $ # pip install numpy cython
     $ git clone https://github.com/massquantity/LibRecommender.git
     $ cd LibRecommender
     $ pip install .
+
+Or if you want to modify some source code, e.g. implementing a new algorithm by inheriting
+from base classes in the library,
+you can also use `editable installs <https://setuptools.pypa.io/en/latest/userguide/development_mode.html>`_,
+which allows you to modify the source code and have the changes take effect
+without having to rebuild and reinstall (The ``-vv`` flag is used for outputting the build process)
+
+.. code-block:: bash
+
+    $ git clone https://github.com/massquantity/LibRecommender.git
+    $ cd LibRecommender
+    $ pip install -e . -vv
 
 -----------------------
 
@@ -27,10 +38,19 @@ Dependencies
     for ``training`` and  `libserving <https://github.com/massquantity/LibRecommender/tree/master/libserving>`_
     for ``serving``. If one only wants to train a model, dependencies for `libserving` are not needed.
 
-.. Attention::
+.. Caution::
 
-    The following dependencies will **NOT** be installed along with LibRecommender to
-    avoid messing up your local dependencies. Make sure your dependencies meet the version requirements.
+    Since version ``1.0.0``, the following dependencies will **NOT** be installed along with LibRecommender to
+    avoid messing up your local dependencies.
+
+    Please make sure dependencies in your machine meet the version requirements.
+    Or one can manually run the `requirements file <https://github.com/massquantity/LibRecommender/blob/master/requirements.txt>`_:
+
+    .. code-block:: bash
+
+        $ pip install -r requirements.txt
+
+    to install all the ``libreco`` dependencies.
 
 
 Dependencies for libreco:
@@ -40,7 +60,6 @@ Dependencies for libreco:
 + TensorFlow >= 1.15
 + PyTorch >= 1.10
 + Numpy >= 1.19.5
-+ Cython >= 0.29.0
 + Pandas >= 1.0.0
 + Scipy >= 1.2.1
 + scikit-learn >= 0.20.0
@@ -48,6 +67,7 @@ Dependencies for libreco:
 + tqdm
 + `nmslib <https://github.com/nmslib/nmslib>`_ (optional, see :doc:`user_guide/embedding`)
 + `DGL <https://github.com/dmlc/dgl>`_ (optional, see :ref:`Implementation Details <pinsage>`)
++ Cython >= 0.29.0 (optional, for building source)
 
 .. NOTE::
 

@@ -13,11 +13,13 @@ First make sure LibRecommender is installed.
 
     $ pip install LibRecommender
 
-.. NOTE::
+.. admonition:: Serving
+    :class: Note
 
     For how to deploy a trained model in LibRecommender, see :ref:`Serving Guide <Serving Guide>`.
 
-.. ATTENTION::
+.. admonition:: TensorFlow1 issue
+    :class: Error
 
     If you encounter errors like
     ``Variables already exist, disallowed...`` in this tutorial, just call
@@ -290,13 +292,13 @@ the data does not exist locally, it will be downloaded at first.
 
 Now we have about 1 million data. In order to perform evaluation after training, we need to split the data
 into train, eval and test data first. In this tutorial we will simply
-use :class:`~libreco.data.random_split`. For other ways of splitting data, see :doc:`user_guide/data_processing`.
+use :meth:`~libreco.data.random_split`. For other ways of splitting data, see :doc:`user_guide/data_processing`.
 
 .. _two parts:
 
 .. NOTE::
 
-   For now, We will only use first half data for training. Later we will use the rest data to retrain the model.
+   For now, We will only use **first half data** for training. Later we will use the rest data to retrain the model.
 
 
 Process Data & Features
@@ -514,31 +516,25 @@ the model from scratch every time we get some new data.
     second half data shape: (500105, 10)
 
 
-The data processing is almost the same, except that we should pass
-``revolution=True, data_info=loaded_data_info, merge_behavior=True`` to
-the ``DatasetFeat.build_trainset`` function, and
-``revolution=True, data_info=new_data_info`` to the
-``DatasetFeat.build_evalset`` function.
+The data processing is similar, except that we should use
+:meth:`~libreco.data.dataset.DatasetFeat.merge_trainset` and :meth:`~libreco.data.dataset.DatasetFeat.merge_evalset`
+in :class:`~libreco.data.dataset.DatasetFeat`.
 
-The purpose of these parameters is combining information from old data
+The purpose of these functions is combining information from old data
 with that from new data, especially for the possible new users/items
 from new data. For more details, see :doc:`user_guide/model_retrain`.
 
 .. code:: python3
 
-    >>> train_data, new_data_info = DatasetFeat.build_trainset(
-            train_data, revolution=True, data_info=loaded_data_info, merge_behavior=True  # use loaded_data_info
-        )
-    >>> eval_data = DatasetFeat.build_evalset(
-            eval_data, revolution=True, data_info=new_data_info  # use new_data_info
-        )
+    >>> train_data = DatasetFeat.merge_trainset(train_data, loaded_data_info, merge_behavior=True)  # use loaded_data_info
+    >>> eval_data = DatasetFeat.merge_evalset(eval_data, loaded_data_info)
 
-    >>> train_data.build_negative_samples(new_data_info, seed=2022)  # use new_data_info
-    >>> eval_data.build_negative_samples(new_data_info, seed=2222)  # use new_data_info
+    >>> train_data.build_negative_samples(loaded_data_info, seed=2022)  # use loaded_data_info
+    >>> eval_data.build_negative_samples(loaded_data_info, seed=2222)
 
 
-Then we construct a new model, and call ``rebuild_model`` method to
-assign the old trained variables into the new model.
+Then we construct a new model, and call :meth:`~libreco.algorithms.WideDeep.rebuild_model`
+method to assign the old trained variables into the new model.
 
 .. code:: python3
 
@@ -548,7 +544,7 @@ assign the old trained variables into the new model.
 
     new_model = WideDeep(
         task="ranking", 
-        data_info=new_data_info,  # pass new_data_info
+        data_info=loaded_data_info,  # pass loaded_data_info
         embed_size=16, 
         n_epochs=2,
         loss_type="cross_entropy",
@@ -611,8 +607,11 @@ Finally, the training and recommendation parts are the same as before.
 
 **This completes our tutorial!**
 
-.. NOTE::
+.. admonition:: Where to go from here
+    :class: Note
 
-    For more examples, see the `examples <https://github.com/massquantity/LibRecommender/tree/master/examples>`__ folder on GitHub.
+    For more examples, see the `examples/ <https://github.com/massquantity/LibRecommender/tree/master/examples>`__ folder on GitHub.
 
-    For more usages, please head to :doc:`user_guide/index` .
+    For more usages, please head to :doc:`user_guide/index`.
+
+    For serving a trained model, please head to :doc:`serving_guide/python`.
