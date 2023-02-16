@@ -92,6 +92,7 @@ extensions = [
     ),
 ]
 
+# copy metadata from pyproject.toml
 readme = (Path(__file__).parent / "README.md").read_text()
 toml_str = (Path(__file__).parent / "pyproject.toml").read_text()
 metadata = tomli.loads(toml_str)["project"]
