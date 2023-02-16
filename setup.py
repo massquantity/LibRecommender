@@ -3,8 +3,10 @@ import logging
 import os
 import platform
 import sys
+from pathlib import Path
 
 import numpy as np
+import tomli
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 from setuptools import Extension, find_packages, setup
@@ -90,10 +92,21 @@ extensions = [
     ),
 ]
 
+readme = (Path(__file__).parent / "README.md").read_text()
+toml_str = (Path(__file__).parent / "pyproject.toml").read_text()
+metadata = tomli.loads(toml_str)["project"]
 
 setup(
-    name="LibRecommender",
-    version="0.12.6",
+    name=metadata["name"],
+    version=metadata["version"],
+    description=metadata["description"],
+    author=metadata["authors"][0]["name"],
+    author_email=metadata["authors"][0]["email"],
+    license=metadata["license"]["text"],
+    url=metadata["urls"]["repository"],
+    long_description=readme,
+    classifiers=metadata["classifiers"],
+    keywords=metadata["keywords"],
     packages=find_packages(
         where=".",
         include=["libreco*", "libserving*"],

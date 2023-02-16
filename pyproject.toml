@@ -5,12 +5,13 @@ requires = [
     "Cython>=0.29.0,<3",
     "numpy>=1.19.5",
     "scipy>=1.2.1",
+    "tomli",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "LibRecommender"
-dynamic = ["version"]
+version = "0.12.6"
 description = "Versatile end-to-end recommender system."
 authors = [
     { name = "massquantity", email = "jinxin_madie@163.com" },
@@ -42,9 +43,6 @@ repository = "https://github.com/massquantity/LibRecommender"
 
 [tool.setuptools]
 include-package-data = true
-
-[tool.setuptools.dynamic]
-version = {attr = "libreco.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["."]
