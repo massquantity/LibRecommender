@@ -12,7 +12,7 @@ from ..bases import GensimBase
 class DeepWalk(GensimBase):
     """*DeepWalk* algorithm.
 
-    .. WARNING::
+    .. CAUTION::
         DeepWalk can only use in ``ranking`` task.
 
     Parameters

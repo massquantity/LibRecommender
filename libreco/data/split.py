@@ -25,7 +25,7 @@ def random_split(
         Whether to shuffle data when splitting.
     test_size : float or None, default: None
         Test data ratio.
-    multi_ratios : list or tuple or None, default: None
+    multi_ratios : list of float, tuple of (float,) or None, default: None
         Ratios for splitting data in multiple parts. If ``test_size`` is not None,
         ``multi_ratios`` will be ignored.
     filter_unknown : bool, default: True
@@ -147,7 +147,7 @@ def split_by_ratio(
         Whether to shuffle data after splitting.
     test_size : float or None, default: None
         Test data ratio.
-    multi_ratios : list or tuple or None, default: None
+    multi_ratios : list of float, tuple of (float,) or None, default: None
         Ratios for splitting data in multiple parts. If ``test_size`` is not None,
         ``multi_ratios`` will be ignored.
     filter_unknown : bool, default: True
@@ -304,7 +304,7 @@ def split_by_ratio_chrono(
     """Assign a certain ratio of items to test data for each user, where items are sorted by time first.
 
     .. IMPORTANT::
-        data should contain a **time** column.
+        This function implies the data should contain a **time** column.
 
     Parameters
     ----------
@@ -316,7 +316,7 @@ def split_by_ratio_chrono(
         Whether to shuffle data after splitting.
     test_size : float or None, default: None
         Test data ratio.
-    multi_ratios : list or tuple or None, default: None
+    multi_ratios : list of float, tuple of (float,) or None, default: None
         Ratios for splitting data in multiple parts. If ``test_size`` is not None,
         ``multi_ratios`` will be ignored.
     seed : int, default: 42
@@ -349,7 +349,7 @@ def split_by_num_chrono(data, order=True, shuffle=False, test_size=1, seed=42):
     """Assign a certain number of items to test data for each user, where items are sorted by time first.
 
     .. IMPORTANT::
-        data should contain a **time** column.
+        This function implies the data should contain a **time** column.
 
     Parameters
     ----------

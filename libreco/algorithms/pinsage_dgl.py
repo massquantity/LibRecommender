@@ -14,7 +14,7 @@ class PinSageDGL(GraphSageDGL, metaclass=ModelMeta, backend="torch"):
     .. NOTE::
         This algorithm is implemented in `DGL <https://github.com/dmlc/dgl>`_.
 
-    .. WARNING::
+    .. CAUTION::
         PinSageDGL can only be used in ``ranking`` task.
 
     .. versionadded:: 0.12.0

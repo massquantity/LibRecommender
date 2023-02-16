@@ -47,7 +47,7 @@ class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         Number of negative samples for each positive sample, only used in `ranking` task.
     dropout_rate : float or None, default: None
         Probability of an element to be zeroed. If it is None, dropout is not used.
-    hidden_units : int or list or tuple, default: 16
+    hidden_units : int, list of int or tuple of (int,), default: 16
         Number of layers and corresponding layer size in RNN.
 
         .. versionchanged:: 1.0.0

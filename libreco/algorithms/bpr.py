@@ -21,7 +21,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
     *BPR* is implemented in both TensorFlow and Cython.
 
-    .. WARNING::
+    .. CAUTION::
         + BPR can only be used in ``ranking`` task.
         + BPR can only use ``bpr`` loss in ``loss_type``.
 

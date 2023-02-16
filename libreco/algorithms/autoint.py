@@ -53,7 +53,7 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         Whether to use batch normalization.
     dropout_rate : float or None, default: None
         Probability of an element to be zeroed. If it is None, dropout is not used.
-    att_embed_size : int or list or tuple, default: (8, 8, 8)
+    att_embed_size : int, list of int or tuple of (int,), default: (8, 8, 8)
         Embedding size in each attention layer. If it is `int`, one layer is used.
     num_heads : int, default: 2
         Number of heads in multi-head attention.
