@@ -602,7 +602,6 @@ class DataInfo:
             "sparse_oov",
             "multi_sparse_unique_vals",
             "multi_sparse_combine_info",
-            "multi_sparse_map",
         ]
         all_variables = vars(self)
         for arg in inside_args:

@@ -176,11 +176,11 @@ def multi_sparse_combine_info(
     return MultiSparseInfo(field_offset, field_length, feat_oov + sparse_offset)
 
 
-def multi_sparse_true_size(data, multi_sparse_col, pad_val):
-    sizes = [
-        np.sum(data[field].to_numpy() != pad_val, axis=1) for field in multi_sparse_col
-    ]
-    return np.vstack(sizes)
+# def multi_sparse_true_size(data, multi_sparse_col, pad_val):
+#    sizes = [
+#        np.sum(data[field].to_numpy() != pad_val, axis=1) for field in multi_sparse_col
+#    ]
+#    return np.vstack(sizes)
 
 
 def check_unknown(values, uniques):

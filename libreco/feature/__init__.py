@@ -7,7 +7,6 @@ from .column import (
     merge_sparse_indices,
     multi_sparse_col_map,
     multi_sparse_combine_info,
-    multi_sparse_true_size,
     recover_sparse_cols,
 )
 from .column_mapping import col_name2index
@@ -30,7 +29,6 @@ __all__ = [
     "get_oov_pos",
     "interaction_consumed",
     "multi_sparse_combine_info",
-    "multi_sparse_true_size",
     "multi_sparse_col_map",
     "recover_sparse_cols",
     "col_name2index",
