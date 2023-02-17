@@ -10,13 +10,14 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v1.json)](https://github.com/charliermarsh/ruff)
 [![platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-%23ffdfba)](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-%23ffdfba)
+[![Documentation Status](https://readthedocs.org/projects/librecommender/badge/?version=stable)](https://librecommender.readthedocs.io/en/stable/?badge=stable)
 ![visitors](https://visitor-badge.glitch.me/badge?page_id=massquantity.LibRecommender&right_color=rgb(91,194,231))
 [![License](https://img.shields.io/github/license/massquantity/LibRecommender?color=ff69b4)](https://github.com/massquantity/LibRecommender/blob/master/LICENSE)
 
 
 ## Overview
 
-**LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation process. It contains a training ([libreco](https://github.com/massquantity/LibRecommender/tree/master/libreco)) and serving ([libserving](https://github.com/massquantity/LibRecommender/tree/master/libserving)) module to let users quickly train and deploy different kinds of recommendation models.
+**LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation process. It contains a training([libreco](https://github.com/massquantity/LibRecommender/tree/master/libreco)) and serving([libserving](https://github.com/massquantity/LibRecommender/tree/master/libserving)) module to let users quickly train and deploy different kinds of recommendation models.
 
 **The main features are:**
 
@@ -203,8 +204,8 @@ $ pip install .
 - scikit-learn >= 0.20.0
 - gensim >= 4.0.0
 - tqdm
-- [nmslib](https://github.com/nmslib/nmslib) (optional, see [User Guide](https://github.com/massquantity/LibRecommender/blob/master/doc/user_guide.md#embedding))
-- [DGL](https://github.com/dmlc/dgl) (optional, see [Implementation Details](https://github.com/massquantity/LibRecommender/blob/master/doc/implementation_details.md#pinsage))
+- [nmslib](https://github.com/nmslib/nmslib) (optional, used in approximate similarity searching. See [Embedding](https://librecommender.readthedocs.io/en/stable/user_guide/embedding.html))
+- [DGL](https://github.com/dmlc/dgl) (optional, used in GraphSage and PinSage. See [Implementation Details](https://librecommender.readthedocs.io/en/stable/internal/implementation_details.html#pinsage))
 
 If you are using Python 3.6, you also need to install [dataclasses](https://github.com/ericvsmith/dataclasses), which was first introduced in Python 3.7.
 
