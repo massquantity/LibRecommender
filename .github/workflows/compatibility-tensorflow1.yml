@@ -83,6 +83,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel setuptools
+          python -m pip install 'protobuf<=3.20.2'
           python -m pip install $(sed "/tensorflow*/d;/nmslib*/d;/dgl*/d" requirements.txt)
           python -m pip install LibRecommender
           python -m pip install tensorflow==${{ matrix.tensorflow-version }}
