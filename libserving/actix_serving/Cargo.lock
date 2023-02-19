@@ -185,7 +185,7 @@ dependencies = [
 
 [[package]]
 name = "actix_serving"
-version = "0.2.2"
+version = "1.0.0"
 dependencies = [
  "actix-web",
  "assert_cmd",
