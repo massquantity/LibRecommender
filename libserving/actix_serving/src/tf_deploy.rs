@@ -102,3 +102,91 @@ fn rank_items_by_score(scores: &[f32], n_rec: usize, user_consumed: &[usize]) ->
         .take(n_rec)
         .collect::<Vec<_>>()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::redis_ops::create_redis_pool;
+    use actix_web::http::{header::ContentType, StatusCode};
+    use actix_web::{dev::Service, middleware::Logger, test, App};
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    #[should_panic(expected = "called `Option::unwrap()` on a `None` value")]
+    async fn test_tf_state() {
+        assert!(init_tf_state("tf").unwrap().is_some());
+        init_tf_state("ooo").unwrap().unwrap();
+    }
+
+    #[actix_web::test]
+    async fn test_tf_serving() -> Result<(), Box<dyn std::error::Error>> {
+        std::env::set_var("RUST_LOG", "debug");
+        env_logger::init();
+        let logger = Logger::default();
+        let redis_pool = create_redis_pool(String::from("localhost"))?;
+        let tf_state = init_tf_state("tf")?.unwrap();
+        let app = test::init_service(
+            App::new()
+                .wrap(logger)
+                .app_data(web::Data::new(redis_pool))
+                .app_data(tf_state)
+                .service(tf_serving),
+        )
+        .await;
+
+        let payload_1_rec = Param {
+            user: String::from("10"),
+            n_rec: 1,
+        };
+        let req = test::TestRequest::post()
+            .uri("/tf/recommend")
+            .set_json(payload_1_rec)
+            .to_request();
+        let resp = test::try_call_service(&app, req).await?;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body: Recommendation = test::try_read_body_json(resp).await?;
+        assert_eq!(body.rec_list.len(), 1);
+
+        let payload_10_rec = Param {
+            user: String::from("10"),
+            n_rec: 10,
+        };
+        let req = test::TestRequest::post()
+            .uri("/tf/recommend")
+            .set_json(payload_10_rec)
+            .to_request();
+        let resp = test::try_call_service(&app, req).await?;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body: Recommendation = test::try_read_body_json(resp).await?;
+        assert_eq!(body.rec_list.len(), 10);
+        Ok(())
+    }
+
+    #[actix_web::test]
+    async fn test_invalid_request() {
+        let redis_pool = create_redis_pool(String::from("localhost")).unwrap();
+        let tf_state = init_tf_state("tf").unwrap().unwrap();
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(redis_pool))
+                .app_data(tf_state)
+                .service(tf_serving),
+        )
+        .await;
+
+        let payload = r#"{"user":10,"n_rec":1}"#.as_bytes(); // user not String
+        let req = test::TestRequest::post()
+            .uri("/tf/recommend")
+            .insert_header(ContentType::json())
+            .set_payload(payload)
+            .to_request();
+        let resp = app.call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+        let req = test::TestRequest::get() // not post
+            .uri("/tf/recommend")
+            .to_request();
+        let resp = app.call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+    }
+}

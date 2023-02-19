@@ -96,3 +96,76 @@ fn sort_by_sims(map: &HashMap<usize, f32>, n_rec: usize) -> Vec<usize> {
         .map(|(i, _)| *i)
         .collect::<Vec<_>>()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::redis_ops::create_redis_pool;
+    use actix_web::http::{header::ContentType, StatusCode};
+    use actix_web::{dev::Service, middleware::Logger, test, App};
+    use pretty_assertions::assert_eq;
+
+    #[actix_web::test]
+    async fn test_knn_serving() -> Result<(), Box<dyn std::error::Error>> {
+        std::env::set_var("RUST_LOG", "debug");
+        env_logger::init();
+        let logger = Logger::default();
+        let redis_pool = create_redis_pool(String::from("localhost"))?;
+        let app = test::init_service(
+            App::new()
+                .wrap(logger)
+                .app_data(web::Data::new(redis_pool))
+                .service(knn_serving),
+        )
+        .await;
+
+        let payload_1_rec = r#"{"user":"10","n_rec":1}"#.as_bytes();
+        let req = test::TestRequest::post()
+            .uri("/knn/recommend")
+            .insert_header(ContentType::json())
+            .set_payload(payload_1_rec)
+            .to_request();
+        let resp = test::try_call_service(&app, req).await?;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body: Recommendation = test::try_read_body_json(resp).await?;
+        assert_eq!(body.rec_list.len(), 1);
+
+        let payload_10_rec = r#"{"user":"10","n_rec":10}"#.as_bytes();
+        let req = test::TestRequest::post()
+            .uri("/knn/recommend")
+            .insert_header(ContentType::json())
+            .set_payload(payload_10_rec)
+            .to_request();
+        let resp = test::try_call_service(&app, req).await?;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body: Recommendation = test::try_read_body_json(resp).await?;
+        assert_eq!(body.rec_list.len(), 10);
+        Ok(())
+    }
+
+    #[actix_web::test]
+    async fn test_invalid_request() {
+        let redis_pool = create_redis_pool(String::from("localhost")).unwrap();
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(redis_pool))
+                .service(knn_serving),
+        )
+        .await;
+
+        let payload = r#"{"user":10,"n_rec":1}"#.as_bytes(); // user not String
+        let req = test::TestRequest::post()
+            .uri("/knn/recommend")
+            .insert_header(ContentType::json())
+            .set_payload(payload)
+            .to_request();
+        let resp = app.call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+        let req = test::TestRequest::get() // not post
+            .uri("/knn/recommend")
+            .to_request();
+        let resp = app.call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+    }
+}

@@ -88,3 +88,87 @@ async fn rec_on_sim_embeds(
         .collect::<Vec<usize>>();
     Ok(item_ids)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::redis_ops::create_redis_pool;
+    use actix_web::http::{header::ContentType, StatusCode};
+    use actix_web::{dev::Service, middleware::Logger, test, App};
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    #[should_panic(expected = "called `Option::unwrap()` on a `None` value")]
+    async fn test_embed_state() {
+        assert!(init_embed_state("embed").unwrap().is_some());
+        init_embed_state("ooo").unwrap().unwrap();
+    }
+
+    #[actix_web::test]
+    async fn test_embed_serving() -> Result<(), Box<dyn std::error::Error>> {
+        std::env::set_var("RUST_LOG", "debug");
+        env_logger::init();
+        let logger = Logger::default();
+        let redis_pool = create_redis_pool(String::from("localhost"))?;
+        let embed_state = init_embed_state("embed")?.unwrap();
+        let app = test::init_service(
+            App::new()
+                .wrap(logger)
+                .app_data(web::Data::new(redis_pool))
+                .app_data(embed_state)
+                .service(embed_serving),
+        )
+        .await;
+
+        let payload_1_rec = r#"{"user":"10","n_rec":1}"#.as_bytes();
+        let req = test::TestRequest::post()
+            .uri("/embed/recommend")
+            .insert_header(ContentType::json())
+            .set_payload(payload_1_rec)
+            .to_request();
+        let resp = test::try_call_service(&app, req).await?;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body: Recommendation = test::try_read_body_json(resp).await?;
+        assert_eq!(body.rec_list.len(), 1);
+
+        let payload_10_rec = r#"{"user":"10","n_rec":10}"#.as_bytes();
+        let req = test::TestRequest::post()
+            .uri("/embed/recommend")
+            .insert_header(ContentType::json())
+            .set_payload(payload_10_rec)
+            .to_request();
+        let resp = test::try_call_service(&app, req).await?;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body: Recommendation = test::try_read_body_json(resp).await?;
+        assert_eq!(body.rec_list.len(), 10);
+        Ok(())
+    }
+
+    #[actix_web::test]
+    async fn test_invalid_request() {
+        let redis_pool = create_redis_pool(String::from("localhost")).unwrap();
+        let embed_state = init_embed_state("embed").unwrap().unwrap();
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(redis_pool))
+                .app_data(embed_state)
+                .service(embed_serving),
+        )
+        .await;
+
+        let payload = r#"{"user":10,"n_rec":1}"#.as_bytes(); // user not String
+        let req = test::TestRequest::post()
+            .uri("/embed/recommend")
+            .insert_header(ContentType::json())
+            .set_payload(payload)
+            .to_request();
+        let resp = app.call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+        let req = test::TestRequest::get() // not post
+            .uri("/embed/recommend")
+            .to_request();
+        let resp = app.call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+    }
+}
