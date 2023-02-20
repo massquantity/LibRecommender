@@ -41,8 +41,7 @@ the data does not exist locally, it will be downloaded at first.
     import warnings
     import zipfile
     from pathlib import Path
-    from urllib.request import urlretrieve
-    
+
     import pandas as pd
     import tensorflow as tf
     import tqdm
@@ -80,8 +79,8 @@ the data does not exist locally, it will be downloaded at first.
             names=["item", "genre"],
             encoding="iso-8859-1",
         )
-        train_data[["genre1", "genre2", "genre3"]] = (
-            train_data["genre"].str.split(r"|", expand=True).fillna("missing").iloc[:, :3]
+        items[["genre1", "genre2", "genre3"]] = (
+            items["genre"].str.split(r"|", expand=True).fillna("missing").iloc[:, :3]
         )
         items.drop("genre", axis=1, inplace=True)
         data = ratings.merge(users, on="user").merge(items, on="item")
