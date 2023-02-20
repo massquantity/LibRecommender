@@ -1,8 +1,8 @@
 import time
 
 import pandas as pd
+import tensorflow as tf
 
-from examples.utils import reset_state
 from libreco.data import split_by_ratio_chrono, DatasetPure
 from libreco.algorithms import (
     SVD,
@@ -18,6 +18,11 @@ from libreco.algorithms import (
     Item2Vec,
     DeepWalk,
 )
+
+
+def reset_state(name):
+    tf.compat.v1.reset_default_graph()
+    print("\n", "=" * 30, name, "=" * 30)
 
 
 if __name__ == "__main__":

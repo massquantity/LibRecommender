@@ -1,10 +1,15 @@
 import pandas as pd
+import tensorflow as tf
 
-from examples.utils import reset_state
 from libreco.data import DatasetFeat, DataInfo
 from libreco.data import split_by_ratio_chrono
 from libreco.algorithms import DeepFM
 from libreco.evaluation import evaluate
+
+
+def reset_state(name):
+    tf.compat.v1.reset_default_graph()
+    print("\n", "=" * 30, name, "=" * 30)
 
 
 if __name__ == "__main__":

@@ -303,7 +303,7 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
         for i in tqdm(range(0, self.n_items, self.batch_size), desc="item embedding"):
             items = torch.tensor(all_items[i : i + self.batch_size], dtype=torch.long)
             item_reprs = self.get_item_repr(items)
-            item_embed.append(item_reprs.cpu().numpy())
+            item_embed.append(item_reprs.detach().cpu().numpy())
         self.item_embed = np.concatenate(item_embed, axis=0)
         self.user_embed = self.get_user_embeddings()
 
@@ -314,7 +314,7 @@ class GraphSageDGL(EmbedBase, metaclass=ModelMeta, backend="torch"):
         if self.paradigm == "u2i":
             for i in range(0, self.n_users, self.batch_size):
                 users = np.arange(i, min(i + self.batch_size, self.n_users))
-                user_reprs = self.get_user_repr(users).cpu().numpy()
+                user_reprs = self.get_user_repr(users).detach().cpu().numpy()
                 user_embed.append(user_reprs)
             return np.concatenate(user_embed, axis=0)
         else:

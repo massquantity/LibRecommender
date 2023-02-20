@@ -1,25 +1,26 @@
-import os
+from pathlib import Path
 
 import pandas as pd
 import tensorflow as tf
 
 import libreco
-from libreco.algorithms import ALS, BPR, Caser, RNN4Rec, UserCF
+from libreco.algorithms import Caser, RNN4Rec
 from libreco.data import DatasetPure, split_by_ratio_chrono
 from libreco.tfops import TF_VERSION
-from libreco.utils.similarities import cosine_sim
 
 if __name__ == "__main__":
     print(f"tensorflow version: {TF_VERSION}")
     print(libreco)
-    print(UserCF, ALS, BPR)
-    print(cosine_sim)
+    from libreco.utils._similarities import forward_cosine, invert_cosine
+    from libreco.algorithms._als import als_update
+    print("Cython functions: ", invert_cosine, forward_cosine, als_update)
 
-    data_path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        # "sample_data",
-        "sample_movielens_rating.dat",
-    )
+    cur_path = Path(".").parent
+    if Path.exists(cur_path / "sample_movielens_rating.dat"):
+        data_path = cur_path / "sample_movielens_rating.dat"
+    else:
+        data_path = cur_path / "sample_data" / "sample_movielens_rating.dat"
+
     pd_data = pd.read_csv(data_path, sep="::", names=["user", "item", "label", "time"])
     train_data, eval_data = split_by_ratio_chrono(pd_data, test_size=0.2)
     train_data, data_info = DatasetPure.build_trainset(train_data)

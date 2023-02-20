@@ -463,19 +463,23 @@ class SageDGLTrainer(SageTrainer):
 
         # nodes in pos_graph and neg_graph are same, difference is the connected edges
         pos_graph, neg_graph, *target_nodes = build_subgraphs(
-            data.queries, data.item_pairs, self.paradigm, self.num_neg, self.device
+            data.queries, data.item_pairs, self.paradigm, self.num_neg
         )
         if self.paradigm == "u2i":
             # user -> item heterogeneous graph, users on srcdata, items on dstdata
             users, items = pos_graph.srcdata[dgl.NID], pos_graph.dstdata[dgl.NID]
             user_reprs = self.model.get_user_repr(users)
             item_reprs = self.model.get_item_repr(items)
+            pos_graph = pos_graph.to(self.device)
+            neg_graph = neg_graph.to(self.device)
             pos_scores = compute_u2i_edge_scores(pos_graph, user_reprs, item_reprs)
             neg_scores = compute_u2i_edge_scores(neg_graph, user_reprs, item_reprs)
         else:
             # item -> item homogeneous graph, items on all nodes
             items = pos_graph.ndata[dgl.NID]
             item_reprs = self.model.get_item_repr(items, target_nodes)
+            pos_graph = pos_graph.to(self.device)
+            neg_graph = neg_graph.to(self.device)
             pos_scores = compute_i2i_edge_scores(pos_graph, item_reprs)
             neg_scores = compute_i2i_edge_scores(neg_graph, item_reprs)
         if self.loss_type in ("bpr", "max_margin") and self.num_neg > 1:

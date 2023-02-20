@@ -138,5 +138,5 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
     def set_embeddings(self):
         self.torch_model.eval()
         embeddings = self.torch_model.embedding_propagation(use_dropout=False)
-        self.user_embed = embeddings[0].numpy()
-        self.item_embed = embeddings[1].numpy()
+        self.user_embed = embeddings[0].detach().cpu().numpy()
+        self.item_embed = embeddings[1].detach().cpu().numpy()

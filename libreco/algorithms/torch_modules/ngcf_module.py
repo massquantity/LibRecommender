@@ -56,7 +56,7 @@ class NGCFModel(nn.Module):
             weight_dict[f"b_pair_{k}"] = nn.Parameter(
                 nn.init.zeros_(torch.empty(1, layers[k + 1]))
             )
-        return embedding_dict, weight_dict
+        return embedding_dict.to(self.device), weight_dict.to(self.device)
 
     def _build_laplacian_matrix(self):
         R = ssp.dok_matrix((self.n_users, self.n_items), dtype=np.float32)

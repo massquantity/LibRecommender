@@ -123,7 +123,8 @@ def recommend_tf_feat(
         params["user_interacted_seq"] = u_last_interacted
         params["user_interacted_len"] = u_interacted_len
 
-    preds = model.sess.run(model.output, get_feed_dict(**params))
+    feed_dict = get_feed_dict(**params)
+    preds = model.sess.run(model.output, feed_dict)
     return rank_recommendations(
         model.task,
         user_ids,

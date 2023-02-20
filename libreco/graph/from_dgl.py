@@ -18,12 +18,12 @@ def check_dgl(cls: type) -> type:
     return cls
 
 
-def build_subgraphs(heads, item_pairs, paradigm, num_neg, device):
+def build_subgraphs(heads, item_pairs, paradigm, num_neg):
     import dgl
 
-    heads_pos = torch.as_tensor(heads, dtype=torch.long, device=device)
-    tails_pos = torch.as_tensor(item_pairs[0], dtype=torch.long, device=device)
-    tails_neg = torch.as_tensor(item_pairs[1], dtype=torch.long, device=device)
+    heads_pos = torch.as_tensor(heads, dtype=torch.long)
+    tails_pos = torch.as_tensor(item_pairs[0], dtype=torch.long)
+    tails_neg = torch.as_tensor(item_pairs[1], dtype=torch.long)
     if num_neg > 1:
         heads_neg = heads_pos.repeat_interleave(num_neg)
     else:
