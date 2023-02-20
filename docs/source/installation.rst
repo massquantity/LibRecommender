@@ -11,9 +11,7 @@ Build from source:
 
 .. code-block:: bash
 
-    $ git clone https://github.com/massquantity/LibRecommender.git
-    $ cd LibRecommender
-    $ pip install .
+    $ pip install git+https://github.com/massquantity/LibRecommender.git
 
 Or if you want to modify some source code, e.g. implementing a new algorithm by inheriting
 from base classes in the library,

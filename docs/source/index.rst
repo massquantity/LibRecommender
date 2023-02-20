@@ -44,8 +44,8 @@ LibRecommender
 ------------------
 
 **LibRecommender** is an easy-to-use recommender system focused on end-to-end recommendation process.
-It contains training(`libreco <https://github.com/massquantity/LibRecommender/tree/master/libreco>`_) and serving(`libserving <https://github.com/massquantity/LibRecommender/tree/master/libserving>`_)
-module for users to quickly train and deploy different kinds of recommendation models.
+It contains a training(`libreco <https://github.com/massquantity/LibRecommender/tree/master/libreco>`_) and serving(`libserving <https://github.com/massquantity/LibRecommender/tree/master/libserving>`_)
+module to let users quickly train and deploy different kinds of recommendation models.
 
 **The main features are:**
 
@@ -61,19 +61,26 @@ module for users to quickly train and deploy different kinds of recommendation m
 Quick Start
 -----------
 
-1. Pure collaborative-filtering example, which uses ``LightGCN`` model and includes process of train, evaluate, predict, recommend and cold-start:
+The two tabs below demonstrate the process of train, evaluate, predict, recommend and cold-start.
 
-.. literalinclude:: ../../examples/pure_example.py
-   :caption: From file `examples/pure_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/pure_example.py>`_
-   :name: pure_example.py
-   :lines: 15-
+1. **Pure** example(collaborative filtering), which uses ``LightGCN`` model.
 
-2. With features example, which uses ``YouTubeRanking`` model and includes process of train, evaluate, predict, recommend and cold-start:
+2. **Feat** example(use features), which uses ``YouTubeRanking`` model.
 
-.. literalinclude:: ../../examples/feat_example.py
-   :caption: From file `examples/feat_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/feat_example.py>`_
-   :name: feat_example.py
-   :lines: 10-
+.. tab:: pure_example
+
+    .. literalinclude:: ../../examples/pure_example.py
+       :caption: From file `examples/pure_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/pure_example.py>`_
+       :name: pure_example.py
+       :lines: 15-
+
+.. tab:: feat_example
+
+    .. literalinclude:: ../../examples/feat_example.py
+       :caption: From file `examples/feat_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/feat_example.py>`_
+       :name: feat_example.py
+       :lines: 10-
+
 
 .. toctree::
    :maxdepth: 1
