@@ -31,7 +31,7 @@ class LightGCNModel(nn.Module):
         item_embeds = nn.Embedding(self.n_items, self.embed_size)
         nn.init.normal_(user_embeds.weight, 0.0, 0.1)
         nn.init.normal_(item_embeds.weight, 0.0, 0.1)
-        return user_embeds, item_embeds
+        return user_embeds.to(self.device), item_embeds.to(self.device)
 
     def _build_laplacian_matrix(self):
         R = ssp.dok_matrix((self.n_users, self.n_items), dtype=np.float32)

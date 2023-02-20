@@ -260,7 +260,7 @@ class GraphSage(EmbedBase, metaclass=ModelMeta, backend="torch"):
         for i in tqdm(range(0, self.n_items, self.batch_size), desc="item embedding"):
             batch_items = all_items[i : i + self.batch_size]
             item_reprs = self.get_item_repr(batch_items)
-            item_embed.append(item_reprs.cpu().numpy())
+            item_embed.append(item_reprs.detach().cpu().numpy())
         self.item_embed = np.concatenate(item_embed, axis=0)
         self.user_embed = self.get_user_embeddings()
 
@@ -273,7 +273,7 @@ class GraphSage(EmbedBase, metaclass=ModelMeta, backend="torch"):
                 users = np.arange(i, min(i + self.batch_size, self.n_users))
                 user_tensors = user_unique_to_tensor(users, self.data_info, self.device)
                 user_reprs = self.torch_model.user_repr(*user_tensors)
-                user_embed.append(user_reprs.cpu().numpy())
+                user_embed.append(user_reprs.detach().cpu().numpy())
             return np.concatenate(user_embed, axis=0)
         else:
             for u in range(self.n_users):
