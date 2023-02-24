@@ -10,7 +10,7 @@ but this is actually not easy for some deep learning models.
 The reason lies in the new users/items that may appear in the new data.
 In deep learning models, embedding variables are commonly used, and their shapes are preassigned and fixed during and after training.
 The same issue also goes with new features. If we load the old model and want to train it with new users/items/features,
-these embedding shape must be expanded, which is not allowed in TensorFlow and PyTorch (Well, at least to my knowledge).
+these embedding shapes must be expanded, which is not allowed in TensorFlow and PyTorch (Well, at least to my knowledge).
 
 One workaround is to combine the new data with the old data, then retrain the model with all the data.
 But it would be a waste of time and resources to retrain on the whole data every time we get some new data.
@@ -20,7 +20,7 @@ Bigger Problem?
 
 So how can we retrain a model if we can't change the shape of the variables in TensorFlow and PyTorch?
 Well, if we can't alter it, we create a new one, then explicitly assign the old one to the new one.
-Specifically, in TensorFlow, we build a new graph with variables with new shape,
+Specifically, in TensorFlow, we build a new graph with variables with new shapes,
 then assign the old values to the correct indices of new variables. For the new indices,
 i.e. the new user/item part, they are initialized randomly as usual.
 
@@ -31,13 +31,13 @@ as well as PyTorch's default method such as `load_state_dict <https://pytorch.or
 , since these can only load to the exact same model with same shapes.
 
 Things become even more desperate if we also want to save and restore the optimizers' variables,
-e.g. the first and second moment in Adam optimizer. Since these variables are used as states in optimizers,
+e.g. the first and second moments in Adam optimizer. Since these variables are used as states in optimizers,
 failing to keep them means losing the previous training state.
 
 Solution in LibRecommender
 --------------------------
 
-So our solution is extracting all the variables to :class:`numpy.ndarray` format, then save them using the save
+So our solution is extracting all the variables to :class:`numpy.ndarray` format, then saving them using the ``save``
 method in numpy. After that the variables are loaded from numpy, we then build the new graph and
 update the new variables with old ones.
 
@@ -49,11 +49,11 @@ the model, which is OK if you are certain that there will be no new user/item in
 .. literalinclude:: ../../../examples/model_retrain_example.py
    :caption: From file `examples/model_retrain_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/model_retrain_example.py>`_
    :name: model_retrain_example.py
-   :lines: 72-74
+   :lines: 77-79
 
 Before retraining the model, the new data should also be transformed. Since the old ``data_info``
 already exists, we need to merge new information with the old one,
-especially those new users/items/features from new data. This achieved by calling
+especially those new users/items/features from new data. This is achieved by calling
 :meth:`~libreco.data.dataset.DatasetFeat.merge_trainset`,
 :meth:`~libreco.data.dataset.DatasetFeat.merge_evalset`,
 :meth:`~libreco.data.dataset.DatasetFeat.merge_testset`
