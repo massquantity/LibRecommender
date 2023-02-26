@@ -40,7 +40,7 @@ dependencies = [
 ]
 
 [project.urls]
-documentation = "https://librecommender.readthedocs.io/en/stable/"
+documentation = "https://librecommender.readthedocs.io/en/latest/"
 repository = "https://github.com/massquantity/LibRecommender"
 
 [tool.setuptools]
