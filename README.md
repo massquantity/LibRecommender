@@ -170,7 +170,7 @@ Besides, if you want to use some other meta features (e.g., age, sex, category e
 
 ## Documentation
 
-The tutorials and API documentation are hosted on [librecommender.readthedocs.io](https://librecommender.readthedocs.io/en/stable/).
+The tutorials and API documentation are hosted on [librecommender.readthedocs.io](https://librecommender.readthedocs.io/en/latest/).
 
 The example scripts are under [examples/](https://github.com/massquantity/LibRecommender/tree/master/examples) folder.
 

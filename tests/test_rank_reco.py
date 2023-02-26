@@ -137,6 +137,6 @@ def test_rank_random():
         return_scores=True,
     )
     assert scores.shape == (2, 2)
-    for k in range(len(scores)):
-        for i in range(1, len(scores[k])):
-            assert scores[k][i - 1] >= scores[k][i]
+    for score in scores.tolist():
+        for i in range(1, len(score)):
+            assert score[i - 1] >= score[i]
