@@ -56,7 +56,7 @@ def test_user_cf(prepare_pure_data, task, sim_type, store_top_k):
 
 
 def test_all_consumed_recommend(prepare_pure_data, monkeypatch):
-    pd_data, train_data, eval_data, data_info = prepare_pure_data
+    _, train_data, eval_data, data_info = prepare_pure_data
     train_data.build_negative_samples(data_info, seed=2022)
     eval_data.build_negative_samples(data_info, seed=2222)
 

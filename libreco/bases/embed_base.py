@@ -230,7 +230,7 @@ class EmbedBase(Base):
         return result_recs
 
     @abc.abstractmethod
-    def set_embeddings(self, *args, **kwargs):
+    def set_embeddings(self):
         pass
 
     def assign_embedding_oov(self):
