@@ -66,9 +66,9 @@ def test_rank_reco():
         return_scores=True,
     )
     assert scores.shape == (2, 2)
-    for k in range(len(scores)):
-        for i in range(1, len(scores[k])):
-            assert scores[k][i - 1] >= scores[k][i]
+    for score in scores.tolist():
+        for i in range(1, len(score)):
+            assert score[i - 1] >= score[i]
 
     preds = np.array([[-0.1, -0.01, 0, 0.1, 0.01], [1, -2, 4, 5, 6]])  # 2d array
     rec_items = rank_recommendations(

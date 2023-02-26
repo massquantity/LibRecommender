@@ -150,11 +150,22 @@ class SVDpp(EmbedBase):
         shuffle=True,
         eval_data=None,
         metrics=None,
-        **kwargs,
+        k=10,
+        eval_batch_size=8192,
+        eval_user_num=None,
     ):
         if self.sparse_interaction is None:
             self.sparse_interaction = self._set_sparse_interaction()
-        super().fit(train_data, verbose, shuffle, eval_data, metrics, **kwargs)
+        super().fit(
+            train_data,
+            verbose,
+            shuffle,
+            eval_data,
+            metrics,
+            k,
+            eval_batch_size,
+            eval_user_num,
+        )
 
     def set_embeddings(self):
         bu, bi, puj, qi = self.sess.run(
