@@ -1,6 +1,14 @@
 Tutorial
 ========
 
+.. image:: https://colab.research.google.com/assets/colab-badge.svg
+   :target: https://colab.research.google.com/github/massquantity/LibRecommender/blob/master/examples/tutorial.ipynb
+   :alt: Open in Colab
+
+.. image:: https://img.shields.io/badge/View-on%20GitHub-blue?logo=GitHub
+   :target: https://github.com/massquantity/LibRecommender/blob/master/examples/tutorial.ipynb
+   :alt: View On GitHub
+
 This tutorial will walk you through the comprehensive process of
 training a model in LibRecommender, i.e. **data processing -> feature
 engineering -> training -> evaluate -> save/load -> retrain**. We will
