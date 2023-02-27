@@ -20,7 +20,7 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.6"
 keywords = ["Collaborative Filtering", "Recommender System"]
-classifiers= [
+classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Education",
