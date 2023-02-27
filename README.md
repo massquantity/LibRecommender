@@ -9,8 +9,7 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/860f0cb5339c41fba9bee5770d09be47)](https://www.codacy.com/gh/massquantity/LibRecommender/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=massquantity/LibRecommender&amp;utm_campaign=Badge_Grade)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v1.json)](https://github.com/charliermarsh/ruff)
-[![platform](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-%23ffdfba)](https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-%23ffdfba)
-[![Documentation Status](https://readthedocs.org/projects/librecommender/badge/?version=stable)](https://librecommender.readthedocs.io/en/stable/?badge=stable)
+[![Documentation Status](https://readthedocs.org/projects/librecommender/badge/?version=latest)](https://librecommender.readthedocs.io/en/latest/?badge=latest)
 ![visitors](https://visitor-badge.glitch.me/badge?page_id=massquantity.LibRecommender&right_color=rgb(91,194,231))
 [![License](https://img.shields.io/github/license/massquantity/LibRecommender?color=ff69b4)](https://github.com/massquantity/LibRecommender/blob/master/LICENSE)
 
@@ -204,8 +203,8 @@ $ pip install .
 - scikit-learn >= 0.20.0
 - gensim >= 4.0.0
 - tqdm
-- [nmslib](https://github.com/nmslib/nmslib) (optional, used in approximate similarity searching. See [Embedding](https://librecommender.readthedocs.io/en/stable/user_guide/embedding.html))
-- [DGL](https://github.com/dmlc/dgl) (optional, used in GraphSage and PinSage. See [Implementation Details](https://librecommender.readthedocs.io/en/stable/internal/implementation_details.html#pinsage))
+- [nmslib](https://github.com/nmslib/nmslib) (optional, used in approximate similarity searching. See [Embedding](https://librecommender.readthedocs.io/en/latest/user_guide/embedding.html))
+- [DGL](https://github.com/dmlc/dgl) (optional, used in GraphSage and PinSage. See [Implementation Details](https://librecommender.readthedocs.io/en/latest/internal/implementation_details.html#pinsage))
 
 If you are using Python 3.6, you also need to install [dataclasses](https://github.com/ericvsmith/dataclasses), which was first introduced in Python 3.7.
 
