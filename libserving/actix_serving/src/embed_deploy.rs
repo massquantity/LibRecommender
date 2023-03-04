@@ -42,12 +42,15 @@ pub async fn embed_serving(
     let user_id = get_str(&mut conn, "user2id", &user, "hget").await?;
     let user_embed: Vec<f32> = get_vec(&mut conn, "user_embed", &user_id).await?;
     let consumed = get_str(&mut conn, "user_consumed", &user, "hget").await?;
-    let item_ids = rec_on_sim_embeds(&user_embed, n_rec, &consumed, state).await?;
+    // let item_ids = rec_on_sim_embeds(&user_embed, n_rec, &consumed, state).await?;
+    let item_ids = tokio::task::spawn_blocking(move || {
+        rec_on_sim_embeds(&user_embed, n_rec, &consumed, state)
+    }).await??;
     let recs = get_multi_str(&mut conn, "id2item", &item_ids).await?;
     Ok(web::Json(Recommendation { rec_list: recs }))
 }
 
-async fn rec_on_sim_embeds(
+fn rec_on_sim_embeds(
     user_embed: &[f32],
     n_rec: usize,
     consumed_str: &str,
