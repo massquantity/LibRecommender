@@ -1,6 +1,6 @@
 # LibRecommender
 
-[![Build](https://img.shields.io/github/actions/workflow/status/massquantity/LibRecommender/wheels.yml?branch=master)](https://github.com/massquantity/LibRecommender/actions/workflows/wheels.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/massquantity/LibRecommender/wheels.yml?branch=master&logo=github)](https://github.com/massquantity/LibRecommender/actions/workflows/wheels.yml)
 [![CI](https://github.com/massquantity/LibRecommender/actions/workflows/ci.yml/badge.svg)](https://github.com/massquantity/LibRecommender/actions/workflows/ci.yml)
 [![Codecov](https://img.shields.io/codecov/c/github/massquantity/LibRecommender?color=ffdfba&logo=codecov&logoColor=%2300FC87CD)](https://app.codecov.io/gh/massquantity/LibRecommender)
 [![pypi](https://img.shields.io/pypi/v/LibRecommender?color=blue)](https://pypi.org/project/LibRecommender/)
