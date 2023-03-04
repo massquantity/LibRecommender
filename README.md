@@ -2,7 +2,7 @@
 
 [![Build](https://img.shields.io/github/actions/workflow/status/massquantity/LibRecommender/wheels.yml?branch=master&logo=github)](https://github.com/massquantity/LibRecommender/actions/workflows/wheels.yml)
 [![CI](https://github.com/massquantity/LibRecommender/actions/workflows/ci.yml/badge.svg)](https://github.com/massquantity/LibRecommender/actions/workflows/ci.yml)
-![Codecov](https://img.shields.io/codecov/c/github/massquantity/LibRecommender?color=ffdfba&logo=codecov&logoColor=%2300FC87CD)
+[![Codecov](https://img.shields.io/codecov/c/github/massquantity/LibRecommender?color=ffdfba&logo=codecov&logoColor=%2300FC87CD)](https://app.codecov.io/gh/massquantity/LibRecommender)
 [![pypi](https://img.shields.io/pypi/v/LibRecommender?color=blue)](https://pypi.org/project/LibRecommender/)
 [![Downloads](https://static.pepy.tech/personalized-badge/librecommender?period=total&units=international_system&left_color=grey&right_color=lightgrey&left_text=Downloads)](https://pepy.tech/project/librecommender)
 [![python versions](https://img.shields.io/pypi/pyversions/LibRecommender?logo=python&logoColor=ffffba)](https://pypi.org/project/LibRecommender/)
