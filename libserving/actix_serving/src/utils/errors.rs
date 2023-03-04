@@ -27,6 +27,8 @@ pub enum ServingError {
     RedisCreatePoolError(#[from] deadpool_redis::CreatePoolError),
     #[error("error: failed to get redis pool, {0}")]
     RedisGetPoolError(#[from] deadpool_redis::PoolError),
+    #[error("error: failed to execute tokio blocking task, {0}")]
+    TaskError(#[from] tokio::task::JoinError),
     #[error("error: failed to get prediction from tf serving, {0}")]
     TfServingError(#[from] reqwest::Error),
     #[error("error: request timeout")]
