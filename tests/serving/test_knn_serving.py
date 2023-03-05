@@ -7,7 +7,7 @@ import requests
 
 from libreco.bases import CfBase
 from libserving.serialization import knn2redis, save_knn
-from tests.utils_path import SAVE_PATH
+from tests.utils_data import SAVE_PATH
 
 
 @pytest.mark.parametrize("knn_model", ["UserCF", "ItemCF"], indirect=True)

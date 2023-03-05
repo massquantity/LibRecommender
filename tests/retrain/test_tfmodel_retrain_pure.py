@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pandas as pd
@@ -7,18 +6,14 @@ import tensorflow as tf
 from libreco.algorithms import WaveNet
 from libreco.data import DataInfo, DatasetPure, split_by_ratio_chrono
 from libreco.evaluation import evaluate
-from tests.utils_path import SAVE_PATH, remove_path
+from tests.utils_data import SAVE_PATH, remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 
 
 def test_tfmodel_retrain_pure():
     tf.compat.v1.reset_default_graph()
-    data_path = os.path.join(
-        str(Path(os.path.realpath(__file__)).parent.parent),
-        "sample_data",
-        "sample_movielens_rating.dat",
-    )
+    data_path = Path(__file__).parents[1] / "sample_data" / "sample_movielens_rating.dat"
     all_data = pd.read_csv(
         data_path, sep="::", names=["user", "item", "label", "time"], engine="python"
     )
@@ -27,7 +22,7 @@ def test_tfmodel_retrain_pure():
     train_data, eval_data = split_by_ratio_chrono(first_half_data, test_size=0.2)
     train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)
-    train_data.build_negative_samples(data_info, seed=2022)
+    # train_data.build_negative_samples(data_info, seed=2022)
     eval_data.build_negative_samples(data_info, seed=2222)
 
     model = WaveNet(
@@ -90,7 +85,7 @@ def test_tfmodel_retrain_pure():
         train_data_orig, new_data_info, merge_behavior=True
     )
     eval_data = DatasetPure.merge_evalset(eval_data_orig, new_data_info)
-    train_data.build_negative_samples(new_data_info, seed=2022)
+    # train_data.build_negative_samples(new_data_info, seed=2022)
     eval_data.build_negative_samples(new_data_info, seed=2222)
 
     new_model = WaveNet(

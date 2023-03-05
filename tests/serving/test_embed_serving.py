@@ -6,7 +6,7 @@ import redis
 import requests
 
 from libserving.serialization import embed2redis, save_embed, save_faiss_index
-from tests.utils_path import SAVE_PATH, remove_path
+from tests.utils_data import SAVE_PATH, remove_path
 
 
 def test_embed_serving(embed_model):

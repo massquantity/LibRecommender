@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pandas as pd
@@ -8,7 +7,7 @@ import tensorflow as tf
 from libreco.algorithms import YouTubeRetrieval
 from libreco.data import DatasetFeat, split_by_ratio_chrono
 from tests.utils_metrics import get_metrics
-from tests.utils_path import SAVE_PATH, remove_path
+from tests.utils_data import SAVE_PATH, remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model
@@ -16,11 +15,7 @@ from tests.utils_save_load import save_load_model
 
 # According to the paper, the YouTuBeRetrieval model can not use item features.
 def prepare_youtube_retrieval_data(multi_sparse=False):
-    data_path = os.path.join(
-        str(Path(os.path.realpath(__file__)).parent.parent),
-        "sample_data",
-        "sample_movielens_merged.csv",
-    )
+    data_path = Path(__file__).parents[1] / "sample_data" / "sample_movielens_merged.csv"
     pd_data = pd.read_csv(data_path, sep=",", header=0)
     train_data, eval_data = split_by_ratio_chrono(pd_data, test_size=0.2)
     if multi_sparse:
@@ -46,13 +41,13 @@ def prepare_youtube_retrieval_data(multi_sparse=False):
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize(
-    "lr_decay, reg, use_bn, dropout_rate, recent_num, random_num, hidden_units",
+    "lr_decay, reg, use_bn, dropout_rate, recent_num, random_num, hidden_units, num_workers",
     [
-        (False, None, False, None, 10, None, 1),
-        (True, 0.001, True, 0.5, None, 10, [16, 16]),
-        (True, 0.001, False, None, None, None, (4, 4, 4)),
-        (False, None, False, None, 10, None, "64,64"),
-        (True, 0.001, True, 0.5, None, 10, [1, 2, 4.22]),
+        (False, None, False, None, 10, None, 1, 0),
+        (True, 0.001, True, 0.5, None, 10, [16, 16], 1),
+        (True, 0.001, False, None, None, None, (4, 4, 4), 2),
+        (False, None, False, None, 10, None, "64,64", 0),
+        (True, 0.001, True, 0.5, None, 10, [1, 2, 4.22], 0),
     ],
 )
 @pytest.mark.parametrize("num_sampled_per_batch", [None, 1, 64])
@@ -68,11 +63,12 @@ def test_youtube_retrieval(
     recent_num,
     random_num,
     hidden_units,
+    num_workers,
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_youtube_retrieval_data()
     if task == "ranking":
-        train_data.build_negative_samples(data_info, seed=2022)
+        # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
 
     if task == "rating":
@@ -110,6 +106,7 @@ def test_youtube_retrieval(
             eval_data=eval_data,
             metrics=get_metrics(task),
             eval_user_num=200,
+            num_workers=num_workers,
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)
@@ -130,9 +127,7 @@ def test_youtube_retrieval_multi_sparse():
     pd_data, train_data, eval_data, data_info = prepare_youtube_retrieval_data(
         multi_sparse=True
     )
-    train_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2022
-    )
+    # train_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2022)
     eval_data.build_negative_samples(
         data_info, item_gen_mode="random", num_neg=1, seed=2222
     )

@@ -4,7 +4,7 @@ import pytest
 
 from libreco.algorithms import BPR
 from libserving.serialization import save_faiss_index
-from tests.utils_path import SAVE_PATH
+from tests.utils_data import SAVE_PATH
 
 
 def test_faiss_index(embed_model):

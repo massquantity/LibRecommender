@@ -2,7 +2,7 @@ import tensorflow as tf
 
 from libreco.bases import TfBase
 from libreco.data import DataInfo
-from tests.utils_path import SAVE_PATH
+from tests.utils_data import SAVE_PATH
 
 
 def save_load_model(cls, model, data_info):

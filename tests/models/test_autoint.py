@@ -2,6 +2,7 @@ import pytest
 import tensorflow as tf
 
 from libreco.algorithms import AutoInt
+from tests.utils_data import set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_multi_sparse_models import fit_multi_sparse
 from tests.utils_pred import ptest_preds
@@ -22,7 +23,7 @@ from tests.utils_save_load import save_load_model
     "lr_decay, reg, use_residual", [(False, None, True), (True, 0.001, False)]
 )
 @pytest.mark.parametrize("att_embed_size", [None, 16, (4, 8)])
-@pytest.mark.parametrize("num_heads", [1, 2])
+@pytest.mark.parametrize("num_heads, num_workers", [(1, 0), (2, 4)])
 def test_autoint(
     prepare_feat_data,
     task,
@@ -32,11 +33,12 @@ def test_autoint(
     use_residual,
     att_embed_size,
     num_heads,
+    num_workers,
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_feat_data
     if task == "ranking":
-        train_data.build_negative_samples(data_info, seed=2022)
+        # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
@@ -67,6 +69,7 @@ def test_autoint(
             eval_data=eval_data,
             metrics=get_metrics(task),
             eval_user_num=40,
+            num_workers=num_workers,
         )
         ptest_preds(model, task, pd_data, with_feats=True)
         ptest_recommends(model, data_info, pd_data, with_feats=True)

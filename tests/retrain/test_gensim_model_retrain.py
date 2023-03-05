@@ -5,7 +5,7 @@ import pandas as pd
 from libreco.algorithms import DeepWalk, Item2Vec
 from libreco.data import DataInfo, DatasetPure, split_by_ratio_chrono
 from libreco.evaluation import evaluate
-from tests.utils_path import SAVE_PATH, remove_path
+from tests.utils_data import SAVE_PATH, remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 

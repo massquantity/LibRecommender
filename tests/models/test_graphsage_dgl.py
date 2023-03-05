@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from libreco.algorithms import GraphSageDGL
 from tests.utils_metrics import get_metrics
-from tests.utils_path import remove_path
+from tests.utils_data import remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model
@@ -47,7 +47,8 @@ from tests.utils_save_load import save_load_model
     "sample_walk_len,"
     "margin,"
     "start_node,"
-    "focus_start",
+    "focus_start,"
+    "num_workers",
     [
         (
             0.0,
@@ -63,6 +64,7 @@ from tests.utils_save_load import save_load_model
             1.0,
             "random",
             False,
+            0,
         ),
         (
             0.01,
@@ -78,6 +80,23 @@ from tests.utils_save_load import save_load_model
             0.0,
             "unpopular",
             True,
+            0,
+        ),
+        (
+            0.0,
+            0.0,
+            False,
+            1e-8,
+            False,
+            True,
+            2,
+            3,
+            3,
+            2,
+            1.0,
+            "random",
+            False,
+            2,
         ),
     ],
 )
@@ -102,6 +121,7 @@ def test_pinsage(
     margin,
     start_node,
     focus_start,
+    num_workers,
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_feat_data
@@ -143,6 +163,9 @@ def test_pinsage(
     elif loss_type == "max_margin" and not sampler:
         with pytest.raises(ValueError):
             GraphSageDGL(**params).fit(train_data)
+    elif num_workers != 0:
+        with pytest.raises(AssertionError):
+            GraphSageDGL(**params).fit(train_data, num_workers=num_workers)
     else:
         model = GraphSageDGL(
             task=task,
@@ -176,6 +199,7 @@ def test_pinsage(
             shuffle=True,
             eval_data=eval_data,
             metrics=get_metrics(task),
+            num_workers=num_workers,
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)

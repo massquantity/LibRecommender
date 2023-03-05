@@ -8,7 +8,6 @@ import pytest
 from libreco.data import DatasetFeat
 from libreco.utils.exception import NotSamplingError
 from libreco.utils.sampling import NegativeSampling
-from libreco.utils.validate import check_has_sampled
 
 
 def test_sampling():
@@ -35,8 +34,6 @@ def test_sampling():
         shuffle=False,
     )
 
-    with pytest.raises(NotSamplingError):
-        check_has_sampled(train_data, verbose=2)
     neg_sampling = NegativeSampling(
         train_data, data_info, num_neg=1, sparse=True, dense=True, batch_sampling=False
     )

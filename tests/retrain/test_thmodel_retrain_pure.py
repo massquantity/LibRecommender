@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import pandas as pd
@@ -6,17 +5,13 @@ import pandas as pd
 from libreco.algorithms import NGCF
 from libreco.data import DataInfo, DatasetPure, split_by_ratio_chrono
 from libreco.evaluation import evaluate
-from tests.utils_path import SAVE_PATH, remove_path
+from tests.utils_data import SAVE_PATH, remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 
 
 def test_torchmodel_retrain_pure():
-    data_path = os.path.join(
-        str(Path(os.path.realpath(__file__)).parent.parent),
-        "sample_data",
-        "sample_movielens_rating.dat",
-    )
+    data_path = Path(__file__).parents[1] / "sample_data" / "sample_movielens_rating.dat"
     all_data = pd.read_csv(
         data_path, sep="::", names=["user", "item", "label", "time"], engine="python"
     )

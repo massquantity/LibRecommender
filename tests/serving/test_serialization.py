@@ -14,7 +14,7 @@ from libserving.serialization import (
     save_tf,
     tf2redis,
 )
-from tests.utils_path import SAVE_PATH
+from tests.utils_data import SAVE_PATH
 
 
 @pytest.mark.parametrize("knn_model", ["UserCF", "ItemCF"], indirect=True)
