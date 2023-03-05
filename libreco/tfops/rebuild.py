@@ -23,7 +23,7 @@ def rebuild_tf_model(self, path, model_name, full_assign=True):
     full_assign : bool, default: True
         Whether to also restore the variables of Adam optimizer.
     """
-    from ..training import get_trainer
+    from ..training.dispatch import get_trainer
 
     self.model_built = True
     self.build_model()

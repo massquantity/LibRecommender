@@ -21,7 +21,7 @@ def rebuild_torch_model(self, path, model_name):
     model_name : str
         Name of the saved model file.
     """
-    from ..training import get_trainer
+    from ..training.dispatch import get_trainer
 
     self.model_built = True
     self.build_model()

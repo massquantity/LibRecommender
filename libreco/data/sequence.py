@@ -3,7 +3,7 @@ import random
 import numpy as np
 
 
-def sparse_user_interacted(
+def get_sparse_interacted(
     user_indices, item_indices, user_consumed, mode=None, num=None
 ):
     interacted_indices = []
@@ -25,31 +25,14 @@ def sparse_user_interacted(
             chosen_items = np.random.choice(consumed_items, num, replace=False)
             interacted_items.extend(chosen_items.tolist())
 
-    assert len(interacted_indices) == len(
-        interacted_items
-    ), "length of indices and values doesn't match"
     interacted_indices = np.asarray(interacted_indices).reshape(-1, 1)
     indices = np.concatenate(
         [interacted_indices, np.zeros_like(interacted_indices)], axis=1
     )
-    return indices, interacted_items, len(user_indices)
+    return indices, np.array(interacted_items), len(user_indices)
 
 
-# def sample_item_with_tolerance(num, consumed_items, consumed_len, tolerance=5):
-#    assert num > tolerance
-#    sampled = []
-#    first_len = num - tolerance
-#    while len(sampled) < first_len:
-#        i = floor(random() * consumed_len)
-#        if consumed_items[i] not in sampled:
-#            sampled.append(consumed_items[i])
-#    for _ in range(tolerance):
-#        i = floor(random() * consumed_len)
-#        sampled.append(consumed_items[i])
-#    return sampled
-
-
-def user_interacted_seq(
+def get_interacted_seq(
     user_indices,
     item_indices,
     user_consumed,
@@ -87,7 +70,7 @@ def user_interacted_seq(
                 batch_interacted[j] = chosen_items
             batch_interacted_len.append(float(num))
 
-    return batch_interacted, batch_interacted_len
+    return batch_interacted, np.array(batch_interacted_len)
 
 
 # most recent num items a user has interacted, assume already sorted by time.
@@ -104,4 +87,4 @@ def get_user_last_interacted(n_users, user_consumed, pad_index, recent_num=10):
             u_last_interacted[u] = u_consumed_items[-recent_num:]
             interacted_len.append(float(recent_num))
 
-    return u_last_interacted, np.asarray(interacted_len)
+    return u_last_interacted, np.array(interacted_len)

@@ -266,15 +266,13 @@ def features_from_batch_data(data_info, sparse, dense, data):
         for col, field_idx in data_info.col_name_mapping["dense_col"].items():
             if col not in data.columns:
                 continue
-            dense_values[field_idx] = data[col].to_numpy()
+            dense_values[field_idx] = data[col].to_numpy(dtype=np.float32)
         dense_values = np.array(dense_values).T
     else:
         dense_values = None
 
     if sparse and dense:
-        assert len(sparse_indices) == len(
-            dense_values
-        ), "indices and values length must equal"
+        assert len(sparse_indices) == len(dense_values)
     return sparse_indices, dense_values
 
 
@@ -300,7 +298,7 @@ def add_item_features(data_info, sparse_indices, dense_values, data):
         for feat_idx, col in enumerate(col_info.name):
             if col not in data.columns:
                 continue
-            dense_values_copy[row_idx, feat_idx] = data[col].to_numpy()
+            dense_values_copy[row_idx, feat_idx] = data[col].to_numpy(dtype=np.float32)
     return sparse_indices_copy, dense_values_copy
 
 
