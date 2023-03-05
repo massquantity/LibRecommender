@@ -34,6 +34,15 @@ class SVDpp(EmbedBase):
         Regularization parameter, must be non-negative or None.
     batch_size : int, default: 256
         Batch size for training.
+    sampler : {'random', 'unconsumed', 'popular'}, default: 'random'
+        Negative sampling strategy.
+
+        - ``'random'`` means random sampling.
+        - ``'unconsumed'`` samples items that the target user did not consume before.
+        - ``'popular'`` has a higher probability to sample popular items as negative samples.
+
+        .. versionadded:: 1.1.0
+
     num_neg : int, default: 1
         Number of negative samples for each positive sample, only used in `ranking` task.
     seed : int, default: 42
@@ -65,6 +74,7 @@ class SVDpp(EmbedBase):
         epsilon=1e-5,
         reg=None,
         batch_size=256,
+        sampler="random",
         num_neg=1,
         seed=42,
         recent_num=30,
@@ -82,6 +92,7 @@ class SVDpp(EmbedBase):
         self.epsilon = epsilon
         self.reg = reg_config(reg)
         self.batch_size = batch_size
+        self.sampler = sampler
         self.num_neg = num_neg
         self.recent_num = recent_num
         self.seed = seed
@@ -153,6 +164,7 @@ class SVDpp(EmbedBase):
         k=10,
         eval_batch_size=8192,
         eval_user_num=None,
+        **kwargs,
     ):
         if self.sparse_interaction is None:
             self.sparse_interaction = self._set_sparse_interaction()

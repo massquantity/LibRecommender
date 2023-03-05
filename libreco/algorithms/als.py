@@ -99,6 +99,7 @@ class ALS(EmbedBase):
         k=10,
         eval_batch_size=8192,
         eval_user_num=None,
+        **kwargs,
     ):
         """Fit ALS model on the training data.
 
@@ -135,7 +136,6 @@ class ALS(EmbedBase):
         user_interaction = train_data.sparse_interaction  # sparse.csr_matrix
         item_interaction = user_interaction.T.tocsr()
         if self.task == "ranking":
-            # check_has_sampled(train_data, verbose)
             user_interaction.data = user_interaction.data * self.alpha + 1
             item_interaction.data = item_interaction.data * self.alpha + 1
 

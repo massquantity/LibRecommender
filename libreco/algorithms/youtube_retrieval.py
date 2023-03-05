@@ -163,7 +163,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
     def build_model(self):
         tf.set_random_seed(self.seed)
-        # item_indices actually serve as labels in YouTuBeRetrieval model
+        # item_indices actually serve as labels in `YouTubeRetrieval` model
         self.item_indices = tf.placeholder(tf.int64, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
         self.concat_embed = []
@@ -188,6 +188,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     def _build_item_interaction(self):
         self.item_interaction_indices = tf.placeholder(tf.int64, shape=[None, 2])
         self.item_interaction_values = tf.placeholder(tf.int32, shape=[None])
+        # `batch_size` may change during training, especially first item in sequence
         self.modified_batch_size = tf.placeholder(tf.int32, shape=[])
 
         item_interaction_features = tf.get_variable(
@@ -221,10 +222,9 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             regularizer=self.reg,
         )
 
-        if self.data_info.multi_sparse_combine_info and self.multi_sparse_combiner in (
-            "sum",
-            "mean",
-            "sqrtn",
+        if (
+            self.data_info.multi_sparse_combine_info
+            and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")
         ):
             sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
