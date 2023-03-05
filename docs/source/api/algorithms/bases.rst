@@ -25,3 +25,8 @@ Base Classes
    :members:
    :inherited-members:
    :show-inheritance:
+
+.. autoclass:: libreco.bases.SageBase
+   :members:
+   :inherited-members:
+   :show-inheritance:

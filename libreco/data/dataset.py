@@ -680,5 +680,5 @@ def _build_features(data, mode, is_ordered, data_info):
             ordered=is_ordered,
         )
     if dense_cols:
-        dense_values = data[dense_cols].to_numpy()
+        dense_values = data[dense_cols].to_numpy(dtype=np.float32)
     return sparse_indices, dense_values, sparse_cols, multi_sparse_cols

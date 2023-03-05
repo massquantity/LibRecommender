@@ -511,7 +511,9 @@ class DataInfo:
                 for feat_idx, col in enumerate(col_info.name):
                     if col not in data.columns:
                         continue
-                    self.user_dense_unique[row_idx, feat_idx] = data[col].to_numpy()
+                    self.user_dense_unique[row_idx, feat_idx] = data[col].to_numpy(
+                        dtype=np.float32
+                    )
         elif mode == "item":
             row_idx = data["item"].to_numpy()
             col_info = self.item_dense_col
@@ -519,7 +521,9 @@ class DataInfo:
                 for feat_idx, col in enumerate(col_info.name):
                     if col not in data.columns:
                         continue
-                    self.item_dense_unique[row_idx, feat_idx] = data[col].to_numpy()
+                    self.item_dense_unique[row_idx, feat_idx] = data[col].to_numpy(
+                        dtype=np.float32
+                    )
 
     def assign_user_features(self, user_data):
         """Assign user features to this ``data_info`` object from ``user_data``.
