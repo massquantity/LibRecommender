@@ -1,7 +1,9 @@
+import itertools
 from importlib.util import find_spec
 
 import numpy as np
 import torch
+import tqdm
 
 
 # avoid exiting the program if dgl is not installed and user wants to use other algorithms
@@ -16,6 +18,37 @@ def check_dgl(cls: type) -> type:
     else:
         cls.dgl_error = None
     return cls
+
+
+def build_i2i_homo_graph(n_items, user_consumed, item_consumed):
+    import dgl
+
+    src_items, dst_items = [], []
+    for i in tqdm.trange(n_items, desc="building homo graph"):
+        neighbors = set()
+        for u in item_consumed[i]:
+            neighbors.update(user_consumed[u])
+        src_items.extend(neighbors)
+        dst_items.extend([i] * len(neighbors))
+    src = torch.tensor(src_items, dtype=torch.long)
+    dst = torch.tensor(dst_items, dtype=torch.long)
+    return dgl.graph((src, dst), num_nodes=n_items)
+
+
+def build_u2i_hetero_graph(n_users, n_items, user_consumed):
+    import dgl
+
+    items = [list(user_consumed[u]) for u in range(n_users)]
+    counts = [len(i) for i in items]
+    users = torch.arange(n_users).repeat_interleave(torch.tensor(counts))
+    items = list(itertools.chain.from_iterable(items))
+    items = torch.tensor(items, dtype=torch.long)
+    graph_data = {
+        ("user", "consumed", "item"): (users, items),
+        ("item", "consumed-by", "user"): (items, users),
+    }
+    num_nodes = {"user": n_users, "item": n_items}
+    return dgl.heterograph(graph_data, num_nodes)
 
 
 def build_subgraphs(heads, item_pairs, paradigm, num_neg):

@@ -22,13 +22,14 @@ def negatives_from_random(
     replace = False if len(items_pos) < n_items else True
     negatives = np_rng.choice(n_items, size=len(items_pos), replace=replace)
     invalid_indices = _check_invalid_negatives(negatives, items_pos, items)
-    for _ in range(tolerance):
-        negatives[invalid_indices] = np_rng.choice(
-            n_items, size=len(invalid_indices), replace=True
-        )
-        invalid_indices = _check_invalid_negatives(negatives, items_pos, items)
-        if not invalid_indices:
-            break
+    if invalid_indices:
+        for _ in range(tolerance):
+            negatives[invalid_indices] = np_rng.choice(
+                n_items, size=len(invalid_indices), replace=True
+            )
+            invalid_indices = _check_invalid_negatives(negatives, items_pos, items)
+            if not invalid_indices:
+                break
     return negatives
 
 
@@ -81,6 +82,7 @@ def negatives_from_unconsumed(
             if not success:
                 n = sample_one()
                 print(f"possible not enough negatives for user {u} and item {i}.")
+            # noinspection PyUnboundLocalVariable
             u_negs.append(n)
         negatives.extend(u_negs)
     return np.array(negatives)
@@ -90,7 +92,7 @@ def neg_probs_from_frequency(item_consumed, n_items, temperature):
     freqs = []
     for i in range(n_items):
         freq = len(set(item_consumed[i]))
-        if temperature != 1:
+        if temperature != 1.0:
             freq = pow(freq, temperature)
         freqs.append(freq)
     freqs = np.array(freqs)
