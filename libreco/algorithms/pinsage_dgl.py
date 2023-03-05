@@ -1,14 +1,13 @@
 """Implementation of PinSageDGL."""
 import importlib
 
-from ..bases import ModelMeta
-from ..graph import check_dgl
-from .graphsage_dgl import GraphSageDGL
 from .torch_modules import PinSageDGLModel
+from ..bases import ModelMeta, SageBase
+from ..graph import NeighborWalkerDGL, build_u2i_hetero_graph, check_dgl
 
 
 @check_dgl
-class PinSageDGL(GraphSageDGL, metaclass=ModelMeta, backend="torch"):
+class PinSageDGL(SageBase, metaclass=ModelMeta, backend="torch"):
     """*PinSageDGL* algorithm.
 
     .. NOTE::
@@ -157,7 +156,6 @@ class PinSageDGL(GraphSageDGL, metaclass=ModelMeta, backend="torch"):
             data_info,
             loss_type,
             paradigm,
-            "mean",
             embed_size,
             n_epochs,
             lr,
@@ -182,12 +180,15 @@ class PinSageDGL(GraphSageDGL, metaclass=ModelMeta, backend="torch"):
             lower_upper_bound,
         )
         self.all_args = locals()
-        self.num_walks = num_walks
         self.neighbor_walk_len = neighbor_walk_len
         self.termination_prob = termination_prob
 
     def build_model(self):
-        self.hetero_g = self.build_hetero_graph()
+        self._dgl.seed(self.seed)
+        self.hetero_g = build_u2i_hetero_graph(
+            self.n_users, self.n_items, self.user_consumed
+        )
+        self.neighbor_walker = NeighborWalkerDGL(self, self.data_info)
         self.torch_model = PinSageDGLModel(
             self.paradigm,
             self.data_info,
@@ -196,15 +197,3 @@ class PinSageDGL(GraphSageDGL, metaclass=ModelMeta, backend="torch"):
             self.num_layers,
             self.dropout_rate,
         ).to(self.device)
-
-    def sample_frontier(self, nodes):
-        sampler = self._dgl.sampling.PinSAGESampler(
-            self.hetero_g,
-            ntype="item",
-            other_type="user",
-            num_traversals=self.neighbor_walk_len,
-            termination_prob=self.termination_prob,
-            num_random_walks=self.num_walks,
-            num_neighbors=self.num_neighbors,
-        )
-        return sampler(nodes)

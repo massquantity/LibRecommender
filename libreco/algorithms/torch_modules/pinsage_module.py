@@ -82,9 +82,10 @@ class PinSageModel(nn.Module):
         neighbors,
         neighbor_sparse_indices,
         neighbor_dense_values,
-        weights,
         offsets,
+        weights,
     ):
+        # graphsage paper author's implementation: https://github.com/williamleif/GraphSAGE/blob/master/graphsage/models.py#L299
         hidden = [
             self.get_raw_features(items, sparse_indices, dense_values, is_user=False)
         ]
