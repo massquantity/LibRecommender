@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from libreco.algorithms import GraphSage
 from tests.utils_metrics import get_metrics
-from tests.utils_path import remove_path
+from tests.utils_data import remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model
@@ -47,7 +47,8 @@ from tests.utils_save_load import save_load_model
     "sample_walk_len,"
     "margin,"
     "start_node,"
-    "focus_start",
+    "focus_start,"
+    "num_workers",
     [
         (
             0.0,
@@ -63,6 +64,7 @@ from tests.utils_save_load import save_load_model
             1.0,
             "random",
             False,
+            0,
         ),
         (
             0.01,
@@ -78,6 +80,7 @@ from tests.utils_save_load import save_load_model
             0.0,
             "unpopular",
             True,
+            2,
         ),
     ],
 )
@@ -101,6 +104,7 @@ def test_graphsage(
     margin,
     start_node,
     focus_start,
+    num_workers,
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_feat_data
@@ -135,7 +139,7 @@ def test_graphsage(
     elif loss_type == "max_margin" and not sampler:
         with pytest.raises(ValueError):
             GraphSage(**params).fit(train_data)
-    elif sampler and sampler == "whatever":
+    elif not sampler or sampler == "whatever":
         with pytest.raises(ValueError):
             GraphSage(**params).fit(train_data)
     else:
@@ -170,6 +174,7 @@ def test_graphsage(
             shuffle=True,
             eval_data=eval_data,
             metrics=get_metrics(task),
+            num_workers=num_workers,
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)

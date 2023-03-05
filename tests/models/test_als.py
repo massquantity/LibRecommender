@@ -4,7 +4,7 @@ from libreco.algorithms import ALS
 from libreco.algorithms.als import least_squares, least_squares_cg
 from libreco.evaluation import evaluate
 from tests.utils_metrics import get_metrics
-from tests.utils_path import SAVE_PATH, remove_path
+from tests.utils_data import SAVE_PATH, remove_path, set_ranking_labels
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model
@@ -17,8 +17,9 @@ from tests.utils_save_load import save_load_model
 def test_als(prepare_pure_data, task, reg, alpha):
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
-        train_data.build_negative_samples(data_info, seed=2022)
+        # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
+        set_ranking_labels(train_data)
 
     if reg in (1, -1.0, None, 0):
         with pytest.raises(ValueError):

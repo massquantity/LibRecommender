@@ -7,18 +7,14 @@ import tensorflow as tf
 from libreco.algorithms import DIN
 from libreco.data import DataInfo, DatasetFeat, split_by_ratio_chrono
 from libreco.evaluation import evaluate
-from tests.utils_path import SAVE_PATH, remove_path
+from tests.utils_data import SAVE_PATH, remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 
 
 def test_tfmodel_retrain_feat():
     tf.compat.v1.reset_default_graph()
-    data_path = os.path.join(
-        str(Path(os.path.realpath(__file__)).parent.parent),
-        "sample_data",
-        "sample_movielens_merged.csv",
-    )
+    data_path = Path(__file__).parents[1] / "sample_data" / "sample_movielens_merged.csv"
     all_data = pd.read_csv(data_path, sep=",", header=0)
     # use first half data as first training part
     first_half_data = all_data[: (len(all_data) // 2)]
@@ -37,7 +33,7 @@ def test_tfmodel_retrain_feat():
         shuffle=False,
     )
     eval_data = DatasetFeat.build_evalset(eval_data)
-    train_data.build_negative_samples(data_info, seed=2022)
+    # train_data.build_negative_samples(data_info, seed=2022)
     eval_data.build_negative_samples(data_info, seed=2222)
 
     model = DIN(
@@ -110,7 +106,7 @@ def test_tfmodel_retrain_feat():
         train_data_orig, new_data_info, merge_behavior=True
     )
     eval_data = DatasetFeat.merge_evalset(eval_data_orig, new_data_info)
-    train_data.build_negative_samples(new_data_info, seed=2022)
+    # train_data.build_negative_samples(new_data_info, seed=2022)
     eval_data.build_negative_samples(new_data_info, seed=2222)
 
     new_model = DIN(

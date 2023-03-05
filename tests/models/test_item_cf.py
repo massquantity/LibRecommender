@@ -3,7 +3,7 @@ import pytest
 
 from libreco.algorithms import ItemCF
 from tests.utils_metrics import get_metrics
-from tests.utils_path import remove_path
+from tests.utils_data import remove_path
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model

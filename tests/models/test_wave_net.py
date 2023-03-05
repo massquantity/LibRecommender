@@ -2,6 +2,7 @@ import pytest
 import tensorflow as tf
 
 from libreco.algorithms import WaveNet
+from tests.utils_data import set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
@@ -9,26 +10,30 @@ from tests.utils_save_load import save_load_model
 
 
 @pytest.mark.parametrize(
-    "task, loss_type",
+    "task, loss_type, sampler",
     [
-        ("rating", "whatever"),
-        ("ranking", "cross_entropy"),
-        ("ranking", "focal"),
-        ("ranking", "unknown"),
+        ("rating", "focal", "random"),
+        ("ranking", "cross_entropy", None),
+        ("ranking", "focal", None),
+        ("ranking", "cross_entropy", "random"),
+        ("ranking", "cross_entropy", "unconsumed"),
+        ("ranking", "focal", "popular"),
+        ("ranking", "unknown", "popular"),
     ],
 )
 @pytest.mark.parametrize(
     "lr_decay, reg, num_neg, dropout_rate, use_bn, "
-    "n_filters, n_blocks, n_layers_per_block, recent_num",
+    "n_filters, n_blocks, n_layers_per_block, recent_num, num_workers",
     [
-        (False, None, 1, None, False, 16, 1, 4, 10),
-        (True, 0.001, 3, 0.5, True, 32, 4, 2, 6),
+        (False, None, 1, None, False, 16, 1, 4, 10, 0),
+        (True, 0.001, 3, 0.5, True, 32, 4, 2, 6, 2),
     ],
 )
 def test_wave_net(
     prepare_pure_data,
     task,
     loss_type,
+    sampler,
     lr_decay,
     reg,
     num_neg,
@@ -38,16 +43,22 @@ def test_wave_net(
     n_blocks,
     n_layers_per_block,
     recent_num,
+    num_workers,
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
-        train_data.build_negative_samples(data_info, seed=2022)
+        # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
+        if sampler is None and loss_type == "cross_entropy":
+            set_ranking_labels(train_data)
 
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
             WaveNet(task, data_info, loss_type).fit(train_data)
+    elif task == "ranking" and sampler is None and loss_type == "focal":
+        with pytest.raises(ValueError):
+            WaveNet(task, data_info, loss_type, sampler=sampler).fit(train_data)
     else:
         model = WaveNet(
             task=task,
@@ -59,6 +70,7 @@ def test_wave_net(
             lr_decay=lr_decay,
             reg=reg,
             batch_size=2048,
+            sampler=sampler,
             num_neg=num_neg,
             dropout_rate=dropout_rate,
             use_bn=use_bn,
@@ -74,6 +86,7 @@ def test_wave_net(
             shuffle=True,
             eval_data=eval_data,
             metrics=get_metrics(task),
+            num_workers=num_workers,
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)

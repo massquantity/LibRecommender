@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from libreco.algorithms import NGCF
 from tests.utils_metrics import get_metrics
-from tests.utils_path import remove_path
+from tests.utils_data import remove_path, set_ranking_labels
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model
@@ -15,6 +15,7 @@ from tests.utils_save_load import save_load_model
     [
         ("cross_entropy", "random", 1),
         ("cross_entropy", "random", 0),
+        ("cross_entropy", None, 1),
         ("focal", None, 1),
         ("focal", "unconsumed", 3),
         ("bpr", "popular", 3),
@@ -25,10 +26,10 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "reg, node_dropout, message_dropout, lr_decay, epsilon, amsgrad, hidden_units, device",
+    "reg, node_dropout, message_dropout, lr_decay, epsilon, amsgrad, hidden_units, device, num_workers",
     [
-        (0.0, 0.0, 0.0, False, 1e-8, False, 1, "cpu"),
-        (0.01, 0.2, 0.2, True, 4e-5, True, (16, 16), "cuda"),
+        (0.0, 0.0, 0.0, False, 1e-8, False, 1, "cpu", 0),
+        (0.01, 0.2, 0.2, True, 4e-5, True, (16, 16), "cuda", 2),
     ],
 )
 def test_ngcf(
@@ -45,12 +46,15 @@ def test_ngcf(
     amsgrad,
     hidden_units,
     device,
+    num_workers,
 ):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
         # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
+        if sampler is None and loss_type == "cross_entropy":
+            set_ranking_labels(train_data)
 
     params = {
         "task": task,
@@ -70,6 +74,9 @@ def test_ngcf(
         with pytest.raises(AssertionError):
             NGCF(**params).fit(train_data)
     elif loss_type == "max_margin" and not sampler:
+        with pytest.raises(ValueError):
+            NGCF(**params).fit(train_data)
+    elif task == "ranking" and sampler is None and loss_type == "focal":
         with pytest.raises(ValueError):
             NGCF(**params).fit(train_data)
     elif sampler and sampler == "whatever":
@@ -101,6 +108,7 @@ def test_ngcf(
             shuffle=True,
             eval_data=eval_data,
             metrics=get_metrics(task),
+            num_workers=num_workers,
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)

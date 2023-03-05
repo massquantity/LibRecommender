@@ -8,7 +8,7 @@ import tensorflow
 
 from libreco.algorithms import ALS, DIN, NCF, ItemCF, UserCF
 from libreco.data import DatasetFeat
-from tests.utils_path import SAVE_PATH, remove_path
+from tests.utils_data import SAVE_PATH, remove_path
 
 
 @pytest.fixture
