@@ -7,7 +7,6 @@ import numpy as np
 
 from ..prediction import predict_from_embedding
 from ..recommendation import cold_start_rec, construct_rec, recommend_from_embedding
-from ..training import get_trainer
 from ..utils.misc import colorize
 from ..utils.save_load import (
     load_default_recs,
@@ -24,7 +23,8 @@ from .base import Base
 class EmbedBase(Base):
     """Base class for embed models.
 
-    Models that can generate user and item embeddings.
+    Models that can generate user and item embeddings for inference.
+    See `algorithm list <https://github.com/massquantity/LibRecommender#references>`_.
 
     Parameters
     ----------
@@ -78,6 +78,7 @@ class EmbedBase(Base):
         k=10,
         eval_batch_size=8192,
         eval_user_num=None,
+        num_workers=0,
     ):
         """Fit embed model on the training data.
 
@@ -101,12 +102,20 @@ class EmbedBase(Base):
         eval_user_num : int or None, default: None
             Number of users for evaluating. Setting it to a positive number will sample
             users randomly from eval data.
+        num_workers : int, default: 0
+            How many subprocesses to use for data loading.
+            0 means that the data will be loaded in the main process,
+            which is slower than multiprocessing.
+
+            .. versionadded:: 1.1.0
 
         Raises
         ------
         RuntimeError
             If :py:func:`fit` is called from a loaded model(:py:func:`load`).
         """
+        from ..training.dispatch import get_trainer
+
         self.check_attribute(eval_data, k)
         self.show_start_time()
         if not self.model_built:
@@ -123,6 +132,7 @@ class EmbedBase(Base):
             k,
             eval_batch_size,
             eval_user_num,
+            num_workers,
         )
         self.set_embeddings()
         self.assign_embedding_oov()

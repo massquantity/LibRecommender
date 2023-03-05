@@ -7,7 +7,7 @@ import numpy as np
 from ..prediction import predict_tf_feat
 from ..recommendation import cold_start_rec, construct_rec, recommend_tf_feat
 from ..tfops import modify_variable_names, sess_config, tf
-from ..training import get_trainer
+from ..training.dispatch import get_trainer
 from ..utils.save_load import (
     load_tf_model,
     load_tf_variables,
@@ -24,7 +24,7 @@ class TfBase(Base):
     """Base class for TF models.
 
     Models that relies on TensorFlow graph for inference. Although some models such as
-    `RNN4Rec`, `SVD` etc., are trained using TensorFlow, they don't belong to this
+    `RNN4Rec`, `SVD` etc., are trained using TensorFlow, they don't inherit from this
     base class since their inference only uses embeddings.
 
     Parameters
@@ -61,6 +61,7 @@ class TfBase(Base):
         k=10,
         eval_batch_size=8192,
         eval_user_num=None,
+        num_workers=0,
     ):
         """Fit TF model on the training data.
 
@@ -84,6 +85,12 @@ class TfBase(Base):
         eval_user_num : int or None, default: None
             Number of users for evaluating. Setting it to a positive number will sample
             users randomly from eval data.
+        num_workers : int, default: 0
+            How many subprocesses to use for data loading.
+            0 means that the data will be loaded in the main process,
+            which is slower than multiprocessing.
+
+            .. versionadded:: 1.1.0
 
         Raises
         ------
@@ -113,6 +120,7 @@ class TfBase(Base):
             k,
             eval_batch_size,
             eval_user_num,
+            num_workers,
         )
         self.assign_tf_variables_oov()
         self.default_recs = recommend_tf_feat(

@@ -35,6 +35,15 @@ class NCF(TfBase, metaclass=ModelMeta):
         Regularization parameter, must be non-negative or None.
     batch_size : int, default: 256
         Batch size for training.
+    sampler : {'random', 'unconsumed', 'popular'}, default: 'random'
+        Negative sampling strategy.
+
+        - ``'random'`` means random sampling.
+        - ``'unconsumed'`` samples items that the target user did not consume before.
+        - ``'popular'`` has a higher probability to sample popular items as negative samples.
+
+        .. versionadded:: 1.1.0
+
     num_neg : int, default: 1
         Number of negative samples for each positive sample, only used in `ranking` task.
     use_bn : bool, default: True
@@ -76,6 +85,7 @@ class NCF(TfBase, metaclass=ModelMeta):
         epsilon=1e-5,
         reg=None,
         batch_size=256,
+        sampler="random",
         num_neg=1,
         use_bn=True,
         dropout_rate=None,
@@ -95,6 +105,7 @@ class NCF(TfBase, metaclass=ModelMeta):
         self.epsilon = epsilon
         self.reg = reg_config(reg)
         self.batch_size = batch_size
+        self.sampler = sampler
         self.num_neg = num_neg
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)

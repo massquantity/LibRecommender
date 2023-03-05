@@ -8,7 +8,7 @@ from ..bases import EmbedBase, ModelMeta
 from ..evaluation import print_metrics
 from ..recommendation import recommend_from_embedding
 from ..tfops import reg_config, sess_config, tf
-from ..training import get_trainer
+from ..training.dispatch import get_trainer
 from ..utils.initializers import truncated_normal
 from ..utils.misc import time_block
 
@@ -51,6 +51,15 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         Regularization parameter, must be non-negative or None.
     batch_size : int, default: 256
         Batch size for training.
+    sampler : {'random', 'unconsumed', 'popular'}, default: 'random'
+        Negative sampling strategy.
+
+        - ``'random'`` means random sampling.
+        - ``'unconsumed'`` samples items that the target user did not consume before.
+        - ``'popular'`` has a higher probability to sample popular items as negative samples.
+
+        .. versionadded:: 1.1.0
+
     num_neg : int, default: 1
         Number of negative samples for each positive sample, only used in `ranking` task.
     use_tf : bool, default: True
@@ -89,6 +98,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         epsilon=1e-5,
         reg=None,
         batch_size=256,
+        sampler="random",
         num_neg=1,
         use_tf=True,
         seed=42,
@@ -109,6 +119,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.epsilon = epsilon
         self.reg = reg_config(reg) if use_tf else reg
         self.batch_size = batch_size
+        self.sampler = sampler
         self.num_neg = num_neg
         self.use_tf = use_tf
         self.seed = seed
@@ -188,6 +199,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         k=10,
         eval_batch_size=8192,
         eval_user_num=None,
+        num_workers=0,
     ):
         """Fit BPR model on the training data.
 
@@ -211,10 +223,12 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         eval_user_num : int or None, default: None
             Number of users for evaluating. Setting it to a positive number will sample
             users randomly from eval data.
+        num_workers : int, default: 0
+            How many subprocesses to use for data loading.
+            0 means that the data will be loaded in the main process.
         """
         self.check_attribute(eval_data, k)
         self.show_start_time()
-        # check_has_sampled(train_data, verbose)
         if not self.model_built:
             self.build_model()
             self.model_built = True
@@ -230,6 +244,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 k,
                 eval_batch_size,
                 eval_user_num,
+                num_workers,
             )
             self.set_embeddings()
         else:

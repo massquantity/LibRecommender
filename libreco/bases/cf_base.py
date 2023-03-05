@@ -51,6 +51,11 @@ class CfBase(Base):
         Random seed.
     lower_upper_bound : tuple or None, default: None
         Lower and upper score bound for `rating` task.
+
+    See Also
+    --------
+    ~libreco.algorithms.UserCF
+    ~libreco.algorithms.ItemCF
     """
 
     def __init__(

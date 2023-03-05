@@ -47,6 +47,7 @@ class GensimBase(EmbedBase):
         k=10,
         eval_batch_size=8192,
         eval_user_num=None,
+        **kwargs,
     ):
         self.check_attribute(eval_data, k)
         self.show_start_time()
