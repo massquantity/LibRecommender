@@ -11,8 +11,8 @@ from libreco.tfops import TF_VERSION
 if __name__ == "__main__":
     print(f"tensorflow version: {TF_VERSION}")
     print(libreco)
-    from libreco.utils._similarities import forward_cosine, invert_cosine
     from libreco.algorithms._als import als_update
+    from libreco.utils._similarities import forward_cosine, invert_cosine
     print("Cython functions: ", invert_cosine, forward_cosine, als_update)
 
     cur_path = Path(".").parent

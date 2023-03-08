@@ -15,8 +15,8 @@ from ..torchops import hidden_units_config
 from ..utils.misc import count_params
 from ..utils.validate import (
     check_dense_values,
-    check_seq_mode,
     check_multi_sparse,
+    check_seq_mode,
     check_sparse_indices,
     dense_field_size,
     sparse_feat_size,

@@ -1,12 +1,10 @@
 import pandas as pd
 import tensorflow as tf
 
-from libreco.data import DatasetFeat, DataInfo
-from libreco.data import split_by_ratio_chrono
 from libreco.algorithms import DeepFM
+from libreco.data import DataInfo, DatasetFeat, split_by_ratio_chrono
 from libreco.evaluation import evaluate
 from libreco.prediction import predict_data_with_feats
-
 
 if __name__ == "__main__":
     data = pd.read_csv("sample_data/sample_movielens_merged.csv", sep=",", header=0)

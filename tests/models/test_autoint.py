@@ -2,7 +2,6 @@ import pytest
 import tensorflow as tf
 
 from libreco.algorithms import AutoInt
-from tests.utils_data import set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_multi_sparse_models import fit_multi_sparse
 from tests.utils_pred import ptest_preds
@@ -23,7 +22,7 @@ from tests.utils_save_load import save_load_model
     "lr_decay, reg, use_residual", [(False, None, True), (True, 0.001, False)]
 )
 @pytest.mark.parametrize("att_embed_size", [None, 16, (4, 8)])
-@pytest.mark.parametrize("num_heads, num_workers", [(1, 0), (2, 4)])
+@pytest.mark.parametrize("num_heads, num_workers", [(1, 0), (2, 1)])
 def test_autoint(
     prepare_feat_data,
     task,

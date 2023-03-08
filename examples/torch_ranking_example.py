@@ -2,16 +2,15 @@ import time
 
 import pandas as pd
 
-from libreco.data import split_by_ratio_chrono, DatasetPure, DatasetFeat
 from libreco.algorithms import (
     NGCF,
-    LightGCN,
     GraphSage,
     GraphSageDGL,
+    LightGCN,
     PinSage,
     PinSageDGL,
 )
-
+from libreco.data import DatasetFeat, DatasetPure, split_by_ratio_chrono
 
 if __name__ == "__main__":
     start_time = time.perf_counter()

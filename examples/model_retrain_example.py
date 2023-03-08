@@ -1,9 +1,8 @@
 import pandas as pd
 import tensorflow as tf
 
-from libreco.data import DatasetFeat, DataInfo
-from libreco.data import split_by_ratio_chrono
 from libreco.algorithms import DeepFM
+from libreco.data import DataInfo, DatasetFeat, split_by_ratio_chrono
 from libreco.evaluation import evaluate
 
 

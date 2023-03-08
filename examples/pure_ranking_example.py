@@ -3,21 +3,21 @@ import time
 import pandas as pd
 import tensorflow as tf
 
-from libreco.data import split_by_ratio_chrono, DatasetPure
 from libreco.algorithms import (
-    SVD,
-    SVDpp,
-    NCF,
     ALS,
     BPR,
-    UserCF,
+    NCF,
+    SVD,
+    Caser,
+    DeepWalk,
+    Item2Vec,
     ItemCF,
     RNN4Rec,
-    Caser,
+    SVDpp,
+    UserCF,
     WaveNet,
-    Item2Vec,
-    DeepWalk,
 )
+from libreco.data import DatasetPure, split_by_ratio_chrono
 
 
 def reset_state(name):

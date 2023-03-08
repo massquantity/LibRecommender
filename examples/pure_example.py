@@ -1,9 +1,8 @@
 import pandas as pd
 
-from libreco.data import random_split, DatasetPure
 from libreco.algorithms import LightGCN  # pure data, algorithm LightGCN
+from libreco.data import DatasetPure, random_split
 from libreco.evaluation import evaluate
-
 
 if __name__ == "__main__":
     data = pd.read_csv(

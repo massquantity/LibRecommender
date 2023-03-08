@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 
+from .ranking import rank_recommendations
 from ..feature import (
     add_item_features,
     features_from_dict,
     get_recommend_indices_and_values,
 )
 from ..tfops import get_feed_dict
-from .ranking import rank_recommendations
 
 
 def construct_rec(data_info, user_ids, computed_recs, inner_id):

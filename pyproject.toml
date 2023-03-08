@@ -65,6 +65,7 @@ known_third_party = "pytest"
 line_length = 88
 multi_line_output = 3
 profile = "black"
+reverse_relative = true
 
 [tool.pydocstyle]
 add-ignore = ["D102"]

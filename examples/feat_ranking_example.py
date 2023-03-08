@@ -3,16 +3,16 @@ import time
 import pandas as pd
 import tensorflow as tf
 
-from libreco.data import split_by_ratio_chrono, DatasetFeat
 from libreco.algorithms import (
-    FM,
-    WideDeep,
-    DeepFM,
-    AutoInt,
     DIN,
-    YouTubeRetrieval,
+    FM,
+    AutoInt,
+    DeepFM,
+    WideDeep,
     YouTubeRanking,
+    YouTubeRetrieval,
 )
+from libreco.data import DatasetFeat, split_by_ratio_chrono
 
 
 def reset_state(name):

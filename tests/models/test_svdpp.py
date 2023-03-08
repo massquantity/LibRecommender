@@ -2,8 +2,8 @@ import pytest
 import tensorflow as tf
 
 from libreco.algorithms import SVDpp
-from tests.utils_metrics import get_metrics
 from tests.utils_data import SAVE_PATH, set_ranking_labels
+from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model
@@ -25,7 +25,9 @@ from tests.utils_save_load import save_load_model
     "reg, num_neg, recent_num, num_workers",
     [(None, 1, 10, 0), (0.001, 3, 1, 2), (2.0, 1, None, 1), (0.001, 3, 0, 0)],
 )
-def test_svdpp(prepare_pure_data, task, loss_type, sampler, reg, num_neg, recent_num, num_workers):
+def test_svdpp(
+    prepare_pure_data, task, loss_type, sampler, reg, num_neg, recent_num, num_workers
+):
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_pure_data
     if task == "ranking":
