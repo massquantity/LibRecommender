@@ -1,7 +1,7 @@
 import pandas as pd
 
-from libreco.data import split_by_ratio_chrono, split_multi_value, DatasetFeat
 from libreco.algorithms import DeepFM
+from libreco.data import DatasetFeat, split_by_ratio_chrono, split_multi_value
 
 pd.set_option("display.max_columns", 20)
 

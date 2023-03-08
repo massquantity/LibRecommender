@@ -1,8 +1,7 @@
 import pandas as pd
 
-from libreco.data import split_by_ratio_chrono, DatasetFeat
 from libreco.algorithms import YouTubeRanking
-
+from libreco.data import DatasetFeat, split_by_ratio_chrono
 
 if __name__ == "__main__":
     data = pd.read_csv("sample_data/sample_movielens_merged.csv", sep=",", header=0)

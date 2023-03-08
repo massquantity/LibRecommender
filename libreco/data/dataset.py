@@ -3,6 +3,8 @@ import itertools
 
 import numpy as np
 
+from .data_info import DataInfo
+from .transformed import TransformedSet
 from ..feature import (
     col_name2index,
     construct_unique_feat,
@@ -15,8 +17,6 @@ from ..feature import (
     multi_sparse_combine_info,
     recover_sparse_cols,
 )
-from .data_info import DataInfo
-from .transformed import TransformedSet
 
 
 class _Dataset(object):

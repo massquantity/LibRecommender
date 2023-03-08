@@ -3,8 +3,8 @@ import pytest
 from libreco.algorithms import ALS
 from libreco.algorithms.als import least_squares, least_squares_cg
 from libreco.evaluation import evaluate
-from tests.utils_metrics import get_metrics
 from tests.utils_data import SAVE_PATH, remove_path, set_ranking_labels
+from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
 from tests.utils_save_load import save_load_model

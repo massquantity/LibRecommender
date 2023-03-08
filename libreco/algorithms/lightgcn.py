@@ -1,9 +1,9 @@
 """Implementation of LightGCN."""
 import torch
 
+from .torch_modules import LightGCNModel
 from ..bases import EmbedBase, ModelMeta
 from ..torchops import device_config
-from .torch_modules import LightGCNModel
 
 
 class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):

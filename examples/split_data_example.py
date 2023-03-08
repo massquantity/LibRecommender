@@ -3,13 +3,12 @@ import time
 import pandas as pd
 
 from libreco.data import (
-    split_by_num,
-    split_by_ratio,
-    split_by_num_chrono,
-    split_by_ratio_chrono,
     random_split,
+    split_by_num,
+    split_by_num_chrono,
+    split_by_ratio,
+    split_by_ratio_chrono,
 )
-
 
 if __name__ == "__main__":
     start_time = time.perf_counter()

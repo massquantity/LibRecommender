@@ -11,7 +11,7 @@ from scipy.sparse import issparse
 from scipy.sparse import load_npz as load_sparse
 from scipy.sparse import save_npz as save_sparse
 
-from ..bases import Base
+from .base import Base
 from ..evaluation import print_metrics
 from ..recommendation import construct_rec, popular_recommendations
 from ..recommendation.ranking import filter_items

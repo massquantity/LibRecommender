@@ -15,7 +15,6 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
-from ..data import TransformedSet
 from .computation import (
     build_eval_transformed_data,
     compute_preds,
@@ -31,6 +30,7 @@ from .metrics import (
     precision_at_k,
     recall_at_k,
 )
+from ..data import TransformedSet
 
 
 def _check_metrics(task, metrics, k):

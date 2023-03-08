@@ -1,9 +1,9 @@
 """Implementation of NGCF."""
 import torch
 
+from .torch_modules import NGCFModel
 from ..bases import EmbedBase, ModelMeta
 from ..torchops import device_config, hidden_units_config
-from .torch_modules import NGCFModel
 
 
 class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
