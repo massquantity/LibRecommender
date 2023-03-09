@@ -41,6 +41,7 @@ h1 {
 }
 
 h2 {
+    color: #3c3c3b;
     font-size: 1.7em;
     font-style: italic;
     text-decoration-line: underline;
@@ -52,6 +53,7 @@ h2 {
 }
 
 h3 {
+    color: #3c3c3b;
     font-size: 1.1em;
 }
 
@@ -69,6 +71,14 @@ body {
 
 .sidebar-brand-text #release {
     color: rgb(124, 210, 200);
+}
+
+.sidebar-tree .caption {
+    color: rgb(73, 116, 124);
+    font-style: italic;
+    font-weight: 800;
+    font-size: 108%;
+    text-transform: capitalize;
 }
 
 dl[class]:not(.option-list):not(.field-list):not(.footnote):not(.glossary):not(.simple) .field-list>dt {
