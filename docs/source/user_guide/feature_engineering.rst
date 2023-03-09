@@ -1,7 +1,7 @@
 Feature Engineering
 ===================
 
-``Sparse`` and ``Dense`` features
+Sparse and Dense Features
 +++++++++++++++++++++++++++++++++
 
 Sparse features are typically categorical features such as sex, location, year, etc.
@@ -26,7 +26,7 @@ So to be clear, for one dense feature, all samples of this feature will be proje
 
 Apart from ``sparse`` and ``dense`` features, ``user`` and ``item`` features should also be provided. Since in order to make predictions and recommendations, the model needs to know whether a feature belongs to user or item. So, in short, these parameters are [``sparse_col``, ``dense_col``, ``user_col``, ``item_col``].
 
-``Multi_Sparse`` features
+Multi_Sparse Features
 +++++++++++++++++++++++++
 
 Often times categorical features can be multi-valued. For example, a movie may have multiple genres, as shown in the ``genre`` feature in the ``MovieLens-1m`` dataset:

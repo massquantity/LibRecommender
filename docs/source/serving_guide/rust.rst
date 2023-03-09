@@ -62,7 +62,7 @@ Note that the ``"user"`` parameter in request should be string and the route is 
     # {"rec_list":["1806","1687","3799","807","1303","1860","3847","3616","1696","1859"]}
 
 
-Embed-based model
+Embed-based Model
 -----------------
 
 Similar to Python Serving Guide,
@@ -127,7 +127,7 @@ Note that the ``"user"`` parameter in request should be string and the route is 
     # {"rec_list":["858","260","2355","1287","527","2371","1220","377","1968","3362"]}
 
 
-TensorFlow-based model
+TensorFlow-based Model
 ----------------------
 
 .. code-block:: bash

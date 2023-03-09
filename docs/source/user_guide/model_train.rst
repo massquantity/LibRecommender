@@ -1,7 +1,7 @@
 Model & Train
 =============
 
-``Pure`` and ``Feat`` model
+Pure and Feat Models
 ---------------------------
 
 LibRecommender is a hybrid recommender system, which means you can choose whether to use
