@@ -99,27 +99,3 @@ def adjust_batch_size(model, original_batch_size):
         else:
             return max(1, int(original_batch_size / model.num_neg))
     return original_batch_size
-
-
-if __name__ == "__main__":
-    import os
-    import random
-
-    import numpy as np
-    from torch.multiprocessing import Process
-
-    class Coll:
-        def __init__(self):
-            self.np_rng = None
-
-        def __call__(self):
-            if self.np_rng is None:
-                self.np_rng = np.random.default_rng(os.getpid())
-            print(self.np_rng.integers(0, 10, (4,)))
-            print(random.randrange(0, 10))
-
-    ps = [Process(target=Coll()) for _ in range(10)]
-    for p in ps:
-        p.start()
-    for p in ps:
-        p.join()
