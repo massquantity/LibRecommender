@@ -91,7 +91,7 @@ from tests.utils_save_load import save_load_model
     ],
 )
 def test_pinsage(
-    prepare_feat_data,
+    feat_data_small,
     task,
     paradigm,
     loss_type,
@@ -115,7 +115,7 @@ def test_pinsage(
     num_workers,
 ):
     tf.compat.v1.reset_default_graph()
-    pd_data, train_data, eval_data, data_info = prepare_feat_data
+    pd_data, train_data, eval_data, data_info = feat_data_small
     if task == "ranking":
         # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
@@ -162,7 +162,7 @@ def test_pinsage(
             lr_decay=lr_decay,
             epsilon=epsilon,
             amsgrad=amsgrad,
-            batch_size=8192,
+            batch_size=80,
             reg=reg,
             dropout_rate=dropout_rate,
             num_neg=num_neg,

@@ -1,11 +1,7 @@
-from pathlib import Path
-
-import pandas as pd
 import pytest
 import tensorflow as tf
 
 from libreco.algorithms import YouTubeRetrieval
-from libreco.data import DatasetFeat, split_by_ratio_chrono
 from tests.utils_data import SAVE_PATH, remove_path
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
@@ -14,31 +10,44 @@ from tests.utils_save_load import save_load_model
 
 
 # According to the paper, the YouTuBeRetrieval model can not use item features.
-def prepare_youtube_retrieval_data(multi_sparse=False):
-    data_path = Path(__file__).parents[1] / "sample_data" / "sample_movielens_merged.csv"
-    pd_data = pd.read_csv(data_path, sep=",", header=0)
-    train_data, eval_data = split_by_ratio_chrono(pd_data, test_size=0.2)
-    if multi_sparse:
-        train_data, data_info = DatasetFeat.build_trainset(
-            train_data=train_data,
-            sparse_col=["sex", "occupation"],
-            multi_sparse_col=[["genre1", "genre2", "genre3"]],
-            dense_col=["age"],
-            user_col=["sex", "age", "occupation", "genre1", "genre2", "genre3"],
-            item_col=[],
-        )
-    else:
-        train_data, data_info = DatasetFeat.build_trainset(
-            train_data=train_data,
-            sparse_col=["sex", "occupation"],
-            dense_col=["age"],
-            user_col=["sex", "age", "occupation"],
-            item_col=[],
-        )
-    eval_data = DatasetFeat.build_testset(eval_data)
-    return pd_data, train_data, eval_data, data_info
+# def prepare_youtube_retrieval_data(multi_sparse=False):
+#    data_path = (
+#        Path(__file__).parents[1] / "sample_data" / "sample_movielens_merged.csv"
+#    )
+#    pd_data = pd.read_csv(data_path, sep=",", header=0)
+#    train_data, eval_data = split_by_ratio_chrono(pd_data, test_size=0.2)
+#    if multi_sparse:
+#        train_data, data_info = DatasetFeat.build_trainset(
+#            train_data=train_data,
+#            sparse_col=["sex", "occupation"],
+#            multi_sparse_col=[["genre1", "genre2", "genre3"]],
+#            dense_col=["age"],
+#            user_col=["sex", "age", "occupation", "genre1", "genre2", "genre3"],
+#            item_col=[],
+#        )
+#    else:
+#        train_data, data_info = DatasetFeat.build_trainset(
+#            train_data=train_data,
+#            sparse_col=["sex", "occupation"],
+#            dense_col=["age"],
+#            user_col=["sex", "age", "occupation"],
+#            item_col=[],
+#        )
+#    eval_data = DatasetFeat.build_testset(eval_data)
+#    return pd_data, train_data, eval_data, data_info
 
 
+@pytest.mark.parametrize(
+    "config_feat_data_small",
+    [
+        {
+            "sparse_col": ["sex", "occupation"],
+            "dense_col": ["age"],
+            "user_col": ["sex", "occupation", "age"],
+        },
+    ],
+    indirect=True,
+)
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize(
     "lr_decay, reg, use_bn, dropout_rate, recent_num, random_num, hidden_units, num_workers",
@@ -50,9 +59,10 @@ def prepare_youtube_retrieval_data(multi_sparse=False):
         (True, 0.001, True, 0.5, None, 10, [1, 2, 4.22], 0),
     ],
 )
-@pytest.mark.parametrize("num_sampled_per_batch", [None, 1, 64])
+@pytest.mark.parametrize("num_sampled_per_batch", [None, 1, 10])
 @pytest.mark.parametrize("loss_type", ["nce", "sampled_softmax", "unknown"])
 def test_youtube_retrieval(
+    config_feat_data_small,
     task,
     lr_decay,
     reg,
@@ -66,7 +76,7 @@ def test_youtube_retrieval(
     num_workers,
 ):
     tf.compat.v1.reset_default_graph()
-    pd_data, train_data, eval_data, data_info = prepare_youtube_retrieval_data()
+    pd_data, train_data, eval_data, data_info = config_feat_data_small
     if task == "ranking":
         # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
@@ -90,7 +100,7 @@ def test_youtube_retrieval(
             lr=1e-4,
             lr_decay=lr_decay,
             reg=reg,
-            batch_size=2048,
+            batch_size=10,
             use_bn=use_bn,
             dropout_rate=dropout_rate,
             hidden_units=hidden_units,
@@ -121,12 +131,22 @@ def test_youtube_retrieval(
         remove_path(SAVE_PATH)
 
 
-def test_youtube_retrieval_multi_sparse():
+@pytest.mark.parametrize(
+    "config_feat_data_small",
+    [
+        {
+            "sparse_col": ["sex", "occupation"],
+            "multi_sparse_col": [["genre1", "genre2", "genre3"]],
+            "dense_col": ["age"],
+            "user_col": ["sex", "occupation", "age", "genre1", "genre2", "genre3"],
+        },
+    ],
+    indirect=True,
+)
+def test_youtube_retrieval_multi_sparse(config_feat_data_small):
     tf.compat.v1.reset_default_graph()
     task = "ranking"
-    pd_data, train_data, eval_data, data_info = prepare_youtube_retrieval_data(
-        multi_sparse=True
-    )
+    pd_data, train_data, eval_data, data_info = config_feat_data_small
     # train_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2022)
     eval_data.build_negative_samples(
         data_info, item_gen_mode="random", num_neg=1, seed=2222
@@ -140,7 +160,7 @@ def test_youtube_retrieval_multi_sparse():
         lr=1e-4,
         lr_decay=True,
         reg=None,
-        batch_size=2048,
+        batch_size=10,
         use_bn=True,
         dropout_rate=None,
         num_sampled_per_batch=None,

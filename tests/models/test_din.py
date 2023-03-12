@@ -36,7 +36,7 @@ from tests.utils_save_load import save_load_model
     ],
 )
 def test_din(
-    prepare_feat_data,
+    feat_data_small,
     task,
     loss_type,
     sampler,
@@ -51,7 +51,7 @@ def test_din(
     num_workers,
 ):
     tf.compat.v1.reset_default_graph()
-    pd_data, train_data, eval_data, data_info = prepare_feat_data
+    pd_data, train_data, eval_data, data_info = feat_data_small
     if task == "ranking":
         # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
@@ -74,7 +74,7 @@ def test_din(
             lr=1e-4,
             lr_decay=lr_decay,
             reg=reg,
-            batch_size=8192,
+            batch_size=100,
             sampler=sampler,
             num_neg=num_neg,
             use_bn=use_bn,
@@ -97,9 +97,9 @@ def test_din(
         ptest_recommends(model, data_info, pd_data, with_feats=True)
 
 
-def test_din_multi_sparse(prepare_multi_sparse_data):
+def test_din_multi_sparse(multi_sparse_data_small):
     task = "ranking"
-    pd_data, train_data, eval_data, data_info = prepare_multi_sparse_data
+    pd_data, train_data, eval_data, data_info = multi_sparse_data_small
     model = fit_multi_sparse(DIN, train_data, eval_data, data_info)
     ptest_preds(model, task, pd_data, with_feats=True)
     ptest_recommends(model, data_info, pd_data, with_feats=True)

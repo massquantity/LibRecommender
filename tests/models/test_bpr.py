@@ -32,7 +32,7 @@ from tests.utils_save_load import save_load_model
     ],
 )
 def test_bpr(
-    prepare_pure_data,
+    pure_data_small,
     task,
     loss_type,
     sampler,
@@ -43,7 +43,7 @@ def test_bpr(
     num_workers,
 ):
     tf.compat.v1.reset_default_graph()
-    pd_data, train_data, eval_data, data_info = prepare_pure_data
+    pd_data, train_data, eval_data, data_info = pure_data_small
     if task == "ranking":
         # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
@@ -62,7 +62,7 @@ def test_bpr(
             n_epochs=2,
             lr=1e-4,
             reg=reg,
-            batch_size=2048,
+            batch_size=40,
             sampler=sampler,
             num_neg=num_neg,
             use_tf=use_tf,
