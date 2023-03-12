@@ -27,8 +27,39 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel setuptools
-          python -m pip install -r requirements.txt
+          python -m pip install $(sed "/nmslib*/d;/dgl*/d" requirements.txt)
           python -m pip install -e .
 
       - name: Test install
-        run: python -c "import dgl; import nmslib; import libreco; print(libreco.__version__)"
+        run: python -c "import libreco; print('libreco --', libreco.__version__)"
+
+      - name: Test install dgl
+        run: |
+          python -m pip install dgl -f https://data.dgl.ai/wheels/repo.html
+          python -c "import dgl; print('dgl --', dgl.__version__)"
+
+      - name: Test running on Linux
+        run: |
+          cp tests/sample_data/sample_movielens_rating.dat /home/runner/work/
+          cp tests/compatibility_test.py /home/runner/work/ && cd /home/runner/work/
+          python -m compatibility_test
+        if: matrix.os == 'ubuntu-20.04'
+
+      - name: Test running on Windows
+        run: |
+          copy D:\a\LibRecommender\LibRecommender\tests\sample_data\sample_movielens_rating.dat D:\a\
+          copy D:\a\LibRecommender\LibRecommender\tests\compatibility_test.py D:\a\ && Set-Location -Path "D:\a\"
+          python -m compatibility_test
+        if: matrix.os == 'windows-latest'
+
+      - name: Test running on macOS
+        run: |
+          cp tests/sample_data/sample_movielens_rating.dat /Users/runner/work/
+          cp tests/compatibility_test.py /Users/runner/work/ && cd /Users/runner/work/
+          python -m compatibility_test
+        if: matrix.os == 'macos-latest'
+
+      - name: Test install nmslib
+        run: |
+          python -m pip install nmslib
+          python -c "import nmslib; print('nmslib --', nmslib.__version__)"
