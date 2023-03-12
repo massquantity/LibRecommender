@@ -12,10 +12,10 @@ from tests.utils_save_load import save_load_model
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize("sim_type", ["cosine", "pearson", "jaccard", "unknown"])
 @pytest.mark.parametrize("store_top_k", [True, False])
-def test_user_cf(prepare_pure_data, task, sim_type, store_top_k):
-    pd_data, train_data, eval_data, data_info = prepare_pure_data
+def test_user_cf(pure_data_small, task, sim_type, store_top_k):
+    pd_data, train_data, eval_data, data_info = pure_data_small
     if task == "ranking":
-        train_data.build_negative_samples(data_info, seed=2022)
+        # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
 
     model = UserCF(
@@ -55,9 +55,9 @@ def test_user_cf(prepare_pure_data, task, sim_type, store_top_k):
             model.rebuild_model("model_path", "user_cf")
 
 
-def test_all_consumed_recommend(prepare_pure_data, monkeypatch):
-    _, train_data, eval_data, data_info = prepare_pure_data
-    train_data.build_negative_samples(data_info, seed=2022)
+def test_all_consumed_recommend(pure_data_small, monkeypatch):
+    _, train_data, eval_data, data_info = pure_data_small
+    # train_data.build_negative_samples(data_info, seed=2022)
     eval_data.build_negative_samples(data_info, seed=2222)
 
     model = UserCF(task="ranking", data_info=data_info)

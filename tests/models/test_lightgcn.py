@@ -31,7 +31,7 @@ from tests.utils_save_load import save_load_model
     [(0.0, 0.0, False, 1e-8, False, 0), (0.01, 0.2, True, 4e-5, True, 2)],
 )
 def test_lightgcn(
-    prepare_pure_data,
+    pure_data_small,
     task,
     loss_type,
     sampler,
@@ -44,7 +44,7 @@ def test_lightgcn(
     num_workers,
 ):
     tf.compat.v1.reset_default_graph()
-    pd_data, train_data, eval_data, data_info = prepare_pure_data
+    pd_data, train_data, eval_data, data_info = pure_data_small
     if task == "ranking":
         # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
@@ -88,7 +88,7 @@ def test_lightgcn(
             lr_decay=lr_decay,
             epsilon=epsilon,
             amsgrad=amsgrad,
-            batch_size=1024,
+            batch_size=40,
             n_layers=3,
             reg=reg,
             dropout_rate=dropout_rate,

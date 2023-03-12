@@ -2,7 +2,9 @@ from libreco.prediction import predict_data_with_feats
 
 
 def ptest_preds(model, task, pd_data, with_feats):
-    pred = model.predict(user=1, item=2333)
+    user = pd_data.user.iloc[0]
+    item = pd_data.item.iloc[0]
+    pred = model.predict(user=user, item=item)
     # prediction in range
     if task == "rating":
         assert 1 <= pred <= 5
@@ -20,4 +22,4 @@ def ptest_preds(model, task, pd_data, with_feats):
 
     if with_feats:
         assert len(predict_data_with_feats(model, pd_data[:5])) == 5
-        model.predict(user=2211, item=110, feats={"sex": "male", "genre_1": "crime"})
+        model.predict(user=user, item=item, feats={"sex": "male", "genre_1": "crime"})

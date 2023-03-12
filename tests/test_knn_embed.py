@@ -3,20 +3,22 @@ import sys
 import pytest
 
 from libreco.algorithms import ALS, LightGCN
+from tests.utils_data import set_ranking_labels
 
 
 @pytest.mark.skipif(
-    sys.version_info[:2] >= (3, 10),
-    reason="Python3.10 or higher can't use `nmslib` yet",
+    sys.platform.startswith("win") or sys.version_info[:2] >= (3, 10),
+    reason="Possible issue on Windows platform or Python >= 3.10 using `nmslib`",
 )
-def test_knn_embed(prepare_pure_data, monkeypatch):
-    _, train_data, eval_data, data_info = prepare_pure_data
-    train_data.build_negative_samples(data_info, seed=2022)
+def test_knn_embed(pure_data_small, monkeypatch):
+    pd_data, train_data, eval_data, data_info = pure_data_small
+    # train_data.build_negative_samples(data_info, seed=2022)
     eval_data.build_negative_samples(data_info, seed=2222)
+    set_ranking_labels(train_data)
 
     als = ALS("ranking", data_info, embed_size=16, n_epochs=2, reg=5.0)
     als.fit(train_data, verbose=2, shuffle=True)
-    ptest_knn(als)
+    ptest_knn(als, pd_data)
 
     lightgcn = LightGCN(
         "ranking",
@@ -25,10 +27,10 @@ def test_knn_embed(prepare_pure_data, monkeypatch):
         embed_size=8,
         n_epochs=1,
         lr=1e-4,
-        batch_size=2048,
+        batch_size=20,
     )
     lightgcn.fit(train_data, verbose=2, shuffle=True)
-    ptest_knn(lightgcn)
+    ptest_knn(lightgcn, pd_data)
 
     with pytest.raises(ValueError):
         lightgcn.get_user_id(-1)
@@ -42,7 +44,7 @@ def test_knn_embed(prepare_pure_data, monkeypatch):
             lightgcn.init_knn(approximate=True, sim_type="cosine")
 
 
-def ptest_knn(model):
+def ptest_knn(model, pd_data):
     assert model.get_user_embedding().shape[0] == model.n_users
     assert model.get_user_embedding().shape[1] == model.embed_size
     assert model.get_item_embedding().shape[0] == model.n_items
@@ -50,24 +52,26 @@ def ptest_knn(model):
     with pytest.raises(ValueError):
         model.init_knn(approximate=True, sim_type="whatever")
 
+    user = pd_data.user[0].item()
+    item = pd_data.item[0].item()
     model.init_knn(approximate=True, sim_type="cosine")
-    sim_cosine_users_approx = model.search_knn_users(5000, 10)
-    sim_cosine_items_approx = model.search_knn_items(3000, 10)
+    sim_cosine_users_approx = model.search_knn_users(user, 10)
+    sim_cosine_items_approx = model.search_knn_items(item, 10)
     model.init_knn(approximate=False, sim_type="cosine")
-    sim_cosine_users = model.search_knn_users(5000, 10)
-    sim_cosine_items = model.search_knn_items(3000, 10)
-    assert compare_diff(sim_cosine_users_approx, sim_cosine_users) <= 5
-    assert compare_diff(sim_cosine_items_approx, sim_cosine_items) <= 5
+    sim_cosine_users = model.search_knn_users(user, 10)
+    sim_cosine_items = model.search_knn_items(item, 10)
+    assert compare_diff(sim_cosine_users_approx, sim_cosine_users) <= 1
+    assert compare_diff(sim_cosine_items_approx, sim_cosine_items) <= 1
     assert model.sim_type == "cosine"
 
     model.init_knn(approximate=True, sim_type="inner-product")
-    sim_ip_users_approx = model.search_knn_users(5000, 10)
-    sim_ip_items_approx = model.search_knn_items(3000, 10)
+    sim_ip_users_approx = model.search_knn_users(user, 10)
+    sim_ip_items_approx = model.search_knn_items(item, 10)
     model.init_knn(approximate=False, sim_type="inner-product")
-    sim_ip_users = model.search_knn_users(5000, 10)
-    sim_ip_items = model.search_knn_items(3000, 10)
-    assert compare_diff(sim_ip_users_approx, sim_ip_users) <= 5
-    assert compare_diff(sim_ip_items_approx, sim_ip_items) <= 5
+    sim_ip_users = model.search_knn_users(user, 10)
+    sim_ip_items = model.search_knn_items(item, 10)
+    assert compare_diff(sim_ip_users_approx, sim_ip_users) <= 1
+    assert compare_diff(sim_ip_items_approx, sim_ip_items) <= 1
     assert model.sim_type == "inner-product"
 
 

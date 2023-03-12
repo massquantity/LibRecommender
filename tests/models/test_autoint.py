@@ -24,7 +24,7 @@ from tests.utils_save_load import save_load_model
 @pytest.mark.parametrize("att_embed_size", [None, 16, (4, 8)])
 @pytest.mark.parametrize("num_heads, num_workers", [(1, 0), (2, 1)])
 def test_autoint(
-    prepare_feat_data,
+    feat_data_small,
     task,
     loss_type,
     lr_decay,
@@ -35,7 +35,7 @@ def test_autoint(
     num_workers,
 ):
     tf.compat.v1.reset_default_graph()
-    pd_data, train_data, eval_data, data_info = prepare_feat_data
+    pd_data, train_data, eval_data, data_info = feat_data_small
     if task == "ranking":
         # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
@@ -53,7 +53,7 @@ def test_autoint(
             lr=1e-4,
             lr_decay=lr_decay,
             reg=reg,
-            batch_size=8192,
+            batch_size=100,
             use_bn=True,
             dropout_rate=None,
             use_residual=use_residual,
@@ -74,9 +74,9 @@ def test_autoint(
         ptest_recommends(model, data_info, pd_data, with_feats=True)
 
 
-def test_autoint_multi_sparse(prepare_multi_sparse_data):
+def test_autoint_multi_sparse(multi_sparse_data_small):
     task = "ranking"
-    pd_data, train_data, eval_data, data_info = prepare_multi_sparse_data
+    pd_data, train_data, eval_data, data_info = multi_sparse_data_small
     model = fit_multi_sparse(AutoInt, train_data, eval_data, data_info)
     ptest_preds(model, task, pd_data, with_feats=True)
     ptest_recommends(model, data_info, pd_data, with_feats=True)

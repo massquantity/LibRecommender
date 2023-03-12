@@ -26,10 +26,10 @@ from tests.utils_save_load import save_load_model
     [(None, 1, 10, 0), (0.001, 3, 1, 2), (2.0, 1, None, 1), (0.001, 3, 0, 0)],
 )
 def test_svdpp(
-    prepare_pure_data, task, loss_type, sampler, reg, num_neg, recent_num, num_workers
+    pure_data_small, task, loss_type, sampler, reg, num_neg, recent_num, num_workers
 ):
     tf.compat.v1.reset_default_graph()
-    pd_data, train_data, eval_data, data_info = prepare_pure_data
+    pd_data, train_data, eval_data, data_info = pure_data_small
     if task == "ranking":
         # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)

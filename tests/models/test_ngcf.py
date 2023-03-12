@@ -33,7 +33,7 @@ from tests.utils_save_load import save_load_model
     ],
 )
 def test_ngcf(
-    prepare_pure_data,
+    pure_data_small,
     task,
     loss_type,
     sampler,
@@ -49,7 +49,7 @@ def test_ngcf(
     num_workers,
 ):
     tf.compat.v1.reset_default_graph()
-    pd_data, train_data, eval_data, data_info = prepare_pure_data
+    pd_data, train_data, eval_data, data_info = pure_data_small
     if task == "ranking":
         # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
@@ -93,7 +93,7 @@ def test_ngcf(
             lr_decay=lr_decay,
             epsilon=epsilon,
             amsgrad=amsgrad,
-            batch_size=8192,
+            batch_size=40,
             reg=reg,
             node_dropout=node_dropout,
             message_dropout=message_dropout,
