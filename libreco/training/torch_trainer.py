@@ -11,6 +11,7 @@ from ..batch import get_batch_loader
 from ..batch.batch_unit import PairwiseBatch, PointwiseBatch
 from ..evaluation import print_metrics
 from ..graph import compute_i2i_edge_scores, compute_u2i_edge_scores
+from ..graph.message import Message
 from ..torchops import (
     binary_cross_entropy_loss,
     bpr_loss,
@@ -101,8 +102,6 @@ class TorchTrainer(BaseTrainer):
                 self.torch_model.train()
                 train_total_loss = []
                 for i, batch_data in enumerate(tqdm(data_loader, desc="train")):
-                    # if "cuda" in self.device.type:
-                    #     batch_data.to_cuda(non_blocking=True)
                     loss = self._compute_loss(batch_data)
                     self.optimizer.zero_grad()
                     loss.backward()
@@ -129,6 +128,8 @@ class TorchTrainer(BaseTrainer):
                 print("=" * 30)
 
     def _compute_loss(self, data):
+        if "cpu" not in self.device.type:  # pragma: no cover
+            data.to_device(self.device)
         user_embeds, item_embeds = self.torch_model(use_dropout=True)
         if isinstance(data, PointwiseBatch):
             users, items = data.users, data.items
@@ -211,21 +212,29 @@ class GraphTrainer(TorchTrainer):
                 f"for i2i, got {self.sampler}"
             )
 
+    def _to_device(self, data):  # pragma: no cover
+        if "cpu" in self.device.type:
+            return data
+        device_data = []
+        for d in data:
+            if isinstance(d, Message):
+                d = d.to_device(self.device)
+            else:
+                d = d.to(self.device)
+            device_data.append(d)
+        return device_data
+
     def _compute_loss(self, data):
         if self.model.use_dgl:
             if self.paradigm == "u2i":
-                user_data, item_data, pos_graph, neg_graph = data
+                user_data, item_data, pos_graph, neg_graph = self._to_device(data)
                 user_reprs = self.model.get_user_repr(user_data)
                 item_reprs = self.model.get_item_repr(item_data)
-                pos_graph = pos_graph.to(self.device)
-                neg_graph = neg_graph.to(self.device)
                 pos_scores = compute_u2i_edge_scores(pos_graph, user_reprs, item_reprs)
                 neg_scores = compute_u2i_edge_scores(neg_graph, user_reprs, item_reprs)
             else:
-                item_data, pos_graph, neg_graph = data
+                item_data, pos_graph, neg_graph = self._to_device(data)
                 item_reprs = self.model.get_item_repr(item_data)
-                pos_graph = pos_graph.to(self.device)
-                neg_graph = neg_graph.to(self.device)
                 pos_scores = compute_i2i_edge_scores(pos_graph, item_reprs)
                 neg_scores = compute_i2i_edge_scores(neg_graph, item_reprs)
             if self.loss_type in ("bpr", "max_margin") and self.num_neg > 1:
@@ -233,10 +242,10 @@ class GraphTrainer(TorchTrainer):
             return self._loss_scores(pos_scores, neg_scores)
         else:
             if self.paradigm == "u2i":
-                user_data, item_pos_data, item_neg_data = data
+                user_data, item_pos_data, item_neg_data = self._to_device(data)
                 query_reprs = self.model.get_user_repr(user_data)
             else:
-                item_data, item_pos_data, item_neg_data = data
+                item_data, item_pos_data, item_neg_data = self._to_device(data)
                 query_reprs = self.model.get_item_repr(item_data)
             item_pos_reprs = self.model.get_item_repr(item_pos_data)
             item_neg_reprs = self.model.get_item_repr(item_neg_data)

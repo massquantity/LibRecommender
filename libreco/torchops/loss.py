@@ -37,6 +37,8 @@ def pairwise_bce_loss(pos_scores, neg_scores, mean=True):
     neg_bce = F.binary_cross_entropy_with_logits(
         neg_scores, torch.zeros_like(neg_scores), reduction="none"
     )
+    pos_bce = _check_dim(pos_bce)
+    neg_bce = _check_dim(neg_bce)
     loss = torch.cat([pos_bce, neg_bce])
     if mean:
         return torch.mean(loss)
@@ -47,11 +49,19 @@ def pairwise_bce_loss(pos_scores, neg_scores, mean=True):
 def pairwise_focal_loss(pos_scores, neg_scores, mean=True):
     pos_focal = focal_loss(pos_scores, torch.ones_like(pos_scores), mean=False)
     neg_focal = focal_loss(neg_scores, torch.zeros_like(neg_scores), mean=False)
+    pos_focal = _check_dim(pos_focal)
+    neg_focal = _check_dim(neg_focal)
     loss = torch.cat([pos_focal, neg_focal])
     if mean:
         return torch.mean(loss)
     else:
         return torch.sum(loss)
+
+
+def _check_dim(tensor):  # pragma: no cover
+    if tensor.dim() == 0:
+        tensor = tensor.unsqueeze(0)
+    return tensor
 
 
 def compute_pair_scores(targets, items_pos, items_neg, repeat_positives=True):

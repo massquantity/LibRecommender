@@ -35,6 +35,15 @@ class TripleFeats(Generic[T]):
             self.item_neg_feats = torch.from_numpy(self.item_neg_feats)
         return self
 
+    def to_device(self, device):  # pragma: no cover
+        if self.query_feats is not None:
+            self.query_feats = self.query_feats.to(device)
+        if self.item_pos_feats is not None:
+            self.item_pos_feats = self.item_pos_feats.to(device)
+        if self.item_neg_feats is not None:
+            self.item_neg_feats = self.item_neg_feats.to(device)
+        return self
+
 
 @dataclass
 class SeqFeats:
@@ -83,6 +92,16 @@ class PointwiseBatch:
             self.dense_values = torch.from_numpy(self.dense_values)
         return self
 
+    def to_device(self, device):  # pragma: no cover
+        self.users = self.users.to(device)
+        self.items = self.items.to(device)
+        self.labels = self.labels.to(device)
+        if self.sparse_indices is not None:
+            self.sparse_indices = self.sparse_indices.to(device)
+        if self.dense_values is not None:
+            self.dense_values = self.dense_values.to(device)
+        return self
+
 
 @dataclass
 class PointwiseSepFeatBatch(PointwiseBatch):
@@ -126,6 +145,18 @@ class PairwiseBatch:
             self.sparse_indices.to_torch_tensor()
         if self.dense_values is not None:
             self.dense_values.to_torch_tensor()
+        return self
+
+    def to_device(self, device):  # pragma: no cover
+        self.queries = self.queries.to(device)
+        self.item_pairs = (
+            self.item_pairs[0].to(device),
+            self.item_pairs[1].to(device),
+        )
+        if self.sparse_indices is not None:
+            self.sparse_indices = self.sparse_indices.to_device(device)
+        if self.dense_values is not None:
+            self.dense_values = self.dense_values.to_device(device)
         return self
 
 
