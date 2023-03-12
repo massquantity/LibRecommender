@@ -25,9 +25,9 @@ if __name__ == "__main__":
     train_data, eval_data = split_by_ratio_chrono(pd_data, test_size=0.2)
     train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)
-    train_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2022
-    )
+    # train_data.build_negative_samples(
+    #    data_info, item_gen_mode="random", num_neg=1, seed=2022
+    # )
     eval_data.build_negative_samples(
         data_info, item_gen_mode="random", num_neg=1, seed=2222
     )
@@ -64,6 +64,7 @@ if __name__ == "__main__":
             "map",
             "ndcg",
         ],
+        num_workers=2,
     )
     print("prediction: ", rnn.predict(user=1, item=2))
     print("recommendation: ", rnn.recommend_user(user=1, n_rec=7))
@@ -93,4 +94,5 @@ if __name__ == "__main__":
             "map",
             "ndcg",
         ],
+        num_workers=2,
     )
