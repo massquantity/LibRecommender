@@ -15,12 +15,12 @@ from tests.utils_save_load import save_load_model
     [(True, 10, 10, 5), (False, 1, 1, 1)],
 )
 def test_deepwalk(
-    prepare_pure_data, task, norm_embed, n_walks, walk_length, window_size
+    pure_data_small, task, norm_embed, n_walks, walk_length, window_size
 ):
     tf.compat.v1.reset_default_graph()
-    pd_data, train_data, eval_data, data_info = prepare_pure_data
+    pd_data, train_data, eval_data, data_info = pure_data_small
     if task == "ranking":
-        train_data.build_negative_samples(data_info, seed=2022)
+        # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
 
     if task == "rating":

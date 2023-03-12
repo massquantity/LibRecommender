@@ -11,11 +11,11 @@ from tests.utils_save_load import save_load_model
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize("norm_embed, window_size", [(True, 5), (False, None)])
-def test_item2vec(prepare_pure_data, task, norm_embed, window_size):
+def test_item2vec(pure_data_small, task, norm_embed, window_size):
     tf.compat.v1.reset_default_graph()
-    pd_data, train_data, eval_data, data_info = prepare_pure_data
+    pd_data, train_data, eval_data, data_info = pure_data_small
     if task == "ranking":
-        train_data.build_negative_samples(data_info, seed=2022)
+        # train_data.build_negative_samples(data_info, seed=2022)
         eval_data.build_negative_samples(data_info, seed=2222)
 
     if task == "rating":
