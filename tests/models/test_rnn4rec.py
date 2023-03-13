@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 import tensorflow as tf
 
@@ -44,6 +46,10 @@ def test_rnn4rec(
     recent_num,
     num_workers,
 ):
+    if not sys.platform.startswith("linux") and num_workers > 0:
+        pytest.skip(
+            "Windows and macOS use `spawn` in multiprocessing, which does not work well in pytest"
+        )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = pure_data_small
     if task == "ranking":

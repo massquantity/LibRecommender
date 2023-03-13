@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 import tensorflow as tf
 
@@ -42,6 +44,10 @@ def test_fm(
     dropout_rate,
     num_workers,
 ):
+    if not sys.platform.startswith("linux") and num_workers > 0:
+        pytest.skip(
+            "Windows and macOS use `spawn` in multiprocessing, which does not work well in pytest"
+        )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = prepare_feat_data
     if task == "ranking":

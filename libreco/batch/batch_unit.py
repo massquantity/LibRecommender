@@ -83,8 +83,8 @@ class PointwiseBatch:
 
     # todo: For now, no torch model uses sequence feature
     def to_torch_tensor(self):
-        self.users = torch.from_numpy(self.users)
-        self.items = torch.from_numpy(self.items)
+        self.users = torch.from_numpy(self.users).long()
+        self.items = torch.from_numpy(self.items).long()
         self.labels = torch.from_numpy(self.labels)
         if self.sparse_indices is not None:
             self.sparse_indices = torch.from_numpy(self.sparse_indices)
