@@ -7,8 +7,12 @@ from tests.utils_data import set_ranking_labels
 
 
 @pytest.mark.skipif(
-    sys.platform.startswith("win") or sys.version_info[:2] >= (3, 10),
-    reason="Possible issue on Windows platform or Python >= 3.10 using `nmslib`",
+    sys.platform.startswith("win") or sys.platform.startswith("darwin"),
+    reason="Possible issue on Windows and MaxOS platform using `nmslib`",
+)
+@pytest.mark.skipif(
+    sys.version_info[:2] >= (3, 10),
+    reason="Possible issue for Python >= 3.10 using `nmslib`",
 )
 def test_knn_embed(pure_data_small, monkeypatch):
     pd_data, train_data, eval_data, data_info = pure_data_small
