@@ -5,8 +5,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import aiohttp
 import requests
+import ujson
 
-REQUEST_LIMIT = 20
+REQUEST_LIMIT = 64
 
 
 def parse_args():
@@ -29,7 +30,7 @@ async def get_reco_async(
         # if semaphore.locked():
         #     await asyncio.sleep(1.0)
         resp.raise_for_status()
-        reco = await resp.json()
+        reco = await resp.json(loads=ujson.loads)
     return reco
 
 
