@@ -9,12 +9,9 @@ source =
     libserving/sanic_serving/
 
 omit =
-    libreco/data/data_generator.py
-    libreco/sampling/data_sampler.py
-    libreco/sampling/batch_unit.py
-    libreco/torchops/features.py
     libreco/utils/exception.py
     libreco/utils/sampling.py
+    libserving/sanic_serving/benchmark.py
 
 [report]
 exclude_lines =
