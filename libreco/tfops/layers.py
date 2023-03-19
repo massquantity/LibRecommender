@@ -13,7 +13,7 @@ from .version import TF_VERSION, tf
 def dense_nn(
     net,
     hidden_units,
-    activation=tf.nn.elu,
+    activation=tf.nn.relu,
     use_bn=True,
     bn_after_activation=True,
     dropout_rate=None,
@@ -31,18 +31,19 @@ def dense_nn(
         for i, units in enumerate(hidden_units, start=1):
             layer_name = name + "_layer" + str(i)
             net = tf_dense(units, activation=None, name=layer_name)(net)
-            if use_bn:
-                if bn_after_activation:
-                    net = activation(net)
-                    net = tf.layers.batch_normalization(net, training=is_training)
+            if i != len(hidden_units):
+                if use_bn:
+                    if bn_after_activation:
+                        net = activation(net)
+                        net = tf.layers.batch_normalization(net, training=is_training)
+                    else:
+                        net = tf.layers.batch_normalization(net, training=is_training)
+                        net = activation(net)
                 else:
-                    net = tf.layers.batch_normalization(net, training=is_training)
                     net = activation(net)
-            else:
-                net = activation(net)
 
-            if dropout_rate:
-                net = tf.layers.dropout(net, dropout_rate, training=is_training)
+                if dropout_rate:
+                    net = tf.layers.dropout(net, dropout_rate, training=is_training)
 
     return net
 
