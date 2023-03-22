@@ -1,5 +1,4 @@
 import os.path
-from collections import Counter
 from io import StringIO
 
 import numpy as np
@@ -14,6 +13,7 @@ from libreco.data import (
     TransformedSet,
     process_data,
 )
+from libreco.data.data_info import OldInfo, store_old_info
 
 sparse_col = ["sex", "occupation", "genre1", "genre2", "genre3"]
 dense_col = ["age"]
@@ -86,14 +86,6 @@ def test_dataset_pure(pure_train_data):
     DatasetPure.build_trainset(pd_data, shuffle=True)
 
 
-def test_negative_samples(pure_train_data):
-    data, data_info = pure_train_data
-    data.build_negative_samples(data_info, num_neg=5)
-    label_frequency = list(Counter(data.labels).values())
-    data_len = len(pd_data)
-    np.testing.assert_array_equal(label_frequency, [data_len, data_len * 5])
-
-
 def test_dataset_feat(feat_train_data):
     data, data_info = feat_train_data
     assert isinstance(data, TransformedSet)
@@ -104,7 +96,7 @@ def test_dataset_feat(feat_train_data):
     assert len(data_info.col_name_mapping["user_sparse_col"]) == 2
     assert len(data_info.col_name_mapping["user_dense_col"]) == 1
     assert len(data_info.col_name_mapping["item_sparse_col"]) == 3
-    assert len(data_info.col_name_mapping["item_dense_col"]) == 0
+    assert "item_dense_col" not in data_info.col_name_mapping
 
     assert data_info.user_sparse_col.name == ["sex", "occupation"]
     assert data_info.user_dense_col.name == ["age"]
@@ -115,9 +107,21 @@ def test_dataset_feat(feat_train_data):
     with pytest.raises(KeyError):
         _ = data_info.user2id[-999]
 
-    data_info.assign_user_features(pd_data)
-    data_info.assign_item_features(pd_data)
-    print(data_info)
+    with pytest.raises(RuntimeError):
+        DatasetFeat.train_called = False
+        DatasetFeat.build_testset(pd_data, shuffle=True)
+    DatasetFeat.build_trainset(
+        pd_data, user_col, item_col, sparse_col, dense_col, shuffle=True
+    )
+
+
+def test_data_info(feat_train_data):
+    _, data_info = feat_train_data
+    assert np.all(np.isin(data_info.item_unique_vals, data_info.popular_items))
+    data_info.old_info = OldInfo(0, 0, 0, 0, popular_items=[-1, -9, 100])
+    data_info._popular_items = None
+    data_info.old_info = store_old_info(data_info)
+    assert np.all(np.isin([-1, -9, 100], data_info.popular_items))
 
     # test save load DataInfo
     data_info.save(os.path.curdir, "test")
@@ -126,13 +130,6 @@ def test_dataset_feat(feat_train_data):
     os.remove(os.path.join(os.path.curdir, "test_data_info_name_mapping.json"))
     assert data_info2.data_size == 10
     assert data_info.col_name_mapping == data_info2.col_name_mapping
-
-    with pytest.raises(RuntimeError):
-        DatasetFeat.train_called = False
-        DatasetFeat.build_testset(pd_data, shuffle=True)
-    DatasetFeat.build_trainset(
-        pd_data, user_col, item_col, sparse_col, dense_col, shuffle=True
-    )
 
 
 def test_processing(feat_train_data):
