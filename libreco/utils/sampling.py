@@ -256,7 +256,7 @@ class NegativeSampling(SamplingBase):
 
 class PairwiseSampling(SamplingBase):
     def __init__(self, dataset, data_info, num_neg=1):
-        super(PairwiseSampling, self).__init__(dataset, data_info, num_neg)
+        super().__init__(dataset, data_info, num_neg)
         if dataset.has_sampled:
             self.user_indices = dataset.user_indices_orig
             self.item_indices = dataset.item_indices_orig
@@ -296,7 +296,7 @@ class PairwiseSampling(SamplingBase):
 
 class PairwiseSamplingSeq(PairwiseSampling):
     def __init__(self, dataset, data_info, num_neg=1, mode=None, num=None):
-        super(PairwiseSamplingSeq, self).__init__(dataset, data_info, num_neg)
+        super().__init__(dataset, data_info, num_neg)
         self.seq_mode = mode
         self.seq_num = num
         self.n_items = data_info.n_items
@@ -305,7 +305,7 @@ class PairwiseSamplingSeq(PairwiseSampling):
 
     def sample_batch(self, user_consumed_set, n_items, batch_size):
         # avoid circular import
-        from ..data.sequence import user_interacted_seq
+        from ..batch.sequence import get_interacted_seq
 
         for k in tqdm(
             range(0, self.data_size, batch_size), desc="pair_sampling sequence train"
@@ -314,7 +314,7 @@ class PairwiseSamplingSeq(PairwiseSampling):
             batch_user_indices = self.user_indices[batch_slice]
             batch_item_indices_pos = self.item_indices[batch_slice]
 
-            (batch_interacted, batch_interacted_len) = user_interacted_seq(
+            batch_interacted, batch_interacted_len = get_interacted_seq(
                 batch_user_indices,
                 batch_item_indices_pos,
                 self.user_consumed,

@@ -1,9 +1,7 @@
 """Implementation of NCF."""
 from ..bases import ModelMeta, TfBase
-from ..prediction import normalize_prediction
 from ..tfops import dense_nn, dropout_config, reg_config, tf, tf_dense
 from ..torchops import hidden_units_config
-from ..utils.validate import check_unknown, convert_id
 
 
 class NCF(TfBase, metaclass=ModelMeta):
@@ -159,99 +157,3 @@ class NCF(TfBase, metaclass=ModelMeta):
         )
         concat_layer = tf.concat([gmf_layer, mlp_layer], axis=1)
         self.output = tf.reshape(tf_dense(units=1)(concat_layer), [-1])
-
-    def predict(self, user, item, feats=None, cold_start="average", inner_id=False):
-        """Make prediction(s) on given user(s) and item(s).
-
-        Parameters
-        ----------
-        user : int or str or array_like
-            User id or batch of user ids.
-        item : int or str or array_like
-            Item id or batch of item ids.
-        feats : None, default: None
-            NCF can't use features.
-        cold_start : {'popular', 'average'}, default: 'average'
-            Cold start strategy.
-
-            - 'popular' will sample from popular items.
-            - 'average' will use the average of all the user/item embeddings as the
-              representation of the cold-start user/item.
-
-        inner_id : bool, default: False
-            Whether to use inner_id defined in `libreco`. For library users inner_id
-            may never be used.
-
-        Returns
-        -------
-        prediction : float or array_like
-            Predicted scores for each user-item pair.
-        """
-        assert feats is None, "NCF can't use features."
-        user, item = convert_id(self, user, item, inner_id)
-        unknown_num, unknown_index, user, item = check_unknown(self, user, item)
-        preds = self.sess.run(
-            self.output,
-            feed_dict={
-                self.user_indices: user,
-                self.item_indices: item,
-                self.is_training: False,
-            },
-        )
-        return normalize_prediction(preds, self, cold_start, unknown_num, unknown_index)
-
-    def recommend_user(
-        self,
-        user,
-        n_rec,
-        user_feats=None,
-        item_data=None,
-        cold_start="average",
-        inner_id=False,
-        filter_consumed=True,
-        random_rec=False,
-    ):
-        """Recommend a list of items for given user(s).
-
-        Parameters
-        ----------
-        user : int or str or array_like
-            User id or batch of user ids to recommend.
-        n_rec : int
-            Number of recommendations to return.
-        user_feats : None, default: None
-            NCF can't use features.
-        item_data : None, default: None
-            NCF can't use features.
-        cold_start : {'popular', 'average'}, default: 'average'
-            Cold start strategy.
-
-            - 'popular' will sample from popular items.
-            - 'average' will use the average of all the user/item embeddings as the
-              representation of the cold-start user/item.
-
-        inner_id : bool, default: False
-            Whether to use inner_id defined in `libreco`. For library users inner_id
-            may never be used.
-        filter_consumed : bool, default: True
-            Whether to filter out items that a user has previously consumed.
-        random_rec : bool, default: False
-            Whether to choose items for recommendation based on their prediction scores.
-
-        Returns
-        -------
-        recommendation : dict
-            Recommendation result with user ids as keys
-            and array_like recommended items as values.
-        """
-        assert user_feats is None and item_data is None, "NCF can't use features."
-        return super().recommend_user(
-            user,
-            n_rec,
-            user_feats,
-            item_data,
-            cold_start,
-            inner_id,
-            filter_consumed,
-            random_rec,
-        )
