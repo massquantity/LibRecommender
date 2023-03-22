@@ -89,8 +89,8 @@ def retrain(model_name, train_data, eval_data, data_info, all_data):
     train_data_orig, eval_data_orig = split_by_ratio_chrono(
         second_half_data, test_size=0.2
     )
-    train_data = DatasetPure.merge_trainset(
-        train_data_orig, new_data_info, merge_behavior=True
+    train_data, new_data_info = DatasetPure.merge_trainset(
+        train_data_orig, new_data_info, merge_behavior=False
     )
     eval_data = DatasetPure.merge_evalset(eval_data_orig, new_data_info)
     # train_data.build_negative_samples(new_data_info, seed=2022)

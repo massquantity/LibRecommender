@@ -4,6 +4,7 @@ import pytest
 import tensorflow as tf
 
 from libreco.algorithms import SVDpp
+from libreco.data import DatasetPure
 from tests.utils_data import SAVE_PATH, set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
@@ -88,9 +89,13 @@ def test_svdpp(
             # test rebuild model
             model.save(SAVE_PATH, "svdpp_model", manual=True, inference_only=False)
             tf.compat.v1.reset_default_graph()
+
+            train_data, new_data_info = DatasetPure.merge_trainset(
+                pd_data, data_info, merge_behavior=True
+            )
             new_model = SVDpp(
                 task=task,
-                data_info=data_info,
+                data_info=new_data_info,
                 embed_size=4,
                 n_epochs=1,
                 lr=1e-4,

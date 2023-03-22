@@ -110,7 +110,7 @@ def test_torchmodel_retrain_feat():
     train_data_orig, eval_data_orig = split_by_ratio_chrono(
         second_half_data, test_size=0.2
     )
-    train_data = DatasetFeat.merge_trainset(
+    train_data, new_data_info = DatasetFeat.merge_trainset(
         train_data_orig, new_data_info, merge_behavior=True
     )
     eval_data = DatasetFeat.merge_evalset(eval_data_orig, new_data_info)

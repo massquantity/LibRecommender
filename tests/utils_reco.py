@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 import pytest
 
 
@@ -58,8 +57,7 @@ def ptest_recommends(model, data_info, pd_data, with_feats):
             n_rec=7,
             inner_id=False,
             cold_start="average",
-            user_feats=pd.Series({"sex": "F", "occupation": 2, "age": 23}),
-            item_data=pd_data.iloc[4:10],
+            user_feats={"sex": "F", "occupation": 2, "age": 23},
         )
         # fails in batch recommend with provided features
         with pytest.raises(ValueError):
@@ -68,6 +66,5 @@ def ptest_recommends(model, data_info, pd_data, with_feats):
                 n_rec=7,
                 inner_id=False,
                 cold_start="average",
-                user_feats=pd.Series({"sex": "F", "occupation": 2, "age": 23}),
-                item_data=pd_data.iloc[4:10],
+                user_feats={"sex": "F", "occupation": 2, "age": 23},
             )
