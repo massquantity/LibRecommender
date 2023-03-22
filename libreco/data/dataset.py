@@ -3,19 +3,28 @@ import itertools
 
 import numpy as np
 
-from .data_info import DataInfo
+from .consumed import update_consumed
+from .data_info import DataInfo, store_old_info
 from .transformed import TransformedSet
-from ..feature import (
-    col_name2index,
-    construct_unique_feat,
+from ..feature.column_mapping import col_name2index
+from ..feature.multi_sparse import (
+    get_multi_sparse_info,
+    multi_sparse_col_map,
+    recover_sparse_cols,
+)
+from ..feature.sparse import (
+    get_id_indices,
     get_oov_pos,
-    get_user_item_sparse_indices,
     merge_offset,
     merge_sparse_col,
     merge_sparse_indices,
-    multi_sparse_col_map,
-    multi_sparse_combine_info,
-    recover_sparse_cols,
+)
+from ..feature.unique import construct_unique_feat
+from ..feature.update import (
+    update_id_unique,
+    update_multi_sparse_unique,
+    update_sparse_unique,
+    update_unique_feats,
 )
 
 
@@ -67,27 +76,20 @@ class _Dataset(object):
         cls._check_col_names(test_data, is_train=False)
         if shuffle:
             test_data = cls.shuffle_data(test_data, seed)
-        if data_info:
-            assert isinstance(data_info, DataInfo), "Invalid passed `data_info`."
-            user_unique_vals = data_info.user_unique_vals
-            item_unique_vals = data_info.item_unique_vals
-        else:
-            user_unique_vals = cls.user_unique_vals
-            item_unique_vals = cls.item_unique_vals
 
         if cls.__name__ == "DatasetPure":
             return _build_transformed_set(
                 test_data,
-                user_unique_vals,
-                item_unique_vals,
+                cls.user_unique_vals,
+                cls.item_unique_vals,
                 is_train=False,
                 is_ordered=False,
             )
         else:
             return _build_transformed_set_feat(
                 test_data,
-                user_unique_vals,
-                item_unique_vals,
+                cls.user_unique_vals,
+                cls.item_unique_vals,
                 is_train=False,
                 is_ordered=False,
                 data_info=data_info,
@@ -276,30 +278,37 @@ class DatasetPure(_Dataset):
 
         Returns
         -------
-        :class:`~libreco.data.TransformedSet`
-            Transformed Data object used for training.
+        new_trainset : :class:`~libreco.data.TransformedSet`
+            New transformed Data object used for training.
+        new_data_info : :class:`~libreco.data.DataInfo`
+            New ``data_info`` that contains some useful information.
         """
-        cls._check_col_names(train_data, is_train=True)
         assert isinstance(data_info, DataInfo), "Invalid passed `data_info`."
+        cls._check_col_names(train_data, is_train=True)
+        cls.user_unique_vals, cls.item_unique_vals = update_id_unique(
+            train_data, data_info
+        )
         if shuffle:
             train_data = cls.shuffle_data(train_data, seed)
 
-        data_info.expand_sparse_unique_vals_and_matrix(train_data)
         merge_transformed, user_indices, item_indices = _build_transformed_set(
             train_data,
-            data_info.user_unique_vals,
-            data_info.item_unique_vals,
+            cls.user_unique_vals,
+            cls.item_unique_vals,
             is_train=True,
             is_ordered=False,
         )
-        user_indices, item_indices = data_info.update_consumed(
-            user_indices, item_indices, merge=merge_behavior
+        new_data_info = DataInfo(
+            interaction_data=train_data[["user", "item", "label"]],
+            user_indices=user_indices,
+            item_indices=item_indices,
+            user_unique_vals=cls.user_unique_vals,
+            item_unique_vals=cls.item_unique_vals,
         )
-        data_info.interaction_data = train_data[["user", "item", "label"]]
-        data_info.set_popular_items(100)
-        data_info.store_args(user_indices, item_indices)
+        new_data_info = update_consumed(new_data_info, data_info, merge_behavior)
+        new_data_info.old_info = store_old_info(data_info)
         cls.train_called = True
-        return merge_transformed
+        return merge_transformed, new_data_info
 
 
 class DatasetFeat(_Dataset):
@@ -321,8 +330,8 @@ class DatasetFeat(_Dataset):
 
     @classmethod
     def _set_feature_col(cls, sparse_col, dense_col, multi_sparse_col):
-        cls.sparse_col = None if not sparse_col else sparse_col
-        cls.dense_col = None if not dense_col else dense_col
+        cls.sparse_col = sparse_col or None
+        cls.dense_col = dense_col or None
         if multi_sparse_col:
             if not all(isinstance(field, list) for field in multi_sparse_col):
                 cls.multi_sparse_col = [multi_sparse_col]
@@ -330,6 +339,33 @@ class DatasetFeat(_Dataset):
                 cls.multi_sparse_col = multi_sparse_col
         else:
             cls.multi_sparse_col = None
+
+    @classmethod
+    def _check_feature_cols(cls, user_col, item_col):
+        all_sparse_col = (
+            merge_sparse_col(cls.sparse_col, cls.multi_sparse_col)
+            if cls.multi_sparse_col is not None
+            else cls.sparse_col
+        )
+        sparse_cols = all_sparse_col or []
+        dense_cols = cls.dense_col or []
+        user_cols = user_col or []
+        item_cols = item_col or []
+        if len(sparse_cols) + len(dense_cols) != len(user_cols) + len(item_cols):
+            len_str = "len(sparse_cols) + len(dense_cols) == len(user_cols) + len(item_cols)"
+            raise ValueError(
+                f"Please make sure length of columns match, i.e. `{len_str}`, got "
+                f"sparse columns: {sparse_cols}, "
+                f"dense columns: {dense_cols}, "
+                f"user columns: {user_cols}, "
+                f"item columns: {item_cols}"
+            )
+        columns1, columns2 = sparse_cols + dense_cols, user_cols + item_cols
+        mis_match_cols = np.setxor1d(columns1, columns2)
+        if len(mis_match_cols) > 0:
+            raise ValueError(
+                f"Got inconsistent columns: {mis_match_cols}, please check the column names"
+            )
 
     @classmethod  # TODO: pseudo pure
     def build_trainset(
@@ -370,6 +406,12 @@ class DatasetFeat(_Dataset):
             Whether the features of users and items are unique in train data.
         pad_val : int or str or list, default: "missing"
             Padding value in multi_sparse columns to ensure same length of all samples.
+
+            .. Warning::
+                If the ``pad_val`` is a single value, it will be used in all ``multi_sparse`` columns.
+                So if you want to use different ``pad_val`` for different ``multi_sparse`` columns,
+                the ``pad_val`` should be a list.
+
         shuffle : bool, default: False
             Whether to fully shuffle data.
 
@@ -385,14 +427,20 @@ class DatasetFeat(_Dataset):
             Transformed Data object used for training.
         data_info : :class:`~libreco.data.DataInfo`
             Object that contains some useful information.
+
+        Raises
+        ------
+        ValueError
+            If the feature columns specified by the user are inconsistent.
         """
         cls._check_subclass()
         cls._check_col_names(train_data, is_train=True)
         cls._set_feature_col(sparse_col, dense_col, multi_sparse_col)
+        cls._check_feature_cols(user_col, item_col)
         cls.user_unique_vals = np.sort(train_data["user"].unique())
         cls.item_unique_vals = np.sort(train_data["item"].unique())
         cls.sparse_unique_vals = _get_sparse_unique_vals(cls.sparse_col, train_data)
-        cls.multi_sparse_unique_vals = _get_multi_sparse_unique_vals(
+        cls.multi_sparse_unique_vals, pad_val_dict = _get_multi_sparse_unique_vals(
             cls.multi_sparse_col, train_data, pad_val
         )
         if shuffle:
@@ -417,15 +465,9 @@ class DatasetFeat(_Dataset):
             if cls.multi_sparse_col
             else sparse_col
         )
-
         col_name_mapping = col_name2index(
             user_col, item_col, all_sparse_col, cls.dense_col
         )
-        user_sparse_col_indices = list(col_name_mapping["user_sparse_col"].values())
-        user_dense_col_indices = list(col_name_mapping["user_dense_col"].values())
-        item_sparse_col_indices = list(col_name_mapping["item_sparse_col"].values())
-        item_dense_col_indices = list(col_name_mapping["item_dense_col"].values())
-
         (
             user_sparse_unique,
             user_dense_unique,
@@ -436,32 +478,32 @@ class DatasetFeat(_Dataset):
             item_indices,
             train_sparse_indices,
             train_dense_values,
-            user_sparse_col_indices,
-            user_dense_col_indices,
-            item_sparse_col_indices,
-            item_dense_col_indices,
+            col_name_mapping,
             unique_feat,
         )
 
-        sparse_offset = (
-            merge_offset(cls, cls.sparse_col, cls.multi_sparse_col)
-            if cls.sparse_col or cls.multi_sparse_col
-            else None
+        sparse_offset = merge_offset(
+            cls.sparse_col,
+            cls.multi_sparse_col,
+            cls.sparse_unique_vals,
+            cls.multi_sparse_unique_vals,
         )
-        sparse_oov = (
-            get_oov_pos(cls, sparse_col, multi_sparse_col)
-            if cls.sparse_col or cls.multi_sparse_col
-            else None
+        sparse_oov = get_oov_pos(
+            cls.sparse_col,
+            cls.multi_sparse_col,
+            cls.sparse_unique_vals,
+            cls.multi_sparse_unique_vals,
         )
-
-        multi_sparse_info = (
-            multi_sparse_combine_info(cls, all_sparse_col, sparse_col, multi_sparse_col)
-            if cls.multi_sparse_col
-            else None
+        multi_sparse_info = get_multi_sparse_info(
+            all_sparse_col,
+            cls.sparse_col,
+            cls.multi_sparse_col,
+            cls.sparse_unique_vals,
+            cls.multi_sparse_unique_vals,
+            pad_val_dict,
         )
         if cls.multi_sparse_col:
-            multi_sparse_map = multi_sparse_col_map(multi_sparse_col)
-            col_name_mapping.update({"multi_sparse": multi_sparse_map})
+            col_name_mapping["multi_sparse"] = multi_sparse_col_map(multi_sparse_col)
 
         interaction_data = train_data[["user", "item", "label"]]
         data_info = DataInfo(
@@ -507,15 +549,21 @@ class DatasetFeat(_Dataset):
 
         Returns
         -------
-        :class:`~libreco.data.TransformedSet`
-            Transformed Data object used for training.
+        new_trainset : :class:`~libreco.data.TransformedSet`
+            New transformed Data object used for training.
+        new_data_info : :class:`~libreco.data.DataInfo`
+            New ``data_info`` that contains some useful information.
         """
-        cls._check_col_names(train_data, is_train=True)
         assert isinstance(data_info, DataInfo), "Invalid passed `data_info`."
+        cls._check_col_names(train_data, is_train=True)
+        cls.user_unique_vals, cls.item_unique_vals = update_id_unique(
+            train_data, data_info
+        )
+        cls.sparse_unique_vals = update_sparse_unique(train_data, data_info)
+        cls.multi_sparse_unique_vals = update_multi_sparse_unique(train_data, data_info)
         if shuffle:
             train_data = cls.shuffle_data(train_data, seed)
 
-        data_info.expand_sparse_unique_vals_and_matrix(train_data)
         (
             merge_transformed,
             user_indices,
@@ -524,77 +572,111 @@ class DatasetFeat(_Dataset):
             multi_sparse_cols,
         ) = _build_transformed_set_feat(
             train_data,
-            data_info.user_unique_vals,
-            data_info.item_unique_vals,
+            cls.user_unique_vals,
+            cls.item_unique_vals,
             is_train=True,
             is_ordered=False,
             data_info=data_info,
         )
+        sparse_offset = merge_offset(
+            sparse_cols,
+            multi_sparse_cols,
+            cls.sparse_unique_vals,
+            cls.multi_sparse_unique_vals,
+        )
+        sparse_oov = get_oov_pos(
+            sparse_cols,
+            multi_sparse_cols,
+            cls.sparse_unique_vals,
+            cls.multi_sparse_unique_vals,
+        )
 
-        data_info.sparse_offset = (
-            merge_offset(data_info, sparse_cols, multi_sparse_cols)
-            if sparse_cols or multi_sparse_cols
-            else None
+        all_sparse_col = data_info.sparse_col.name
+        pad_val = (
+            data_info.multi_sparse_combine_info.pad_val
+            if cls.multi_sparse_unique_vals
+            else dict()
         )
-        data_info.sparse_oov = (
-            get_oov_pos(data_info, sparse_cols, multi_sparse_cols)
-            if sparse_cols or multi_sparse_cols
-            else None
+        multi_sparse_info = get_multi_sparse_info(
+            all_sparse_col,
+            cls.sparse_col,
+            cls.multi_sparse_col,
+            cls.sparse_unique_vals,
+            cls.multi_sparse_unique_vals,
+            pad_val,
         )
-        data_info.multi_sparse_combine_info = (
-            multi_sparse_combine_info(
-                data_info, data_info.sparse_col.name, sparse_cols, multi_sparse_cols
-            )
-            if multi_sparse_cols
-            else None
-        )
-        data_info.modify_sparse_indices()
 
-        # if a user or item has duplicate features, will only update the last one.
-        user_data = train_data.drop_duplicates(subset=["user"], keep="last")
-        item_data = train_data.drop_duplicates(subset=["item"], keep="last")
-        data_info.assign_user_features(user_data)
-        data_info.assign_item_features(item_data)
-        data_info.add_oov()
-        user_indices, item_indices = data_info.update_consumed(
-            user_indices, item_indices, merge=merge_behavior
+        user_sparse_unique, user_dense_unique = update_unique_feats(
+            train_data,
+            data_info,
+            cls.user_unique_vals,
+            cls.sparse_unique_vals,
+            cls.multi_sparse_unique_vals,
+            sparse_offset,
+            sparse_oov,
+            is_user=True,
         )
-        data_info.interaction_data = train_data[["user", "item", "label"]]
-        data_info.set_popular_items(100)
-        data_info.store_args(user_indices, item_indices)
+        item_sparse_unique, item_dense_unique = update_unique_feats(
+            train_data,
+            data_info,
+            cls.item_unique_vals,
+            cls.sparse_unique_vals,
+            cls.multi_sparse_unique_vals,
+            sparse_offset,
+            sparse_oov,
+            is_user=False,
+        )
+
+        interaction_data = train_data[["user", "item", "label"]]
+        new_data_info = DataInfo(
+            data_info.col_name_mapping,
+            interaction_data,
+            user_sparse_unique,
+            user_dense_unique,
+            item_sparse_unique,
+            item_dense_unique,
+            user_indices,
+            item_indices,
+            cls.user_unique_vals,
+            cls.item_unique_vals,
+            cls.sparse_unique_vals,
+            sparse_offset,
+            sparse_oov,
+            cls.multi_sparse_unique_vals,
+            multi_sparse_info,
+        )
+        new_data_info = update_consumed(new_data_info, data_info, merge_behavior)
+        new_data_info.old_info = store_old_info(data_info)
         cls.train_called = True
-        return merge_transformed
+        return merge_transformed, new_data_info
 
 
 def _get_sparse_unique_vals(sparse_col, train_data):
-    if sparse_col:
-        sparse_unique_vals = dict()
-        for col in sparse_col:
-            sparse_unique_vals[col] = np.sort(train_data[col].unique())
-    else:
-        sparse_unique_vals = None
+    if not sparse_col:
+        return
+    sparse_unique_vals = dict()
+    for col in sparse_col:
+        sparse_unique_vals[col] = np.sort(train_data[col].unique())
     return sparse_unique_vals
 
 
 def _get_multi_sparse_unique_vals(multi_sparse_col, train_data, pad_val):
-    if multi_sparse_col:
-        multi_sparse_unique_vals = dict()
-        if not isinstance(pad_val, (list, tuple)):
-            pad_val = [pad_val] * len(multi_sparse_col)
-        assert len(multi_sparse_col) == len(
-            pad_val
-        ), "length of multi_sparse_col and pad_val doesn't match"
-        for i, field in enumerate(multi_sparse_col):
-            unique_vals = set(
-                itertools.chain.from_iterable(train_data[field].to_numpy().T)
-            )
-            if pad_val[i] in unique_vals:
-                unique_vals.remove(pad_val[i])
-            # use name of a field's first column as representative
-            multi_sparse_unique_vals[field[0]] = sorted(unique_vals)
-    else:
-        multi_sparse_unique_vals = None
-    return multi_sparse_unique_vals
+    if not multi_sparse_col:
+        return None, None
+    multi_sparse_unique_vals = dict()
+    if not isinstance(pad_val, (list, tuple)):
+        pad_val = [pad_val] * len(multi_sparse_col)
+    if len(multi_sparse_col) != len(pad_val):
+        raise ValueError("Length of `multi_sparse_col` and `pad_val` doesn't match")
+    pad_val_dict = dict()
+    for i, field in enumerate(multi_sparse_col):
+        unique_vals = set(itertools.chain.from_iterable(train_data[field].to_numpy().T))
+        if pad_val[i] in unique_vals:
+            unique_vals.remove(pad_val[i])
+        # use name of a field's first column as representative
+        multi_sparse_unique_vals[field[0]] = np.sort(list(unique_vals))
+        pad_val_dict[field[0]] = pad_val[i]
+    return multi_sparse_unique_vals, pad_val_dict
 
 
 def _build_transformed_set(
@@ -605,25 +687,25 @@ def _build_transformed_set(
     is_ordered,
     has_feats=False,
 ):
-    mode = "train" if is_train else "test"
-    user_indices, item_indices = get_user_item_sparse_indices(
+    user_indices, item_indices = get_id_indices(
         data,
         user_unique_vals,
         item_unique_vals,
-        mode=mode,
-        ordered=is_ordered,
+        is_train,
+        is_ordered,
     )
     if "label" in data.columns:
         labels = data["label"].to_numpy(dtype=np.float32)
     else:
         # in case test_data has no label column, create dummy labels for consistency
-        labels = np.zeros(len(data))
+        labels = np.zeros(len(data), dtype=np.float32)
 
     transformed_data = TransformedSet(
         user_indices, item_indices, labels, train=is_train
     )
     if has_feats:
-        return user_indices, item_indices, labels, mode
+        return user_indices, item_indices, labels
+
     if is_train:
         return transformed_data, user_indices, item_indices
     else:
@@ -638,12 +720,12 @@ def _build_transformed_set_feat(
     is_ordered,
     data_info=None,
 ):
-    user_indices, item_indices, labels, mode = _build_transformed_set(
+    user_indices, item_indices, labels = _build_transformed_set(
         data, user_unique_vals, item_unique_vals, is_train, is_ordered, has_feats=True
     )
 
     sparse_indices, dense_values, sparse_cols, multi_sparse_cols = _build_features(
-        data, mode, is_ordered, data_info
+        data, is_train, is_ordered, data_info
     )
     transformed_data = TransformedSet(
         user_indices, item_indices, labels, sparse_indices, dense_values, train=is_train
@@ -658,26 +740,27 @@ def _build_transformed_set_feat(
         return pure_data + (sparse_cols, multi_sparse_cols)
 
 
-def _build_features(data, mode, is_ordered, data_info):
+def _build_features(data, is_train, is_ordered, data_info):
     sparse_indices, dense_values = None, None
     if data_info:
-        data_class = data_info
         sparse_cols, multi_sparse_cols = recover_sparse_cols(data_info)
         dense_cols = data_info.dense_col.name
     else:
-        data_class = DatasetFeat
         sparse_cols = DatasetFeat.sparse_col
         multi_sparse_cols = DatasetFeat.multi_sparse_col
         dense_cols = DatasetFeat.dense_col
 
+    sparse_unique = DatasetFeat.sparse_unique_vals
+    multi_sparse_unique = DatasetFeat.multi_sparse_unique_vals
     if sparse_cols or multi_sparse_cols:
         sparse_indices = merge_sparse_indices(
-            data_class,
             data,
             sparse_cols,
             multi_sparse_cols,
-            mode=mode,
-            ordered=is_ordered,
+            sparse_unique,
+            multi_sparse_unique,
+            is_train,
+            is_ordered,
         )
     if dense_cols:
         dense_values = data[dense_cols].to_numpy(dtype=np.float32)

@@ -1,4 +1,6 @@
 """Rebuild PyTorch models."""
+from dataclasses import astuple
+
 import torch
 from torch import nn
 
@@ -48,16 +50,25 @@ def rebuild_torch_model(self, path, model_name):
     # `strict=False` ignores non-matching keys
     self.torch_model.load_state_dict(model_state_dict, strict=False)
 
+    sparse_offset = self.data_info.sparse_offset
+    old_n_users, old_n_items, old_sparse_len, old_sparse_oov, _ = astuple(
+        self.data_info.old_info
+    )
+
     for name, param in self.torch_model.named_parameters():
         if name in user_params:
-            index = torch.arange(self.data_info.old_n_users, device=self.device)
+            index = torch.arange(old_n_users, device=self.device)
             param.index_copy_(0, index, user_params[name])
         elif name in item_params:
-            index = torch.arange(self.data_info.old_n_items, device=self.device)
+            index = torch.arange(old_n_items, device=self.device)
             param.index_copy_(0, index, item_params[name])
         elif name in sparse_params:
             old_indices, old_values = get_sparse_indices_values(
-                self.data_info, sparse_params[name], self.device
+                sparse_offset,
+                old_sparse_len,
+                old_sparse_oov,
+                sparse_params[name],
+                self.device,
             )
             param.index_copy_(0, old_indices, old_values)
 
@@ -65,7 +76,7 @@ def rebuild_torch_model(self, path, model_name):
         optimizer_user_state = optimizer_state_dict["state"][i]
         assign_adam_optimizer_states(
             optimizer_user_state,
-            self.data_info.old_n_users,
+            old_n_users,
             self.n_users,
             self.embed_size,
             self.device,
@@ -74,7 +85,7 @@ def rebuild_torch_model(self, path, model_name):
         optimizer_item_state = optimizer_state_dict["state"][i]
         assign_adam_optimizer_states(
             optimizer_item_state,
-            self.data_info.old_n_items,
+            old_n_items,
             self.n_items,
             self.embed_size,
             self.device,
@@ -88,15 +99,17 @@ def rebuild_torch_model(self, path, model_name):
     self.trainer.optimizer.load_state_dict(optimizer_state_dict)
 
 
-def get_sparse_indices_values(data_info, sparse_param_tensor, device):
+def get_sparse_indices_values(
+    sparse_offset, old_sparse_len, old_sparse_oov, sparse_param_tensor, device
+):
     indices = list(range(len(sparse_param_tensor)))
     # remove oov indices
-    for i in data_info.old_sparse_oov:
+    for i in old_sparse_oov:
         indices.remove(i)
     sparse_param_tensor = sparse_param_tensor[indices]
 
     indices = []
-    for offset, size in zip(data_info.sparse_offset, data_info.old_sparse_len):
+    for offset, size in zip(sparse_offset, old_sparse_len):
         if size != -1:
             indices.extend(range(offset, offset + size))
     indices = torch.tensor(indices, dtype=torch.long, device=device)
@@ -114,12 +127,14 @@ def assign_adam_optimizer_states(state, old_num, new_num, embed_size, device):
 
 
 def assign_adam_sparse_states(state, data_info, embed_size, device):
+    _, _, old_sparse_len, old_sparse_oov, _ = astuple(data_info.old_info)
+    sparse_offset = data_info.sparse_offset
     sparse_size = sparse_feat_size(data_info)
     new_first_moment = nn.init.zeros_(
         torch.empty(sparse_size, embed_size, device=device)
     )
     old_indices, old_values = get_sparse_indices_values(
-        data_info, state["exp_avg"], device
+        sparse_offset, old_sparse_len, old_sparse_oov, state["exp_avg"], device
     )
     new_first_moment.index_copy_(0, old_indices, old_values)
     state["exp_avg"] = new_first_moment
@@ -127,7 +142,7 @@ def assign_adam_sparse_states(state, data_info, embed_size, device):
         torch.empty(sparse_size, embed_size, device=device)
     )
     old_indices, old_values = get_sparse_indices_values(
-        data_info, state["exp_avg_sq"], device
+        sparse_offset, old_sparse_len, old_sparse_oov, state["exp_avg_sq"], device
     )
     new_second_moment.index_copy_(0, old_indices, old_values)
     state["exp_avg_sq"] = new_second_moment

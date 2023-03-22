@@ -1,5 +1,6 @@
 """Rebuild TensorFlow models."""
 import os
+from dataclasses import astuple
 
 import numpy as np
 
@@ -41,27 +42,30 @@ def rebuild_tf_model(self, path, model_name, full_assign=True):
         manual_variables,
     ) = modify_variable_names(self, trainable=True)
 
+    sparse_offset = self.data_info.sparse_offset
+    old_n_users, old_n_items, old_sparse_len, old_sparse_oov, _ = astuple(
+        self.data_info.old_info
+    )
+
     update_ops = []
     for v in tf.trainable_variables():
         if user_variables is not None and v.name in user_variables:
             # remove oov values
-            old_var = variables[v.name][: self.data_info.old_n_users]
+            old_var = variables[v.name][: old_n_users]
             user_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
             update_ops.append(v.scatter_update(user_op))
 
         if item_variables is not None and v.name in item_variables:
-            old_var = variables[v.name][: self.data_info.old_n_items]
+            old_var = variables[v.name][: old_n_items]
             item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
             update_ops.append(v.scatter_update(item_op))
 
         if sparse_variables is not None and v.name in sparse_variables:
             old_var = variables[v.name]
             # remove oov values
-            old_var = np.delete(old_var, self.data_info.old_sparse_oov, axis=0)
+            old_var = np.delete(old_var, old_sparse_oov, axis=0)
             indices = []
-            for offset, size in zip(
-                self.data_info.sparse_offset, self.data_info.old_sparse_len
-            ):
+            for offset, size in zip(sparse_offset, old_sparse_len):
                 if size != -1:
                     indices.extend(range(offset, offset + size))
             sparse_op = tf.IndexedSlices(old_var, indices)
@@ -89,7 +93,7 @@ def rebuild_tf_model(self, path, model_name, full_assign=True):
                 optimizer_user_variables is not None
                 and v.name in optimizer_user_variables
             ):
-                old_var = variables[v.name][: self.data_info.old_n_users]
+                old_var = variables[v.name][: old_n_users]
                 user_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
                 update_ops.append(v.scatter_update(user_op))
 
@@ -97,7 +101,7 @@ def rebuild_tf_model(self, path, model_name, full_assign=True):
                 optimizer_item_variables is not None
                 and v.name in optimizer_item_variables
             ):
-                old_var = variables[v.name][: self.data_info.old_n_items]
+                old_var = variables[v.name][: old_n_items]
                 item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
                 update_ops.append(v.scatter_update(item_op))
 
@@ -107,11 +111,9 @@ def rebuild_tf_model(self, path, model_name, full_assign=True):
             ):
                 old_var = variables[v.name]
                 # remove oov values
-                old_var = np.delete(old_var, self.data_info.old_sparse_oov, axis=0)
+                old_var = np.delete(old_var, old_sparse_oov, axis=0)
                 indices = []
-                for offset, size in zip(
-                    self.data_info.sparse_offset, self.data_info.old_sparse_len
-                ):
+                for offset, size in zip(sparse_offset, old_sparse_len):
                     if size != -1:
                         indices.extend(range(offset, offset + size))
                 sparse_op = tf.IndexedSlices(old_var, indices)

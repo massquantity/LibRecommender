@@ -2,7 +2,7 @@
 import numpy as np
 from scipy.sparse import csr_matrix
 
-from ..feature import interaction_consumed
+from .consumed import interaction_consumed
 from ..utils.sampling import NegativeSampling
 
 
