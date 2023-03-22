@@ -1,15 +1,11 @@
 import numpy as np
-import pandas as pd
 
-from ..utils.exception import NotSamplingError
 from ..utils.misc import colorize
 
 
 def convert_id(model, user, item, inner_id=False):
-    if not isinstance(user, (list, tuple, np.ndarray, pd.Series)):
-        user = [user]
-    if not isinstance(item, (list, tuple, np.ndarray, pd.Series)):
-        item = [item]
+    user = [user] if np.isscalar(user) else user
+    item = [item] if np.isscalar(item) else item
     if not inner_id:
         user = [model.data_info.user2id.get(u, model.n_users) for u in user]
         item = [model.data_info.item2id.get(i, model.n_items) for i in item]
@@ -23,8 +19,7 @@ def check_unknown(model, user, item):
     unknown_num = len(unknown_index)
     if unknown_num > 0:
         unknown_str = (
-            f"Detect {unknown_num} unknown interaction(s), "
-            f"position: {unknown_index}"
+            f"Detect {unknown_num} unknown interaction(s), position: {unknown_index}"
         )
         print(f"{colorize(unknown_str, 'red')}")
     return unknown_num, unknown_index, user, item
@@ -45,14 +40,14 @@ def check_unknown_user(data_info, user, inner_id=False):
     return known_users_ids, unknown_users
 
 
-def check_has_sampled(data, verbose):
-    if not data.has_sampled and verbose > 1:
-        exception_str = (
-            "During training, "
-            "one must do whole data sampling "
-            "before evaluating on epochs."
-        )
-        raise NotSamplingError(f"{colorize(exception_str, 'red')}")
+# def check_has_sampled(data, verbose):
+#    if not data.has_sampled and verbose > 1:
+#        exception_str = (
+#            "During training, "
+#            "one must do whole data sampling "
+#            "before evaluating on epochs."
+#        )
+#        raise NotSamplingError(f"{colorize(exception_str, 'red')}")
 
 
 def check_seq_mode(recent_num, random_num):
