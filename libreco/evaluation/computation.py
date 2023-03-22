@@ -3,7 +3,7 @@ from scipy.special import expit
 from tqdm import tqdm
 
 from ..data import TransformedSet
-from ..feature import features_from_batch_data
+from ..prediction.preprocess import features_from_batch
 from ..tfops import get_feed_dict
 from ..utils.constants import TF_FEAT_MODELS
 
@@ -23,7 +23,7 @@ def build_eval_transformed_data(model, data, negative_sample, update_features, s
         and hasattr(model, "sparse")
         and hasattr(model, "dense")
     ):
-        sparse_indices, dense_values = features_from_batch_data(
+        sparse_indices, dense_values = features_from_batch(
             data_info, model.sparse, model.dense, data
         )
     # todo: merge user_consumed

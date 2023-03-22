@@ -86,7 +86,7 @@ class TfBase(Base):
             Number of users for evaluating. Setting it to a positive number will sample
             users randomly from eval data.
         num_workers : int, default: 0
-            How many subprocesses to use for data loading.
+            How many subprocesses to use for training data loading.
             0 means that the data will be loaded in the main process,
             which is slower than multiprocessing.
 
@@ -128,7 +128,6 @@ class TfBase(Base):
             user_ids=[self.n_users],
             n_rec=min(2000, self.n_items),
             user_feats=None,
-            item_data=None,
             filter_consumed=False,
             random_rec=False,
         ).flatten()
@@ -160,6 +159,8 @@ class TfBase(Base):
         prediction : float or numpy.ndarray
             Predicted scores for each user-item pair.
         """
+        if self.model_name == "NCF" and feats is not None:
+            raise ValueError("NCF can't use features")
         return predict_tf_feat(self, user, item, feats, cold_start, inner_id)
 
     def recommend_user(
@@ -167,7 +168,6 @@ class TfBase(Base):
         user,
         n_rec,
         user_feats=None,
-        item_data=None,
         cold_start="average",
         inner_id=False,
         filter_consumed=True,
@@ -206,14 +206,12 @@ class TfBase(Base):
             Recommendation result with user ids as keys
             and array_like recommended items as values.
         """
-        if (
-            (user_feats is not None or item_data is not None)
-            and not np.isscalar(user)
-            and len(user) > 1
-        ):
+        if user_feats is not None and not np.isscalar(user) and len(user) > 1:
             raise ValueError(
                 f"Batch recommend doesn't support assigning arbitrary features: {user}"
             )
+        if self.model_name == "NCF" and user_feats is not None:
+            raise ValueError("NCF can't use features")
 
         result_recs = dict()
         user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
@@ -233,7 +231,6 @@ class TfBase(Base):
                 user_ids,
                 n_rec,
                 user_feats,
-                item_data,
                 filter_consumed,
                 random_rec,
             )

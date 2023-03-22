@@ -103,7 +103,7 @@ class EmbedBase(Base):
             Number of users for evaluating. Setting it to a positive number will sample
             users randomly from eval data.
         num_workers : int, default: 0
-            How many subprocesses to use for data loading.
+            How many subprocesses to use for training data loading.
             0 means that the data will be loaded in the main process,
             which is slower than multiprocessing.
 
