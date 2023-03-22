@@ -59,7 +59,7 @@ def _check_num_match(v, num):
 
 def save_tf_serving_model(path: str, model: TfBase, version: int):
     model_name = model.model_name.lower()
-    if not path:
+    if not path:  # pragma: no cover
         model_base_path = os.path.realpath("..")
         export_path = os.path.join(
             model_base_path, "serving", "models", f"{model_name}", f"{version}"
