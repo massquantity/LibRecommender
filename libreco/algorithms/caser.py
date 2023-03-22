@@ -2,7 +2,7 @@
 import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
-from ..data.sequence import get_user_last_interacted
+from ..batch.sequence import get_user_last_interacted
 from ..tfops import (
     conv_nn,
     dropout_config,
