@@ -24,7 +24,6 @@ exclude_lines =
     except .*redis.*
     except \(ImportError, ModuleNotFoundError\):
     except ValidationError.
-    if not path:
     if __name__ == .__main__.:
     @(abc\.)?abstractmethod
 
