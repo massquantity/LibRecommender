@@ -14,7 +14,7 @@ from .batch_unit import (
     TripleFeats,
 )
 from .enums import Backend, FeatType
-from ..data.sequence import get_interacted_seq, get_sparse_interacted
+from .sequence import get_interacted_seq, get_sparse_interacted
 from ..graph import build_subgraphs, pairs_from_dgl_graph
 from ..sampling import (
     neg_probs_from_frequency,

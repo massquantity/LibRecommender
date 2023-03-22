@@ -2,7 +2,7 @@
 import numpy as np
 
 from ..bases import ModelMeta, TfBase
-from ..data.sequence import get_user_last_interacted
+from ..batch.sequence import get_user_last_interacted
 from ..tfops import (
     dense_nn,
     dropout_config,

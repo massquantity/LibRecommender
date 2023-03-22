@@ -2,7 +2,7 @@
 import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
-from ..data.sequence import get_user_last_interacted
+from ..batch.sequence import get_user_last_interacted
 from ..tfops import dropout_config, reg_config, sess_config, tf, tf_dense, tf_rnn
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
