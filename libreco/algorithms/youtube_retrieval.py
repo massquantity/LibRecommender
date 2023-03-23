@@ -136,7 +136,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.lr = lr
         self.lr_decay = lr_decay
         self.epsilon = epsilon
-        self.hidden_units = hidden_units_config(hidden_units) + [self.embed_size]
+        self.hidden_units = [*hidden_units_config(hidden_units), self.embed_size]
         self.reg = reg_config(reg)
         self.batch_size = batch_size
         self.use_bn = use_bn

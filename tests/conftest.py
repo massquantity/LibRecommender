@@ -66,7 +66,7 @@ def make_synthetic_data():
     size = 200
     np_rng = np.random.default_rng(42)
     genres = ["crime", "drama", "action", "comedy", "missing"]
-    df = pd.DataFrame(
+    data = pd.DataFrame(
         {
             "user": np_rng.integers(0, 20, size),
             "item": np_rng.integers(0, 60, size),
@@ -81,7 +81,7 @@ def make_synthetic_data():
             "profit": np_rng.random(size) * 10000,
         }
     )
-    return df
+    return data
 
 
 @pytest.fixture

@@ -19,7 +19,7 @@ def test_multi_sparse_processing():
         split_multi_value(data, multi_value_col=["genre"], sep="|", max_len=3)
 
     sep = ","  # wrong separator
-    _ = split_multi_value(
+    data, *_ = split_multi_value(
         data,
         multi_value_col=["genre"],
         sep=sep,
@@ -33,7 +33,7 @@ def test_multi_sparse_processing():
 
     sep = "|"
     data = pd.read_csv(data_path, sep=",", header=0)
-    multi_sparse_col, multi_user_col, multi_item_col = split_multi_value(
+    data, multi_sparse_col, multi_user_col, multi_item_col = split_multi_value(
         data,
         multi_value_col=["genre"],
         sep=sep,

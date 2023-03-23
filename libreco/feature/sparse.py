@@ -163,7 +163,7 @@ def get_sparse_indices_matrix(data, sparse_col, sparse_unique, is_train, is_orde
 def get_sparse_offset(sparse_col, sparse_unique):
     # plus one for oov value
     unique_values = [len(sparse_unique[col]) + 1 for col in sparse_col]
-    return np.cumsum(np.array([0] + unique_values))[:-1]
+    return np.cumsum(np.array([0, *unique_values]))[:-1]
 
 
 def get_last_offset(sparse_col, sparse_unique):

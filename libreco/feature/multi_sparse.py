@@ -51,7 +51,7 @@ def get_multi_sparse_offset(multi_sparse_col, multi_sparse_unique):
     unique_values = [
         len(multi_sparse_unique[field[0]]) + 1 for field in multi_sparse_col
     ]
-    field_offset = np.cumsum(np.array([0] + unique_values)).tolist()[:-1]
+    field_offset = np.cumsum(np.array([0, *unique_values])).tolist()[:-1]
     offset = []
     # each sub-feature will use same offset
     for i, field in enumerate(multi_sparse_col):

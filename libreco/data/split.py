@@ -340,9 +340,8 @@ def split_by_ratio_chrono(
         ["user" in data.columns, "time" in data.columns]
     ), "data must contains user and time column"
 
-    data = data.sort_values(by=["time"])
-    data.reset_index(drop=True, inplace=True)
-    return split_by_ratio(**locals())
+    data = data.sort_values(by=["time"]).reset_index(drop=True)
+    return split_by_ratio(data, order, shuffle, test_size, multi_ratios, seed=seed)
 
 
 def split_by_num_chrono(data, order=True, shuffle=False, test_size=1, seed=42):
@@ -382,9 +381,8 @@ def split_by_num_chrono(data, order=True, shuffle=False, test_size=1, seed=42):
         ["user" in data.columns, "time" in data.columns]
     ), "data must contains user and time column"
 
-    data = data.sort_values(by=["time"])
-    data.reset_index(drop=True, inplace=True)
-    return split_by_num(**locals())
+    data = data.sort_values(by=["time"]).reset_index(drop=True)
+    return split_by_num(data, order, shuffle, test_size, seed=seed)
 
 
 def _groupby_user(user_indices, order):
