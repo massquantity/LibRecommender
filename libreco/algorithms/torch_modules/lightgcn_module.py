@@ -13,7 +13,7 @@ class LightGCNModel(nn.Module):
         n_layers,
         dropout_rate,
         user_consumed,
-        device=torch.device("cpu"),
+        device,
     ):
         super(LightGCNModel, self).__init__()
         self.n_users = n_users

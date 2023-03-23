@@ -1,4 +1,5 @@
 """Classes for Transforming and Building Data."""
+import functools
 import itertools
 
 import numpy as np
@@ -606,25 +607,20 @@ class DatasetFeat(_Dataset):
             pad_val,
         )
 
-        user_sparse_unique, user_dense_unique = update_unique_feats(
+        _update_func = functools.partial(
+            update_unique_feats,
             train_data,
             data_info,
-            cls.user_unique_vals,
-            cls.sparse_unique_vals,
-            cls.multi_sparse_unique_vals,
-            sparse_offset,
-            sparse_oov,
-            is_user=True,
+            sparse_unique=cls.sparse_unique_vals,
+            multi_sparse_unique=cls.multi_sparse_unique_vals,
+            sparse_offset=sparse_offset,
+            sparse_oov=sparse_oov,
         )
-        item_sparse_unique, item_dense_unique = update_unique_feats(
-            train_data,
-            data_info,
-            cls.item_unique_vals,
-            cls.sparse_unique_vals,
-            cls.multi_sparse_unique_vals,
-            sparse_offset,
-            sparse_oov,
-            is_user=False,
+        user_sparse_unique, user_dense_unique = _update_func(
+            unique_ids=cls.user_unique_vals, is_user=True
+        )
+        item_sparse_unique, item_dense_unique = _update_func(
+            unique_ids=cls.item_unique_vals, is_user=False
         )
 
         interaction_data = train_data[["user", "item", "label"]]

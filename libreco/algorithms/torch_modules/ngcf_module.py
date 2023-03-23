@@ -15,7 +15,7 @@ class NGCFModel(nn.Module):
         node_dropout,
         message_dropout,
         user_consumed,
-        device=torch.device("cpu"),
+        device,
     ):
         super(NGCFModel, self).__init__()
         self.n_users = n_users

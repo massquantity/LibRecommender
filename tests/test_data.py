@@ -41,7 +41,13 @@ pd_data = pd.read_csv(raw_data, header=0)
 
 @pytest.fixture(params=[pd_data])
 def pure_train_data(request):
-    return DatasetPure.build_trainset(request.param)
+    train_data, data_info = DatasetPure.build_trainset(request.param, shuffle=True)
+    _ = DatasetPure.build_testset(request.param, shuffle=True)
+    new_train_data, new_data_info = DatasetPure.merge_trainset(
+        request.param, data_info, merge_behavior=False, shuffle=True
+    )
+    _ = DatasetPure.merge_testset(request.param, new_data_info, shuffle=True)
+    return train_data, data_info
 
 
 @pytest.fixture(
@@ -56,7 +62,15 @@ def pure_train_data(request):
     ]
 )
 def feat_train_data(request):
-    return DatasetFeat.build_trainset(**request.param)
+    train_data, data_info = DatasetFeat.build_trainset(**request.param, shuffle=True)
+    _ = DatasetFeat.build_testset(request.param["train_data"], shuffle=True)
+    new_train_data, new_data_info = DatasetFeat.merge_trainset(
+        request.param["train_data"], data_info, merge_behavior=False, shuffle=True
+    )
+    _ = DatasetFeat.merge_testset(
+        request.param["train_data"], new_data_info, shuffle=True
+    )
+    return train_data, data_info
 
 
 def test_dataset_pure(pure_train_data):
