@@ -28,9 +28,15 @@ def ptest_recommends(model, data_info, pd_data, with_feats):
     cold_user1, cold_user2 = -99999, -1
     cold_reco1 = model.recommend_user(user=cold_user1, n_rec=3)[cold_user1]
     cold_reco2 = model.recommend_user(user=cold_user2, n_rec=3)[cold_user2]
-    # np.testing.assert_array_equal(cold_reco1, cold_reco2)
     assert len(cold_reco1) == len(cold_reco2) == 3
-    assert np.any(np.sort(cold_reco1) != np.sort(cold_reco2))
+    if hasattr(model, "default_recs") and model.default_recs is not None:
+        default_recs = model.default_recs
+    else:
+        default_recs = [data_info.item2id[i] for i in data_info.popular_items]
+    cold_reco1 = [data_info.item2id[i] for i in cold_reco1]
+    cold_reco2 = [data_info.item2id[i] for i in cold_reco2]
+    assert np.all(np.isin(cold_reco1, default_recs))
+    assert np.all(np.isin(cold_reco2, default_recs))
 
     u1, u2, u3 = users[2], users[3], users[4]
     random_reco = model.recommend_user(
