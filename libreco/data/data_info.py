@@ -154,7 +154,7 @@ class DataInfo:
         # store old info for rebuild models
         self.old_info = None
         self.all_args = locals()
-        self.add_oov()
+        self.add_oovs()
 
     @staticmethod
     def map_sparse_vals(sparse_unique_vals, multi_sparse_unique_vals):
@@ -395,35 +395,21 @@ class DataInfo:
             self.item_dense_col,
         )
 
-    def add_oov(self):
-        if (
-            self.user_sparse_unique is not None
-            and len(self.user_sparse_unique) == self.n_users
-        ):
-            user_sparse_oov = self.sparse_oov[self.user_sparse_col.index]
-            self.user_sparse_unique = np.vstack(
-                [self.user_sparse_unique, user_sparse_oov]
-            )
-        if (
-            self.item_sparse_unique is not None
-            and len(self.item_sparse_unique) == self.n_items
-        ):
-            item_sparse_oov = self.sparse_oov[self.item_sparse_col.index]
-            self.item_sparse_unique = np.vstack(
-                [self.item_sparse_unique, item_sparse_oov]
-            )
-        if (
-            self.user_dense_unique is not None
-            and len(self.user_dense_unique) == self.n_users
-        ):
-            user_dense_oov = np.mean(self.user_dense_unique, axis=0)
-            self.user_dense_unique = np.vstack([self.user_dense_unique, user_dense_oov])
-        if (
-            self.item_dense_unique is not None
-            and len(self.item_dense_unique) == self.n_items
-        ):
-            item_dense_oov = np.mean(self.item_dense_unique, axis=0)
-            self.item_dense_unique = np.vstack([self.item_dense_unique, item_dense_oov])
+    def add_oovs(self):
+        def _concat_oov(uniques, cols=None):
+            if uniques is None:
+                return
+            oov = self.sparse_oov[cols] if cols else np.mean(uniques, axis=0)
+            return np.vstack([uniques, oov])
+
+        self.user_sparse_unique = _concat_oov(
+            self.user_sparse_unique, self.user_sparse_col.index
+        )
+        self.item_sparse_unique = _concat_oov(
+            self.item_sparse_unique, self.item_sparse_col.index
+        )
+        self.user_dense_unique = _concat_oov(self.user_dense_unique)
+        self.item_dense_unique = _concat_oov(self.item_dense_unique)
 
     @property
     def popular_items(self):
