@@ -42,7 +42,7 @@ class NGCFModel(nn.Module):
         )
 
         weight_dict = nn.ParameterDict()
-        layers = [self.embed_size] + self.layers
+        layers = [self.embed_size, *self.layers]
         for k in range(len(self.layers)):
             weight_dict[f"W_self_{k}"] = nn.Parameter(
                 nn.init.xavier_uniform_(torch.empty(layers[k], layers[k + 1]))

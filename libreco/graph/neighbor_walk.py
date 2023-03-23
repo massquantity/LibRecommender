@@ -137,7 +137,7 @@ class NeighborWalkerDGL(NeighborWalker):
                 edge_dir="in",
             )
 
-    def transform_blocks(self, nodes, target_nodes=None):  # noqa: D400, D415
+    def transform_blocks(self, nodes, target_nodes=None):
         r"""Bipartite graph block: items(nodes) -> sampled neighbor nodes
 
         -------------

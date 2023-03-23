@@ -112,7 +112,7 @@ def split_multi_value(
             new_col_name = col + f"_{i+1}"
             sparse_col.append(new_col_name)
             data[new_col_name] = split_col.str.get(i)
-            data[new_col_name].fillna(pad_val[j], inplace=True)
+            data[new_col_name] = data[new_col_name].fillna(pad_val[j])
 
         multi_sparse_col.append(sparse_col)
         if user_col is not None and col in user_col:
@@ -120,6 +120,5 @@ def split_multi_value(
         elif item_col is not None and col in item_col:
             item_sparse_col.extend(sparse_col)
 
-    data.fillna(pad_val[0], inplace=True)
-    data.drop(multi_value_col, axis=1, inplace=True)
-    return multi_sparse_col, user_sparse_col, item_sparse_col
+    data = data.fillna(pad_val[0]).drop(multi_value_col, axis=1)
+    return data, multi_sparse_col, user_sparse_col, item_sparse_col

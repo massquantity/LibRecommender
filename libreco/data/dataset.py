@@ -731,9 +731,9 @@ def _build_transformed_set_feat(
 
     pure_data = transformed_data, user_indices, item_indices
     if not data_info:
-        return pure_data + (sparse_indices, dense_values)
+        return pure_data + (sparse_indices, dense_values)  # noqa: RUF005
     else:
-        return pure_data + (sparse_cols, multi_sparse_cols)
+        return pure_data + (sparse_cols, multi_sparse_cols)  # noqa: RUF005
 
 
 def _build_features(data, is_train, is_ordered, data_info):

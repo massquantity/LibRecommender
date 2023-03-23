@@ -124,7 +124,7 @@ def test_data_info_features():
 def feature_data():
     size = 5
     np_rng = np.random.default_rng(88)
-    df = pd.DataFrame(
+    data = pd.DataFrame(
         {
             "user": [4, 1, 10, 11, 12],
             "item": [1, 2, 3, 4, 5],
@@ -140,7 +140,7 @@ def feature_data():
             "genre3": ["y", "y", "zz", "x", "missing"],
         }
     )
-    return df
+    return data
 
 
 def test_sparse_indices(feature_data):
@@ -379,7 +379,7 @@ def test_multi_sparse_indices(feature_data):
 
 @pytest.fixture
 def feature_data_pair():
-    df = pd.DataFrame(
+    data = pd.DataFrame(
         {
             "user": [4, 1, 10],
             "item": [1, 2, 8],
@@ -394,7 +394,7 @@ def feature_data_pair():
             "genre3": ["y", "y", "z"],
         }
     )
-    new_df = pd.DataFrame(
+    new_data = pd.DataFrame(
         {
             "user": [11, 1],
             "item": [4, 1],
@@ -415,7 +415,7 @@ def feature_data_pair():
     user_cols = ["sex", "age", "occupation", "actor1", "actor2"]
     item_cols = ["genre1", "genre2", "genre3"]
     _, data_info = DatasetFeat.build_trainset(
-        train_data=df,
+        train_data=data,
         sparse_col=sparse_cols,
         multi_sparse_col=multi_sparse_cols,
         dense_col=dense_cols,
@@ -423,7 +423,7 @@ def feature_data_pair():
         item_col=item_cols,
         pad_val=[0, "missing"],
     )
-    return sparse_cols, multi_sparse_cols, data_info, new_df
+    return sparse_cols, multi_sparse_cols, data_info, new_data
 
 
 def test_update_features(feature_data_pair):

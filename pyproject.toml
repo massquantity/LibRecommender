@@ -87,7 +87,7 @@ filterwarnings = [
 line-length = 88
 target-version = "py38"
 show-source = true
-ignore = ["E501", "F401", "B008", "B010", "S101", "S104"]
+ignore = ["E501", "F401", "B008", "B010", "NPY002"]
 select = [
     # pyflakes
     "F",
@@ -98,6 +98,10 @@ select = [
     "YTT",
     # flake8-bugbear
     "B",
-    # flake8-bandit
-    "S",
+    # pandas-vet
+    "PD",
+    # NumPy-specific rules
+    "NPY",
+    # Ruff-specific rules
+    "RUF",
 ]
