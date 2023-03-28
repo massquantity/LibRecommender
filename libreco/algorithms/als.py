@@ -93,6 +93,7 @@ class ALS(EmbedBase):
     def fit(
         self,
         train_data,
+        neg_sampling,
         verbose=1,
         shuffle=True,
         eval_data=None,
@@ -161,6 +162,7 @@ class ALS(EmbedBase):
             if verbose > 1:
                 print_metrics(
                     model=self,
+                    neg_sampling=neg_sampling,
                     train_data=train_data,
                     eval_data=eval_data,
                     metrics=metrics,

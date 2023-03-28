@@ -1,7 +1,5 @@
 import abc
 
-import numpy as np
-
 from ..batch import adjust_batch_size
 
 

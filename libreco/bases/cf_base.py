@@ -108,6 +108,7 @@ class CfBase(Base):
     def fit(
         self,
         train_data,
+        neg_sampling,
         verbose=1,
         eval_data=None,
         metrics=None,
@@ -190,6 +191,7 @@ class CfBase(Base):
         if verbose > 1:
             print_metrics(
                 model=self,
+                neg_sampling=neg_sampling,
                 eval_data=eval_data,
                 metrics=metrics,
                 eval_batch_size=eval_batch_size,

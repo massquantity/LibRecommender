@@ -45,7 +45,7 @@ class Base(abc.ABC):
         self.default_recs = None
 
     @abc.abstractmethod
-    def fit(self, train_data, **kwargs):
+    def fit(self, train_data, neg_sampling, **kwargs):
         """Fit model on the training data.
 
         Parameters

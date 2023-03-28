@@ -41,6 +41,7 @@ class GensimBase(EmbedBase):
     def fit(
         self,
         train_data,
+        neg_sampling,
         verbose=1,
         shuffle=True,
         eval_data=None,
@@ -78,6 +79,7 @@ class GensimBase(EmbedBase):
         if verbose > 1:
             print_metrics(
                 model=self,
+                neg_sampling=neg_sampling,
                 eval_data=eval_data,
                 metrics=metrics,
                 eval_batch_size=eval_batch_size,

@@ -157,6 +157,7 @@ class SVDpp(EmbedBase):
     def fit(
         self,
         train_data,
+        neg_sampling,
         verbose=1,
         shuffle=True,
         eval_data=None,
@@ -170,6 +171,7 @@ class SVDpp(EmbedBase):
             self.sparse_interaction = self._set_sparse_interaction()
         super().fit(
             train_data,
+            neg_sampling,
             verbose,
             shuffle,
             eval_data,

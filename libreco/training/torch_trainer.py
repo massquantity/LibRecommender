@@ -77,6 +77,7 @@ class TorchTrainer(BaseTrainer):
     def run(
         self,
         train_data,
+        neg_sampling,
         verbose,
         shuffle,
         eval_data,
@@ -87,9 +88,8 @@ class TorchTrainer(BaseTrainer):
         num_workers,
     ):
         self._check_params()
-        self._check_labels(train_data)
         data_loader = get_batch_loader(
-            self.model, train_data, self.batch_size, shuffle, num_workers
+            self.model, train_data, neg_sampling, self.batch_size, shuffle, num_workers
         )
         n_batches = math.ceil(len(train_data) / self.batch_size)
         for epoch in range(1, self.n_epochs + 1):
@@ -118,6 +118,7 @@ class TorchTrainer(BaseTrainer):
                 self.model.set_embeddings()
                 print_metrics(
                     model=self.model,
+                    neg_sampling=neg_sampling,
                     eval_data=eval_data,
                     metrics=metrics,
                     eval_batch_size=eval_batch_size,

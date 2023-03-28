@@ -193,6 +193,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     def fit(
         self,
         train_data,
+        neg_sampling,
         verbose=1,
         shuffle=True,
         eval_data=None,
@@ -238,6 +239,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 self.trainer = get_trainer(self)
             self.trainer.run(
                 train_data,
+                neg_sampling,
                 verbose,
                 shuffle,
                 eval_data,
@@ -251,6 +253,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         else:
             self._fit_cython(
                 train_data=train_data,
+                neg_sampling=neg_sampling,
                 verbose=verbose,
                 shuffle=shuffle,
                 eval_data=eval_data,
@@ -274,6 +277,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     def _fit_cython(
         self,
         train_data,
+        neg_sampling,
         verbose=1,
         shuffle=True,
         eval_data=None,
@@ -345,6 +349,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             if verbose > 1:
                 print_metrics(
                     model=self,
+                    neg_sampling=neg_sampling,
                     eval_data=eval_data,
                     metrics=metrics,
                     eval_batch_size=eval_batch_size,

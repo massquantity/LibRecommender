@@ -63,6 +63,7 @@ class EmbedBase(Base):
     def fit(
         self,
         train_data,
+        neg_sampling,
         verbose=1,
         shuffle=True,
         eval_data=None,
@@ -115,6 +116,7 @@ class EmbedBase(Base):
             self.trainer = get_trainer(self)
         self.trainer.run(
             train_data,
+            neg_sampling,
             verbose,
             shuffle,
             eval_data,

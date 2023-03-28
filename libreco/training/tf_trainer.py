@@ -45,6 +45,7 @@ class TensorFlowTrainer(BaseTrainer):
     def run(
         self,
         train_data,
+        neg_sampling,
         verbose,
         shuffle,
         eval_data,
@@ -54,10 +55,8 @@ class TensorFlowTrainer(BaseTrainer):
         eval_user_num,
         num_workers,
     ):
-        if self.model.model_name != "YouTubeRetrieval":
-            self._check_labels(train_data)
         data_loader = get_batch_loader(
-            self.model, train_data, self.batch_size, shuffle, num_workers
+            self.model, train_data, neg_sampling, self.batch_size, shuffle, num_workers
         )
         for epoch in range(1, self.n_epochs + 1):
             if self.lr_decay:
@@ -83,6 +82,7 @@ class TensorFlowTrainer(BaseTrainer):
                     self.model.set_embeddings()
                 print_metrics(
                     model=self.model,
+                    neg_sampling=neg_sampling,
                     eval_data=eval_data,
                     metrics=metrics,
                     eval_batch_size=eval_batch_size,
