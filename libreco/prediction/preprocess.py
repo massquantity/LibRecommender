@@ -1,6 +1,15 @@
 import numpy as np
 
 
+def convert_id(model, user, item, inner_id=False):
+    user = [user] if np.isscalar(user) else user
+    item = [item] if np.isscalar(item) else item
+    if not inner_id:
+        user = [model.data_info.user2id.get(u, model.n_users) for u in user]
+        item = [model.data_info.item2id.get(i, model.n_items) for i in item]
+    return np.array(user), np.array(item)
+
+
 def get_original_feats(data_info, user, item, sparse, dense):
     """Get original features from data_info to predict using feat models."""
     user = [user] if np.isscalar(user) else user

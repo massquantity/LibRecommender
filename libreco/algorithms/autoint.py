@@ -14,8 +14,8 @@ from ..utils.validate import (
     dense_field_size,
     sparse_feat_size,
     sparse_field_size,
-    true_sparse_field_size,
 )
+from ..feature.multi_sparse import true_sparse_field_size
 
 
 class AutoInt(TfBase, metaclass=ModelMeta):

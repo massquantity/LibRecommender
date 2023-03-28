@@ -53,9 +53,7 @@ def column_sparse_indices(values, unique, is_train, is_ordered, multi_sparse=Fal
     return col_indices
 
 
-def get_id_indices(
-    data, user_unique_vals, item_unique_vals, is_train, is_ordered
-):
+def get_id_indices(data, user_unique_vals, item_unique_vals, is_train, is_ordered):
     user_indices = column_sparse_indices(
         data["user"].to_numpy(), user_unique_vals, is_train, is_ordered
     )

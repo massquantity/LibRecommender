@@ -9,6 +9,7 @@ from ..evaluation import print_metrics
 from ..recommendation import recommend_from_embedding
 from ..utils.misc import time_block
 from ..utils.save_load import save_default_recs, save_params
+from ..utils.validate import check_fitting
 
 
 class GensimBase(EmbedBase):
@@ -49,7 +50,7 @@ class GensimBase(EmbedBase):
         eval_user_num=None,
         **kwargs,
     ):
-        self.check_attribute(eval_data, k)
+        check_fitting(self, train_data, eval_data, neg_sampling, k)
         self.show_start_time()
         if self.data is None:
             self.data = self.get_data()

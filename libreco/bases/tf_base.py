@@ -17,7 +17,7 @@ from ..utils.save_load import (
     save_tf_model,
     save_tf_variables,
 )
-from ..utils.validate import check_unknown_user
+from ..utils.validate import check_fitting, check_unknown_user
 
 
 class TfBase(Base):
@@ -97,14 +97,7 @@ class TfBase(Base):
         RuntimeError
             If :py:func:`fit` is called from a loaded model(:py:func:`load`).
         """
-        if self.loaded:
-            raise RuntimeError(
-                "Loaded model doesn't support retraining, use `rebuild_model` instead. "
-                "Or constructing a new model from scratch."
-            )
-        if eval_data is not None and k > self.n_items:
-            raise ValueError(f"eval `k` {k} exceeds num of items {self.n_items}")
-
+        check_fitting(self, train_data, eval_data, neg_sampling, k)
         self.show_start_time()
         if not self.model_built:
             self.build_model()

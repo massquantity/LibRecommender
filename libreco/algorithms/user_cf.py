@@ -124,7 +124,7 @@ class UserCF(CfBase):
         )
         sim_users = self.sim_matrix.indices[user_slice]
         sim_values = self.sim_matrix.data[user_slice]
-        if sim_users.size == 0 or np.all(sim_values <= 0):
+        if sim_users.size == 0 or np.all(sim_values <= 0):  # pragma: no cover
             self.print_count += 1
             no_str = (
                 f"no similar neighbor for user {user_id}, "

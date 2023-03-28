@@ -3,15 +3,6 @@ import numpy as np
 from ..utils.misc import colorize
 
 
-def convert_id(model, user, item, inner_id=False):
-    user = [user] if np.isscalar(user) else user
-    item = [item] if np.isscalar(item) else item
-    if not inner_id:
-        user = [model.data_info.user2id.get(u, model.n_users) for u in user]
-        item = [model.data_info.item2id.get(i, model.n_items) for i in item]
-    return np.array(user), np.array(item)
-
-
 def check_unknown(model, user, item):
     unknown_user_indices = list(np.where(user == model.n_users)[0])
     unknown_item_indices = list(np.where(item == model.n_items)[0])
@@ -112,10 +103,60 @@ def check_multi_sparse(data_info, multi_sparse_combiner):
     return combiner
 
 
-def true_sparse_field_size(data_info, sparse_field_size, combiner):
-    # When using multi_sparse_combiner, field size will decrease.
-    if data_info.multi_sparse_combine_info and combiner in ("sum", "mean", "sqrtn"):
-        field_length = data_info.multi_sparse_combine_info.field_len
-        return sparse_field_size - (sum(field_length) - len(field_length))
-    else:
-        return sparse_field_size
+def check_fitting(model, train_data, eval_data, neg_sampling, k):
+    check_neg_sampling(model, neg_sampling)
+    check_labels(model, train_data.labels, neg_sampling)
+    check_retrain_loaded_model(model)
+    check_eval(eval_data, k, model.n_items)
+
+
+def check_neg_sampling(model, neg_sampling):
+    assert isinstance(neg_sampling, bool), (
+        f"`neg_sampling` in `fit()` must be bool, got `{neg_sampling}`. "
+        f"Set `model.fit(..., neg_sampling=True)` if your data is implicit(i.e., `task` is ranking) "
+        f"and ONLY contains positive labels. Otherwise, negative sampling is not needed."
+    )
+    if model.task == "rating" and neg_sampling:
+        raise ValueError("`rating` task should not use negative sampling")
+    if (
+        hasattr(model, "loss_type")
+        and model.loss_type in ("bpr", "max_margin")
+        and not neg_sampling
+    ):
+        raise ValueError(f"`{model.loss_type}` loss must use negative sampling.")
+
+
+def check_labels(model, labels, neg_sampling):
+    # still needs negative sampling when evaluating for these models
+    # if model.model_name in (
+    #    "YouTubeRetrieval",
+    #    "UserCF",
+    #    "ItemCF",
+    #    "Item2Vec",
+    #    "DeepWalk",
+    # ):
+    #    return
+    if model.task == "ranking" and not neg_sampling:
+        unique_labels = np.unique(labels)
+        if (
+            len(unique_labels) != 2
+            or min(unique_labels) != 0.0
+            or max(unique_labels) != 1.0
+        ):
+            raise ValueError(
+                f"For `ranking` task without negative sampling, labels in data must be 0 and 1, "
+                f"got unique labels: {unique_labels}"
+            )
+
+
+def check_retrain_loaded_model(model):
+    if hasattr(model, "loaded") and model.loaded:
+        raise RuntimeError(
+            "Loaded model doesn't support retraining, use `rebuild_model` instead. "
+            "Or constructing a new model from scratch."
+        )
+
+
+def check_eval(eval_data, k, n_items):
+    if eval_data is not None and k > n_items:
+        raise ValueError(f"eval `k` {k} exceeds num of items {n_items}")

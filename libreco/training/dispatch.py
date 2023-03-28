@@ -1,10 +1,11 @@
 from .tf_trainer import TensorFlowTrainer, WideDeepTrainer, YoutubeRetrievalTrainer
 from .torch_trainer import GraphTrainer, TorchTrainer
-from ..bases import SageBase
 from ..utils.constants import TF_TRAIN_MODELS
 
 
 def get_trainer(model):
+    from ..bases import SageBase
+
     train_params = {
         "model": model,
         "task": model.task,

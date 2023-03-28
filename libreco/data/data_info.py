@@ -1,4 +1,4 @@
-"""Class for Storing Various Data Information."""
+"""Classes for Storing Various Data Information."""
 import inspect
 import json
 import os
@@ -8,7 +8,6 @@ from typing import Any, Dict, Iterable, List
 
 import numpy as np
 import pandas as pd
-from numpy.random import default_rng
 
 from .consumed import interaction_consumed
 from ..feature.update import (
@@ -25,12 +24,12 @@ EmptyFeature = Feature(name=[], index=[])
 # noinspection PyUnresolvedReferences
 @dataclass
 class MultiSparseInfo:
-    """:func:`~dataclasses.dataclass` object for storing Multi-sparse features information.
+    """`dataclasses <https://docs.python.org/3/library/dataclasses.html>`_
+    for storing multi-sparse features information.
 
-    A group of multi-sparse features are considered a "field".
-    e.g. ["genre1", "genre2", "genre3"] form a field "genre".
-    So this object contains fields' offset, field's length and fields' oov.
-    Since features belong to the same field share one oov.
+    A group of multi-sparse features are considered as a "field",
+    e.g., ("genre1", "genre2", "genre3") form a "genre" field,
+    and features belong to the same field share the same oov.
 
     Attributes
     ----------
@@ -41,7 +40,7 @@ class MultiSparseInfo:
     feat_oov : numpy.ndarray
         All multi-sparse fields' oov.
     pad_val : dict of {str : Any}
-        Padding value in multi_sparse columns.
+        Padding value in multi-sparse columns.
     """
 
     __slots__ = ("field_offset", "field_len", "feat_oov", "pad_val")
@@ -142,7 +141,7 @@ class DataInfo:
         )
         # Numpy doc states that it is recommended to use new random API
         # https://numpy.org/doc/stable/reference/random/index.html
-        self.np_rng = default_rng()
+        self.np_rng = np.random.default_rng()
         self._n_users = None
         self._n_items = None
         self._user2id = None

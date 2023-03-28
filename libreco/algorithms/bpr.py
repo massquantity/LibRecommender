@@ -11,6 +11,7 @@ from ..tfops import reg_config, sess_config, tf
 from ..training.dispatch import get_trainer
 from ..utils.initializers import truncated_normal
 from ..utils.misc import time_block
+from ..utils.validate import check_fitting
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=LOG_FORMAT)
@@ -227,7 +228,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             How many subprocesses to use for data loading.
             0 means that the data will be loaded in the main process.
         """
-        self.check_attribute(eval_data, k)
+        check_fitting(self, train_data, eval_data, neg_sampling, k)
         self.show_start_time()
         if not self.model_built:
             self.build_model()
