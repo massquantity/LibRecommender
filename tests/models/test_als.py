@@ -12,18 +12,37 @@ from tests.utils_save_load import save_load_model
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize(
-    "reg, alpha", [(1, 5), (-1.0, 5), (None, 5), (0, 5), (0.001, 10), (0.1, 100)]
+    "neg_sampling, reg, alpha",
+    [
+        (True, 1, 5),
+        (True, -1.0, 5),
+        (True, None, 5),
+        (True, 0, 5),
+        (True, 0.001, 10),
+        (True, 0.1, 100),
+        (False, 0.1, 100),
+        (False, 1.1, 100),
+        (None, 0.1, 100),
+    ],
 )
-def test_als(pure_data_small, task, reg, alpha):
+def test_als(pure_data_small, task, neg_sampling, reg, alpha):
     pd_data, train_data, eval_data, data_info = pure_data_small
-    if task == "ranking":
-        # train_data.build_negative_samples(data_info, seed=2022)
-        eval_data.build_negative_samples(data_info, seed=2222)
+    if task == "ranking" and reg == 1.1:
         set_ranking_labels(train_data)
+        set_ranking_labels(eval_data)
 
     if reg in (1, -1.0, None, 0):
         with pytest.raises(ValueError):
-            _ = ALS(task=task, data_info=data_info, reg=reg)
+            ALS(task, data_info, reg=reg)
+    elif neg_sampling is None:
+        with pytest.raises(AssertionError):
+            ALS(task, data_info, reg=reg).fit(train_data, neg_sampling)
+    elif task == "rating" and neg_sampling:
+        with pytest.raises(ValueError):
+            ALS(task, data_info).fit(train_data, neg_sampling)
+    elif task == "ranking" and not neg_sampling and reg == 0.1:
+        with pytest.raises(ValueError):
+            ALS(task, data_info, reg=reg).fit(train_data, neg_sampling)
     else:
         model = ALS(
             task=task,
@@ -36,6 +55,7 @@ def test_als(pure_data_small, task, reg, alpha):
         )
         model.fit(
             train_data,
+            neg_sampling=neg_sampling,
             verbose=2,
             shuffle=True,
             eval_data=eval_data,
@@ -47,15 +67,16 @@ def test_als(pure_data_small, task, reg, alpha):
         evaluate(
             model,
             eval_data,
+            neg_sampling=neg_sampling,
             eval_batch_size=8192,
             k=10,
             metrics=get_metrics(task),
         )
 
         with pytest.raises(ValueError):
-            evaluate(model, eval_data, metrics="whatever")
+            evaluate(model, eval_data, neg_sampling=True, metrics="whatever")
         with pytest.raises(TypeError):
-            evaluate(model, eval_data, k=1.0)
+            evaluate(model, eval_data, neg_sampling=True, k=1.0)
 
         # test save and load model
         if task == "ranking" and reg == 0.1:

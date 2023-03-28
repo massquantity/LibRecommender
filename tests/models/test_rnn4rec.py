@@ -12,15 +12,18 @@ from tests.utils_save_load import save_load_model
 
 
 @pytest.mark.parametrize(
-    "task, loss_type, sampler",
+    "task, loss_type, sampler, neg_sampling",
     [
-        ("rating", "focal", "random"),
-        ("ranking", "cross_entropy", None),
-        ("ranking", "focal", None),
-        ("ranking", "cross_entropy", "random"),
-        ("ranking", "bpr", "unconsumed"),
-        ("ranking", "focal", "popular"),
-        ("ranking", "unknown", "popular"),
+        ("rating", "focal", "random", None),
+        ("rating", "focal", None, True),
+        ("rating", "focal", "random", True),
+        ("ranking", "cross_entropy", "random", False),
+        ("ranking", "focal", "random", False),
+        ("ranking", "cross_entropy", "random", True),
+        ("ranking", "cross_entropy", "unconsumed", True),
+        ("ranking", "focal", "popular", True),
+        ("ranking", "bpr", "unconsumed", True),
+        ("ranking", "unknown", "popular", True),
     ],
 )
 @pytest.mark.parametrize(
@@ -36,6 +39,7 @@ def test_rnn4rec(
     task,
     loss_type,
     sampler,
+    neg_sampling,
     rnn_type,
     lr_decay,
     reg,
@@ -52,18 +56,22 @@ def test_rnn4rec(
         )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = pure_data_small
-    if task == "ranking":
-        # train_data.build_negative_samples(data_info, seed=2022)
-        eval_data.build_negative_samples(data_info, seed=2222)
-        if sampler is None and loss_type == "cross_entropy":
-            set_ranking_labels(train_data)
+    if task == "ranking" and neg_sampling is False and loss_type == "cross_entropy":
+        set_ranking_labels(train_data)
+        set_ranking_labels(eval_data)
 
-    if task == "ranking" and loss_type not in ("cross_entropy", "bpr", "focal"):
+    if neg_sampling is None:
+        with pytest.raises(AssertionError):
+            RNN4Rec(task, data_info).fit(train_data, neg_sampling)
+    elif task == "rating" and neg_sampling:
         with pytest.raises(ValueError):
-            RNN4Rec(task, data_info, loss_type).fit(train_data)
-    elif task == "ranking" and sampler is None and loss_type == "focal":
+            RNN4Rec(task, data_info).fit(train_data, neg_sampling)
+    elif loss_type == "focal" and (neg_sampling is False or sampler is None):
         with pytest.raises(ValueError):
-            RNN4Rec(task, data_info, loss_type, sampler=sampler).fit(train_data)
+            RNN4Rec(task, data_info, sampler=sampler).fit(train_data, neg_sampling)
+    elif task == "ranking" and loss_type not in ("cross_entropy", "bpr", "focal"):
+        with pytest.raises(ValueError):
+            RNN4Rec(task, data_info, loss_type).fit(train_data, neg_sampling)
     else:
         model = RNN4Rec(
             task=task,
@@ -86,6 +94,7 @@ def test_rnn4rec(
         )
         model.fit(
             train_data,
+            neg_sampling,
             verbose=2,
             shuffle=True,
             eval_data=eval_data,
@@ -100,4 +109,4 @@ def test_rnn4rec(
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
         ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
         with pytest.raises(RuntimeError):
-            loaded_model.fit(train_data)
+            loaded_model.fit(train_data, neg_sampling)

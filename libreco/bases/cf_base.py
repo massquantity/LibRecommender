@@ -13,12 +13,13 @@ from scipy.sparse import save_npz as save_sparse
 
 from .base import Base
 from ..evaluation import print_metrics
+from ..prediction.preprocess import convert_id
 from ..recommendation import construct_rec, popular_recommendations
 from ..recommendation.ranking import filter_items
 from ..utils.misc import colorize, time_block
 from ..utils.save_load import load_params, save_params
 from ..utils.similarities import cosine_sim, jaccard_sim, pearson_sim
-from ..utils.validate import check_unknown, check_unknown_user, convert_id
+from ..utils.validate import check_fitting, check_unknown, check_unknown_user
 
 
 class CfBase(Base):
@@ -107,6 +108,7 @@ class CfBase(Base):
     def fit(
         self,
         train_data,
+        neg_sampling,
         verbose=1,
         eval_data=None,
         metrics=None,
@@ -135,6 +137,7 @@ class CfBase(Base):
             Number of users for evaluating. Setting it to a positive number will sample
             users randomly from eval data.
         """
+        check_fitting(self, train_data, eval_data, neg_sampling, k)
         self.show_start_time()
         self.user_interaction = train_data.sparse_interaction
         self.item_interaction = self.user_interaction.T.tocsr()
@@ -188,6 +191,7 @@ class CfBase(Base):
         if verbose > 1:
             print_metrics(
                 model=self,
+                neg_sampling=neg_sampling,
                 eval_data=eval_data,
                 metrics=metrics,
                 eval_batch_size=eval_batch_size,
@@ -311,7 +315,7 @@ class CfBase(Base):
     ):
         if filter_consumed:
             ids, preds = filter_items(ids, preds, consumed)
-        if len(ids) == 0:
+        if len(ids) == 0:  # pragma: no cover
             self.print_count += 1
             no_str = (
                 f"no suitable recommendation for user {user}, "

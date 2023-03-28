@@ -25,12 +25,6 @@ if __name__ == "__main__":
     train_data, eval_data = split_by_ratio_chrono(pd_data, test_size=0.2)
     train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)
-    # train_data.build_negative_samples(
-    #    data_info, item_gen_mode="random", num_neg=1, seed=2022
-    # )
-    eval_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
 
     rnn = RNN4Rec(
         "ranking",
@@ -51,6 +45,7 @@ if __name__ == "__main__":
     )
     rnn.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -81,6 +76,7 @@ if __name__ == "__main__":
     )
     caser.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,

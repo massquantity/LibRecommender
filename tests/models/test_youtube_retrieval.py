@@ -4,7 +4,7 @@ import pytest
 import tensorflow as tf
 
 from libreco.algorithms import YouTubeRetrieval
-from tests.utils_data import SAVE_PATH, remove_path
+from tests.utils_data import SAVE_PATH, remove_path, set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
@@ -62,6 +62,7 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize("num_sampled_per_batch", [None, 1, 10])
+@pytest.mark.parametrize("neg_sampling", ["wrong_labels", False, True])
 @pytest.mark.parametrize("loss_type", ["nce", "sampled_softmax", "unknown"])
 def test_youtube_retrieval(
     config_feat_data_small,
@@ -71,6 +72,7 @@ def test_youtube_retrieval(
     use_bn,
     dropout_rate,
     num_sampled_per_batch,
+    neg_sampling,
     loss_type,
     recent_num,
     random_num,
@@ -83,19 +85,24 @@ def test_youtube_retrieval(
         )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = config_feat_data_small
-    if task == "ranking":
-        # train_data.build_negative_samples(data_info, seed=2022)
-        eval_data.build_negative_samples(data_info, seed=2222)
+    if neg_sampling is False:
+        set_ranking_labels(train_data)
+        set_ranking_labels(eval_data)
 
     if task == "rating":
         with pytest.raises(AssertionError):
             _ = YouTubeRetrieval(task, data_info, loss_type)
-    elif task == "ranking" and loss_type not in ("nce", "sampled_softmax"):
-        with pytest.raises(ValueError):
-            YouTubeRetrieval(task, data_info, loss_type).fit(train_data)
     elif hidden_units in ("64,64", [1, 2, 4.22]):
         with pytest.raises(ValueError):
-            YouTubeRetrieval(task, data_info, hidden_units=hidden_units)
+            _ = YouTubeRetrieval(task, data_info, hidden_units=hidden_units)
+    elif neg_sampling == "wrong_labels":
+        with pytest.raises(ValueError):
+            YouTubeRetrieval(task, data_info, loss_type).fit(
+                train_data, neg_sampling=False
+            )
+    elif task == "ranking" and loss_type not in ("nce", "sampled_softmax"):
+        with pytest.raises(ValueError):
+            YouTubeRetrieval(task, data_info, loss_type).fit(train_data, neg_sampling)
     else:
         model = YouTubeRetrieval(
             task=task,
@@ -117,6 +124,7 @@ def test_youtube_retrieval(
         )
         model.fit(
             train_data,
+            neg_sampling,
             verbose=2,
             shuffle=True,
             eval_data=eval_data,
@@ -153,10 +161,6 @@ def test_youtube_retrieval_multi_sparse(config_feat_data_small):
     tf.compat.v1.reset_default_graph()
     task = "ranking"
     pd_data, train_data, eval_data, data_info = config_feat_data_small
-    # train_data.build_negative_samples(data_info, item_gen_mode="random", num_neg=1, seed=2022)
-    eval_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
     model = YouTubeRetrieval(
         task=task,
         data_info=data_info,
@@ -174,6 +178,7 @@ def test_youtube_retrieval_multi_sparse(config_feat_data_small):
     )
     model.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,

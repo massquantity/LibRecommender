@@ -14,11 +14,11 @@ class TransformedSet:
 
     Parameters
     ----------
-    user_indices : numpy.ndarray or None, default: None
+    user_indices : numpy.ndarray
         All user rows in data, represented in inner id.
-    item_indices : numpy.ndarray or None, default: None
+    item_indices : numpy.ndarray
         All item rows in data, represented in inner id.
-    labels : numpy.ndarray or None, default: None
+    labels : numpy.ndarray
         All labels in data.
     sparse_indices : numpy.ndarray or None, default: None
         All sparse rows in data, represented in inner id.
@@ -105,20 +105,7 @@ class TransformedSet:
 
     def __getitem__(self, index):
         """Get a slice of data."""
-        pure_part = (
-            self.user_indices[index],
-            self.item_indices[index],
-            self.labels[index],
-        )
-        sparse_part = (
-            (self.sparse_indices[index],)
-            if self.sparse_indices is not None
-            else (None,)
-        )
-        dense_part = (
-            (self.dense_values[index],) if self.dense_values is not None else (None,)
-        )
-        return pure_part + sparse_part + dense_part
+        return self.user_indices[index], self.item_indices[index], self.labels[index]
 
     @property
     def user_indices(self):

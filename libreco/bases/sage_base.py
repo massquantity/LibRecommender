@@ -5,7 +5,6 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from ..algorithms.torch_modules import GraphSageModel, PinSageModel
 from ..bases import EmbedBase
 from ..graph import NeighborWalker
 from ..graph.message import ItemMessage, ItemMessageDGL, UserMessage
@@ -103,12 +102,10 @@ class SageBase(EmbedBase):
         raise NotImplementedError
 
     def get_user_repr(self, user_data: UserMessage):
-        assert isinstance(self.torch_model, (GraphSageModel, PinSageModel))
         users, sparse_indices, dense_values = astuple(user_data)
         return self.torch_model.user_repr(users, sparse_indices, dense_values)
 
     def get_item_repr(self, item_data: Union[ItemMessage, ItemMessageDGL]):
-        assert isinstance(self.torch_model, (GraphSageModel, PinSageModel))
         if isinstance(item_data, ItemMessage):
             (
                 item,

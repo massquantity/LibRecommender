@@ -16,12 +16,11 @@ from tests.utils_data import set_ranking_labels
 )
 def test_knn_embed(pure_data_small, monkeypatch):
     pd_data, train_data, eval_data, data_info = pure_data_small
-    # train_data.build_negative_samples(data_info, seed=2022)
-    eval_data.build_negative_samples(data_info, seed=2222)
     set_ranking_labels(train_data)
+    set_ranking_labels(eval_data)
 
     als = ALS("ranking", data_info, embed_size=16, n_epochs=2, reg=5.0)
-    als.fit(train_data, verbose=2, shuffle=True)
+    als.fit(train_data, neg_sampling=True, verbose=2, shuffle=True)
     ptest_knn(als, pd_data)
 
     lightgcn = LightGCN(
@@ -33,7 +32,7 @@ def test_knn_embed(pure_data_small, monkeypatch):
         lr=1e-4,
         batch_size=20,
     )
-    lightgcn.fit(train_data, verbose=2, shuffle=True)
+    lightgcn.fit(train_data, neg_sampling=True, verbose=2, shuffle=True)
     ptest_knn(lightgcn, pd_data)
 
     with pytest.raises(ValueError):

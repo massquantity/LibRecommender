@@ -21,7 +21,6 @@ def test_faiss_index(embed_model):
 @pytest.fixture
 def embed_model(prepare_pure_data):
     _, train_data, _, data_info = prepare_pure_data
-    train_data.build_negative_samples(data_info, seed=2022)
     model = BPR(
         data_info=data_info,
         n_epochs=2,
@@ -30,5 +29,5 @@ def embed_model(prepare_pure_data):
         use_tf=False,
         optimizer="adam",
     )
-    model.fit(train_data, verbose=2)
+    model.fit(train_data, neg_sampling=True, verbose=2)
     return model

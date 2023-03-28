@@ -4,7 +4,7 @@ import pytest
 import tensorflow as tf
 
 from libreco.algorithms import GraphSageDGL
-from tests.utils_data import remove_path
+from tests.utils_data import remove_path, set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
 from tests.utils_reco import ptest_recommends
@@ -13,27 +13,26 @@ from tests.utils_save_load import save_load_model
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize(
-    "paradigm, aggregator_type, loss_type, sampler, num_neg",
+    "paradigm, aggregator_type, loss_type, sampler, num_neg, neg_sampling",
     [
-        ("whatever", "mean", "cross_entropy", "random", 1),
-        ("u2i", "mean", "cross_entropy", "random", 1),
-        ("i2i", "gcn", "cross_entropy", "random", 1),
-        ("u2i", "gcn", "cross_entropy", None, 0),
-        ("u2i", "gcn", "cross_entropy", "random", 0),
-        ("u2i", "pool", "focal", None, 1),
-        ("u2i", "pool", "focal", "unconsumed", 3),
-        ("u2i", "lstm", "focal", "popular", 2),
-        ("i2i", "mean", "focal", "random", 3),
-        ("u2i", "pool", "bpr", "popular", 2),
-        ("u2i", "lstm", "bpr", "unconsumed", 2),
-        ("u2i", "whatever", "bpr", "random", 2),
-        ("i2i", "gcn", "max_margin", "random", 2),
-        ("i2i", "pool", "max_margin", "popular", 1),
-        ("i2i", "lstm", "max_margin", None, 2),
-        ("u2i", "lstm", "whatever", "random", 1),
-        ("u2i", "gcn", "bpr", "whatever", 1),
-        ("i2i", "mean", "bpr", "out-batch", 1),
-        ("i2i", "mean", "bpr", "unconsumed", 5),
+        ("whatever", "mean", "cross_entropy", "random", 1, True),
+        ("u2i", "mean", "cross_entropy", "random", 1, False),
+        ("u2i", "pool", "focal", "random", 1, False),
+        ("u2i", "mean", "cross_entropy", "random", 1, True),
+        ("i2i", "gcn", "cross_entropy", "random", 1, True),
+        ("u2i", "gcn", "cross_entropy", "random", 0, True),
+        ("u2i", "pool", "focal", "unconsumed", 3, True),
+        ("u2i", "lstm", "focal", "popular", 2, True),
+        ("i2i", "mean", "focal", "random", 3, True),
+        ("u2i", "pool", "bpr", "popular", 2, True),
+        ("u2i", "lstm", "bpr", "unconsumed", 2, True),
+        ("u2i", "whatever", "bpr", "random", 2, True),
+        ("i2i", "gcn", "max_margin", "random", 2, True),
+        ("i2i", "pool", "max_margin", "popular", 1, True),
+        ("u2i", "lstm", "whatever", "random", 1, True),
+        ("u2i", "gcn", "bpr", "whatever", 1, True),
+        ("i2i", "mean", "bpr", "out-batch", 1, True),
+        ("i2i", "mean", "bpr", "unconsumed", 5, True),
     ],
 )
 @pytest.mark.parametrize(
@@ -110,6 +109,7 @@ def test_pinsage(
     loss_type,
     sampler,
     num_neg,
+    neg_sampling,
     reg,
     dropout_rate,
     lr_decay,
@@ -131,9 +131,9 @@ def test_pinsage(
         )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = feat_data_small
-    if task == "ranking":
-        # train_data.build_negative_samples(data_info, seed=2022)
-        eval_data.build_negative_samples(data_info, seed=2222)
+    if task == "ranking" and neg_sampling is False and loss_type == "cross_entropy":
+        set_ranking_labels(train_data)
+        set_ranking_labels(eval_data)
 
     params = {
         "task": task,
@@ -157,21 +157,23 @@ def test_pinsage(
     elif loss_type == "whatever":
         with pytest.raises(ValueError):
             _ = GraphSageDGL(**params)
-    elif not sampler or sampler == "whatever":
+    elif loss_type == "focal" and neg_sampling is False:
         with pytest.raises(ValueError):
-            GraphSageDGL(**params).fit(train_data)
+            GraphSageDGL(**params).fit(train_data, neg_sampling)
+    elif sampler == "whatever":
+        with pytest.raises(ValueError):
+            GraphSageDGL(**params).fit(train_data, neg_sampling)
     elif paradigm == "i2i" and sampler == "unconsumed":
         with pytest.raises(ValueError):
-            GraphSageDGL(**params).fit(train_data)
-    elif loss_type == "cross_entropy" and sampler and num_neg <= 0:
+            GraphSageDGL(**params).fit(train_data, neg_sampling)
+    elif loss_type == "cross_entropy" and neg_sampling and num_neg <= 0:
         with pytest.raises(AssertionError):
-            GraphSageDGL(**params).fit(train_data)
-    elif loss_type == "max_margin" and not sampler:
-        with pytest.raises(ValueError):
-            GraphSageDGL(**params).fit(train_data)
+            GraphSageDGL(**params).fit(train_data, neg_sampling)
     elif num_workers != 0:
         with pytest.raises(AssertionError):
-            GraphSageDGL(**params).fit(train_data, num_workers=num_workers)
+            GraphSageDGL(**params).fit(
+                train_data, neg_sampling, num_workers=num_workers
+            )
     else:
         model = GraphSageDGL(
             task=task,
@@ -201,6 +203,7 @@ def test_pinsage(
         )
         model.fit(
             train_data,
+            neg_sampling,
             verbose=2,
             shuffle=True,
             eval_data=eval_data,
@@ -215,6 +218,6 @@ def test_pinsage(
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
         ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
         with pytest.raises(RuntimeError):
-            loaded_model.fit(train_data)
+            loaded_model.fit(train_data, neg_sampling)
         model.save("not_existed_path", "graphsage2")
         remove_path("not_existed_path")

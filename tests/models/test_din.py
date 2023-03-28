@@ -17,15 +17,17 @@ from tests.utils_save_load import save_load_model
 
 
 @pytest.mark.parametrize(
-    "task, loss_type, sampler",
+    "task, loss_type, sampler, neg_sampling",
     [
-        ("rating", "focal", "random"),
-        ("ranking", "cross_entropy", None),
-        ("ranking", "focal", None),
-        ("ranking", "cross_entropy", "random"),
-        ("ranking", "cross_entropy", "unconsumed"),
-        ("ranking", "focal", "popular"),
-        ("ranking", "unknown", "popular"),
+        ("rating", "focal", "random", None),
+        ("rating", "focal", None, True),
+        ("rating", "focal", "random", True),
+        ("ranking", "cross_entropy", "random", False),
+        ("ranking", "focal", "unconsumed", False),
+        ("ranking", "cross_entropy", "random", True),
+        ("ranking", "cross_entropy", "unconsumed", True),
+        ("ranking", "focal", "popular", True),
+        ("ranking", "unknown", "popular", True),
     ],
 )
 @pytest.mark.parametrize(
@@ -41,6 +43,7 @@ def test_din(
     task,
     loss_type,
     sampler,
+    neg_sampling,
     lr_decay,
     reg,
     num_neg,
@@ -57,18 +60,22 @@ def test_din(
         )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = feat_data_small
-    if task == "ranking":
-        # train_data.build_negative_samples(data_info, seed=2022)
-        eval_data.build_negative_samples(data_info, seed=2222)
-        if sampler is None and loss_type == "cross_entropy":
-            set_ranking_labels(train_data)
+    if task == "ranking" and neg_sampling is False and loss_type == "cross_entropy":
+        set_ranking_labels(train_data)
+        set_ranking_labels(eval_data)
 
-    if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
+    if neg_sampling is None:
+        with pytest.raises(AssertionError):
+            DIN(task, data_info).fit(train_data, neg_sampling)
+    elif task == "rating" and neg_sampling:
         with pytest.raises(ValueError):
-            DIN(task, data_info, loss_type).fit(train_data)
-    elif task == "ranking" and sampler is None and loss_type == "focal":
+            DIN(task, data_info).fit(train_data, neg_sampling)
+    elif loss_type == "focal" and (neg_sampling is False or sampler is None):
         with pytest.raises(ValueError):
-            DIN(task, data_info, loss_type, sampler=sampler).fit(train_data)
+            DIN(task, data_info, sampler=sampler).fit(train_data, neg_sampling)
+    elif task == "ranking" and loss_type not in ("cross_entropy", "focal"):
+        with pytest.raises(ValueError):
+            DIN(task, data_info, loss_type).fit(train_data, neg_sampling)
     else:
         model = DIN(
             task=task,
@@ -91,6 +98,7 @@ def test_din(
         )
         model.fit(
             train_data,
+            neg_sampling,
             verbose=2,
             shuffle=True,
             eval_data=eval_data,
@@ -114,7 +122,7 @@ def test_din_multi_sparse(multi_sparse_data_small):
     ptest_preds(loaded_model, task, pd_data, with_feats=True)
     ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=True)
     with pytest.raises(RuntimeError):
-        loaded_model.fit(train_data)
+        loaded_model.fit(train_data, neg_sampling=True)
 
 
 def test_item_dense_feature():
@@ -144,6 +152,7 @@ def test_item_dense_feature():
     )
     model.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,

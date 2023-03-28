@@ -22,8 +22,6 @@ def test_gensim_model_retrain_pure():
     train_data, eval_data = split_by_ratio_chrono(first_half_data, test_size=0.2)
     train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)
-    # train_data.build_negative_samples(data_info, seed=2022)
-    eval_data.build_negative_samples(data_info, seed=2222)
     retrain("item2vec", train_data, eval_data, data_info, all_data)
     retrain("deepwalk", train_data, eval_data, data_info, all_data)
 
@@ -53,6 +51,7 @@ def retrain(model_name, train_data, eval_data, data_info, all_data):
 
     model.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -70,11 +69,10 @@ def retrain(model_name, train_data, eval_data, data_info, all_data):
     eval_result = evaluate(
         model,
         eval_data,
+        neg_sampling=True,
         eval_batch_size=8192,
         k=10,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
-        neg_sample=True,
-        update_features=False,
         seed=2222,
     )
 
@@ -93,8 +91,6 @@ def retrain(model_name, train_data, eval_data, data_info, all_data):
         train_data_orig, new_data_info, merge_behavior=False
     )
     eval_data = DatasetPure.merge_evalset(eval_data_orig, new_data_info)
-    # train_data.build_negative_samples(new_data_info, seed=2022)
-    eval_data.build_negative_samples(new_data_info, seed=2222)
 
     if model_name == "item2vec":
         new_model = Item2Vec(
@@ -121,6 +117,7 @@ def retrain(model_name, train_data, eval_data, data_info, all_data):
     new_model.rebuild_model(path=SAVE_PATH, model_name=model_name)
     new_model.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -141,11 +138,10 @@ def retrain(model_name, train_data, eval_data, data_info, all_data):
     new_eval_result = evaluate(
         new_model,
         eval_data_orig,
+        neg_sampling=True,
         eval_batch_size=8192,
         k=10,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
-        neg_sample=True,
-        update_features=False,
         seed=2222,
     )
 

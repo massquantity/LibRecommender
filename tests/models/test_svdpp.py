@@ -13,15 +13,17 @@ from tests.utils_save_load import save_load_model
 
 
 @pytest.mark.parametrize(
-    "task, loss_type, sampler",
+    "task, loss_type, sampler, neg_sampling",
     [
-        ("rating", "focal", "random"),
-        ("ranking", "cross_entropy", None),
-        ("ranking", "focal", None),
-        ("ranking", "cross_entropy", "random"),
-        ("ranking", "cross_entropy", "unconsumed"),
-        ("ranking", "focal", "popular"),
-        ("ranking", "unknown", "popular"),
+        ("rating", "focal", "random", None),
+        ("rating", "focal", None, True),
+        ("rating", "focal", "random", True),
+        ("ranking", "cross_entropy", "random", False),
+        ("ranking", "focal", "random", False),
+        ("ranking", "cross_entropy", "random", True),
+        ("ranking", "cross_entropy", "unconsumed", True),
+        ("ranking", "focal", "popular", True),
+        ("ranking", "unknown", "popular", True),
     ],
 )
 @pytest.mark.parametrize(
@@ -29,7 +31,15 @@ from tests.utils_save_load import save_load_model
     [(None, 1, 10, 0), (0.001, 3, 1, 2), (2.0, 1, None, 1), (0.001, 3, 0, 0)],
 )
 def test_svdpp(
-    pure_data_small, task, loss_type, sampler, reg, num_neg, recent_num, num_workers
+    pure_data_small,
+    task,
+    loss_type,
+    sampler,
+    neg_sampling,
+    reg,
+    num_neg,
+    recent_num,
+    num_workers,
 ):
     if not sys.platform.startswith("linux") and num_workers > 0:
         pytest.skip(
@@ -37,18 +47,22 @@ def test_svdpp(
         )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = pure_data_small
-    if task == "ranking":
-        # train_data.build_negative_samples(data_info, seed=2022)
-        eval_data.build_negative_samples(data_info, seed=2222)
-        if sampler is None and loss_type == "cross_entropy":
-            set_ranking_labels(train_data)
+    if task == "ranking" and neg_sampling is False and loss_type == "cross_entropy":
+        set_ranking_labels(train_data)
+        set_ranking_labels(eval_data)
 
-    if recent_num == 0:
+    if neg_sampling is None:
         with pytest.raises(AssertionError):
-            SVDpp(task, data_info, recent_num=recent_num).fit(train_data)
-    elif task == "ranking" and sampler is None and loss_type == "focal":
+            SVDpp(task, data_info).fit(train_data, neg_sampling)
+    elif task == "rating" and neg_sampling:
         with pytest.raises(ValueError):
-            SVDpp(task, data_info, loss_type, sampler=sampler).fit(train_data)
+            SVDpp(task, data_info).fit(train_data, neg_sampling)
+    elif recent_num == 0:
+        with pytest.raises(AssertionError):
+            SVDpp(task, data_info, recent_num=recent_num).fit(train_data, neg_sampling)
+    elif loss_type == "focal" and (neg_sampling is False or sampler is None):
+        with pytest.raises(ValueError):
+            SVDpp(task, data_info, sampler=sampler).fit(train_data, neg_sampling)
     else:
         model = SVDpp(
             task=task,
@@ -66,10 +80,11 @@ def test_svdpp(
         )
         if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
             with pytest.raises(ValueError):
-                model.fit(train_data)
+                model.fit(train_data, neg_sampling)
         else:
             model.fit(
                 train_data,
+                neg_sampling,
                 verbose=2,
                 shuffle=True,
                 eval_data=eval_data,
@@ -84,7 +99,7 @@ def test_svdpp(
             ptest_preds(loaded_model, task, pd_data, with_feats=False)
             ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
             with pytest.raises(RuntimeError):
-                loaded_model.fit(train_data)
+                loaded_model.fit(train_data, neg_sampling)
 
             # test rebuild model
             model.save(SAVE_PATH, "svdpp_model", manual=True, inference_only=False)
@@ -93,6 +108,8 @@ def test_svdpp(
             train_data, new_data_info = DatasetPure.merge_trainset(
                 pd_data, data_info, merge_behavior=True
             )
+            if task == "ranking" and not neg_sampling:
+                set_ranking_labels(train_data)
             new_model = SVDpp(
                 task=task,
                 data_info=new_data_info,
@@ -105,6 +122,6 @@ def test_svdpp(
                 tf_sess_config=None,
             )
             new_model.rebuild_model(SAVE_PATH, "svdpp_model", full_assign=True)
-            new_model.fit(train_data)
+            new_model.fit(train_data, neg_sampling)
             with pytest.raises(ValueError):
-                new_model.fit(train_data, eval_data=eval_data, k=10000)
+                new_model.fit(train_data, neg_sampling, eval_data=eval_data, k=10000)

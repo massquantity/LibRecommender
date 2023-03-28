@@ -4,13 +4,14 @@ from scipy.special import expit
 from tqdm import tqdm
 
 from .preprocess import (
+    convert_id,
     features_from_batch,
     get_original_feats,
     get_seq_feats,
     set_temp_feats,
 )
 from ..tfops import get_feed_dict
-from ..utils.validate import check_unknown, convert_id
+from ..utils.validate import check_unknown
 
 
 def normalize_prediction(preds, model, cold_start, unknown_num, unknown_index):
@@ -48,9 +49,7 @@ def predict_tf_feat(model, user, item, feats, cold_start, inner_id):
         item_indices,
         sparse_indices,
         dense_values,
-    ) = get_original_feats(
-        model.data_info, user, item, has_sparse, has_dense
-    )
+    ) = get_original_feats(model.data_info, user, item, has_sparse, has_dense)
 
     if feats is not None:
         assert isinstance(feats, dict), "`feats` must be `dict`."

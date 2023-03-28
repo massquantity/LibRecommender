@@ -32,8 +32,6 @@ def test_torchmodel_retrain_feat():
         shuffle=False,
     )
     eval_data = DatasetFeat.build_evalset(eval_data)
-    # train_data.build_negative_samples(data_info, seed=2022)
-    eval_data.build_negative_samples(data_info, seed=2222)
 
     model = GraphSage(
         "ranking",
@@ -62,6 +60,7 @@ def test_torchmodel_retrain_feat():
     )
     model.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -79,6 +78,7 @@ def test_torchmodel_retrain_feat():
     eval_result = evaluate(
         model,
         eval_data,
+        neg_sampling=True,
         sample_user_num=200,
         eval_batch_size=8192,
         k=10,
@@ -92,8 +92,6 @@ def test_torchmodel_retrain_feat():
             "map",
             "ndcg",
         ],
-        neg_sample=True,
-        update_features=False,
         seed=2222,
     )
 
@@ -114,8 +112,6 @@ def test_torchmodel_retrain_feat():
         train_data_orig, new_data_info, merge_behavior=True
     )
     eval_data = DatasetFeat.merge_evalset(eval_data_orig, new_data_info)
-    # train_data.build_negative_samples(new_data_info, seed=2022)
-    eval_data.build_negative_samples(new_data_info, seed=2222)
 
     new_model = GraphSage(
         "ranking",
@@ -145,6 +141,7 @@ def test_torchmodel_retrain_feat():
     new_model.rebuild_model(path=SAVE_PATH, model_name="graphsage_model")
     new_model.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -165,12 +162,11 @@ def test_torchmodel_retrain_feat():
     new_eval_result = evaluate(
         new_model,
         eval_data_orig,
+        neg_sampling=True,
         sample_user_num=200,
         eval_batch_size=100000,
         k=10,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
-        neg_sample=True,
-        update_features=True,
         seed=2222,
     )
 

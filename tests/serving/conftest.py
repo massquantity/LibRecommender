@@ -24,23 +24,21 @@ def redis_client():
 @pytest.fixture
 def knn_model(prepare_pure_data, request):
     _, train_data, _, data_info = prepare_pure_data
-    train_data.build_negative_samples(data_info, seed=2022)
     if request.param == "UserCF":
         user_cf_model = UserCF("ranking", data_info)
-        user_cf_model.fit(train_data, verbose=2)
+        user_cf_model.fit(train_data, neg_sampling=True, verbose=2)
         return user_cf_model
     elif request.param == "ItemCF":
         item_cf_model = ItemCF("ranking", data_info)
-        item_cf_model.fit(train_data, verbose=2)
+        item_cf_model.fit(train_data, neg_sampling=True, verbose=2)
         return item_cf_model
 
 
 @pytest.fixture
 def embed_model(prepare_pure_data):
     _, train_data, _, data_info = prepare_pure_data
-    train_data.build_negative_samples(data_info, seed=2022)
     model = ALS("ranking", data_info, n_epochs=1, use_cg=False, reg=0.1)
-    model.fit(train_data, verbose=2)
+    model.fit(train_data, neg_sampling=True, verbose=2)
     return model
 
 
@@ -50,9 +48,8 @@ def tf_model(prepare_pure_data, request):
     remove_path(SAVE_PATH)
     if request.param == "pure":
         _, train_data, _, data_info = prepare_pure_data
-        train_data.build_negative_samples(data_info, seed=2022)
         model = NCF("ranking", data_info, n_epochs=1, batch_size=2048)
-        model.fit(train_data, verbose=2)
+        model.fit(train_data, neg_sampling=True, verbose=2)
         return model
     else:
         if "user" in request.param:
@@ -81,7 +78,6 @@ def tf_model(prepare_pure_data, request):
         pd_data = pd.read_csv(data_path, sep=",", header=0)
         pd_data["item_dense_feat"] = np.random.random(len(pd_data))
         train_data, data_info = DatasetFeat.build_trainset(pd_data, **features)
-        train_data.build_negative_samples(data_info, seed=2022)
         model = DIN("ranking", data_info, n_epochs=1, batch_size=2048)
-        model.fit(train_data, verbose=2)
+        model.fit(train_data, neg_sampling=True, verbose=2)
         return model

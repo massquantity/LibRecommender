@@ -8,6 +8,7 @@ import numpy as np
 from .base import Base
 from ..prediction import predict_from_embedding
 from ..recommendation import cold_start_rec, construct_rec, recommend_from_embedding
+from ..training.dispatch import get_trainer
 from ..utils.misc import colorize
 from ..utils.save_load import (
     load_default_recs,
@@ -17,7 +18,7 @@ from ..utils.save_load import (
     save_tf_variables,
     save_torch_state_dict,
 )
-from ..utils.validate import check_unknown_user
+from ..utils.validate import check_fitting, check_unknown_user
 
 
 class EmbedBase(Base):
@@ -59,18 +60,10 @@ class EmbedBase(Base):
     def build_model(self):
         raise NotImplementedError
 
-    def check_attribute(self, eval_data, k):
-        if hasattr(self, "loaded") and self.loaded:
-            raise RuntimeError(
-                "Loaded model doesn't support retraining, use `rebuild_model` instead. "
-                "Or constructing a new model from scratch."
-            )
-        if eval_data is not None and k > self.n_items:
-            raise ValueError(f"eval `k` {k} exceeds num of items {self.n_items}")
-
     def fit(
         self,
         train_data,
+        neg_sampling,
         verbose=1,
         shuffle=True,
         eval_data=None,
@@ -114,9 +107,7 @@ class EmbedBase(Base):
         RuntimeError
             If :py:func:`fit` is called from a loaded model(:py:func:`load`).
         """
-        from ..training.dispatch import get_trainer
-
-        self.check_attribute(eval_data, k)
+        check_fitting(self, train_data, eval_data, neg_sampling, k)
         self.show_start_time()
         if not self.model_built:
             self.build_model()
@@ -125,6 +116,7 @@ class EmbedBase(Base):
             self.trainer = get_trainer(self)
         self.trainer.run(
             train_data,
+            neg_sampling,
             verbose,
             shuffle,
             eval_data,

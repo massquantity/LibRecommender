@@ -12,7 +12,6 @@ from .collators import (
     SparseCollator,
 )
 from .enums import Backend
-from ..bases import SageBase
 from ..utils.constants import FEAT_TRAIN_MODELS, TF_TRAIN_MODELS
 
 
@@ -43,17 +42,17 @@ class BatchData(torch.utils.data.Dataset):
         return math.ceil(length / self.factor) if self.factor is not None else length
 
 
-def get_batch_loader(model, data, batch_size, shuffle, num_workers=0):
+def get_batch_loader(model, data, neg_sampling, batch_size, shuffle, num_workers=0):
     use_features = True if model.model_name in FEAT_TRAIN_MODELS else False
     factor = (
         model.num_walks * model.sample_walk_len
-        if isinstance(model, SageBase) and model.paradigm == "i2i"
+        if "Sage" in model.model_name and model.paradigm == "i2i"
         else None
     )
     batch_data = BatchData(data, use_features, factor)
     sampler = RandomSampler(batch_data) if shuffle else SequentialSampler(batch_data)
     batch_sampler = BatchSampler(sampler, batch_size=batch_size, drop_last=False)
-    collate_fn = get_collate_fn(model, num_workers)
+    collate_fn = get_collate_fn(model, neg_sampling, num_workers)
     return DataLoader(
         batch_data,
         batch_size=None,  # `batch_size=None` disables automatic batching
@@ -63,18 +62,18 @@ def get_batch_loader(model, data, batch_size, shuffle, num_workers=0):
     )
 
 
-def get_collate_fn(model, num_workers):
+def get_collate_fn(model, neg_sampling, num_workers):
     model_name, data_info = model.model_name, model.data_info
     backend = Backend.TF if model_name in TF_TRAIN_MODELS else Backend.TORCH
     if model_name == "YouTubeRetrieval":
         collate_fn = SparseCollator(model, data_info, backend)
-    elif isinstance(model, SageBase):
+    elif "Sage" in model.model_name:
         if model.use_dgl:
             assert num_workers == 0, "DGL models can't use multiprocessing data loader"
             collate_fn = GraphDGLCollator(model, data_info, backend)
         else:
             collate_fn = GraphCollator(model, data_info, backend)
-    elif model.task == "rating" or model.sampler is None:
+    elif model.task == "rating" or not neg_sampling:
         collate_fn = NormalCollator(model, data_info, backend)
     else:
         if model.loss_type in ("cross_entropy", "focal"):
@@ -89,7 +88,7 @@ def get_collate_fn(model, num_workers):
 def adjust_batch_size(model, original_batch_size):
     if model.model_name == "YouTubeRetrieval":
         return original_batch_size
-    elif isinstance(model, SageBase) and model.paradigm == "i2i":
+    elif "Sage" in model.model_name and model.paradigm == "i2i":
         walk_len = model.sample_walk_len
         bs = original_batch_size / model.num_neg / model.num_walks / walk_len
         return max(1, int(bs))

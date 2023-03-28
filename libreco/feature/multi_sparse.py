@@ -141,3 +141,15 @@ def recover_sparse_cols(data_info):
             else:
                 i += 1
     return sparse_cols, multi_sparse_cols
+
+
+def true_sparse_field_size(data_info, sparse_field_size, combiner):
+    """Get the real sparse field size.
+
+    When using multi_sparse_combiner, field size will decrease.
+    """
+    if data_info.multi_sparse_combine_info and combiner in ("sum", "mean", "sqrtn"):
+        field_length = data_info.multi_sparse_combine_info.field_len
+        return sparse_field_size - (sum(field_length) - len(field_length))
+    else:
+        return sparse_field_size

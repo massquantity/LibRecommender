@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 import tensorflow as tf
 
 from libreco.algorithms import DIN
@@ -32,8 +33,6 @@ def test_tfmodel_retrain_feat():
         shuffle=False,
     )
     eval_data = DatasetFeat.build_evalset(eval_data)
-    # train_data.build_negative_samples(data_info, seed=2022)
-    eval_data.build_negative_samples(data_info, seed=2222)
 
     model = DIN(
         "ranking",
@@ -51,6 +50,7 @@ def test_tfmodel_retrain_feat():
     )
     model.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -69,6 +69,7 @@ def test_tfmodel_retrain_feat():
     eval_result = evaluate(
         model,
         eval_data,
+        neg_sampling=True,
         sample_user_num=200,
         eval_batch_size=8192,
         k=10,
@@ -82,8 +83,6 @@ def test_tfmodel_retrain_feat():
             "map",
             "ndcg",
         ],
-        neg_sample=True,
-        update_features=False,
         seed=2222,
     )
 
@@ -105,8 +104,6 @@ def test_tfmodel_retrain_feat():
         train_data_orig, new_data_info, merge_behavior=True
     )
     eval_data = DatasetFeat.merge_evalset(eval_data_orig, new_data_info)
-    # train_data.build_negative_samples(new_data_info, seed=2022)
-    eval_data.build_negative_samples(new_data_info, seed=2222)
 
     new_model = DIN(
         "ranking",
@@ -125,6 +122,7 @@ def test_tfmodel_retrain_feat():
     new_model.rebuild_model(path=SAVE_PATH, model_name="din_model", full_assign=True)
     new_model.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -143,17 +141,20 @@ def test_tfmodel_retrain_feat():
     ptest_preds(new_model, "ranking", second_half_data, with_feats=False)
     ptest_recommends(new_model, new_data_info, second_half_data, with_feats=False)
 
+    with pytest.raises(ValueError, match="`data` must be `pandas.DataFrame` or `TransformedSet`"):
+        _ = evaluate(new_model, eval_data_orig["user"], neg_sampling=True)
+
     new_eval_result = evaluate(
         new_model,
         eval_data_orig,
+        neg_sampling=True,
         sample_user_num=200,
         eval_batch_size=100000,
         k=20,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
-        neg_sample=True,
-        update_features=True,
         seed=2222,
     )
+    _ = evaluate(new_model, eval_data, neg_sampling=False)
 
     assert new_eval_result["roc_auc"] != eval_result["roc_auc"]
 

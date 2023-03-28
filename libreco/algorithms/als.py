@@ -11,6 +11,7 @@ from ..recommendation import recommend_from_embedding
 from ..utils.initializers import truncated_normal
 from ..utils.misc import time_block
 from ..utils.save_load import save_default_recs, save_params
+from ..utils.validate import check_fitting
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=LOG_FORMAT)
@@ -92,6 +93,7 @@ class ALS(EmbedBase):
     def fit(
         self,
         train_data,
+        neg_sampling,
         verbose=1,
         shuffle=True,
         eval_data=None,
@@ -130,7 +132,7 @@ class ALS(EmbedBase):
             logging.warning("Als cython version is not available")
             raise
 
-        self.check_attribute(eval_data, k)
+        check_fitting(self, train_data, eval_data, neg_sampling, k)
         self.show_start_time()
         self.build_model()
         user_interaction = train_data.sparse_interaction  # sparse.csr_matrix
@@ -160,6 +162,7 @@ class ALS(EmbedBase):
             if verbose > 1:
                 print_metrics(
                     model=self,
+                    neg_sampling=neg_sampling,
                     train_data=train_data,
                     eval_data=eval_data,
                     metrics=metrics,
