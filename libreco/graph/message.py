@@ -1,8 +1,10 @@
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from typing import Iterable, List, Optional
 
 import numpy as np
 import torch
+
+from ..batch.enums import Backend
 
 
 def to_cpu_tensor(data, dtype=None):
@@ -22,10 +24,6 @@ def to_device(data, device):
 
 
 class Message:
-
-    def to_torch_tensor(self):
-        raise NotImplementedError
-
     def to_device(self, device):
         raise NotImplementedError
 
@@ -35,12 +33,13 @@ class UserMessage(Message):
     users: Iterable[int]
     sparse_indices: Optional[Iterable[int]]
     dense_values: Optional[Iterable[float]]
+    backend: InitVar[Backend] = Backend.TORCH
 
-    def to_torch_tensor(self):
-        self.users = to_cpu_tensor(self.users, dtype=torch.long)
-        self.sparse_indices = to_cpu_tensor(self.sparse_indices, dtype=torch.long)
-        self.dense_values = to_cpu_tensor(self.dense_values, dtype=torch.float)
-        return self
+    def __post_init__(self, backend):
+        if backend is Backend.TORCH:
+            self.users = to_cpu_tensor(self.users, dtype=torch.long)
+            self.sparse_indices = to_cpu_tensor(self.sparse_indices, dtype=torch.long)
+            self.dense_values = to_cpu_tensor(self.dense_values, dtype=torch.float)
 
     def to_device(self, device):
         self.users = to_device(self.users, device)
@@ -59,22 +58,27 @@ class ItemMessage(Message):
     neighbors_dense: List[Optional[Iterable[float]]]
     offsets: List[List[int]]
     weights: Optional[List[List[float]]]
+    backend: InitVar[Backend] = Backend.TORCH
 
-    def to_torch_tensor(self):
-        self.items = to_cpu_tensor(self.items, dtype=torch.long)
-        self.sparse_indices = to_cpu_tensor(self.sparse_indices, dtype=torch.long)
-        self.dense_values = to_cpu_tensor(self.dense_values, dtype=torch.float)
-        self.neighbors = [to_cpu_tensor(n, dtype=torch.long) for n in self.neighbors]
-        self.neighbors_sparse = [
-            to_cpu_tensor(n, dtype=torch.long) for n in self.neighbors_sparse
-        ]
-        self.neighbors_dense = [
-            to_cpu_tensor(n, dtype=torch.float) for n in self.neighbors_dense
-        ]
-        self.offsets = [to_cpu_tensor(n, dtype=torch.long) for n in self.offsets]
-        if self.weights is not None:
-            self.weights = [to_cpu_tensor(n, dtype=torch.float) for n in self.weights]
-        return self
+    def __post_init__(self, backend):
+        if backend is Backend.TORCH:
+            self.items = to_cpu_tensor(self.items, dtype=torch.long)
+            self.sparse_indices = to_cpu_tensor(self.sparse_indices, dtype=torch.long)
+            self.dense_values = to_cpu_tensor(self.dense_values, dtype=torch.float)
+            self.neighbors = [
+                to_cpu_tensor(n, dtype=torch.long) for n in self.neighbors
+            ]
+            self.neighbors_sparse = [
+                to_cpu_tensor(n, dtype=torch.long) for n in self.neighbors_sparse
+            ]
+            self.neighbors_dense = [
+                to_cpu_tensor(n, dtype=torch.float) for n in self.neighbors_dense
+            ]
+            self.offsets = [to_cpu_tensor(n, dtype=torch.long) for n in self.offsets]
+            if self.weights is not None:
+                self.weights = [
+                    to_cpu_tensor(n, dtype=torch.float) for n in self.weights
+                ]
 
     def to_device(self, device):
         self.items = to_device(self.items, device)
@@ -97,12 +101,13 @@ class ItemMessageDGL(Message):
     items: Iterable[int]
     sparse_indices: Optional[Iterable[int]]
     dense_values: Optional[Iterable[float]]
+    backend: InitVar[Backend] = Backend.TORCH
 
-    def to_torch_tensor(self):
-        self.items = to_cpu_tensor(self.items, dtype=torch.long)
-        self.sparse_indices = to_cpu_tensor(self.sparse_indices, dtype=torch.long)
-        self.dense_values = to_cpu_tensor(self.dense_values, dtype=torch.float)
-        return self
+    def __post_init__(self, backend):
+        if backend is Backend.TORCH:
+            self.items = to_cpu_tensor(self.items, dtype=torch.long)
+            self.sparse_indices = to_cpu_tensor(self.sparse_indices, dtype=torch.long)
+            self.dense_values = to_cpu_tensor(self.dense_values, dtype=torch.float)
 
     def to_device(self, device):
         self.blocks = [to_device(block, device) for block in self.blocks]

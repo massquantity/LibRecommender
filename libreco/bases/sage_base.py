@@ -142,7 +142,7 @@ class SageBase(EmbedBase):
             if self.use_dgl:
                 batch_items = torch.tensor(batch_items, dtype=torch.long)
             item_data = self.neighbor_walker(batch_items)
-            item_data = item_data.to_torch_tensor().to_device(self.device)
+            item_data = item_data.to_device(self.device)
             item_reprs = self.get_item_repr(item_data)
             item_embed.append(item_reprs.detach().cpu().numpy())
         self.item_embed = np.concatenate(item_embed, axis=0)
@@ -156,7 +156,7 @@ class SageBase(EmbedBase):
             for i in range(0, self.n_users, self.batch_size):
                 users = np.arange(i, min(i + self.batch_size, self.n_users))
                 user_data = self.neighbor_walker.get_user_feats(users)
-                user_data = user_data.to_torch_tensor().to_device(self.device)
+                user_data = user_data.to_device(self.device)
                 user_reprs = self.get_user_repr(user_data)
                 user_embed.append(user_reprs.detach().cpu().numpy())
             return np.concatenate(user_embed, axis=0)

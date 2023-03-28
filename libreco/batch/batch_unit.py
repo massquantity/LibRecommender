@@ -1,8 +1,10 @@
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from typing import Generic, Iterable, Optional, Tuple, TypeVar
 
 import numpy as np
 import torch
+
+from ..batch.enums import Backend
 
 T = TypeVar("T", int, float)
 
@@ -80,17 +82,18 @@ class PointwiseBatch:
     sparse_indices: Optional[Iterable[int]]
     dense_values: Optional[Iterable[float]]
     seqs: Optional[SeqFeats]
+    backend: InitVar[Backend]
 
     # todo: For now, no torch model uses sequence feature
-    def to_torch_tensor(self):
-        self.users = torch.from_numpy(self.users).long()
-        self.items = torch.from_numpy(self.items).long()
-        self.labels = torch.from_numpy(self.labels)
-        if self.sparse_indices is not None:
-            self.sparse_indices = torch.from_numpy(self.sparse_indices)
-        if self.dense_values is not None:
-            self.dense_values = torch.from_numpy(self.dense_values)
-        return self
+    def __post_init__(self, backend):
+        if backend is Backend.TORCH:
+            self.users = torch.from_numpy(self.users).long()
+            self.items = torch.from_numpy(self.items).long()
+            self.labels = torch.from_numpy(self.labels)
+            if self.sparse_indices is not None:
+                self.sparse_indices = torch.from_numpy(self.sparse_indices)
+            if self.dense_values is not None:
+                self.dense_values = torch.from_numpy(self.dense_values)
 
     def to_device(self, device):  # pragma: no cover
         self.users = self.users.to(device)
@@ -108,15 +111,15 @@ class PointwiseSepFeatBatch(PointwiseBatch):
     sparse_indices: Optional[PairFeats[int]]
     dense_values: Optional[PairFeats[float]]
 
-    def to_torch_tensor(self):
-        self.users = torch.from_numpy(self.users)
-        self.items = torch.from_numpy(self.items)
-        self.labels = torch.from_numpy(self.labels)
-        if self.sparse_indices is not None:
-            self.sparse_indices.to_torch_tensor()
-        if self.dense_values is not None:
-            self.dense_values.to_torch_tensor()
-        return self
+    def __post_init__(self, backend):
+        if backend is Backend.TORCH:
+            self.users = torch.from_numpy(self.users)
+            self.items = torch.from_numpy(self.items)
+            self.labels = torch.from_numpy(self.labels)
+            if self.sparse_indices is not None:
+                self.sparse_indices.to_torch_tensor()
+            if self.dense_values is not None:
+                self.dense_values.to_torch_tensor()
 
 
 @dataclass
@@ -134,18 +137,19 @@ class PairwiseBatch:
     sparse_indices: Optional[TripleFeats[int]]
     dense_values: Optional[TripleFeats[float]]
     seqs: Optional[SeqFeats]
+    backend: InitVar[Backend]
 
-    def to_torch_tensor(self):
-        self.queries = torch.from_numpy(self.queries)
-        self.item_pairs = (
-            torch.from_numpy(self.item_pairs[0]),
-            torch.from_numpy(self.item_pairs[1]),
-        )
-        if self.sparse_indices is not None:
-            self.sparse_indices.to_torch_tensor()
-        if self.dense_values is not None:
-            self.dense_values.to_torch_tensor()
-        return self
+    def __post_init__(self, backend):
+        if backend is Backend.TORCH:
+            self.queries = torch.from_numpy(self.queries)
+            self.item_pairs = (
+                torch.from_numpy(self.item_pairs[0]),
+                torch.from_numpy(self.item_pairs[1]),
+            )
+            if self.sparse_indices is not None:
+                self.sparse_indices.to_torch_tensor()
+            if self.dense_values is not None:
+                self.dense_values.to_torch_tensor()
 
     def to_device(self, device):  # pragma: no cover
         self.queries = self.queries.to(device)
