@@ -21,7 +21,7 @@ def test_knn_serving(knn_model):
         shell=True,
         check=True,
     )
-    time.sleep(2)  # wait for the server to start
+    time.sleep(0.8)  # wait for the server to start
 
     response = requests.post(
         "http://localhost:8000/knn/recommend", json={"user": 1, "n_rec": 1}, timeout=1
@@ -36,4 +36,4 @@ def test_knn_serving(knn_model):
     r = redis.Redis()
     r.flushdb()
     r.close()
-    time.sleep(1)
+    time.sleep(0.2)

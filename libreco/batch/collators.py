@@ -13,7 +13,7 @@ from .batch_unit import (
     SparseSeqFeats,
     TripleFeats,
 )
-from .enums import Backend, FeatType
+from .enums import FeatType
 from .sequence import get_interacted_seq, get_sparse_interacted
 from ..graph import build_subgraphs, pairs_from_dgl_graph
 from ..sampling import (
@@ -69,9 +69,8 @@ class BaseCollator:
             sparse_indices=sparse_batch,
             dense_values=dense_batch,
             seqs=seq_batch,
+            backend=self.backend,
         )
-        if self.backend is Backend.TORCH:
-            batch_data.to_torch_tensor()
         return batch_data
 
     def get_col_index(self, feat_type):
@@ -216,9 +215,8 @@ class PointwiseCollator(BaseCollator):
             sparse_indices=sparse_batch,
             dense_values=dense_batch,
             seqs=seq_batch,
+            backend=self.backend,
         )
-        if self.backend is Backend.TORCH:
-            batch_data.to_torch_tensor()
         return batch_data
 
     def get_pointwise_feats(self, batch, feat_type, items):
@@ -264,9 +262,8 @@ class PairwiseCollator(BaseCollator):
             sparse_indices=sparse_batch,
             dense_values=dense_batch,
             seqs=seq_batch,
+            backend=self.backend,
         )
-        if self.backend is Backend.TORCH:
-            batch_data.to_torch_tensor()
         return batch_data
 
     def get_pairwise_feats(self, batch, feat_type, items_neg):
@@ -311,9 +308,9 @@ class GraphCollator(BaseCollator):
         if self.paradigm == "u2i":
             users, items_pos = batch["user"], batch["item"]
             items_neg = self.sample_neg_items(batch, self.sampler, self.num_neg)
-            user_data = self.neighbor_walker.get_user_feats(users).to_torch_tensor()
-            item_pos_data = self.neighbor_walker(items_pos).to_torch_tensor()
-            item_neg_data = self.neighbor_walker(items_neg).to_torch_tensor()
+            user_data = self.neighbor_walker.get_user_feats(users)
+            item_pos_data = self.neighbor_walker(items_pos)
+            item_neg_data = self.neighbor_walker(items_neg)
             return user_data, item_pos_data, item_neg_data
         else:
             start_nodes = self.get_start_nodes(batch)
@@ -326,9 +323,9 @@ class GraphCollator(BaseCollator):
                 self.focus_start,
             )
             items_neg = self.sample_i2i_negatives(items, items_pos)
-            item_data = self.neighbor_walker(items, items_pos).to_torch_tensor()
-            item_pos_data = self.neighbor_walker(items_pos).to_torch_tensor()
-            item_neg_data = self.neighbor_walker(items_neg).to_torch_tensor()
+            item_data = self.neighbor_walker(items, items_pos)
+            item_pos_data = self.neighbor_walker(items_pos)
+            item_neg_data = self.neighbor_walker(items_neg)
             return item_data, item_pos_data, item_neg_data
 
     # exclude both items and items_pos
@@ -389,8 +386,8 @@ class GraphDGLCollator(GraphCollator):
             # user -> item heterogeneous graph, users on srcdata, items on dstdata
             all_users = pos_graph.srcdata[self.dgl.NID]
             all_items = pos_graph.dstdata[self.dgl.NID]
-            user_data = self.neighbor_walker.get_user_feats(all_users).to_torch_tensor()
-            item_data = self.neighbor_walker(all_items).to_torch_tensor()
+            user_data = self.neighbor_walker.get_user_feats(all_users)
+            item_data = self.neighbor_walker(all_items)
             return user_data, item_data, pos_graph, neg_graph
         else:
             start_nodes = self.get_start_nodes(batch)
@@ -408,7 +405,7 @@ class GraphDGLCollator(GraphCollator):
             )
             # item -> item homogeneous graph, items on all nodes
             all_items = pos_graph.ndata[self.dgl.NID]
-            item_data = self.neighbor_walker(all_items, target_nodes).to_torch_tensor()
+            item_data = self.neighbor_walker(all_items, target_nodes)
             return item_data, pos_graph, neg_graph
 
     def get_start_nodes(self, batch):
