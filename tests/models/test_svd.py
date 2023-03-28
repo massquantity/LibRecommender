@@ -12,37 +12,45 @@ from tests.utils_save_load import save_load_model
 
 
 @pytest.mark.parametrize(
-    "task, loss_type, sampler",
+    "task, loss_type, sampler, neg_sampling",
     [
-        ("rating", "focal", "random"),
-        ("ranking", "cross_entropy", None),
-        ("ranking", "focal", None),
-        ("ranking", "cross_entropy", "random"),
-        ("ranking", "cross_entropy", "unconsumed"),
-        ("ranking", "focal", "popular"),
-        ("ranking", "unknown", "popular"),
+        ("rating", "focal", "random", None),
+        ("rating", "focal", None, True),
+        ("rating", "focal", "random", True),
+        ("ranking", "cross_entropy", "random", False),
+        ("ranking", "focal", "random", False),
+        ("ranking", "cross_entropy", "random", True),
+        ("ranking", "cross_entropy", "unconsumed", True),
+        ("ranking", "focal", "popular", True),
+        ("ranking", "unknown", "popular", True),
     ],
 )
 @pytest.mark.parametrize("reg, num_neg, num_workers", [(None, 1, 0), (0.001, 3, 2)])
-def test_svd(pure_data_small, task, loss_type, sampler, reg, num_neg, num_workers):
+def test_svd(
+    pure_data_small, task, loss_type, sampler, neg_sampling, reg, num_neg, num_workers
+):
     if not sys.platform.startswith("linux") and num_workers > 0:
         pytest.skip(
             "Windows and macOS use `spawn` in multiprocessing, which does not work well in pytest"
         )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = pure_data_small
-    if task == "ranking":
-        # train_data.build_negative_samples(data_info, seed=2022)
-        eval_data.build_negative_samples(data_info, seed=2222)
-        if sampler is None and loss_type == "cross_entropy":
-            set_ranking_labels(train_data)
+    if task == "ranking" and neg_sampling is False and loss_type == "cross_entropy":
+        set_ranking_labels(train_data)
+        set_ranking_labels(eval_data)
 
-    if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
+    if neg_sampling is None:
+        with pytest.raises(AssertionError):
+            SVD(task, data_info).fit(train_data, neg_sampling)
+    elif task == "rating" and neg_sampling:
         with pytest.raises(ValueError):
-            SVD(task, data_info, loss_type).fit(train_data)
-    elif task == "ranking" and sampler is None and loss_type == "focal":
+            SVD(task, data_info).fit(train_data, neg_sampling)
+    elif loss_type == "focal" and (neg_sampling is False or sampler is None):
         with pytest.raises(ValueError):
-            SVD(task, data_info, loss_type, sampler=sampler).fit(train_data)
+            SVD(task, data_info, sampler=sampler).fit(train_data, neg_sampling)
+    elif task == "ranking" and loss_type not in ("cross_entropy", "focal"):
+        with pytest.raises(ValueError):
+            SVD(task, data_info, loss_type).fit(train_data, neg_sampling)
     else:
         model = SVD(
             task=task,
@@ -59,6 +67,7 @@ def test_svd(pure_data_small, task, loss_type, sampler, reg, num_neg, num_worker
         )
         model.fit(
             train_data,
+            neg_sampling,
             verbose=2,
             shuffle=True,
             eval_data=eval_data,

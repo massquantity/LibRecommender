@@ -42,13 +42,11 @@ def test_autoint(
         )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = feat_data_small
-    if task == "ranking":
-        # train_data.build_negative_samples(data_info, seed=2022)
-        eval_data.build_negative_samples(data_info, seed=2222)
 
+    neg_sampling = True if task == "ranking" else False
     if task == "ranking" and loss_type not in ("cross_entropy", "focal"):
         with pytest.raises(ValueError):
-            AutoInt(task, data_info, loss_type).fit(train_data)
+            AutoInt(task, data_info, loss_type).fit(train_data, neg_sampling)
     else:
         model = AutoInt(
             task=task,
@@ -69,6 +67,7 @@ def test_autoint(
         )
         model.fit(
             train_data,
+            neg_sampling=neg_sampling,
             verbose=2,
             shuffle=True,
             eval_data=eval_data,
@@ -92,4 +91,4 @@ def test_autoint_multi_sparse(multi_sparse_data_small):
     ptest_preds(loaded_model, task, pd_data, with_feats=True)
     ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=True)
     with pytest.raises(RuntimeError):
-        loaded_model.fit(train_data)
+        loaded_model.fit(train_data, neg_sampling=True)

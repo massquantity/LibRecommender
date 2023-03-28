@@ -22,8 +22,6 @@ def test_tfmodel_retrain_pure():
     train_data, eval_data = split_by_ratio_chrono(first_half_data, test_size=0.2)
     train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)
-    # train_data.build_negative_samples(data_info, seed=2022)
-    eval_data.build_negative_samples(data_info, seed=2222)
 
     model = WaveNet(
         "ranking",
@@ -42,6 +40,7 @@ def test_tfmodel_retrain_pure():
     )
     model.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -59,11 +58,10 @@ def test_tfmodel_retrain_pure():
     eval_result = evaluate(
         model,
         eval_data,
+        neg_sampling=True,
         eval_batch_size=8192,
         k=10,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
-        neg_sample=True,
-        update_features=False,
         seed=2222,
     )
 
@@ -85,8 +83,6 @@ def test_tfmodel_retrain_pure():
         train_data_orig, new_data_info, merge_behavior=True
     )
     eval_data = DatasetPure.merge_evalset(eval_data_orig, new_data_info)
-    # train_data.build_negative_samples(new_data_info, seed=2022)
-    eval_data.build_negative_samples(new_data_info, seed=2222)
 
     new_model = WaveNet(
         "ranking",
@@ -108,6 +104,7 @@ def test_tfmodel_retrain_pure():
     )
     new_model.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -128,11 +125,10 @@ def test_tfmodel_retrain_pure():
     new_eval_result = evaluate(
         new_model,
         eval_data_orig,
+        neg_sampling=True,
         eval_batch_size=100000,
         k=2,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
-        neg_sample=True,
-        update_features=False,
         seed=2222,
     )
 

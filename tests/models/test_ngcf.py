@@ -13,18 +13,20 @@ from tests.utils_save_load import save_load_model
 
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize(
-    "loss_type, sampler, num_neg",
+    "loss_type, sampler, num_neg, neg_sampling",
     [
-        ("cross_entropy", "random", 1),
-        ("cross_entropy", "random", 0),
-        ("cross_entropy", None, 1),
-        ("focal", None, 1),
-        ("focal", "unconsumed", 3),
-        ("bpr", "popular", 3),
-        ("max_margin", "random", 2),
-        ("max_margin", None, 2),
-        ("whatever", "random", 1),
-        ("bpr", "whatever", 1),
+        ("focal", None, 1, True),
+        ("focal", "random", 1, None),
+        ("cross_entropy", "random", 1, True),
+        ("cross_entropy", "random", 0, True),
+        ("cross_entropy", "random", 1, False),
+        ("focal", "unconsumed", 1, False),
+        ("focal", "unconsumed", 3, True),
+        ("focal", "popular", 3, True),
+        ("bpr", "popular", 3, True),
+        ("max_margin", "random", 2, True),
+        ("max_margin", None, 2, False),
+        ("whatever", "random", 1, True),
     ],
 )
 @pytest.mark.parametrize(
@@ -40,6 +42,7 @@ def test_ngcf(
     loss_type,
     sampler,
     num_neg,
+    neg_sampling,
     reg,
     node_dropout,
     message_dropout,
@@ -56,11 +59,9 @@ def test_ngcf(
         )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = pure_data_small
-    if task == "ranking":
-        # train_data.build_negative_samples(data_info, seed=2022)
-        eval_data.build_negative_samples(data_info, seed=2222)
-        if sampler is None and loss_type == "cross_entropy":
-            set_ranking_labels(train_data)
+    if task == "ranking" and neg_sampling is False and loss_type == "cross_entropy":
+        set_ranking_labels(train_data)
+        set_ranking_labels(eval_data)
 
     params = {
         "task": task,
@@ -76,18 +77,15 @@ def test_ngcf(
     elif loss_type == "whatever":
         with pytest.raises(ValueError):
             _ = NGCF(**params)
-    elif loss_type == "cross_entropy" and sampler and num_neg <= 0:
+    elif neg_sampling is None:
         with pytest.raises(AssertionError):
-            NGCF(**params).fit(train_data)
-    elif loss_type == "max_margin" and not sampler:
+            NGCF(**params).fit(train_data, neg_sampling)
+    elif loss_type != "cross_entropy" and (not neg_sampling or sampler is None):
         with pytest.raises(ValueError):
-            NGCF(**params).fit(train_data)
-    elif task == "ranking" and sampler is None and loss_type == "focal":
-        with pytest.raises(ValueError):
-            NGCF(**params).fit(train_data)
-    elif sampler and sampler == "whatever":
-        with pytest.raises(ValueError):
-            NGCF(**params).fit(train_data)
+            NGCF(**params).fit(train_data, neg_sampling)
+    elif loss_type == "cross_entropy" and neg_sampling and num_neg <= 0:
+        with pytest.raises(AssertionError):
+            NGCF(**params).fit(train_data, neg_sampling)
     else:
         model = NGCF(
             task=task,
@@ -110,6 +108,7 @@ def test_ngcf(
         )
         model.fit(
             train_data,
+            neg_sampling,
             verbose=2,
             shuffle=True,
             eval_data=eval_data,

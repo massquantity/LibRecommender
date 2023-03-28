@@ -12,14 +12,15 @@ from tests.utils_save_load import save_load_model
 
 
 @pytest.mark.parametrize(
-    "task, loss_type, sampler",
+    "task, loss_type, sampler, neg_sampling",
     [
-        ("rating", "whatever", "random"),
-        ("ranking", "cross_entropy", None),
-        ("ranking", "cross_entropy", "random"),
-        ("ranking", "focal", "unconsumed"),
-        ("ranking", "bpr", None),
-        ("ranking", "bpr", "popular"),
+        ("rating", "whatever", "random", True),
+        ("ranking", "cross_entropy", None, True),
+        ("ranking", "cross_entropy", "random", True),
+        ("ranking", "focal", "unconsumed", True),
+        ("ranking", "bpr", None, True),
+        ("ranking", "bpr", "random", False),
+        ("ranking", "bpr", "popular", True),
     ],
 )
 @pytest.mark.parametrize(
@@ -38,6 +39,7 @@ def test_bpr(
     task,
     loss_type,
     sampler,
+    neg_sampling,
     reg,
     num_neg,
     use_tf,
@@ -50,16 +52,13 @@ def test_bpr(
         )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = pure_data_small
-    if task == "ranking":
-        # train_data.build_negative_samples(data_info, seed=2022)
-        eval_data.build_negative_samples(data_info, seed=2222)
 
     if task == "rating" or (task == "ranking" and loss_type != "bpr"):
         with pytest.raises(AssertionError):
             _ = BPR(task, data_info, loss_type)
-    elif sampler is None:
+    elif sampler is None or not neg_sampling:
         with pytest.raises(ValueError):
-            BPR(task, data_info, sampler=sampler).fit(train_data)
+            BPR(task, data_info, sampler=sampler).fit(train_data, neg_sampling)
     else:
         model = BPR(
             task=task,
@@ -78,6 +77,7 @@ def test_bpr(
             with pytest.raises(ValueError):
                 model.fit(
                     train_data,
+                    neg_sampling,
                     verbose=2,
                     shuffle=True,
                     eval_data=eval_data,
@@ -86,6 +86,7 @@ def test_bpr(
         else:
             model.fit(
                 train_data,
+                neg_sampling,
                 verbose=2,
                 shuffle=True,
                 eval_data=eval_data,
@@ -96,14 +97,14 @@ def test_bpr(
             ptest_preds(model, task, pd_data, with_feats=False)
             ptest_recommends(model, data_info, pd_data, with_feats=False)
             with pytest.raises(ValueError):
-                model.fit(train_data, eval_data=eval_data, k=10000)
+                model.fit(train_data, neg_sampling, eval_data=eval_data, k=10000)
 
             # test save and load model
             loaded_model, loaded_data_info = save_load_model(BPR, model, data_info)
             ptest_preds(loaded_model, task, pd_data, with_feats=False)
             ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
             with pytest.raises(RuntimeError):
-                loaded_model.fit(train_data)
+                loaded_model.fit(train_data, neg_sampling)
             model.save("not_existed_path", "bpr2")
             remove_path("not_existed_path")
 
