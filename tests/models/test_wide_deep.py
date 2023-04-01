@@ -104,6 +104,8 @@ def test_wide_deep(
         )
         ptest_preds(model, task, pd_data, with_feats=True)
         ptest_recommends(model, data_info, pd_data, with_feats=True)
+        with pytest.raises(ValueError):
+            model.recommend_user(1, 7, seq=[1, 2, 3])
 
 
 def test_wide_deep_multi_sparse(prepare_multi_sparse_data):

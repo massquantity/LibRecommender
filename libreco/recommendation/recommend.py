@@ -1,6 +1,6 @@
 import numpy as np
 
-from .preprocess import process_tf_feat
+from .preprocess import embed_from_seq, process_tf_feat
 from .ranking import rank_recommendations
 
 
@@ -36,23 +36,30 @@ def construct_rec(data_info, user_ids, computed_recs, inner_id):
 
 
 def recommend_from_embedding(
-    task,
+    model,
     user_ids,
     n_rec,
-    data_info,
-    user_embed,
-    item_embed,
+    user_embeddings,
+    item_embeddings,
+    seq,
     filter_consumed,
     random_rec,
+    inner_id=False,
 ):
-    preds = user_embed[user_ids] @ item_embed[:data_info.n_items].T  # exclude item oov
+    user_embed = (
+        user_embeddings[user_ids]
+        if seq is None or len(seq) == 0
+        else embed_from_seq(model, user_ids, seq, inner_id)
+    )
+    item_embeds = item_embeddings[:model.n_items]  # exclude item oov
+    preds = user_embed @ item_embeds.T
     return rank_recommendations(
-        task,
+        model.task,
         user_ids,
         preds,
         n_rec,
-        data_info.n_items,
-        data_info.user_consumed,
+        model.n_items,
+        model.user_consumed,
         filter_consumed,
         random_rec,
     )
@@ -63,10 +70,12 @@ def recommend_tf_feat(
     user_ids,
     n_rec,
     user_feats,
+    seq,
     filter_consumed,
     random_rec,
+    inner_id=False,
 ):
-    feed_dict = process_tf_feat(model, user_ids, user_feats)
+    feed_dict = process_tf_feat(model, user_ids, user_feats, seq, inner_id)
     preds = model.sess.run(model.output, feed_dict)
     return rank_recommendations(
         model.task,

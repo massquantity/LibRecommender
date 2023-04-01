@@ -9,6 +9,7 @@ from ..prediction import predict_tf_feat
 from ..recommendation import cold_start_rec, construct_rec, recommend_tf_feat
 from ..tfops import modify_variable_names, sess_config, tf
 from ..training.dispatch import get_trainer
+from ..utils.constants import SEQUENCE_RECOMMEND_MODELS
 from ..utils.save_load import (
     load_tf_model,
     load_tf_variables,
@@ -123,6 +124,7 @@ class TfBase(Base):
             user_ids=[self.n_users],
             n_rec=min(2000, self.n_items),
             user_feats=None,
+            seq=None,
             filter_consumed=False,
             random_rec=False,
         ).flatten()
@@ -155,7 +157,7 @@ class TfBase(Base):
             Predicted scores for each user-item pair.
         """
         if self.model_name == "NCF" and feats is not None:
-            raise ValueError("NCF can't use features")
+            raise ValueError("NCF can't use features.")
         return predict_tf_feat(self, user, item, feats, cold_start, inner_id)
 
     def recommend_user(
@@ -163,6 +165,7 @@ class TfBase(Base):
         user,
         n_rec,
         user_feats=None,
+        seq=None,
         cold_start="average",
         inner_id=False,
         filter_consumed=True,
@@ -198,15 +201,23 @@ class TfBase(Base):
         Returns
         -------
         recommendation : dict of {Union[int, str, array_like] : numpy.ndarray}
-            Recommendation result with user ids as keys
-            and array_like recommended items as values.
+            Recommendation result with user ids as keys and array_like recommended items as values.
         """
-        if user_feats is not None and not np.isscalar(user) and len(user) > 1:
+        if seq is not None and self.model_name not in SEQUENCE_RECOMMEND_MODELS:
             raise ValueError(
-                f"Batch recommend doesn't support assigning arbitrary features: {user}"
+                f"`{self.model_name}` doesn't support arbitrary seq recommendation."
             )
+        if not np.isscalar(user) and len(user) > 1:
+            if user_feats is not None:
+                raise ValueError(
+                    f"Batch recommend doesn't support assigning arbitrary features: {user}"
+                )
+            if seq is not None:
+                raise ValueError(
+                    f"Batch recommend doesn't support arbitrary item sequence: {user}"
+                )
         if self.model_name == "NCF" and user_feats is not None:
-            raise ValueError("NCF can't use features")
+            raise ValueError("`NCF` can't use features.")
 
         result_recs = dict()
         user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
@@ -226,8 +237,10 @@ class TfBase(Base):
                 user_ids,
                 n_rec,
                 user_feats,
+                seq,
                 filter_consumed,
                 random_rec,
+                inner_id,
             )
             user_recs = construct_rec(self.data_info, user_ids, computed_recs, inner_id)
             result_recs.update(user_recs)

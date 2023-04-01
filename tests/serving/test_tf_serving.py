@@ -24,7 +24,7 @@ def test_tf_serving(tf_model):
         check=True,
     )
     subprocess.run("python tests/serving/mock_tf_server.py &", shell=True, check=True)
-    time.sleep(1.5)  # wait for the server to start
+    time.sleep(2)  # wait for the server to start
 
     response = requests.post(
         "http://localhost:8000/tf/recommend", json={"user": 1, "n_rec": 1}, timeout=1
@@ -40,4 +40,4 @@ def test_tf_serving(tf_model):
     r = redis.Redis()
     r.flushdb()
     r.close()
-    time.sleep(0.1)
+    time.sleep(1)

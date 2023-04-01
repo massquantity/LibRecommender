@@ -7,7 +7,7 @@ from libreco.algorithms import Caser
 from tests.utils_data import set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
-from tests.utils_reco import ptest_recommends
+from tests.utils_reco import ptest_recommends, ptest_seq_recommends
 from tests.utils_save_load import save_load_model
 
 
@@ -103,6 +103,7 @@ def test_caser(
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)
+        ptest_seq_recommends(model, pd_data)
 
         # test save and load model
         loaded_model, loaded_data_info = save_load_model(Caser, model, data_info)

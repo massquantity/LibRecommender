@@ -174,12 +174,12 @@ class ALS(EmbedBase):
                 print("=" * 30)
         self.assign_embedding_oov()
         self.default_recs = recommend_from_embedding(
-            task=self.task,
+            model=self,
             user_ids=[self.n_users],
             n_rec=min(2000, self.n_items),
-            data_info=self.data_info,
-            user_embed=self.user_embed,
-            item_embed=self.item_embed,
+            user_embeddings=self.user_embed,
+            item_embeddings=self.item_embed,
+            seq=None,
             filter_consumed=False,
             random_rec=False,
         ).flatten()
