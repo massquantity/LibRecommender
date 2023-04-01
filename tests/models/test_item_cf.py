@@ -51,6 +51,8 @@ def test_item_cf(pure_data_small, task, sim_type, store_top_k, neg_sampling):
         model.recommend_user(1, 10, random_rec=True)
         with pytest.raises(ValueError):
             model.predict(user="cold user1", item="cold item2", cold_start="other")
+        with pytest.raises(TypeError):
+            model.recommend_user(1, 7, seq=[1, 2, 3])
 
         # test save and load model
         loaded_model, loaded_data_info = save_load_model(ItemCF, model, data_info)

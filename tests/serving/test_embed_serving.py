@@ -20,7 +20,7 @@ def test_embed_serving(embed_model):
         shell=True,
         check=True,
     )
-    time.sleep(0.8)  # wait for the server to start
+    time.sleep(2)  # wait for the server to start
 
     response = requests.post(
         "http://localhost:8000/embed/recommend", json={"user": 1, "n_rec": 1}, timeout=1
@@ -38,4 +38,4 @@ def test_embed_serving(embed_model):
     r = redis.Redis()
     r.flushdb()
     r.close()
-    time.sleep(0.2)
+    time.sleep(1)

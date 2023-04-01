@@ -76,6 +76,8 @@ def test_svd(
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)
+        with pytest.raises(ValueError):
+            model.recommend_user(1, 7, seq=[1, 2, 3])
 
         # test save and load model manual
         loaded_model, loaded_data_info = save_load_model(SVD, model, data_info)

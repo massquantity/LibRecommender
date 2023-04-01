@@ -8,7 +8,7 @@ from tests.utils_data import set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_multi_sparse_models import fit_multi_sparse
 from tests.utils_pred import ptest_preds
-from tests.utils_reco import ptest_recommends
+from tests.utils_reco import ptest_recommends, ptest_seq_recommends
 from tests.utils_save_load import save_load_model
 
 
@@ -106,6 +106,7 @@ def test_youtube_ranking(
         )
         ptest_preds(model, task, pd_data, with_feats=True)
         ptest_recommends(model, data_info, pd_data, with_feats=True)
+        ptest_seq_recommends(model, pd_data)
 
 
 def test_youtube_ranking_multi_sparse(multi_sparse_data_small):
@@ -114,6 +115,7 @@ def test_youtube_ranking_multi_sparse(multi_sparse_data_small):
     model = fit_multi_sparse(YouTubeRanking, train_data, eval_data, data_info)
     ptest_preds(model, task, pd_data, with_feats=True)
     ptest_recommends(model, data_info, pd_data, with_feats=True)
+    ptest_seq_recommends(model, pd_data)
 
     # test save and load model
     loaded_model, loaded_data_info = save_load_model(YouTubeRanking, model, data_info)
