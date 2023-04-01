@@ -193,6 +193,7 @@ dependencies = [
  "deadpool-redis",
  "env_logger",
  "faiss",
+ "fnv",
  "futures",
  "log",
  "num_cpus",
