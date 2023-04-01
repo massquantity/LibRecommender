@@ -1,7 +1,6 @@
-use std::collections::{HashMap, HashSet};
-
 use actix_web::{post, web, Responder};
 use deadpool_redis::{Connection, Pool};
+use fnv::{FnvHashMap, FnvHashSet};
 
 use crate::common::{Param, Recommendation};
 use crate::errors::{ServingError, ServingResult};
@@ -25,7 +24,7 @@ pub async fn knn_serving(
     let user_id = get_str(&mut conn, "user2id", &user, "hget").await?;
     let model_name = get_str(&mut conn, "model_name", "none", "get").await?;
     let consumed_list: Vec<usize> = get_vec(&mut conn, "user_consumed", &user).await?;
-    let user_consumed: HashSet<usize> = HashSet::from_iter(consumed_list);
+    let user_consumed: FnvHashSet<usize> = FnvHashSet::from_iter(consumed_list);
 
     let recs = match model_name.as_str() {
         "UserCF" => rec_on_user_sims(&user_id, n_rec, &user_consumed, &mut conn).await?,
@@ -38,10 +37,10 @@ pub async fn knn_serving(
 async fn rec_on_user_sims(
     user_id: &str,
     n_rec: usize,
-    user_consumed: &HashSet<usize>,
+    user_consumed: &FnvHashSet<usize>,
     conn: &mut Connection,
 ) -> ServingResult<Vec<String>> {
-    let mut id_sim_map: HashMap<usize, f32> = HashMap::new();
+    let mut id_sim_map: FnvHashMap<usize, f32> = FnvHashMap::default();
     let k_sim_str = get_str(conn, "k_sims", user_id, "hget").await?;
     let k_sim_users: Vec<(usize, f32)> = serde_json::from_str(&k_sim_str)?;
     for (v, sim) in k_sim_users {
@@ -64,10 +63,10 @@ async fn rec_on_user_sims(
 
 async fn rec_on_item_sims(
     n_rec: usize,
-    user_consumed: &HashSet<usize>,
+    user_consumed: &FnvHashSet<usize>,
     conn: &mut Connection,
 ) -> ServingResult<Vec<String>> {
-    let mut id_sim_map: HashMap<usize, f32> = HashMap::new();
+    let mut id_sim_map: FnvHashMap<usize, f32> = FnvHashMap::default();
     for i in user_consumed {
         let k_sim_str = get_str(conn, "k_sims", &i.to_string(), "hget").await?;
         let k_sim_items: Vec<(usize, f32)> = serde_json::from_str(&k_sim_str)?;
@@ -87,7 +86,7 @@ async fn rec_on_item_sims(
         .map_err(ServingError::RedisError)
 }
 
-fn sort_by_sims(map: &HashMap<usize, f32>, n_rec: usize) -> Vec<usize> {
+fn sort_by_sims(map: &FnvHashMap<usize, f32>, n_rec: usize) -> Vec<usize> {
     let mut id_sims = map.iter().collect::<Vec<(_, _)>>();
     id_sims.sort_unstable_by(|&(_, a), &(_, b)| a.partial_cmp(b).unwrap().reverse());
     id_sims
