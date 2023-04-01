@@ -1,10 +1,38 @@
 import numpy as np
 
-from ..prediction.preprocess import get_seq_feats, set_temp_feats
+from ..prediction.preprocess import get_cached_seqs, set_temp_feats
 from ..tfops import get_feed_dict
 
 
-def process_tf_feat(model, user_ids, user_feats):
+def embed_from_seq(model, user_ids, seq, inner_id):
+    seq, seq_len = build_rec_seq(seq, model, inner_id)
+    feed_dict = {
+        model.user_interacted_seq: seq,
+        model.user_interacted_len: seq_len,
+    }
+    if hasattr(model, "user_indices"):
+        feed_dict[model.user_indices] = np.array(user_ids, dtype=np.int32)
+    embed = model.sess.run(model.user_vector, feed_dict)
+    # embed = embed / np.linalg.norm(embed, axis=1, keepdims=True)
+    bias = np.ones([1, 1], dtype=embed.dtype)
+    return np.hstack([embed, bias])
+
+
+def build_rec_seq(seq, model, inner_id, repeat=False):
+    assert isinstance(seq, (list, np.ndarray)), "`seq` must be list or numpy.ndarray."
+    if not inner_id:
+        seq = [model.data_info.item2id.get(i, model.n_items) for i in seq]
+    recent_seq = np.full((1, model.max_seq_len), model.n_items, dtype=np.int32)
+    seq_len = min(model.max_seq_len, len(seq))
+    recent_seq[0, -seq_len:] = seq[-seq_len:]
+    seq_len = np.array([seq_len], dtype=np.float32)
+    if repeat:
+        recent_seq = np.repeat(recent_seq, model.n_items, axis=0)
+        seq_len = np.repeat(seq_len, model.n_items)
+    return recent_seq, seq_len
+
+
+def process_tf_feat(model, user_ids, user_feats, seq, inner_id):
     user_indices, item_indices, sparse_indices, dense_values = [], [], [], []
     has_sparse = model.sparse if hasattr(model, "sparse") else None
     has_dense = model.dense if hasattr(model, "dense") else None
@@ -29,7 +57,10 @@ def process_tf_feat(model, user_ids, user_feats):
         sparse_indices, dense_values = set_temp_feats(
             model.data_info, sparse_indices, dense_values, user_feats
         )
-    seqs, seq_len = get_seq_feats(model, user_ids, repeat=True)
+    if seq is not None and len(seq) > 0:
+        seqs, seq_len = build_rec_seq(seq, model, inner_id, repeat=True)
+    else:
+        seqs, seq_len = get_cached_seqs(model, user_ids, repeat=True)
     return get_feed_dict(
         model=model,
         user_indices=user_indices,

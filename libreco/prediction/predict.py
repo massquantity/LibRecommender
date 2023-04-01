@@ -7,7 +7,7 @@ from .preprocess import (
     convert_id,
     features_from_batch,
     get_original_feats,
-    get_seq_feats,
+    get_cached_seqs,
     set_temp_feats,
 )
 from ..tfops import get_feed_dict
@@ -58,7 +58,7 @@ def predict_tf_feat(model, user, item, feats, cold_start, inner_id):
             model.data_info, sparse_indices, dense_values, feats
         )
 
-    seqs, seq_len = get_seq_feats(model, user_indices, repeat=False)
+    seqs, seq_len = get_cached_seqs(model, user_indices, repeat=False)
     feed_dict = get_feed_dict(
         model=model,
         user_indices=user_indices,
@@ -90,7 +90,7 @@ def predict_data_with_feats(
         sparse_indices, dense_values = features_from_batch(
             model.data_info, model.sparse, model.dense, batch_data
         )
-        seqs, seq_len = get_seq_feats(model, user_indices, repeat=False)
+        seqs, seq_len = get_cached_seqs(model, user_indices, repeat=False)
         feed_dict = get_feed_dict(
             model=model,
             user_indices=user_indices,

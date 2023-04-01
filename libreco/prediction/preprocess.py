@@ -104,7 +104,7 @@ def _set_dense_values(dense_values, col_mapping, feat_dict):
         dense_values[:, field_idx] = val
 
 
-def get_seq_feats(model, user_id, repeat):
+def get_cached_seqs(model, user_id, repeat):
     if model.model_category != "sequence":
         return None, None
     seqs = model.recent_seqs[user_id]

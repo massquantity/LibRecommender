@@ -100,3 +100,11 @@ EMBEDDING_MODELS = (
     "PinSage",
     "PinSageDGL",
 )
+
+SEQUENCE_RECOMMEND_MODELS = (
+    "YouTubeRanking",
+    "DIN",
+    "RNN4Rec",
+    "Caser",
+    "WaveNet",
+)

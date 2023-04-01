@@ -9,6 +9,7 @@ from .base import Base
 from ..prediction import predict_from_embedding
 from ..recommendation import cold_start_rec, construct_rec, recommend_from_embedding
 from ..training.dispatch import get_trainer
+from ..utils.constants import SEQUENCE_RECOMMEND_MODELS
 from ..utils.misc import colorize
 from ..utils.save_load import (
     load_default_recs,
@@ -129,12 +130,12 @@ class EmbedBase(Base):
         self.set_embeddings()
         self.assign_embedding_oov()
         self.default_recs = recommend_from_embedding(
-            task=self.task,
+            model=self,
             user_ids=[self.n_users],
             n_rec=min(2000, self.n_items),
-            data_info=self.data_info,
-            user_embed=self.user_embed,
-            item_embed=self.item_embed,
+            user_embeddings=self.user_embed,
+            item_embeddings=self.item_embed,
+            seq=None,
             filter_consumed=False,
             random_rec=False,
         ).flatten()
@@ -170,6 +171,7 @@ class EmbedBase(Base):
         self,
         user,
         n_rec,
+        seq=None,
         cold_start="average",
         inner_id=False,
         filter_consumed=True,
@@ -201,9 +203,18 @@ class EmbedBase(Base):
         Returns
         -------
         recommendation : dict of {Union[int, str, array_like] : numpy.ndarray}
-            Recommendation result with user ids as keys
-            and array_like recommended items as values.
+            Recommendation result with user ids as keys and array_like recommended items as values.
         """
+        if seq is not None:
+            if self.model_name not in SEQUENCE_RECOMMEND_MODELS:
+                raise ValueError(
+                    f"`{self.model_name}` doesn't support arbitrary seq recommendation."
+                )
+            if not np.isscalar(user) and len(user) > 1:
+                raise ValueError(
+                    f"Batch recommend doesn't support arbitrary item sequence: {user}"
+                )
+
         result_recs = dict()
         user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
         if unknown_users:
@@ -218,14 +229,15 @@ class EmbedBase(Base):
             result_recs.update(cold_recs)
         if user_ids:
             computed_recs = recommend_from_embedding(
-                self.task,
+                self,
                 user_ids,
                 n_rec,
-                self.data_info,
                 self.user_embed,
                 self.item_embed,
+                seq,
                 filter_consumed,
                 random_rec,
+                inner_id,
             )
             user_recs = construct_rec(self.data_info, user_ids, computed_recs, inner_id)
             result_recs.update(user_recs)
