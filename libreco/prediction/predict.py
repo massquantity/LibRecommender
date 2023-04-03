@@ -6,8 +6,8 @@ from tqdm import tqdm
 from .preprocess import (
     convert_id,
     features_from_batch,
-    get_original_feats,
     get_cached_seqs,
+    get_original_feats,
     set_temp_feats,
 )
 from ..tfops import get_feed_dict

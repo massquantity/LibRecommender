@@ -3,6 +3,7 @@ import numpy as np
 
 from ..bases import ModelMeta, TfBase
 from ..batch.sequence import get_user_last_interacted
+from ..feature.multi_sparse import true_sparse_field_size
 from ..tfops import (
     dense_nn,
     dropout_config,
@@ -22,7 +23,6 @@ from ..utils.validate import (
     sparse_feat_size,
     sparse_field_size,
 )
-from ..feature.multi_sparse import true_sparse_field_size
 
 
 class YouTubeRanking(TfBase, metaclass=ModelMeta):

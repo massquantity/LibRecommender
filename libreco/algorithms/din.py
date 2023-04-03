@@ -3,6 +3,7 @@ import numpy as np
 
 from ..bases import ModelMeta, TfBase
 from ..batch.sequence import get_user_last_interacted
+from ..feature.multi_sparse import true_sparse_field_size
 from ..tfops import (
     dense_nn,
     dropout_config,
@@ -22,7 +23,6 @@ from ..utils.validate import (
     sparse_feat_size,
     sparse_field_size,
 )
-from ..feature.multi_sparse import true_sparse_field_size
 
 
 class DIN(TfBase, metaclass=ModelMeta):
@@ -201,7 +201,7 @@ class DIN(TfBase, metaclass=ModelMeta):
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.user_interacted_seq = tf.placeholder(
             tf.int32, shape=[None, self.max_seq_len]
-        )  # B * seq
+        )
         self.user_interacted_len = tf.placeholder(tf.float32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
@@ -280,17 +280,6 @@ class DIN(TfBase, metaclass=ModelMeta):
                 tf.gather(sparse_embed, self.item_sparse_col_indices, axis=1)
             )
             self.item_embed.append(item_sparse_embed)
-
-        # sparse_embed = tf.nn.embedding_lookup(
-        #    self.sparse_feat, self.sparse_indices)
-        # self.concat_embed.append(tf.reshape(
-        #    sparse_embed, [-1, self.sparse_field_size * self.embed_size])
-        # )
-        # if self.item_sparse:
-        #    item_sparse_embed = tf.layers.flatten(
-        #        tf.gather(sparse_embed, self.item_sparse_col_indices, axis=1)
-        #    )
-        #    self.item_embed.append(item_sparse_embed)
 
     def _build_dense(self):
         batch_size = tf.shape(self.dense_values)[0]

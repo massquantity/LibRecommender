@@ -3,8 +3,8 @@ import pandas as pd
 from tqdm import tqdm
 
 from ..data import TransformedSet
-from ..utils.validate import check_labels
 from ..prediction.preprocess import convert_id
+from ..utils.validate import check_labels
 
 
 def build_eval_transformed_data(model, data, neg_sampling, seed):
