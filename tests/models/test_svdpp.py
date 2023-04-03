@@ -93,6 +93,7 @@ def test_svdpp(
             )
             ptest_preds(model, task, pd_data, with_feats=False)
             ptest_recommends(model, data_info, pd_data, with_feats=False)
+            model.save(SAVE_PATH, "svdpp_model", manual=True, inference_only=False)
 
             # test save and load model
             loaded_model, loaded_data_info = save_load_model(SVDpp, model, data_info)
@@ -102,9 +103,6 @@ def test_svdpp(
                 loaded_model.fit(train_data, neg_sampling)
 
             # test rebuild model
-            model.save(SAVE_PATH, "svdpp_model", manual=True, inference_only=False)
-            tf.compat.v1.reset_default_graph()
-
             train_data, new_data_info = DatasetPure.merge_trainset(
                 pd_data, data_info, merge_behavior=True
             )

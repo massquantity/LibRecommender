@@ -1,22 +1,10 @@
 """Implementation of Caser."""
-import numpy as np
-
-from ..bases import EmbedBase, ModelMeta
-from ..batch.sequence import get_user_last_interacted
-from ..tfops import (
-    conv_nn,
-    dropout_config,
-    max_pool,
-    reg_config,
-    sess_config,
-    tf,
-    tf_dense,
-)
+from ..bases import ModelMeta, SeqEmbedBase
+from ..tfops import conv_nn, dropout_config, max_pool, reg_config, tf, tf_dense
 from ..utils.misc import count_params
-from ..utils.validate import check_seq_mode
 
 
-class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
+class Caser(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     """*Caser* algorithm.
 
     Parameters
@@ -110,10 +98,16 @@ class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         lower_upper_bound=None,
         tf_sess_config=None,
     ):
-        super().__init__(task, data_info, embed_size, lower_upper_bound)
-
+        super().__init__(
+            task,
+            data_info,
+            embed_size,
+            recent_num,
+            random_num,
+            lower_upper_bound,
+            tf_sess_config,
+        )
         self.all_args = locals()
-        self.sess = sess_config(tf_sess_config)
         self.loss_type = loss_type
         self.n_epochs = n_epochs
         self.lr = lr
@@ -128,8 +122,6 @@ class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.nh_filters = nh_filters
         self.nv_filters = nv_filters
         self.seed = seed
-        self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
-        self.recent_seqs, self.recent_seq_lens = self._set_recent_seqs()
 
     def build_model(self):
         tf.set_random_seed(self.seed)
@@ -212,9 +204,7 @@ class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
             # h_conv = tf.reduce_max(h_conv, axis=1)
             h_size = h_conv.get_shape().as_list()[1]
-            h_conv = max_pool(pool_size=h_size, strides=1, padding="valid")(
-                inputs=h_conv
-            )
+            h_conv = max_pool(pool_size=h_size, strides=1, padding="valid")(h_conv)
             h_conv = tf.squeeze(h_conv, axis=1)
             convs_out.append(h_conv)
 
@@ -230,24 +220,3 @@ class Caser(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         convs_out = tf.concat(convs_out, axis=1)
         convs_out = tf_dense(units=self.embed_size, activation=tf.nn.relu)(convs_out)
         self.user_vector = tf.concat([user_repr, convs_out], axis=1)
-
-    def _set_recent_seqs(self):
-        recent_seqs, recent_seq_lens = get_user_last_interacted(
-            self.n_users, self.user_consumed, self.n_items, self.max_seq_len
-        )
-        return recent_seqs, recent_seq_lens.astype(np.int64)
-
-    def set_embeddings(self):
-        feed_dict = {
-            self.user_indices: np.arange(self.n_users),
-            self.user_interacted_seq: self.recent_seqs,
-            self.user_interacted_len: self.recent_seq_lens,
-        }
-        user_vector = self.sess.run(self.user_vector, feed_dict)
-        item_weights = self.sess.run(self.item_weights)
-        item_biases = self.sess.run(self.item_biases)
-
-        user_bias = np.ones([len(user_vector), 1], dtype=user_vector.dtype)
-        item_bias = item_biases[:, None]
-        self.user_embed = np.hstack([user_vector, user_bias])
-        self.item_embed = np.hstack([item_weights, item_bias])

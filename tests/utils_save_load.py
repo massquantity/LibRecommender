@@ -10,7 +10,7 @@ def save_load_model(cls, model, data_info):
     data_info.save(path=SAVE_PATH, model_name=model_name)
     model.save(SAVE_PATH, model_name, manual=True, inference_only=True)
 
-    if issubclass(cls, TfBase):
+    if issubclass(cls, TfBase) or hasattr(model, "sess"):
         tf.compat.v1.reset_default_graph()
     loaded_data_info = DataInfo.load(path=SAVE_PATH, model_name=model_name)
     loaded_model = cls.load(SAVE_PATH, model_name, loaded_data_info, manual=True)

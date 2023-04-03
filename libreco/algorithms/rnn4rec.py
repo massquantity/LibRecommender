@@ -1,15 +1,11 @@
 """Implementation of RNN4Rec model."""
-import numpy as np
-
-from ..bases import EmbedBase, ModelMeta
-from ..batch.sequence import get_user_last_interacted
-from ..tfops import dropout_config, reg_config, sess_config, tf, tf_dense, tf_rnn
+from ..bases import ModelMeta, SeqEmbedBase
+from ..tfops import dropout_config, reg_config, tf, tf_dense, tf_rnn
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
-from ..utils.validate import check_seq_mode
 
 
-class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
+class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     """*RNN4Rec* algorithm.
 
     .. NOTE::
@@ -109,10 +105,16 @@ class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         lower_upper_bound=None,
         tf_sess_config=None,
     ):
-        super().__init__(task, data_info, embed_size, lower_upper_bound)
-
+        super().__init__(
+            task,
+            data_info,
+            embed_size,
+            recent_num,
+            random_num,
+            lower_upper_bound,
+            tf_sess_config,
+        )
         self.all_args = locals()
-        self.sess = sess_config(tf_sess_config)
         self.loss_type = loss_type
         self.rnn_type = rnn_type.lower()
         self.n_epochs = n_epochs
@@ -127,9 +129,15 @@ class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.dropout_rate = dropout_config(dropout_rate)
         self.use_ln = use_layer_norm
         self.seed = seed
-        self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
-        self.recent_seqs, self.recent_seq_lens = self._set_recent_seqs()
         self._check_params()
+
+    def _check_params(self):
+        if self.rnn_type not in ("lstm", "gru"):
+            raise ValueError("`rnn_type` must either be `lstm` or `gru`")
+        if self.loss_type not in ("cross_entropy", "bpr", "focal"):
+            raise ValueError(
+                "`loss_type` must be one of (`cross_entropy`, `focal`, `bpr`)"
+            )
 
     def build_model(self):
         tf.set_random_seed(self.seed)
@@ -147,7 +155,6 @@ class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 tf.reduce_sum(tf.multiply(self.user_vector, item_vector), axis=1)
                 + item_bias
             )
-
         elif self.loss_type == "bpr":
             self.item_indices_pos = tf.placeholder(tf.int32, shape=[None])
             self.item_indices_neg = tf.placeholder(tf.int32, shape=[None])
@@ -216,31 +223,3 @@ class RNN4Rec(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             is_training=self.is_training,
         )
         self.user_vector = tf_dense(units=self.embed_size, activation=None)(rnn_output)
-
-    def _set_recent_seqs(self):
-        recent_seqs, recent_seq_lens = get_user_last_interacted(
-            self.n_users, self.user_consumed, self.n_items, self.max_seq_len
-        )
-        return recent_seqs, recent_seq_lens.astype(np.int64)
-
-    def set_embeddings(self):
-        feed_dict = {
-            self.user_interacted_seq: self.recent_seqs,
-            self.user_interacted_len: self.recent_seq_lens,
-        }
-        user_vector = self.sess.run(self.user_vector, feed_dict)
-        item_weights = self.sess.run(self.item_weights)
-        item_biases = self.sess.run(self.item_biases)
-
-        user_bias = np.ones([len(user_vector), 1], dtype=user_vector.dtype)
-        item_bias = item_biases[:, None]
-        self.user_embed = np.hstack([user_vector, user_bias])
-        self.item_embed = np.hstack([item_weights, item_bias])
-
-    def _check_params(self):
-        if self.rnn_type not in ("lstm", "gru"):
-            raise ValueError("`rnn_type` must either be 'lstm' or 'gru'")
-        if self.loss_type not in ("cross_entropy", "bpr", "focal"):
-            raise ValueError(
-                "`loss_type` must be one of ('cross_entropy`, 'focal', 'bpr')"
-            )
