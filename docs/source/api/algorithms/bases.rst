@@ -30,3 +30,8 @@ Base Classes
    :members:
    :inherited-members:
    :show-inheritance:
+
+.. autoclass:: libreco.bases.SeqEmbedBase
+   :members:
+   :inherited-members:
+   :show-inheritance:
