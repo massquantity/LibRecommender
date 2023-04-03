@@ -58,6 +58,7 @@ target-version = ["py36", "py38", "py310"]
 [tool.isort]
 atomic = true
 default_section = "THIRDPARTY"
+extend_skip_glob = ["*.pyx"]
 force_grid_wrap = 0
 include_trailing_comma = true
 known_first_party = ["libreco", "libserving"]

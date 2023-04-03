@@ -1,5 +1,6 @@
 """Implementation of DeepFM."""
 from ..bases import ModelMeta, TfBase
+from ..feature.multi_sparse import true_sparse_field_size
 from ..tfops import (
     dense_nn,
     dropout_config,
@@ -18,7 +19,6 @@ from ..utils.validate import (
     sparse_feat_size,
     sparse_field_size,
 )
-from ..feature.multi_sparse import true_sparse_field_size
 
 
 class DeepFM(TfBase, metaclass=ModelMeta):
