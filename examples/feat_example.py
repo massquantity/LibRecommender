@@ -19,11 +19,7 @@ if __name__ == "__main__":
         train_data, user_col, item_col, sparse_col, dense_col
     )
     test_data = DatasetFeat.build_testset(test_data)
-
-    # sample negative items for each record
-    train_data.build_negative_samples(data_info)
-    test_data.build_negative_samples(data_info)
-    print(data_info)  # n_users: 5962, n_items: 3226, data sparsity: 0.4185 %
+    print(data_info)  # n_users: 5953, n_items: 3209, data density: 0.4213 %
 
     ytb_ranking = YouTubeRanking(
         task="ranking",
@@ -37,6 +33,7 @@ if __name__ == "__main__":
     )
     ytb_ranking.fit(
         train_data,
+        neg_sampling=True,  # sample negative items train and eval data
         verbose=2,
         shuffle=True,
         eval_data=test_data,

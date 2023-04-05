@@ -32,12 +32,6 @@ if __name__ == "__main__":
     )
     test_data = DatasetFeat.build_testset(test, shuffle=False)
     print(data_info)
-    train_data.build_negative_samples(
-        data_info, num_neg=1, item_gen_mode="random", seed=2020
-    )
-    test_data.build_negative_samples(
-        data_info, num_neg=1, item_gen_mode="random", seed=2222
-    )
 
     deepfm = DeepFM(
         "ranking",
@@ -57,6 +51,7 @@ if __name__ == "__main__":
     )
     deepfm.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=test_data,
@@ -86,11 +81,11 @@ if __name__ == "__main__":
     second_half_data = all_data[(len(all_data) // 2) :]
     train, test = split_by_ratio_chrono(second_half_data, test_size=0.2)
 
-    train_data = DatasetFeat.merge_trainset(train, data_info, merge_behavior=True)
+    train_data, data_info = DatasetFeat.merge_trainset(
+        train, data_info, merge_behavior=True
+    )
     test_data = DatasetFeat.merge_testset(test, data_info)
     print("new data_info: ", data_info)
-    train_data.build_negative_samples(data_info, item_gen_mode="random", seed=2020)
-    test_data.build_negative_samples(data_info, item_gen_mode="random", seed=2222)
 
     # ========================== retrain begin =============================
     model = DeepFM(
@@ -115,6 +110,7 @@ if __name__ == "__main__":
 
     model.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=test_data,
@@ -141,19 +137,17 @@ if __name__ == "__main__":
             n_rec=7,
             inner_id=False,
             cold_start="average",
-            user_feats=pd.Series({"sex": "F", "occupation": 2, "age": 23}),
-            item_data=all_data.iloc[4:10],
+            user_feats={"sex": "F", "occupation": 2, "age": 23},
         ),
     )
 
     eval_result = evaluate(
         model,
         test,
+        neg_sampling=True,
         eval_batch_size=8192,
         k=10,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
-        neg_sample=True,
-        update_features=False,
         seed=2222,
     )
     print("Eval Result: ")

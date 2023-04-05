@@ -18,12 +18,10 @@ if __name__ == "__main__":
     user_col = ["sex", "age", "occupation"]
     item_col = ["genre"]
 
-    # The "max_len" parameter means max category a sample can have.
-    # If it is set to None, will use max category length a sample can
-    # have across the whole data.
-    # Note if it is not None, it should also be a list,
-    # because there are possibly many multi_value features.
-    multi_sparse_col, multi_user_col, multi_item_col = split_multi_value(
+    # The "max_len" parameter means the maximum number of sub-features after transformation.
+    # If it is None, will use max category length a sample can have across the whole data.
+    # Note if not None, it should be a list, because there are possibly many `multi_value` features.
+    data, multi_sparse_col, multi_user_col, multi_item_col = split_multi_value(
         data,
         multi_value_col,
         sep="|",
@@ -60,13 +58,6 @@ if __name__ == "__main__":
     )
     eval_data = DatasetFeat.build_testset(eval_data)
     print(data_info)
-    # do negative sampling, assume the data only contains positive feedback
-    train_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2020
-    )
-    eval_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
 
     deepfm = DeepFM(
         "ranking",
@@ -87,6 +78,7 @@ if __name__ == "__main__":
     )
     deepfm.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,

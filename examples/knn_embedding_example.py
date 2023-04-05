@@ -27,13 +27,6 @@ if __name__ == "__main__":
     train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)
 
-    train_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2020
-    )
-    eval_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
-
     rnn = RNN4Rec(
         "ranking",
         data_info,
@@ -51,7 +44,7 @@ if __name__ == "__main__":
         recent_num=10,
         tf_sess_config=None,
     )
-    rnn.fit(train_data, verbose=2)
+    rnn.fit(train_data, neg_sampling=True, verbose=2)
 
     # `sim_type` should either be `cosine` or `inner-product`
     rnn.init_knn(approximate=approximate, sim_type="cosine")

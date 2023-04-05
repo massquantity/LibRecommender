@@ -40,6 +40,7 @@ if __name__ == "__main__":
     )
     svd.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -60,6 +61,7 @@ if __name__ == "__main__":
     )
     svdpp.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -86,6 +88,7 @@ if __name__ == "__main__":
     )
     ncf.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -113,6 +116,7 @@ if __name__ == "__main__":
     )
     rnn.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -133,7 +137,14 @@ if __name__ == "__main__":
         n_threads=1,
         seed=42,
     )
-    als.fit(train_data, verbose=2, shuffle=True, eval_data=eval_data, metrics=metrics)
+    als.fit(
+        train_data,
+        neg_sampling=False,
+        verbose=2,
+        shuffle=True,
+        eval_data=eval_data,
+        metrics=metrics,
+    )
     print("prediction: ", als.predict(user=1, item=2333))
     print("recommendation: ", als.recommend_user(user=1, n_rec=7))
 
@@ -149,6 +160,7 @@ if __name__ == "__main__":
     )
     user_cf.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         eval_data=eval_data,
         metrics=metrics,
@@ -168,6 +180,7 @@ if __name__ == "__main__":
     )
     item_cf.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         eval_data=eval_data,
         metrics=metrics,
