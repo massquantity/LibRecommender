@@ -14,6 +14,15 @@ from .common import (
 
 
 def save_embed(path: str, model: EmbedBase):
+    """Save Embed model to disk.
+
+    Parameters
+    ----------
+    path : str
+        Model saving path.
+    model : EmbedBase
+        Model to save.
+    """
     check_path_exists(path)
     save_model_name(path, model)
     save_id_mapping(path, model.data_info)

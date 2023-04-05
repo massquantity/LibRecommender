@@ -85,16 +85,57 @@ def split_multi_value(
     user_col=None,
     item_col=None,
 ):
+    """Transform multi-valued features to the divided sub-features.
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        Original data.
+    multi_value_col : list of str
+        Multi-value columns names.
+    sep : str
+        Delimiter to use.
+    max_len : list or tuple of int or None, default: None
+        The maximum number of sub-features after transformation.
+        If it is None, the maximum category length of all the samples will be used.
+        If not None, it should be a list or tuple,
+        because there are possibly many ``multi_value`` features.
+    pad_val : Any or list of Any, default: "missing"
+        The padding value used for missing features.
+    user_col : list of str or None, default: None
+        User column names.
+    item_col : list of str or None, default: None
+        Item column names.
+
+    Returns
+    -------
+    data : pandas.DataFrame
+        Transformed data.
+    multi_sparse_col : list of str
+        Transformed multi-sparse column names.
+    user_sparse_col : list of str
+        Transformed user columns.
+    item_sparse_col : list of str
+        Transformed item columns.
+
+    Raises
+    ------
+    AssertionError
+        If ``max_len`` is not list or tuple.
+    AssertionError
+        If ``max_len`` size != ``multi_value_col`` size.
+    """
     if max_len is not None:
-        assert isinstance(max_len, (list, tuple)) and len(max_len) == len(
-            multi_value_col
-        ), "`max_len` must be list or tuple and have same length as `multi_value_col`"
+        assert isinstance(max_len, (list, tuple)), "`max_len` must be list or tuple"
+        assert len(max_len) == len(multi_value_col), (
+            "`max_len` must have same length as `multi_value_col`"
+        )  # fmt: skip
 
     if not isinstance(pad_val, (list, tuple)):
         pad_val = [pad_val] * len(multi_value_col)
-    assert len(multi_value_col) == len(
-        pad_val
-    ), "length of multi_sparse_col and pad_val doesn't match"
+    assert len(multi_value_col) == len(pad_val), (
+        "length of `multi_sparse_col` and `pad_val` doesn't match"
+    )  # fmt: skip
 
     user_sparse_col, item_sparse_col, multi_sparse_col = [], [], []
     for j, col in enumerate(multi_value_col):
@@ -105,7 +146,7 @@ def split_multi_value(
             .str.replace("\\s+", "", regex=True)
             .str.lower()
         )
-        data.loc[data[col] == "", col] = pad_val
+        data.loc[data[col] == "", col] = pad_val[j]
         split_col = data[col].str.split(sep)
         col_len = int(split_col.str.len().max()) if max_len is None else max_len[j]
         for i in range(col_len):

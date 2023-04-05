@@ -209,6 +209,11 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         ----------
         train_data : :class:`~libreco.data.TransformedSet` object
             Data object used for training.
+        neg_sampling : bool
+            Whether to perform negative sampling for training or evaluating data.
+
+            .. versionadded:: 1.1.0
+
         verbose : int, default: 1
             Print verbosity. If `eval_data` is provided, setting it to higher than 1
             will print evaluation metrics during training.

@@ -264,6 +264,10 @@ class DatasetPure(_Dataset):
 
         .. versionadded:: 1.0.0
 
+        .. versionchanged:: 1.1.0
+           Applying a more functional approach. A new ``data_info`` will be constructed
+           and returned, and the passed old ``data_info`` should be discarded.
+
         Parameters
         ----------
         train_data : pandas.DataFrame
@@ -353,7 +357,7 @@ class DatasetFeat(_Dataset):
         user_cols = user_col or []
         item_cols = item_col or []
         if len(sparse_cols) + len(dense_cols) != len(user_cols) + len(item_cols):
-            len_str = "len(sparse_cols) + len(dense_cols) == len(user_cols) + len(item_cols)"
+            len_str = "len(sparse_cols) + len(dense_cols) == len(user_cols) + len(item_cols)"  # fmt: skip
             raise ValueError(
                 f"Please make sure length of columns match, i.e. `{len_str}`, got "
                 f"sparse columns: {sparse_cols}, "
@@ -534,6 +538,10 @@ class DatasetFeat(_Dataset):
         """Build transformed data by merging new train data with old data.
 
         .. versionadded:: 1.0.0
+
+        .. versionchanged:: 1.1.0
+           Applying a more functional approach. A new ``data_info`` will be constructed
+           and returned, and the passed old ``data_info`` should be discarded.
 
         Parameters
         ----------

@@ -52,6 +52,8 @@ class Base(abc.ABC):
         ----------
         train_data : :class:`~libreco.data.TransformedSet` object
             Data object used for training.
+        neg_sampling : bool
+            Whether to perform negative sampling for training or evaluating data.
         """
         raise NotImplementedError
 

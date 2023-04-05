@@ -71,6 +71,15 @@ class TfBase(Base):
         ----------
         train_data : :class:`~libreco.data.TransformedSet` object
             Data object used for training.
+        neg_sampling : bool
+            Whether to perform negative sampling for training or evaluating data.
+
+            .. versionadded:: 1.1.0
+
+            .. NOTE::
+               Negative sampling is needed if your data is implicit(i.e., `task` is ranking)
+               and ONLY contains positive labels. Otherwise, it should be False.
+
         verbose : int, default: 1
             Print verbosity. If `eval_data` is provided, setting it to higher than 1
             will print evaluation metrics during training.
@@ -94,10 +103,16 @@ class TfBase(Base):
 
             .. versionadded:: 1.1.0
 
+            .. CAUTION::
+               Using multiprocessing(``num_workers`` > 0) may consume more memory than
+               single processing. See `Multi-process data loading <https://pytorch.org/docs/stable/data.html#multi-process-data-loading>`_.
+
         Raises
         ------
         RuntimeError
             If :py:func:`fit` is called from a loaded model(:py:func:`load`).
+        AssertionError
+            If ``neg_sampling`` parameter is not bool type.
         """
         check_fitting(self, train_data, eval_data, neg_sampling, k)
         self.show_start_time()
@@ -179,10 +194,15 @@ class TfBase(Base):
             User id or batch of user ids to recommend.
         n_rec : int
             Number of recommendations to return.
-        user_feats : dict or pandas.Series or None, default: None
+        user_feats : dict or None, default: None
             Extra user features for recommendation.
-        item_data : pandas.DataFrame or None, default: None
-            Extra item features for recommendation.
+        seq : list or numpy.ndarray
+            Extra item sequence for recommendation. If the sequence length is larger than
+            `recent_num` hyperparameter specified in the model, it will be truncated.
+            If it is smaller, it will be padded.
+
+            .. versionadded:: 1.1.0
+
         cold_start : {'popular', 'average'}, default: 'average'
             Cold start strategy.
 

@@ -13,6 +13,11 @@ from ..utils.validate import check_fitting
 
 
 class GensimBase(EmbedBase):
+    """Base class for models that use Gensim for training.
+
+    Including Item2Vec and Deepwalk.
+    """
+
     def __init__(
         self,
         task,

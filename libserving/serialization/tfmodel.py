@@ -18,6 +18,17 @@ from .common import (
 
 
 def save_tf(path: str, model: TfBase, version: int = 1):
+    """Save TF model to disk.
+
+    Parameters
+    ----------
+    path : str
+        Model saving path.
+    model : TfBase
+        Model to save.
+    version : int, default: 1
+        Version number used in ``tf.saved_model``.
+    """
     check_path_exists(path)
     save_model_name(path, model)
     save_id_mapping(path, model.data_info)
