@@ -48,6 +48,7 @@ if __name__ == "__main__":
     )
     fm.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -74,6 +75,7 @@ if __name__ == "__main__":
     )
     wd.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -100,6 +102,7 @@ if __name__ == "__main__":
     )
     deepfm.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -128,6 +131,7 @@ if __name__ == "__main__":
     )
     autoint.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -156,6 +160,7 @@ if __name__ == "__main__":
     )
     din.fit(
         train_data,
+        neg_sampling=False,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,

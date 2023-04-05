@@ -17,11 +17,6 @@ if __name__ == "__main__":
     train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)
     test_data = DatasetPure.build_testset(test_data)
-
-    # sample negative items for each record
-    train_data.build_negative_samples(data_info)
-    eval_data.build_negative_samples(data_info)
-    test_data.build_negative_samples(data_info)
     print(data_info)  # n_users: 5894, n_items: 3253, data sparsity: 0.4172 %
 
     lightgcn = LightGCN(
@@ -38,6 +33,7 @@ if __name__ == "__main__":
     # monitor metrics on eval_data during training
     lightgcn.fit(
         train_data,
+        neg_sampling=True,  # sample negative items for train and eval data
         verbose=2,
         eval_data=eval_data,
         metrics=["loss", "roc_auc", "precision", "recall", "ndcg"],
@@ -49,6 +45,7 @@ if __name__ == "__main__":
         evaluate(
             model=lightgcn,
             data=test_data,
+            neg_sampling=True,  # sample negative items for test data
             metrics=["loss", "roc_auc", "precision", "recall", "ndcg"],
         ),
     )

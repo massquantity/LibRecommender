@@ -6,7 +6,9 @@ import tensorflow as tf
 from libreco.algorithms import (
     ALS,
     BPR,
+    LightGCN,
     NCF,
+    NGCF,
     SVD,
     Caser,
     DeepWalk,
@@ -37,13 +39,6 @@ if __name__ == "__main__":
     train_data, data_info = DatasetPure.build_trainset(train_data)
     eval_data = DatasetPure.build_evalset(eval_data)
     print(data_info)
-    # do negative sampling, assume the data only contains positive feedback
-    train_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2020
-    )
-    eval_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
 
     metrics = [
         "loss",
@@ -55,6 +50,63 @@ if __name__ == "__main__":
         "map",
         "ndcg",
     ]
+
+    reset_state("NGCF")
+    ngcf = NGCF(
+        "ranking",
+        data_info,
+        loss_type="cross_entropy",
+        embed_size=16,
+        n_epochs=2,
+        lr=3e-4,
+        lr_decay=False,
+        reg=0.0,
+        batch_size=2048,
+        num_neg=1,
+        node_dropout=0.0,
+        message_dropout=0.0,
+        hidden_units=(64, 64, 64),
+        device="cuda",
+    )
+    ngcf.fit(
+        train_data,
+        neg_sampling=True,
+        verbose=2,
+        shuffle=True,
+        eval_data=eval_data,
+        metrics=metrics,
+    )
+    print("prediction: ", ngcf.predict(user=1, item=2333))
+    print("recommendation: ", ngcf.recommend_user(user=1, n_rec=7))
+    print("batch recommendation: ", ngcf.recommend_user(user=[1, 2, 3], n_rec=7))
+
+    reset_state("LightGCN")
+    lightgcn = LightGCN(
+        "ranking",
+        data_info,
+        loss_type="bpr",
+        embed_size=16,
+        n_epochs=2,
+        lr=3e-4,
+        lr_decay=False,
+        reg=0.0,
+        batch_size=2048,
+        num_neg=1,
+        dropout_rate=0.0,
+        n_layers=3,
+        device="cuda",
+    )
+    lightgcn.fit(
+        train_data,
+        neg_sampling=True,
+        verbose=2,
+        shuffle=True,
+        eval_data=eval_data,
+        metrics=metrics,
+    )
+    print("prediction: ", lightgcn.predict(user=1, item=2333))
+    print("recommendation: ", lightgcn.recommend_user(user=1, n_rec=7))
+    print("batch recommendation: ", lightgcn.recommend_user(user=[1, 2, 3], n_rec=7))
 
     reset_state("SVD")
     svd = SVD(
@@ -70,6 +122,7 @@ if __name__ == "__main__":
     )
     svd.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -91,6 +144,7 @@ if __name__ == "__main__":
     )
     svdpp.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         eval_data=eval_data,
         metrics=metrics,
@@ -117,6 +171,7 @@ if __name__ == "__main__":
     )
     ncf.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -139,6 +194,7 @@ if __name__ == "__main__":
     )
     als.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         eval_data=eval_data,
         metrics=metrics,
@@ -163,6 +219,7 @@ if __name__ == "__main__":
     )
     bpr.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -189,6 +246,7 @@ if __name__ == "__main__":
     )
     rnn.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -218,6 +276,7 @@ if __name__ == "__main__":
     )
     caser.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -248,6 +307,7 @@ if __name__ == "__main__":
     )
     wave.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -268,6 +328,7 @@ if __name__ == "__main__":
     )
     item2vec.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -290,6 +351,7 @@ if __name__ == "__main__":
     )
     deepwalk.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -310,6 +372,7 @@ if __name__ == "__main__":
     )
     user_cf.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         eval_data=eval_data,
         metrics=metrics,
@@ -329,6 +392,7 @@ if __name__ == "__main__":
     )
     item_cf.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         eval_data=eval_data,
         metrics=metrics,

@@ -6,6 +6,7 @@ from libreco.data import DataInfo, DatasetFeat, split_by_ratio_chrono
 from libreco.evaluation import evaluate
 from libreco.prediction import predict_data_with_feats
 
+
 if __name__ == "__main__":
     data = pd.read_csv("sample_data/sample_movielens_merged.csv", sep=",", header=0)
     train, test = split_by_ratio_chrono(data, test_size=0.2)
@@ -24,12 +25,6 @@ if __name__ == "__main__":
     )
     test_data = DatasetFeat.build_testset(test, shuffle=False)
     print(data_info)
-    train_data.build_negative_samples(
-        data_info, num_neg=1, item_gen_mode="random", seed=2020
-    )
-    test_data.build_negative_samples(
-        data_info, num_neg=1, item_gen_mode="random", seed=2222
-    )
 
     deepfm = DeepFM(
         "ranking",
@@ -48,6 +43,7 @@ if __name__ == "__main__":
     )
     deepfm.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=test_data,
@@ -88,8 +84,7 @@ if __name__ == "__main__":
             n_rec=7,
             inner_id=False,
             cold_start="average",
-            user_feats=pd.Series({"sex": "F", "occupation": 2, "age": 23}),
-            item_data=data.iloc[4:10],
+            user_feats={"sex": "F", "occupation": 2, "age": 23},
         ),
     )
     print()
@@ -109,16 +104,15 @@ if __name__ == "__main__":
     data_info.assign_user_features(user_data=data)
     data_info.assign_item_features(item_data=data)
 
-    # set neg_sample=True if data is implicit and only contains positive label
+    # set `neg_sampling=True` if data is implicit and only contains positive label
     eval_result = evaluate(
         model=model,
         data=test,
+        neg_sampling=True,
         eval_batch_size=8192,
         k=10,
         metrics=["roc_auc", "pr_auc", "precision", "recall", "map", "ndcg"],
         sample_user_num=2048,
-        neg_sample=True,
-        update_features=False,
         seed=2222,
     )
     print("Eval Result: ")

@@ -25,13 +25,6 @@ if __name__ == "__main__":
     )
     eval_data = DatasetFeat.build_testset(eval_data)
     print(data_info)
-    # do negative sampling, assume the data only contains positive feedback
-    train_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2020
-    )
-    eval_data.build_negative_samples(
-        data_info, item_gen_mode="random", num_neg=1, seed=2222
-    )
 
     deepfm = DeepFM(
         "ranking",
@@ -52,6 +45,7 @@ if __name__ == "__main__":
 
     deepfm.fit(
         train_data,
+        neg_sampling=True,
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
