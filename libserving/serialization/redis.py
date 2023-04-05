@@ -19,6 +19,19 @@ def redis_connection(host: str, port: int, db: int):
 
 
 def knn2redis(path: str, host: str = "localhost", port: int = 6379, db: int = 0):
+    """Save KNN model to redis.
+
+    Parameters
+    ----------
+    path : str
+        Model saving path.
+    host : str, default: "localhost"
+        Redis host.
+    port : int, default: 6379
+        Redis port
+    db : int, default: 0
+        Redis db number
+    """
     with redis_connection(host, port, db) as r:
         model_name2redis(path, r)
         id_mapping2redis(path, r)
@@ -27,6 +40,19 @@ def knn2redis(path: str, host: str = "localhost", port: int = 6379, db: int = 0)
 
 
 def embed2redis(path: str, host: str = "localhost", port: int = 6379, db: int = 0):
+    """Save Embed model to redis.
+
+    Parameters
+    ----------
+    path : str
+        Model saving path.
+    host : str, default: "localhost"
+        Redis host.
+    port : int, default: 6379
+        Redis port
+    db : int, default: 0
+        Redis db number
+    """
     with redis_connection(host, port, db) as r:
         model_name2redis(path, r)
         id_mapping2redis(path, r)
@@ -35,6 +61,19 @@ def embed2redis(path: str, host: str = "localhost", port: int = 6379, db: int = 
 
 
 def tf2redis(path: str, host: str = "localhost", port: int = 6379, db: int = 0):
+    """Save TF model to redis.
+
+    Parameters
+    ----------
+    path : str
+        Model saving path.
+    host : str, default: "localhost"
+        Redis host.
+    port : int, default: 6379
+        Redis port
+    db : int, default: 0
+        Redis db number
+    """
     with redis_connection(host, port, db) as r:
         model_name2redis(path, r)
         id_mapping2redis(path, r)

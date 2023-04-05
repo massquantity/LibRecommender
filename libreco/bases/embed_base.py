@@ -80,6 +80,15 @@ class EmbedBase(Base):
         ----------
         train_data : :class:`~libreco.data.TransformedSet` object
             Data object used for training.
+        neg_sampling : bool
+            Whether to perform negative sampling for training or evaluating data.
+
+            .. versionadded:: 1.1.0
+
+            .. NOTE::
+               Negative sampling is needed if your data is implicit(i.e., `task` is ranking)
+               and ONLY contains positive labels. Otherwise, it should be False.
+
         verbose : int, default: 1
             Print verbosity. If `eval_data` is provided, setting it to higher than 1
             will print evaluation metrics during training.
@@ -103,10 +112,16 @@ class EmbedBase(Base):
 
             .. versionadded:: 1.1.0
 
+            .. CAUTION::
+               Using multiprocessing(``num_workers`` > 0) may consume more memory than
+               single processing. See `Multi-process data loading <https://pytorch.org/docs/stable/data.html#multi-process-data-loading>`_.
+
         Raises
         ------
         RuntimeError
             If :py:func:`fit` is called from a loaded model(:py:func:`load`).
+        AssertionError
+            If ``neg_sampling`` parameter is not bool type.
         """
         check_fitting(self, train_data, eval_data, neg_sampling, k)
         self.show_start_time()
@@ -185,6 +200,13 @@ class EmbedBase(Base):
             User id or batch of user ids to recommend.
         n_rec : int
             Number of recommendations to return.
+        seq : list or numpy.ndarray
+            Extra item sequence for recommendation. If the sequence length is larger than
+            `recent_num` hyperparameter specified in the model, it will be truncated.
+            If it is smaller, it will be padded.
+
+            .. versionadded:: 1.1.0
+
         cold_start : {'popular', 'average'}, default: 'average'
             Cold start strategy.
 
@@ -319,8 +341,8 @@ class EmbedBase(Base):
         model = cls(**hparams)
         model.loaded = True
         model.default_recs = load_default_recs(path, model_name)
-        setattr(model, "user_embed", variables["user_embed"])
-        setattr(model, "item_embed", variables["item_embed"])
+        model.user_embed = variables["user_embed"]
+        model.item_embed = variables["item_embed"]
         return model
 
     def get_user_id(self, user):

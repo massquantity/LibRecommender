@@ -14,6 +14,17 @@ from .common import (
 
 
 def save_knn(path: str, model: CfBase, k: int):
+    """Save KNN model to disk.
+
+    Parameters
+    ----------
+    path : str
+        Model saving path.
+    model : CfBase
+        Model to save.
+    k : int
+        Number of similar users/items to save.
+    """
     check_path_exists(path)
     save_model_name(path, model)
     save_id_mapping(path, model.data_info)
