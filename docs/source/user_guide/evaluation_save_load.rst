@@ -37,15 +37,13 @@ Evaluate After Training
 After the training, one can use the :func:`~libreco.evaluation.evaluate` function to
 evaluate on test data directly.
 
-By default, it also won't update features stored in :class:`~libreco.data.DataInfo`,
-but you can choose ``update_features=True`` to achieve that.
-Also note if your evaluation data(typically in :class:`pandas.DataFrame` format) **is implicit and only contains positive label**,
-then negative sampling is needed by passing ``neg_sample=True``:
+Note that if your evaluation data(typically in :class:`pandas.DataFrame` format) **is implicit and only contains positive label**,
+then negative sampling is needed by passing ``neg_sampling=True``:
 
 .. literalinclude:: ../../../examples/save_load_example.py
    :caption: From file `examples/save_load_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/save_load_example.py>`_
    :name: save_load_example.py
-   :lines: 89-101
+   :lines: 85-94
 
 Save/Load Model
 ---------------

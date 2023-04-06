@@ -2,11 +2,11 @@ Feature Engineering
 ===================
 
 Sparse and Dense Features
-+++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++
 
 Sparse features are typically categorical features such as sex, location, year, etc.
-These features are projected into low dimension vectors by using an embedding layer,
-and this is by far the most common way of handling these kinds of features.
+These features are projected into low dimension vectors through an embedding layer,
+which is by far the most common way of handling sparse features.
 
 Dense features are typically numerical features such as age, price, length, etc.
 Unfortunately, there is no common way of handling these features, so in LibRecommender
@@ -26,8 +26,8 @@ So to be clear, for one dense feature, all samples of this feature will be proje
 
 Apart from ``sparse`` and ``dense`` features, ``user`` and ``item`` features should also be provided. Since in order to make predictions and recommendations, the model needs to know whether a feature belongs to user or item. So, in short, these parameters are [``sparse_col``, ``dense_col``, ``user_col``, ``item_col``].
 
-Multi_Sparse Features
-+++++++++++++++++++++++++
+Multi-Sparse Features
+++++++++++++++++++++++
 
 Often times categorical features can be multi-valued. For example, a movie may have multiple genres, as shown in the ``genre`` feature in the ``MovieLens-1m`` dataset:
 
@@ -78,7 +78,7 @@ divided by the square root of sub-feature number, e.g. sqrt(3) in ``genre`` feat
 I'm not sure about this, but I think this ``sqrtn`` idea originally came from `SVD++ <https://people.engr.tamu.edu/huangrh/Spring16/papers_course/matrix_factorization.pdf>`_,
 and it was also used in *Scaled Dot-Product Attention* part of `Transformer <https://arxiv.org/pdf/1706.03762.pdf>`_.
 Generally the four methods described here have similar functionality as in `tf.nn.embedding_lookup_sparse <https://www.tensorflow.org/versions/r1.15/api_docs/python/tf/nn/embedding_lookup_sparse>`_,
-but we didn't use it directly in our implementation since it has no ``normal`` choice.
+but we didn't use it directly in our implementation since it has no ``normal`` option.
 
 So in general you should choose a strategy in parameter ``multi_sparse_combiner`` when
 building models with ``multi_sparse`` features:
@@ -115,68 +115,4 @@ LibRecommender also provides a convenient function (``split_multi_value``) to tr
 .. literalinclude:: ../../../examples/multi_sparse_processing_example.py
    :caption: From file `examples/multi_sparse_processing_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/multi_sparse_processing_example.py>`_
    :name: multi_sparse_processing_example.py
-   :lines: 26-34
-
-
-Changing Feature
-++++++++++++++++
-
-In real-world scenarios, users' features are very likely to change every time we make recommendations
-for them. For example, a user's location may change many times a day, and we may need to take this
-into account. This feature issue can actually be combined with the cold-start issue. For example,
-a user has appeared in training data, but his/her location doesn't exist in training data's ``location``
-feature.
-
-How do we handle these changing feature problems? Fortunately, LibRecommender can deal with them elegantly.
-
-If you want to predict or recommend with specific features, the usage is pretty straightforward.
-For prediction, just pass the ``feats`` argument, which only accepts ``dict`` or ``pands.Series`` type:
-
-.. code-block:: python3
-
-   >>> model.predict(user=1, item=110, feats={"sex": "F", "occupation": 2, "age": 23})
-
-
-There is no need to specify a feature belongs to user or item, because this information
-has already been stored in model's :class:`~libreco.data.DataInfo` object. Note if you misspelled some feature names,
-e.g. "sex" -> "sax", the model will simply ignore this feature. If you pass a feature category
-that doesn't appear in training data, e.g. "sex" -> "bisexual", then it will be ignored too.
-
-If you want to predict on a whole dataset with features, you can use the ``predict_data_with_feats`` function.
-By setting ``batch_size`` to ``None``, the model will treat all the data as one batch,
-which may cause memory issues:
-
-.. code-block:: python3
-
-   >>> from libreco.prediction import predict_data_with_feats
-   >>> predict_data_with_feats(model, data=dataset, batch_size=1024, cold_start="average")
-
-To make recommendation for one user, we can pass the user features to ``user_feats`` argument.
-It actually doesn't make much sense to change the item features when making recommendation for
-only one user, but we provide an ``item_data`` argument anyway, which can change the item features.
-The type of ``item_data`` must be :class:`pandas.DataFrame` . We assume one may want to change the
-features of multiple items, since it nearly makes no difference to the recommendation
-result if only one item's features have been changed.
-
-.. code-block:: python3
-
-   >>> model.recommend_user(user=1, n_rec=7, cold_start="popular",
-                            user_feats=pd.Series({"sex": "F", "occupation": 2, "age": 23}),
-                            item_data=item_features)
-
-Note the three functions described above doesn't change the unique user/item features inside
-the :class:`~libreco.data.DataInfo` object. So the next time you call ``model.predict(user=1, item=110)`` ,
-it will still use the features stored in ``DataInfo``. However, if you do want to change
-the features in ``DataInfo``, then you can use ``assign_user_features`` and ``assign_item_features`` :
-
-.. code-block:: python3
-
-   >>> data_info.assign_user_features(user_data=data)
-   >>> data_info.assign_item_features(item_data=data)
-
-The passed ``data`` argument is a ``pandas.DataFrame`` that contains the user/item information.
-Be careful with this assign operation if you are not sure if the features in ``data`` are useful.
-
-.. SeeAlso::
-
-    `changing_feature_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/changing_feature_example.py>`_
+   :lines: 24-32

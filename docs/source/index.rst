@@ -52,10 +52,11 @@ module to let users quickly train and deploy different kinds of recommendation m
 + Implements a number of popular recommendation algorithms such as FM, DIN, LightGCN etc. See `full algorithm list <https://github.com/massquantity/LibRecommender#references>`_.
 + A hybrid recommender system, which allows users to use either collaborative-filtering or content-based features. New features can be added on the fly.
 + Low memory usage, automatically convert categorical and multi-value categorical features to sparse representation.
-+ Support training for both explicit and implicit datasets, as well as negative sampling on implicit data.
-+ Provide end-to-end workflow, i.e. data handling / preprocessing -> model training -> evaluate -> save/load -> serving.
-+ Support cold-start prediction and recommendation.
-+ Provide unified and friendly API for all algorithms.
++ Supports training for both explicit and implicit datasets, as well as negative sampling on implicit data.
++ Provides end-to-end workflow, i.e. data handling / preprocessing -> model training -> evaluate -> save/load -> serving.
++ Supports cold-start prediction and recommendation.
++ Supports dynamic feature and sequence recommendation.
++ Provides unified and friendly API for all algorithms.
 + Easy to retrain model with new users/items from new data.
 
 Quick Start
@@ -126,6 +127,7 @@ The two tabs below demonstrate the process of train, evaluate, predict, recommen
    api/data/index
    api/algorithms/index
    api/evaluation
+   api/serialization
 
 .. toctree::
    :maxdepth: 1
