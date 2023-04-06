@@ -345,16 +345,6 @@ i.e. ``len(sparse_col) + len(dense_col) == len(user_col) + len(item_col)``.
 
     n_users: 6040, n_items: 3576, data density: 1.8523 %
 
-In this example we treat all the samples in data as positive samples,
-and perform negative sampling. This is a standard procedure for "implicit data".
-
-.. code:: python3
-
-    # sample negative items for each record
-    >>> train_data.build_negative_samples(data_info)
-    >>> eval_data.build_negative_samples(data_info)
-    >>> test_data.build_negative_samples(data_info)
-
 
 Training the Model
 ------------------
@@ -368,6 +358,9 @@ learning rate separately by using a dict:
 ``{"wide": 0.01, "deep": 3e-4}``. For other model hyper-parameters, see API reference of
 :class:`~libreco.algorithms.WideDeep`.
 
+In this example we treat all the samples in data as positive samples,
+and perform negative sampling. This is a standard procedure for "implicit data".
+
 .. code:: python3
 
     from libreco.algorithms import WideDeep
@@ -380,14 +373,15 @@ learning rate separately by using a dict:
         embed_size=16,
         n_epochs=2,
         loss_type="cross_entropy",
-        lr={"wide": 0.01, "deep": 3e-4},
+        lr={"wide": 0.05, "deep": 7e-4},
         batch_size=2048,
         use_bn=True,
         hidden_units=(128, 64, 32),
     )
-    
+
     model.fit(
         train_data,
+        neg_sampling=True,  # perform negative sampling on training and eval data
         verbose=2,
         shuffle=True,
         eval_data=eval_data,
@@ -396,21 +390,21 @@ learning rate separately by using a dict:
 
 ::
 
-    Epoch 1 elapsed: 3.053s
-        train_loss: 0.6778
-        eval log_loss: 0.5676
-        eval roc_auc: 0.8005
-        eval precision@10: 0.0277
-        eval recall@10: 0.0409
-        eval ndcg@10: 0.1119
+    Epoch 1 elapsed: 2.905s
+        train_loss: 0.959
+        eval log_loss: 0.5823
+        eval roc_auc: 0.8032
+        eval precision@10: 0.0236
+        eval recall@10: 0.0339
+        eval ndcg@10: 0.1001
 
-    Epoch 2 elapsed: 3.008s
-        train_loss: 0.4994
-        eval log_loss: 0.4928
-        eval roc_auc: 0.8373
-        eval precision@10: 0.0321
-        eval recall@10: 0.0506
-        eval ndcg@10: 0.1384
+    Epoch 2 elapsed: 2.508s
+        train_loss: 0.499
+        eval log_loss: 0.4769
+        eval roc_auc: 0.8488
+        eval precision@10: 0.0332
+        eval recall@10: 0.0523
+        eval ndcg@10: 0.1376
 
 We’ve trained the model for 2 epochs and evaluated the performance on
 the eval data during training. Next we can evaluate on the *independent*
@@ -419,15 +413,20 @@ test data.
 .. code:: python3
 
     >>> from libreco.evaluation import evaluate
-    >>> evaluate(model=model, data=test_data, metrics=["loss", "roc_auc", "precision", "recall", "ndcg"])
+    >>> evaluate(
+    >>>     model=model,
+    >>>     data=test_data,
+    >>>     neg_sampling=True,  # perform negative sampling on test data
+    >>>     metrics=["loss", "roc_auc", "precision", "recall", "ndcg"],
+    >>> )
 
 .. parsed-literal::
 
-    {'loss': 0.49392982253743395,
-     'roc_auc': 0.8364561294428758,
-     'precision': 0.03056640625,
-     'recall': 0.05029253291880213,
-     'ndcg': 0.12794099009836263}
+    {'loss': 0.4782908669403157,
+     'roc_auc': 0.8483713737644527,
+     'precision': 0.031268748897123694,
+     'recall': 0.04829594849021039,
+     'ndcg': 0.12866793895121623}
 
 
 
@@ -443,8 +442,7 @@ recommendation for one user or a batch of users.
 
 .. parsed-literal::
 
-    {1: array([ 260, 2858, 1210])}
-
+    {1: array([ 364, 3751, 2858])}
 
 
 .. code:: python3
@@ -453,9 +451,28 @@ recommendation for one user or a batch of users.
 
 .. parsed-literal::
 
-    {1: array([ 260, 2858, 1210]),
-     2: array([527, 356, 480]),
-     3: array([ 589, 2571, 1240])}
+    {1: array([ 364, 3751, 2858]),
+     2: array([1617,  608,  912]),
+     3: array([ 589, 2571, 1200])}
+
+You can also make recommdation based on specific user features.
+
+.. code:: python3
+
+    >>> model.recommend_user(user=1, n_rec=3, user_feats={"sex": "M", "age": 33})
+
+.. parsed-literal::
+
+    {1: array([2716,  589, 2571])}
+
+
+.. code:: python3
+
+    >>> model.recommend_user(user=1, n_rec=3, user_feats={"occupation": 17})
+
+.. parsed-literal::
+
+    {1: array([2858, 1210, 1580])}
 
 
 
@@ -518,12 +535,9 @@ from new data. For more details, see :doc:`user_guide/model_retrain`.
 
 .. code:: python3
 
-    >>> train_data = DatasetFeat.merge_trainset(train_data, loaded_data_info, merge_behavior=True)  # use loaded_data_info
-    >>> eval_data = DatasetFeat.merge_evalset(eval_data, loaded_data_info)
-
-    >>> train_data.build_negative_samples(loaded_data_info, seed=2022)  # use loaded_data_info
-    >>> eval_data.build_negative_samples(loaded_data_info, seed=2222)
-
+    >>> # pass `loaded_data_info` and get `new_data_info`
+    >>> train_data, new_data_info = DatasetFeat.merge_trainset(train_data, loaded_data_info, merge_behavior=True)
+    >>> eval_data = DatasetFeat.merge_evalset(eval_data, new_data_info)  # use new_data_info
 
 Then we construct a new model, and call :meth:`~libreco.algorithms.WideDeep.rebuild_model`
 method to assign the old trained variables into the new model.
@@ -536,11 +550,11 @@ method to assign the old trained variables into the new model.
 
     new_model = WideDeep(
         task="ranking", 
-        data_info=loaded_data_info,  # pass loaded_data_info
+        data_info=new_data_info,  # pass new_data_info
         embed_size=16, 
         n_epochs=2,
         loss_type="cross_entropy",
-        lr={"wide": 0.01, "deep": 3e-4}, 
+        lr={"wide": 0.01, "deep": 1e-4},
         batch_size=2048,
         use_bn=True,
         hidden_units=(128, 64, 32), 
@@ -553,7 +567,8 @@ Finally, the training and recommendation parts are the same as before.
 .. code:: python3
 
     new_model.fit(
-        train_data, 
+        train_data,
+        neg_sampling=True,
         verbose=2, 
         shuffle=True, 
         eval_data=eval_data,
@@ -562,21 +577,21 @@ Finally, the training and recommendation parts are the same as before.
 
 ::
 
-    Epoch 1 elapsed: 2.955s
-        train_loss: 0.4604
-        eval log_loss: 0.4497
-        eval roc_auc: 0.8678
-        eval precision@10: 0.1015
-        eval recall@10: 0.0715
-        eval ndcg@10: 0.3106
+    Epoch 1 elapsed: 2.867s
+        train_loss: 0.4867
+        eval log_loss: 0.4482
+        eval roc_auc: 0.8708
+        eval precision@10: 0.0985
+        eval recall@10: 0.0710
+        eval ndcg@10: 0.3062
 
-    Epoch 2 elapsed: 2.657s
-        train_loss: 0.4332
-        eval log_loss: 0.4371
-        eval roc_auc: 0.8760
-        eval precision@10: 0.1043
-        eval recall@10: 0.0740
-        eval ndcg@10: 0.3189
+    Epoch 2 elapsed: 2.770s
+        train_loss: 0.472
+        eval log_loss: 0.4416
+        eval roc_auc: 0.8741
+        eval precision@10: 0.1031
+        eval recall@10: 0.0738
+        eval ndcg@10: 0.3168
 
 
 .. code:: python3
@@ -585,7 +600,7 @@ Finally, the training and recommendation parts are the same as before.
 
 .. parsed-literal::
 
-    {1: array([2858, 1259, 3175])}
+    {1: array([ 364, 2858, 1210])}
 
 .. code:: python3
 
@@ -593,9 +608,9 @@ Finally, the training and recommendation parts are the same as before.
 
 .. parsed-literal::
 
-    {1: array([2858, 1259, 3175]),
-     2: array([1222, 1240,  858]),
-     3: array([2858, 1580,  589])}
+    {1: array([ 364, 2858, 1210]),
+     2: array([ 608, 1617, 1233]),
+     3: array([ 589, 2571, 1387])}
 
 **This completes our tutorial!**
 

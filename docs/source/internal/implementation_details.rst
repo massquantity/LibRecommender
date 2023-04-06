@@ -88,13 +88,13 @@ But of course you can change to the value you want.
 
 .. code-block:: python3
 
-    model = YouTubeRetrieval(
-        task,
-        data_info,
-        loss_type="sampled_softmax",  # or "nce"
-        num_sampled_per_batch=None,  # "None" will use batch_size, or can be set to 1, 1000, 9999 ...
-        sampler="uniform",
-    )
+    >>> model = YouTubeRetrieval(
+    >>>     task,
+    >>>     data_info,
+    >>>     loss_type="sampled_softmax",  # or "nce"
+    >>>     num_sampled_per_batch=None,  # "None" will use batch_size, or can be set to 1, 1000, 9999 ...
+    >>>     sampler="uniform",
+    >>> )
 
 
 RNN4Rec / GRU4Rec
@@ -125,16 +125,17 @@ also choose other losses by setting the ``loss_type`` parameter.
 
 .. code-block:: python3
 
-    ngcf = NGCF(
-        "ranking",
-        data_info,
-        loss_type="cross_entropy",  # or "focal", "bpr", "max_margin"
-    )
-    lightgcn = LightGCN(
-        "ranking",
-        data_info,
-        loss_type="bpr",
-    )
+    >>> ngcf = NGCF(
+    >>>     "ranking",
+    >>>     data_info,
+    >>>     loss_type="cross_entropy",  # or "focal", "bpr", "max_margin"
+    >>> )
+
+    >>> lightgcn = LightGCN(
+    >>>     "ranking",
+    >>>     data_info,
+    >>>     loss_type="bpr",
+    >>> )
 
 
 .. _pinsage:
@@ -170,17 +171,17 @@ like other ``feat`` models:
 
     >>> from libreco.algorithms import PinSage, PinSageDGL
     >>> model = PinSage(  # PyTorch version
-            task,
-            data_info,
-            loss_type="cross_entropy",  # or "focal", "bpr", "max_margin"
-            paradigm="u2i",  # or "i2i"
-        )
+    >>>     task,
+    >>>     data_info,
+    >>>     loss_type="cross_entropy",  # or "focal", "bpr", "max_margin"
+    >>>     paradigm="u2i",  # or "i2i"
+    >>> )
     >>> model = PinSageDGL(  # DGL version
-            task,
-            data_info,
-            loss_type="max_margin",
-            paradigm="i2i",
-        )
+    >>>     task,
+    >>>     data_info,
+    >>>     loss_type="max_margin",
+    >>>     paradigm="i2i",
+    >>> )
     >>> model.fit(train_data)
 
 
@@ -203,16 +204,16 @@ whereas the DGL version can use ``mean``, ``gcn``, ``pool``, ``lstm``, thanks to
 
     >>> from libreco.algorithms import GraphSage, GraphSageDGL
     >>> model = GraphSage(  # PyTorch version
-            task,
-            data_info,
-            loss_type="cross_entropy",  # or "focal", "bpr", "max_margin"
-            paradigm="u2i",  # or "i2i"
-        )
+    >>>     task,
+    >>>     data_info,
+    >>>     loss_type="cross_entropy",  # or "focal", "bpr", "max_margin"
+    >>>     paradigm="u2i",  # or "i2i"
+    >>> )
     >>> model = GraphSageDGL(  # DGL version
-            task,
-            data_info,
-            loss_type="focal",
-            paradigm="i2i",
-            aggregator_type="mean",  # or "gcn", "pool", "lstm"
-        )
+    >>>     task,
+    >>>     data_info,
+    >>>     loss_type="focal",
+    >>>     paradigm="i2i",
+    >>>     aggregator_type="mean",  # or "gcn", "pool", "lstm"
+    >>> )
     >>> model.fit(train_data)

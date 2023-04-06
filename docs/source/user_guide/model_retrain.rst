@@ -49,7 +49,7 @@ the model, which is OK if you are certain that there will be no new user/item in
 .. literalinclude:: ../../../examples/model_retrain_example.py
    :caption: From file `examples/model_retrain_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/model_retrain_example.py>`_
    :name: model_retrain_example.py
-   :lines: 76-78
+   :lines: 71-73
 
 Before retraining the model, the new data should also be transformed. Since the old ``data_info``
 already exists, we need to merge new information with the old one,
@@ -67,7 +67,7 @@ information in old data with that in new data, you can pass ``merge_behavior=Tru
 
 .. code-block:: python3
 
-   >>> train_data = DatasetFeat.merge_trainset(train, data_info, merge_behavior=True)
+   >>> train_data, new_data_info = DatasetFeat.merge_trainset(train, data_info, merge_behavior=True)
 
 Finally, loading the old variables and assigning them to the new model requires only one function :meth:`~libreco.algorithms.DeepFM.rebuild_model`:
 
