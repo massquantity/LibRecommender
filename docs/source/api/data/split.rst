@@ -10,3 +10,5 @@ Split
 .. autofunction:: libreco.data.split_by_ratio_chrono
 
 .. autofunction:: libreco.data.split_by_num_chrono
+
+.. autofunction:: libreco.data.split_multi_value
