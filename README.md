@@ -5,7 +5,6 @@
 [![Codecov](https://img.shields.io/codecov/c/github/massquantity/LibRecommender?color=ffdfba&logo=codecov&logoColor=%2300FC87CD)](https://app.codecov.io/gh/massquantity/LibRecommender)
 [![pypi](https://img.shields.io/pypi/v/LibRecommender?color=blue)](https://pypi.org/project/LibRecommender/)
 [![Downloads](https://static.pepy.tech/personalized-badge/librecommender?period=total&units=international_system&left_color=grey&right_color=lightgrey&left_text=Downloads)](https://pepy.tech/project/librecommender)
-[![python versions](https://img.shields.io/pypi/pyversions/LibRecommender?logo=python&logoColor=ffffba)](https://pypi.org/project/LibRecommender/)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/860f0cb5339c41fba9bee5770d09be47)](https://www.codacy.com/gh/massquantity/LibRecommender/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=massquantity/LibRecommender&amp;utm_campaign=Badge_Grade)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v1.json)](https://github.com/charliermarsh/ruff)
@@ -22,11 +21,12 @@
 
 + Implements a number of popular recommendation algorithms such as FM, DIN, LightGCN etc. See [full algorithm list](#references).
 + A hybrid recommender system, which allows user to use either collaborative-filtering or content-based features. New features can be added on the fly.
-+ Low memory usage, automatically convert categorical and multi-value categorical features to sparse representation.
-+ Support training for both explicit and implicit datasets, as well as negative sampling on implicit data.
-+ Provide end-to-end workflow, i.e. data handling / preprocessing -> model training -> evaluate -> save/load -> serving.
-+ Support cold-start prediction and recommendation.
-+ Provide unified and friendly API for all algorithms. 
++ Low memory usage, automatically converts categorical and multi-value categorical features to sparse representation.
++ Supports training for both explicit and implicit datasets, as well as negative sampling on implicit data.
++ Provides end-to-end workflow, i.e. data handling / preprocessing -> model training -> evaluate -> save/load -> serving.
++ Supports cold-start prediction and recommendation.
++ Supports dynamic feature and sequence recommendation.
++ Provides unified and friendly API for all algorithms. 
 + Easy to retrain model with new users/items from new data.
 
 
@@ -51,11 +51,6 @@ train_data, eval_data, test_data = random_split(data, multi_ratios=[0.8, 0.1, 0.
 train_data, data_info = DatasetPure.build_trainset(train_data)
 eval_data = DatasetPure.build_evalset(eval_data)
 test_data = DatasetPure.build_testset(test_data)
-
-# sample negative items for each record
-train_data.build_negative_samples(data_info)
-eval_data.build_negative_samples(data_info)
-test_data.build_negative_samples(data_info)
 print(data_info)  # n_users: 5894, n_items: 3253, data sparsity: 0.4172 %
 
 lightgcn = LightGCN(
@@ -72,6 +67,7 @@ lightgcn = LightGCN(
 # monitor metrics on eval data during training
 lightgcn.fit(
     train_data,
+    neg_sampling=True,
     verbose=2,
     eval_data=eval_data,
     metrics=["loss", "roc_auc", "precision", "recall", "ndcg"],
@@ -81,6 +77,7 @@ lightgcn.fit(
 evaluate(
     model=lightgcn,
     data=test_data,
+    neg_sampling=True,
     metrics=["loss", "roc_auc", "precision", "recall", "ndcg"],
 )
 
@@ -117,10 +114,6 @@ train_data, data_info = DatasetFeat.build_trainset(
     train_data, user_col, item_col, sparse_col, dense_col
 )
 test_data = DatasetFeat.build_testset(test_data)
-
-# sample negative items for each record
-train_data.build_negative_samples(data_info)  
-test_data.build_negative_samples(data_info)
 print(data_info)  # n_users: 5962, n_items: 3226, data sparsity: 0.4185 %
 
 ytb_ranking = YouTubeRanking(
@@ -135,6 +128,7 @@ ytb_ranking = YouTubeRanking(
 )
 ytb_ranking.fit(
     train_data,
+    neg_sampling=True,
     verbose=2,
     shuffle=True,
     eval_data=test_data,
