@@ -7,8 +7,8 @@ import numpy as np
 from ..tfops import tf
 
 
-def shuffle_data(length, *args):
-    mask = np.random.permutation(range(length))
+def shuffle_data(np_rng, length, *args):
+    mask = np_rng.permutation(range(length))
     return tuple(map(lambda x: x[mask], [*args]))
 
 

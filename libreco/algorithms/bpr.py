@@ -136,14 +136,20 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             self._build_model_cython()
 
     def _build_model_cython(self):
-        np.random.seed(self.seed)
+        np_rng = np.random.default_rng(self.seed)
         # last dimension is item bias, so for user all set to 1.0
         self.user_embed = truncated_normal(
-            shape=(self.n_users, self.embed_size + 1), mean=0.0, scale=0.03
+            np_rng,
+            shape=(self.n_users, self.embed_size + 1),
+            mean=0.0,
+            scale=0.03,
         )
         self.user_embed[:, self.embed_size] = 1.0
         self.item_embed = truncated_normal(
-            shape=(self.n_items, self.embed_size + 1), mean=0.0, scale=0.03
+            np_rng,
+            shape=(self.n_items, self.embed_size + 1),
+            mean=0.0,
+            scale=0.03,
         )
         self.item_embed[:, self.embed_size] = 0.0
 

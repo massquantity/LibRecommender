@@ -85,7 +85,9 @@ class DeepWalk(GensimBase):
 
     def get_data(self):
         graph = self._build_graph()
-        return _ItemCorpus(graph, self.n_items, self.n_walks, self.walk_length)
+        return _ItemCorpus(
+            graph, self.n_items, self.n_walks, self.walk_length, self.seed
+        )
 
     def build_model(self):
         model = Word2Vec(
@@ -103,16 +105,17 @@ class DeepWalk(GensimBase):
 
 
 class _ItemCorpus:
-    def __init__(self, graph, n_items, n_walks, walk_length):
+    def __init__(self, graph, n_items, n_walks, walk_length, seed):
         self.graph = graph
         self.n_items = n_items
         self.n_walks = n_walks
         self.walk_length = walk_length
+        self.np_rng = np.random.default_rng(seed)
         self.i = 0
 
     def __iter__(self):
         for _ in tqdm(range(self.n_walks), desc=f"DeepWalk iter {self.i}"):
-            for node in np.random.permutation(self.n_items):
+            for node in self.np_rng.permutation(self.n_items):
                 walk = [node]
                 while len(walk) < self.walk_length:
                     neighbors = self.graph[walk[-1]]

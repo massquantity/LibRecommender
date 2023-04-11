@@ -64,11 +64,12 @@ def test_max_pool_layer(random_data):
 
 @pytest.mark.parametrize("dim", [3])
 def test_rnn_layer(random_data):
+    np_rng = np.random.default_rng(42)
     with tf.Session() as sess:
         output = tf_rnn(
             inputs=random_data,
             rnn_type="lstm",
-            lengths=np.random.randint(0, 20, [100]),
+            lengths=np_rng.integers(0, 20, [100]),
             maxlen=20,
             hidden_units=[16, 8],
             dropout_rate=0.1,
@@ -79,7 +80,7 @@ def test_rnn_layer(random_data):
         output2 = tf_rnn(
             inputs=random_data,
             rnn_type="gru",
-            lengths=np.random.randint(0, 20, [100]),
+            lengths=np_rng.integers(0, 20, [100]),
             maxlen=20,
             hidden_units=[16],
             dropout_rate=0.1,

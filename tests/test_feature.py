@@ -89,7 +89,8 @@ def test_data_info_features():
         "sample_movielens_merged.csv",
     )
     pd_data = pd.read_csv(data_path, sep=",", header=0)
-    pd_data["item_dense_col"] = np.random.randint(0, 10000, size=len(pd_data))
+    np_rng = np.random.default_rng(42)
+    pd_data["item_dense_col"] = np_rng.integers(0, 10000, size=len(pd_data))
 
     multi_sparse_col = [["genre1", "genre2", "genre3"]]
     sparse_col = []

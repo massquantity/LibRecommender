@@ -89,11 +89,11 @@ filterwarnings = [
 line-length = 88
 target-version = "py38"
 show-source = true
-ignore = ["E501", "F401", "B008", "B010", "NPY002"]
+ignore = ["E501"]
 select = [
     # pyflakes
     "F",
-    # pycodestyle
+    # pycodestyle(Error, Warning)
     "E",
     "W",
     # flake8-2020
@@ -107,3 +107,4 @@ select = [
     # Ruff-specific rules
     "RUF",
 ]
+exclude = ["sampling.py"]  # deprecated module

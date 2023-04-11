@@ -180,12 +180,15 @@ class SparseCollator(BaseCollator):
         )
 
     def get_seqs(self, user_indices, item_indices):
+        if self.seq_mode == "random":
+            self._set_random_seeds()
         batch_indices, batch_values, batch_size = get_sparse_interacted(
             user_indices,
             item_indices,
             self.user_consumed,
             self.seq_mode,
             self.max_seq_len,
+            self.np_rng,
         )
         return SparseSeqFeats(batch_indices, batch_values, batch_size)
 

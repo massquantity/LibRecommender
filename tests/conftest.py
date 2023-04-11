@@ -25,7 +25,7 @@ def prepare_pure_data():
 def read_feat_data():
     data_path = Path(__file__).parent / "sample_data" / "sample_movielens_merged.csv"
     pd_data = pd.read_csv(data_path, sep=",", header=0)
-    pd_data["item_dense_feat"] = np.random.randn(len(pd_data), 1)
+    pd_data["item_dense_feat"] = np.random.default_rng(42).normal(size=len(pd_data))
     return pd_data, split_by_ratio_chrono(pd_data, test_size=0.2)
 
 
