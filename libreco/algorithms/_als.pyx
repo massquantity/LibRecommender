@@ -1,31 +1,42 @@
+# cython: language_level=3
 import numpy as np
 import cython
 from cython.parallel import parallel, prange
 from libc.stdlib cimport malloc, free
-from libc.string cimport memcpy, memset
+from libc.string cimport memcpy
 
 cimport scipy.linalg.cython_lapack as cython_lapack
 cimport scipy.linalg.cython_blas as cython_blas
 
 
-cdef inline void axpy(int *n, float *da, float *dx, int *incx, float *dy, 
-                      int *incy) nogil:
+cdef inline void axpy(
+    int *n, float *da, float *dx, int *incx, float *dy, int *incy
+) nogil:
     cython_blas.saxpy(n, da, dx, incx, dy, incy)
 
 
-cdef inline void posv(char *u, int *n, int *nrhs, float *a, int *lda, 
-                      float *b, int *ldb, int *info) nogil:
+cdef inline void posv(
+    char *u, int *n, int *nrhs, float *a, int *lda, float *b, int *ldb, int *info
+) nogil:
     cython_lapack.sposv(u, n, nrhs, a, lda, b, ldb, info)
 
 
-cdef inline void symv(char *u, int *n, float *alpha, float *a, int *lda, 
-                      float *x, int *incx, float *beta, float *y, 
-                      int *incy) nogil:
+cdef inline void symv(
+    char *u,
+    int *n,
+    float *alpha,
+    float *a,
+    int *lda,
+    float *x,
+    int *incx,
+    float *beta,
+    float *y,
+    int *incy,
+) nogil:
     cython_blas.ssymv(u, n, alpha, a, lda, x, incx, beta, y, incy)
 
 
-cdef inline float dot(int *n, float *sx, int *incx, float *sy, 
-                      int *incy) nogil:
+cdef inline float dot(int *n, float *sx, int *incx, float *sy, int *incy) nogil:
     return cython_blas.sdot(n, sx, incx, sy, incy)
 
 
@@ -33,28 +44,68 @@ cdef inline void scal(int *n, float *sa, float *sx, int *incx) nogil:
     cython_blas.sscal(n, sa, sx, incx)
 
 
-def als_update(interaction, X, Y, reg, task, use_cg=True, 
-               num_threads=1, cg_steps=3):
+def als_update(interaction, X, Y, reg, task, use_cg=True, num_threads=1, cg_steps=3):
     if task == "rating" and use_cg:
-        _least_squares_cg(interaction.indices, interaction.indptr, 
-            interaction.data, X, Y, reg, num_threads, 0, cg_steps)
+        _least_squares_cg(
+            interaction.indices,
+            interaction.indptr,
+            interaction.data,
+            X,
+            Y,
+            reg,
+            num_threads,
+            0,
+            cg_steps,
+        )
     elif task == "rating" and not use_cg:
-        _least_squares(interaction.indices, interaction.indptr, 
-            interaction.data, X, Y, reg, num_threads, 0)
+        _least_squares(
+            interaction.indices,
+            interaction.indptr,
+            interaction.data,
+            X,
+            Y,
+            reg,
+            num_threads,
+            0,
+        )
     elif task == "ranking" and use_cg:
-        _least_squares_cg(interaction.indices, interaction.indptr, 
-            interaction.data, X, Y, reg, num_threads, 1, cg_steps)
+        _least_squares_cg(
+            interaction.indices,
+            interaction.indptr,
+            interaction.data,
+            X,
+            Y,
+            reg,
+            num_threads,
+            1,
+            cg_steps,
+        )
     elif task == "ranking" and not use_cg:
-        _least_squares(interaction.indices, interaction.indptr, 
-            interaction.data, X, Y, reg, num_threads, 1)
+        _least_squares(
+            interaction.indices,
+            interaction.indptr,
+            interaction.data,
+            X,
+            Y,
+            reg,
+            num_threads,
+            1,
+        )
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void _least_squares(const int[:] indices, const int[:] indptr, 
-    const float[:] data, float[:, ::1] X, float[:, ::1] Y, double reg, 
-    int num_threads, int implicit):
+cdef void _least_squares(
+    const int[:] indices,
+    const int[:] indptr,
+    const float[:] data,
+    float[:, ::1] X,
+    float[:, ::1] Y,
+    double reg,
+    int num_threads,
+    int implicit,
+):
     cdef int n_x = X.shape[0], embed_size = X.shape[1]
     cdef int m, i, j, index, err, one = 1
     cdef float rating, confidence, temp
@@ -116,9 +167,17 @@ cdef void _least_squares(const int[:] indices, const int[:] indptr,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void _least_squares_cg(const int[:] indices, const int[:] indptr, 
-    const float[:] data, float[:, ::1] X, float[:, ::1] Y, double reg, 
-    int num_threads, int implicit, int cg_steps):
+cdef void _least_squares_cg(
+    const int[:] indices,
+    const int[:] indptr,
+    const float[:] data,
+    float[:, ::1] X,
+    float[:, ::1] Y,
+    double reg,
+    int num_threads,
+    int implicit,
+    int cg_steps,
+):
     cdef int n_x = X.shape[0], embed_size = X.shape[1]
     cdef int m, i, j, index, err, one = 1
     cdef float rating, confidence, temp, rsold, rsnew, ak
@@ -207,4 +266,3 @@ cdef void _least_squares_cg(const int[:] indices, const int[:] indptr,
             free(Ap)
             free(p)
             free(r)
-
