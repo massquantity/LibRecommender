@@ -1,9 +1,9 @@
 #cython: language_level=3
-from cython.parallel import prange, parallel
 import numpy as np
 cimport numpy as np
 cimport cython
-from libc.math cimport sqrt as csqrt, pow as cpow
+
+from cython.parallel import prange, parallel
 from libcpp.vector cimport vector
 from libc.stdlib cimport malloc, calloc, free
 from libc.string cimport memset
@@ -343,10 +343,18 @@ cdef void compute_jaccard(
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cpdef invert_jaccard(const int[:] indices, const int[:] indptr, const float[:] data, 
-                    const int[:] x_count, int min_common, int n_x, int n_y, 
-                    int block_size, int block_num, int num_threads=1):
-
+cpdef invert_jaccard(
+    const int[:] indices,
+    const int[:] indptr,
+    const float[:] data,
+    const int[:] x_count,
+    int min_common,
+    int n_x,
+    int n_y,
+    int block_size,
+    int block_num,
+    int num_threads=1,
+):
     cdef Py_ssize_t res_count = count_freq(
         indices, indptr, min_common, n_x, n_y, block_size, block_num, num_threads)
 
@@ -364,10 +372,14 @@ cpdef invert_jaccard(const int[:] indices, const int[:] indptr, const float[:] d
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cpdef forward_cosine(const int[:] indices, const int[:] indptr, 
-                     const float[:] data, const float[:] x_norm, 
-                     int min_common, int n_x):
-
+cpdef forward_cosine(
+    const int[:] indices,
+    const int[:] indptr,
+    const float[:] data,
+    const float[:] x_norm,
+    int min_common,
+    int n_x,
+):
     cdef Py_ssize_t x1, x2, y1, y2, i, j, end1, end2, count
     cdef float cos, prods, sqi, sqj
     cdef vector[uint] res_indices, res_indptr
@@ -416,11 +428,15 @@ cpdef forward_cosine(const int[:] indices, const int[:] indptr,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cpdef forward_pearson(const int[:] indices, const int[:] indptr, 
-                      const float[:] data, const float[:] x_mean, 
-                      const float[:] x_mean_centered_norm, 
-                      int min_common, int n_x):
-
+cpdef forward_pearson(
+    const int[:] indices,
+    const int[:] indptr,
+    const float[:] data,
+    const float[:] x_mean,
+    const float[:] x_mean_centered_norm,
+    int min_common,
+    int n_x,
+):
     cdef Py_ssize_t x1, x2, y1, y2, i, j, end1, end2, count
     cdef float pearson, prods, sqi, sqj, smean1, smean2
     cdef vector[uint] res_indices, res_indptr
@@ -471,10 +487,14 @@ cpdef forward_pearson(const int[:] indices, const int[:] indptr,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cpdef forward_jaccard(const int[:] indices, const int[:] indptr, 
-                      const float[:] data, const int[:] x_count, 
-                      int min_common, int n_x):
-
+cpdef forward_jaccard(
+    const int[:] indices,
+    const int[:] indptr,
+    const float[:] data,
+    const int[:] x_count,
+    int min_common,
+    int n_x,
+):
     cdef Py_ssize_t x1, x2, y1, y2, i, j, end1, end2
     cdef float jaccard, intersection, union
     cdef vector[uint] res_indices, res_indptr
@@ -511,4 +531,3 @@ cpdef forward_jaccard(const int[:] indices, const int[:] indptr,
             res_indptr.push_back(res_indices.size())
 
     return res_indices, res_indptr, res_data
-

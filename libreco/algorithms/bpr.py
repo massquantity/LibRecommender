@@ -10,7 +10,7 @@ from ..recommendation import recommend_from_embedding
 from ..tfops import reg_config, sess_config, tf
 from ..training.dispatch import get_trainer
 from ..utils.initializers import truncated_normal
-from ..utils.misc import time_block
+from ..utils.misc import shuffle_data, time_block
 from ..utils.validate import check_fitting
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -299,7 +299,6 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
         if self.optimizer == "sgd":
             trainer = partial(bpr_update)
-
         elif self.optimizer == "momentum":
             user_velocity = np.zeros_like(self.user_embed, dtype=np.float32)
             item_velocity = np.zeros_like(self.item_embed, dtype=np.float32)
@@ -310,42 +309,43 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 i_velocity=item_velocity,
                 momentum=momentum,
             )
-
         elif self.optimizer == "adam":
-            # refer to the `Deep Learning` book,
-            # which is called first and second moment
+            # Refer to the `Deep Learning` book, which is called first and second moment
             user_1st_moment = np.zeros_like(self.user_embed, dtype=np.float32)
             item_1st_moment = np.zeros_like(self.item_embed, dtype=np.float32)
             user_2nd_moment = np.zeros_like(self.user_embed, dtype=np.float32)
             item_2nd_moment = np.zeros_like(self.item_embed, dtype=np.float32)
-            rho1, rho2 = 0.9, 0.999
             trainer = partial(
                 bpr_update,
                 u_1st_mom=user_1st_moment,
                 i_1st_mom=item_1st_moment,
                 u_2nd_mom=user_2nd_moment,
                 i_2nd_mom=item_2nd_moment,
-                rho1=rho1,
-                rho2=rho2,
             )
-
         else:
             raise ValueError(
-                "optimizer must be one of these: ('sgd', 'momentum', 'adam')"
+                "optimizer must be one of these: (`sgd`, `momentum`, `adam`)"
             )
 
         for epoch in range(1, self.n_epochs + 1):
+            user_indices = train_data.user_indices.astype(np.int32)
+            item_indices = train_data.item_indices.astype(np.int32)
+            if shuffle:
+                user_indices, item_indices = shuffle_data(
+                    self.data_info.np_rng, len(user_indices), user_indices, item_indices
+                )
             with time_block(f"Epoch {epoch}", verbose):
                 trainer(
                     optimizer=self.optimizer,
-                    train_data=train_data,
+                    user_indices=user_indices,
+                    item_indices=item_indices,
+                    sparse_interaction=train_data.sparse_interaction,
                     user_embed=self.user_embed,
                     item_embed=self.item_embed,
                     lr=self.lr,
-                    reg=self.reg,
+                    reg=self.reg or 0.0,
                     n_users=self.n_users,
                     n_items=self.n_items,
-                    shuffle=shuffle,
                     num_threads=self.num_threads,
                     seed=self.seed,
                     epoch=epoch,
