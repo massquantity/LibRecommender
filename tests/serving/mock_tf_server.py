@@ -11,7 +11,7 @@ app = Sanic("mock-tf-server")
 async def tf_serving(request: Request, model_name: str) -> HTTPResponse:
     logger.info(f"Mock predictions for {model_name.replace(':predict', '')}")
     n_items = len(request.json["inputs"]["item_indices"])
-    return json({"outputs": np.random.randn(n_items).tolist()})
+    return json({"outputs": np.random.default_rng(42).normal(size=n_items).tolist()})
 
 
 if __name__ == "__main__":

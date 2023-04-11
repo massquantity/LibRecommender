@@ -5,7 +5,7 @@ from libreco.data import DatasetPure, split_by_ratio_chrono
 from libreco.utils.misc import colorize
 
 try:
-    import nmslib
+    import nmslib  # noqa: F401
 
     approximate = True
     print_str = "use `nmslib` for similarity search"

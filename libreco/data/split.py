@@ -175,7 +175,6 @@ def split_by_ratio(
     --------
     split_by_ratio_chrono
     """
-    np.random.seed(seed)
     assert "user" in data.columns, "data must contains user column"
     ratios, n_splits = _check_and_convert_ratio(test_size, multi_ratios)
 
@@ -198,8 +197,9 @@ def split_by_ratio(
                 split_indices_all[i].extend(list(u_split_data[i]))
 
     if shuffle:
+        np_rng = np.random.default_rng(seed)
         split_data_all = tuple(
-            data.iloc[np.random.permutation(idx)] for idx in split_indices_all
+            data.iloc[np_rng.permutation(idx)] for idx in split_indices_all
         )
     else:
         split_data_all = list(data.iloc[idx] for idx in split_indices_all)
@@ -262,7 +262,6 @@ def split_by_num(
     --------
     split_by_num_chrono
     """
-    np.random.seed(seed)
     assert "user" in data.columns, "data must contains user column"
     assert isinstance(test_size, int), "test_size must be int value"
     assert 0 < test_size < len(data), "test_size must be in (0, len(data))"
@@ -287,8 +286,9 @@ def split_by_num(
             test_indices.extend(u_data[-k:])
 
     if shuffle:
-        train_indices = np.random.permutation(train_indices)
-        test_indices = np.random.permutation(test_indices)
+        np_rng = np.random.default_rng(seed)
+        train_indices = np_rng.permutation(train_indices)
+        test_indices = np_rng.permutation(test_indices)
 
     split_data_all = (data.iloc[train_indices], data.iloc[test_indices])
     if filter_unknown:

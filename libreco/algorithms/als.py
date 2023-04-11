@@ -82,12 +82,12 @@ class ALS(EmbedBase):
         self.seed = seed
 
     def build_model(self):
-        np.random.seed(self.seed)
+        np_rng = np.random.default_rng(self.seed)
         self.user_embed = truncated_normal(
-            shape=[self.n_users, self.embed_size], mean=0.0, scale=0.03
+            np_rng, shape=[self.n_users, self.embed_size], mean=0.0, scale=0.03
         )
         self.item_embed = truncated_normal(
-            shape=[self.n_items, self.embed_size], mean=0.0, scale=0.03
+            np_rng, shape=[self.n_items, self.embed_size], mean=0.0, scale=0.03
         )
 
     def fit(

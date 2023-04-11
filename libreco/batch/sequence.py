@@ -3,9 +3,7 @@ import random
 import numpy as np
 
 
-def get_sparse_interacted(
-    user_indices, item_indices, user_consumed, mode=None, num=None
-):
+def get_sparse_interacted(user_indices, item_indices, user_consumed, mode, num, np_rng):
     interacted_indices = []
     interacted_items = []
     for j, (u, i) in enumerate(zip(user_indices, item_indices)):
@@ -22,7 +20,7 @@ def get_sparse_interacted(
             interacted_items.extend(consumed_items[start_index:position])
         elif position >= num and mode == "random":
             interacted_indices.extend([j] * num)
-            chosen_items = np.random.choice(consumed_items, num, replace=False)
+            chosen_items = np_rng.choice(consumed_items, num, replace=False)
             interacted_items.extend(chosen_items.tolist())
 
     interacted_indices = np.asarray(interacted_indices).reshape(-1, 1)
