@@ -5,7 +5,7 @@ From `pypi <https://pypi.org/project/LibRecommender/>`_ :
 
 .. code-block:: bash
 
-    $ pip install LibRecommender
+    $ pip install -U LibRecommender
 
 Build from source:
 

@@ -70,7 +70,8 @@ that doesn't appear in training data, e.g. "sex" -> "bisexual", then it will be 
 
 To make recommendation for a user based on dynamic features, pass the user features to the ``user_feats`` argument and the user's
 item sequence to the ``seq`` argument. Only ``feat`` models support the assignment of user features,
-and the models support sequence recommendations are ``RNN4Rec``, ``Caser``, ``WaveNet``, ``YouTubeRanking`` and ``DIN``.
+and the models support sequence recommendations are ``RNN4Rec``, ``Caser``, ``WaveNet``,
+``YouTubeRetrieval``, ``YouTubeRanking`` and ``DIN``.
 
 .. code-block:: python3
 
