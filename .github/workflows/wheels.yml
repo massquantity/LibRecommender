@@ -14,7 +14,7 @@ on:
           - "no"
 
 jobs:
-  # Build the wheels for Linux, Windows and macOS for Python 3.6 and newer
+  # Build wheels on Linux, Windows and macOS for Python 3.6+
   build_wheels:
     name: Build wheel for cp${{ matrix.python }}-${{ matrix.platform_id }}
     runs-on: ${{ matrix.os }}
@@ -45,6 +45,10 @@ jobs:
             python: 310
             bitness: 64
             platform_id: win_amd64
+          - os: windows-latest
+            python: 311
+            bitness: 64
+            platform_id: win_amd64
 
           # Linux 64 bit manylinux2014
           - os: ubuntu-20.04
@@ -72,6 +76,11 @@ jobs:
             bitness: 64
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
+          - os: ubuntu-20.04
+            python: 311
+            bitness: 64
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
 
           # MacOS x86_64
           - os: macos-latest
@@ -93,6 +102,10 @@ jobs:
           - os: macos-latest
             bitness: 64
             python: 310
+            platform_id: macosx_x86_64
+          - os: macos-latest
+            bitness: 64
+            python: 311
             platform_id: macosx_x86_64
 
     steps:
