@@ -77,8 +77,8 @@ def multi_sparse_alone(
 
 def get_feed_dict(
     model,
-    user_indices,
-    item_indices,
+    user_indices=None,
+    item_indices=None,
     labels=None,
     sparse_indices=None,
     dense_values=None,
@@ -86,14 +86,18 @@ def get_feed_dict(
     user_interacted_len=None,
     is_training=False,
 ):
-    feed_dict = {model.user_indices: user_indices, model.item_indices: item_indices}
-    if labels is not None:
+    feed_dict = dict()
+    if hasattr(model, "user_indices") and user_indices is not None:
+        feed_dict.update({model.user_indices: user_indices})
+    if hasattr(model, "item_indices") and item_indices is not None:
+        feed_dict.update({model.item_indices: item_indices})
+    if hasattr(model, "labels") and labels is not None:
         feed_dict.update({model.labels: labels})
     if hasattr(model, "is_training"):
         feed_dict.update({model.is_training: is_training})
-    if hasattr(model, "sparse") and model.sparse:
+    if hasattr(model, "sparse") and model.sparse and sparse_indices is not None:
         feed_dict.update({model.sparse_indices: sparse_indices})
-    if hasattr(model, "dense") and model.dense:
+    if hasattr(model, "dense") and model.dense and dense_values is not None:
         feed_dict.update({model.dense_values: dense_values})
     if model.model_category == "sequence":
         feed_dict.update(
@@ -102,4 +106,27 @@ def get_feed_dict(
                 model.user_interacted_len: user_interacted_len,
             }
         )
+    return feed_dict
+
+
+def get_sparse_feed_dict(
+    model,
+    sparse_tensor_indices,
+    sparse_tensor_values,
+    user_ids,
+    batch_size=1,
+    is_training=False,
+):
+    feed_dict = {
+        model.item_interaction_indices: sparse_tensor_indices,
+        model.item_interaction_values: sparse_tensor_values,
+        model.modified_batch_size: batch_size,
+        model.is_training: is_training,
+    }
+    if hasattr(model, "sparse") and model.sparse:
+        sparse_indices = model.data_info.user_sparse_unique[user_ids]
+        feed_dict.update({model.sparse_indices: sparse_indices})
+    if hasattr(model, "dense") and model.dense:
+        dense_values = model.data_info.user_dense_unique[user_ids]
+        feed_dict.update({model.dense_values: dense_values})
     return feed_dict

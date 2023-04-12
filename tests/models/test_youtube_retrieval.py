@@ -2,12 +2,13 @@ import sys
 
 import pytest
 import tensorflow as tf
+from numpy.testing import assert_array_equal
 
 from libreco.algorithms import YouTubeRetrieval
 from tests.utils_data import SAVE_PATH, remove_path, set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
-from tests.utils_reco import ptest_recommends
+from tests.utils_reco import ptest_recommends, ptest_seq_recommends
 from tests.utils_save_load import save_load_model
 
 
@@ -134,6 +135,7 @@ def test_youtube_retrieval(
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)
+        seq_rec = ptest_seq_recommends(model, pd_data)
 
         # test save and load model
         loaded_model, loaded_data_info = save_load_model(
@@ -141,6 +143,8 @@ def test_youtube_retrieval(
         )
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
         ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
+        loaded_seq_rec = ptest_seq_recommends(loaded_model, pd_data)
+        assert_array_equal(seq_rec, loaded_seq_rec)
 
         remove_path(SAVE_PATH)
 
@@ -187,10 +191,13 @@ def test_youtube_retrieval_multi_sparse(config_feat_data_small):
     )
     ptest_preds(model, task, pd_data, with_feats=False)
     ptest_recommends(model, data_info, pd_data, with_feats=False)
+    seq_rec = ptest_seq_recommends(model, pd_data)
 
     # test save and load model
     loaded_model, loaded_data_info = save_load_model(YouTubeRetrieval, model, data_info)
     ptest_preds(loaded_model, task, pd_data, with_feats=False)
     ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
+    loaded_seq_rec = ptest_seq_recommends(loaded_model, pd_data)
+    assert_array_equal(seq_rec, loaded_seq_rec)
 
     remove_path(SAVE_PATH)

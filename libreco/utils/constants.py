@@ -102,6 +102,7 @@ EMBEDDING_MODELS = (
 )
 
 SEQUENCE_RECOMMEND_MODELS = (
+    "YouTubeRetrieval",
     "YouTubeRanking",
     "DIN",
     "RNN4Rec",

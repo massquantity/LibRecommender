@@ -1,4 +1,6 @@
 """Implementation of YouTubeRetrieval."""
+import os
+
 import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
@@ -13,6 +15,7 @@ from ..tfops import (
 )
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
+from ..utils.save_load import load_tf_variables
 from ..utils.validate import (
     check_dense_values,
     check_multi_sparse,
@@ -131,6 +134,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         if len(data_info.item_col) > 0:
             raise ValueError("The `YouTuBeRetrieval` model assumes no item features.")
         self.all_args = locals()
+        self.sess = sess_config(tf_sess_config)
         self.loss_type = loss_type
         self.n_epochs = n_epochs
         self.lr = lr
@@ -144,7 +148,6 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.num_sampled_per_batch = num_sampled_per_batch
         self.sampler = sampler
         self.seed = seed
-        self.sess = sess_config(tf_sess_config)
         self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
         self.recent_seq_indices, self.recent_seq_values = self._set_recent_seqs()
         self.sparse = check_sparse_indices(data_info)
@@ -176,7 +179,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             self._build_dense()
 
         concat_features = tf.concat(self.concat_embed, axis=1)
-        self.user_vector_repr = dense_nn(
+        self.user_vector = dense_nn(
             concat_features,
             self.hidden_units,
             use_bn=self.use_bn,
@@ -187,7 +190,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
     def _build_item_interaction(self):
         self.item_interaction_indices = tf.placeholder(tf.int64, shape=[None, 2])
-        self.item_interaction_values = tf.placeholder(tf.int32, shape=[None])
+        self.item_interaction_values = tf.placeholder(tf.int64, shape=[None])
         # `batch_size` may change during training, especially first item in sequence
         self.modified_batch_size = tf.placeholder(tf.int32, shape=[])
 
@@ -299,7 +302,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         indices = np.concatenate(
             [interacted_indices, np.zeros_like(interacted_indices)], axis=1
         )
-        return indices, interacted_items
+        return indices, np.array(interacted_items, dtype=np.int64)
 
     def set_embeddings(self):
         feed_dict = {
@@ -309,14 +312,13 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             self.is_training: False,
         }
         if self.sparse:
-            # remove oov
             user_sparse_indices = self.data_info.user_sparse_unique[:-1]
             feed_dict.update({self.sparse_indices: user_sparse_indices})
         if self.dense:
             user_dense_values = self.data_info.user_dense_unique[:-1]
             feed_dict.update({self.dense_values: user_dense_values})
 
-        user_vector = self.sess.run(self.user_vector_repr, feed_dict)
+        user_vector = self.sess.run(self.user_vector, feed_dict)
         item_weights = self.sess.run(self.nce_weights)
         item_biases = self.sess.run(self.nce_biases)
 
@@ -324,3 +326,21 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         item_bias = item_biases[:, None]
         self.user_embed = np.hstack([user_vector, user_bias])
         self.item_embed = np.hstack([item_weights, item_bias])
+
+    def save(self, path, model_name, inference_only=False, **_):
+        super().save(path, model_name, inference_only=False)
+        if inference_only:
+            embed_path = os.path.join(path, model_name)
+            np.savez_compressed(
+                file=embed_path,
+                user_embed=self.user_embed,
+                item_embed=self.item_embed,
+            )
+
+    @classmethod
+    def load(cls, path, model_name, data_info, **kwargs):
+        model = load_tf_variables(cls, path, model_name, data_info)
+        embeddings = np.load(os.path.join(path, f"{model_name}.npz"))
+        model.user_embed = embeddings["user_embed"]
+        model.item_embed = embeddings["item_embed"]
+        return model
