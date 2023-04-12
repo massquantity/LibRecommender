@@ -15,11 +15,11 @@ engineering -> training -> evaluate -> save/load -> retrain**. We will
 use `Wide & Deep <https://arxiv.org/pdf/1606.07792.pdf>`__ as the
 example algorithm.
 
-First make sure LibRecommender is installed.
+First make sure the latest LibRecommender has been installed:
 
 .. code-block:: bash
 
-    $ pip install LibRecommender
+    $ pip install -U LibRecommender
 
 .. admonition:: Serving
     :class: Note
