@@ -1,5 +1,9 @@
 from .configs import dropout_config, lr_decay_config, reg_config, sess_config
-from .features import get_feed_dict, multi_sparse_combine_embedding
+from .features import (
+    get_feed_dict,
+    get_sparse_feed_dict,
+    multi_sparse_combine_embedding,
+)
 from .layers import conv_nn, dense_nn, max_pool, tf_dense, tf_rnn
 from .loss import choose_tf_loss
 from .rebuild import rebuild_tf_model
@@ -12,6 +16,7 @@ __all__ = [
     "reg_config",
     "sess_config",
     "get_feed_dict",
+    "get_sparse_feed_dict",
     "multi_sparse_combine_embedding",
     "dense_nn",
     "conv_nn",

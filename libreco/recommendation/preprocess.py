@@ -1,17 +1,31 @@
 import numpy as np
 
 from ..prediction.preprocess import get_cached_seqs, set_temp_feats
-from ..tfops import get_feed_dict
+from ..tfops import get_feed_dict, get_sparse_feed_dict
 
 
 def embed_from_seq(model, user_ids, seq, inner_id):
-    seq, seq_len = build_rec_seq(seq, model, inner_id)
-    feed_dict = {
-        model.user_interacted_seq: seq,
-        model.user_interacted_len: seq_len,
-    }
-    if hasattr(model, "user_indices"):
-        feed_dict[model.user_indices] = np.array(user_ids, dtype=np.int32)
+    if model.model_name == "YouTubeRetrieval":
+        sparse_tensor_indices, sparse_tensor_values = build_sparse_seq(
+            seq, model, inner_id
+        )
+        feed_dict = get_sparse_feed_dict(
+            model=model,
+            sparse_tensor_indices=sparse_tensor_indices,
+            sparse_tensor_values=sparse_tensor_values,
+            user_ids=user_ids,
+            batch_size=1,
+            is_training=False,
+        )
+    else:
+        seq, seq_len = build_rec_seq(seq, model, inner_id)
+        feed_dict = get_feed_dict(
+            model=model,
+            user_indices=np.array(user_ids, dtype=np.int32),
+            user_interacted_seq=seq,
+            user_interacted_len=seq_len,
+            is_training=False,
+        )
     embed = model.sess.run(model.user_vector, feed_dict)
     # embed = embed / np.linalg.norm(embed, axis=1, keepdims=True)
     bias = np.ones([1, 1], dtype=embed.dtype)
@@ -19,17 +33,23 @@ def embed_from_seq(model, user_ids, seq, inner_id):
 
 
 def build_rec_seq(seq, model, inner_id, repeat=False):
-    assert isinstance(seq, (list, np.ndarray)), "`seq` must be list or numpy.ndarray."
-    if not inner_id:
-        seq = [model.data_info.item2id.get(i, model.n_items) for i in seq]
+    seq, seq_len = _extract_seq(seq, model, inner_id)
     recent_seq = np.full((1, model.max_seq_len), model.n_items, dtype=np.int32)
-    seq_len = min(model.max_seq_len, len(seq))
     recent_seq[0, -seq_len:] = seq[-seq_len:]
     seq_len = np.array([seq_len], dtype=np.float32)
     if repeat:
         recent_seq = np.repeat(recent_seq, model.n_items, axis=0)
         seq_len = np.repeat(seq_len, model.n_items)
     return recent_seq, seq_len
+
+
+def build_sparse_seq(seq, model, inner_id):
+    seq, seq_len = _extract_seq(seq, model, inner_id)
+    sparse_tensor_indices = np.zeros((seq_len, 2), dtype=np.int64)
+    # -1 will be pruned in `tf.nn.safe_embedding_lookup_sparse`
+    seq = [i if i < model.n_items else -1 for i in seq[-seq_len:]]
+    sparse_tensor_values = np.array(seq, dtype=np.int64)
+    return sparse_tensor_indices, sparse_tensor_values
 
 
 def process_tf_feat(model, user_ids, user_feats, seq, inner_id):
@@ -111,3 +131,11 @@ def _extract_feats(user, n_items, user_col, item_col, user_unique, item_unique):
         features = np.concatenate([user_feats, item_feats], axis=1)
         return features[:, col_reindex]
     return user_feats if user_col else item_feats
+
+
+def _extract_seq(seq, model, inner_id):
+    assert isinstance(seq, (list, np.ndarray)), "`seq` must be list or numpy.ndarray."
+    if not inner_id:
+        seq = [model.data_info.item2id.get(i, model.n_items) for i in seq]
+    seq_len = min(model.max_seq_len, len(seq))
+    return seq, seq_len
