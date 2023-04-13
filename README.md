@@ -174,7 +174,7 @@ The example scripts are under [examples/](https://github.com/massquantity/LibRec
 From pypi : &nbsp;
 
 ```shell
-$ pip install LibRecommender
+$ pip install -U LibRecommender
 ```
 
 Build from source:
@@ -202,19 +202,20 @@ $ pip install .
 
 If you are using Python 3.6, you also need to install [dataclasses](https://github.com/ericvsmith/dataclasses), which was first introduced in Python 3.7.
 
-LibRecommender is tested under TensorFlow 1.15, 2.5, 2.8 and 2.10. If you encounter any problem during running, feel free to open an issue.
+LibRecommender has been tested under TensorFlow 1.15, 2.6, 2.10 and 2.12. If you encounter any problem during running, feel free to open an issue.
 
 **Known issue**: Sometimes one may encounter errors like `ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject`. In this case try upgrading numpy, and version 1.22.0 or higher is probably a safe option.
 
 The table below shows some compatible version combinations: 
 
-| Python |     Numpy      |      TensorFlow      |          OS           |
-|:------:|:--------------:|:--------------------:|:---------------------:|
-|  3.6   |     1.19.5     |      1.15, 2.5       | linux, windows, macos |
-|  3.7   | 1.20.3, 1.21.6 | 1.15, 2.5, 2.8, 2.10 | linux, windows, macos |
-|  3.8   | 1.22.4, 1.23.2 |    2.5, 2.8, 2.10    | linux, windows, macos |
-|  3.9   | 1.22.4, 1.23.2 |    2.5, 2.8, 2.10    | linux, windows, macos |
-|  3.10  | 1.22.4, 1.23.2 |      2.8, 2.10       | linux, windows, macos |
+| Python |         Numpy          |   TensorFlow    |          OS           |
+| :----: | :--------------------: | :-------------: | :-------------------: |
+|  3.6   |         1.19.5         |    1.15, 2.5    | linux, windows, macos |
+|  3.7   |     1.20.3, 1.21.6     | 1.15, 2.6, 2.10 | linux, windows, macos |
+|  3.8   |     1.22.4, 1.23.4     | 2.6, 2.10, 2.12 | linux, windows, macos |
+|  3.9   |     1.22.4, 1.23.4     | 2.6, 2.10, 2.12 | linux, windows, macos |
+|  3.10  | 1.22.4, 1.23.4, 1.24.2 |   2.10, 2.12    | linux, windows, macos |
+|  3.11  |     1.23.4, 1.24.2     |      2.12       | linux, windows, macos |
 
 
 #### Optional Dependencies for [`libserving`](https://github.com/massquantity/LibRecommender/tree/master/libserving):
