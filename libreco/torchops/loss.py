@@ -66,8 +66,8 @@ def _check_dim(tensor):  # pragma: no cover
 
 def compute_pair_scores(targets, items_pos, items_neg, repeat_positives=True):
     if len(targets) == len(items_pos) == len(items_neg):
-        pos_scores = torch.sum(torch.mul(targets, items_pos), dim=1)
-        neg_scores = torch.sum(torch.mul(targets, items_neg), dim=1)
+        pos_scores = (targets * items_pos).sum(1)
+        neg_scores = (targets * items_neg).sum(1)
         return pos_scores, neg_scores
 
     if len(targets) != len(items_pos):
@@ -82,12 +82,9 @@ def compute_pair_scores(targets, items_pos, items_neg, repeat_positives=True):
             f"got {neg_len} and {pos_len}"
         )
     factor = int(neg_len / pos_len)
-    embed_size = items_pos.shape[1]
-    targets_neg = targets.unsqueeze(1)
-    items_neg = items_neg.view(pos_len, factor, embed_size)
-    pos_scores = torch.sum(torch.mul(targets, items_pos), dim=1)
+    pos_scores = torch.einsum('ij,ij->i', targets, items_pos)
     if repeat_positives:
         pos_scores = pos_scores.repeat_interleave(factor)
-    neg_scores = torch.mul(targets_neg, items_neg).view(-1, embed_size)
-    neg_scores = torch.sum(neg_scores, dim=1)
+    items_neg = items_neg.view(pos_len, factor, -1)
+    neg_scores = torch.einsum("i...k,ijk->ij", targets, items_neg).ravel()
     return pos_scores, neg_scores
