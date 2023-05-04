@@ -2,6 +2,7 @@
 import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
+from ..embedding import normalize_embeds
 from ..tfops import reg_config, sess_config, tf
 
 
@@ -68,6 +69,7 @@ class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         data_info,
         loss_type="cross_entropy",
         embed_size=16,
+        norm_embed=False,
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
@@ -85,6 +87,7 @@ class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.all_args = locals()
         self.sess = sess_config(tf_sess_config)
         self.loss_type = loss_type
+        self.norm_embed = norm_embed
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
@@ -129,6 +132,10 @@ class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         bias_item = tf.nn.embedding_lookup(self.bi_var, self.item_indices)
         embed_user = tf.nn.embedding_lookup(self.pu_var, self.user_indices)
         embed_item = tf.nn.embedding_lookup(self.qi_var, self.item_indices)
+        if self.norm_embed:
+            embed_user, embed_item = normalize_embeds(
+                embed_user, embed_item, backend="tf"
+            )
         self.output = (
             bias_user
             + bias_item
@@ -143,5 +150,7 @@ class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         user_bias[:, 0] = bu
         item_bias = np.ones([len(qi), 2], dtype=qi.dtype)
         item_bias[:, 1] = bi
+        if self.norm_embed:
+            pu, qi = normalize_embeds(pu, qi, backend="np")
         self.user_embed = np.hstack([pu, user_bias])
         self.item_embed = np.hstack([qi, item_bias])

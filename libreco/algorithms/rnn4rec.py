@@ -1,5 +1,6 @@
 """Implementation of RNN4Rec model."""
 from ..bases import ModelMeta, SeqEmbedBase
+from ..embedding import normalize_embeds
 from ..tfops import dropout_config, reg_config, tf, tf_dense, tf_rnn
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
@@ -88,6 +89,7 @@ class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         loss_type="cross_entropy",
         rnn_type="gru",
         embed_size=16,
+        norm_embed=False,
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
@@ -109,6 +111,7 @@ class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             task,
             data_info,
             embed_size,
+            norm_embed,
             recent_num,
             random_num,
             lower_upper_bound,
@@ -148,8 +151,9 @@ class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         if self.task == "rating" or self.loss_type in ("cross_entropy", "focal"):
             self.user_indices = tf.placeholder(tf.int32, shape=[None])
             self.item_indices = tf.placeholder(tf.int32, shape=[None])
-
             item_vector = tf.nn.embedding_lookup(self.item_weights, self.item_indices)
+            if self.norm_embed:
+                item_vector = normalize_embeds(item_vector, backend="tf")
             item_bias = tf.nn.embedding_lookup(self.item_biases, self.item_indices)
             self.output = (
                 tf.reduce_sum(tf.multiply(self.user_vector, item_vector), axis=1)
@@ -164,6 +168,10 @@ class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             item_embed_neg = tf.nn.embedding_lookup(
                 self.item_weights, self.item_indices_neg
             )
+            if self.norm_embed:
+                item_embed_pos, item_embed_neg = normalize_embeds(
+                    item_embed_pos, item_embed_neg, backend="tf"
+                )
             item_bias_pos = tf.nn.embedding_lookup(
                 self.item_biases, self.item_indices_pos
             )
@@ -222,4 +230,9 @@ class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             use_ln=self.use_ln,
             is_training=self.is_training,
         )
-        self.user_vector = tf_dense(units=self.embed_size, activation=None)(rnn_output)
+        user_vector = tf_dense(units=self.embed_size, activation=None)(rnn_output)
+        self.user_vector = (
+            normalize_embeds(user_vector, backend="tf")
+            if self.norm_embed
+            else user_vector
+        )

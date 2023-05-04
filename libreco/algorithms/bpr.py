@@ -5,6 +5,7 @@ from functools import partial
 import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
+from ..embedding import normalize_embeds
 from ..evaluation import print_metrics
 from ..recommendation import recommend_from_embedding
 from ..tfops import reg_config, sess_config, tf
@@ -93,6 +94,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         data_info=None,
         loss_type="bpr",
         embed_size=16,
+        norm_embed=False,
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
@@ -114,6 +116,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         assert loss_type == "bpr", "BPR should use bpr loss"
         self.all_args = locals()
         self.loss_type = loss_type
+        self.norm_embed = norm_embed
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
@@ -184,6 +187,11 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         embed_item_neg = tf.nn.embedding_lookup(
             self.item_embed_var, self.item_indices_neg
         )
+        if self.norm_embed:
+            embed_user, embed_item_pos, embed_item_neg = normalize_embeds(
+                embed_user, embed_item_pos, embed_item_neg, backend="tf"
+            )
+
         bias_item_pos = tf.nn.embedding_lookup(
             self.item_bias_var, self.item_indices_pos
         )
@@ -377,5 +385,9 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         # to be compatible with cython version, bias is concatenated with embedding
         user_bias = np.ones([len(user_embed), 1], dtype=user_embed.dtype)
         item_bias = item_bias[:, None]
+        if self.norm_embed:
+            user_embed, item_embed = normalize_embeds(
+                user_embed, item_embed, backend="np"
+            )
         self.user_embed = np.hstack([user_embed, user_bias])
         self.item_embed = np.hstack([item_embed, item_bias])

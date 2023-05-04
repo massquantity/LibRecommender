@@ -1,5 +1,6 @@
 """Implementation of Caser."""
 from ..bases import ModelMeta, SeqEmbedBase
+from ..embedding import normalize_embeds
 from ..tfops import conv_nn, dropout_config, max_pool, reg_config, tf, tf_dense
 from ..utils.misc import count_params
 
@@ -80,6 +81,7 @@ class Caser(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         data_info=None,
         loss_type="cross_entropy",
         embed_size=16,
+        norm_embed=False,
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
@@ -102,6 +104,7 @@ class Caser(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             task,
             data_info,
             embed_size,
+            norm_embed,
             recent_num,
             random_num,
             lower_upper_bound,
@@ -130,6 +133,8 @@ class Caser(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self._build_user_embeddings()
 
         item_vector = tf.nn.embedding_lookup(self.item_weights, self.item_indices)
+        if self.norm_embed:
+            item_vector = normalize_embeds(item_vector, backend="tf")
         item_bias = tf.nn.embedding_lookup(self.item_biases, self.item_indices)
         self.output = (
             tf.reduce_sum(tf.multiply(self.user_vector, item_vector), axis=1)
@@ -219,4 +224,9 @@ class Caser(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
         convs_out = tf.concat(convs_out, axis=1)
         convs_out = tf_dense(units=self.embed_size, activation=tf.nn.relu)(convs_out)
-        self.user_vector = tf.concat([user_repr, convs_out], axis=1)
+        user_vector = tf.concat([user_repr, convs_out], axis=1)
+        self.user_vector = (
+            normalize_embeds(user_vector, backend="tf")
+            if self.norm_embed
+            else user_vector
+        )
