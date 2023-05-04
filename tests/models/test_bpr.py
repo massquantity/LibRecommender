@@ -24,14 +24,14 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "reg, num_neg, use_tf, optimizer, num_workers",
+    "norm_embed, reg, num_neg, use_tf, optimizer, num_workers",
     [
-        (None, 1, False, "unknown", 0),
-        (None, 1, True, "sgd", 0),
-        (0.003, 3, True, "sgd", 2),
-        (0.001, 3, False, "sgd", 0),
-        (None, 1, False, "momentum", 0),
-        (0.001, 3, False, "adam", 0),
+        (True, None, 1, False, "unknown", 0),
+        (True, None, 1, True, "sgd", 0),
+        (False, 0.003, 3, True, "sgd", 2),
+        (False, 0.001, 3, False, "sgd", 0),
+        (False, None, 1, False, "momentum", 0),
+        (False, 0.001, 3, False, "adam", 0),
     ],
 )
 def test_bpr(
@@ -40,6 +40,7 @@ def test_bpr(
     loss_type,
     sampler,
     neg_sampling,
+    norm_embed,
     reg,
     num_neg,
     use_tf,
@@ -64,6 +65,7 @@ def test_bpr(
             task=task,
             data_info=data_info,
             embed_size=16,
+            norm_embed=norm_embed,
             n_epochs=2,
             lr=1e-4,
             reg=reg,

@@ -27,11 +27,11 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "lr_decay, reg, num_neg, dropout_rate, use_bn, "
+    "norm_embed, lr_decay, reg, num_neg, dropout_rate, use_bn, "
     "n_filters, n_blocks, n_layers_per_block, recent_num, num_workers",
     [
-        (False, None, 1, None, False, 16, 1, 4, 10, 0),
-        (True, 0.001, 3, 0.5, True, 32, 4, 2, 6, 2),
+        (True, False, None, 1, None, False, 16, 1, 4, 10, 0),
+        (False, True, 0.001, 3, 0.5, True, 32, 4, 2, 6, 2),
     ],
 )
 def test_wave_net(
@@ -40,6 +40,7 @@ def test_wave_net(
     loss_type,
     sampler,
     neg_sampling,
+    norm_embed,
     lr_decay,
     reg,
     num_neg,
@@ -79,6 +80,7 @@ def test_wave_net(
             data_info=data_info,
             loss_type=loss_type,
             embed_size=4,
+            norm_embed=norm_embed,
             n_epochs=1,
             lr=1e-4,
             lr_decay=lr_decay,

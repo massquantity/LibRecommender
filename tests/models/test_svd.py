@@ -25,9 +25,19 @@ from tests.utils_save_load import save_load_model
         ("ranking", "unknown", "popular", True),
     ],
 )
-@pytest.mark.parametrize("reg, num_neg, num_workers", [(None, 1, 0), (0.001, 3, 2)])
+@pytest.mark.parametrize(
+    "norm_embed, reg, num_neg, num_workers", [(True, None, 1, 0), (False, 0.001, 3, 2)]
+)
 def test_svd(
-    pure_data_small, task, loss_type, sampler, neg_sampling, reg, num_neg, num_workers
+    pure_data_small,
+    task,
+    loss_type,
+    sampler,
+    neg_sampling,
+    norm_embed,
+    reg,
+    num_neg,
+    num_workers,
 ):
     if not sys.platform.startswith("linux") and num_workers > 0:
         pytest.skip(
@@ -57,6 +67,7 @@ def test_svd(
             data_info=data_info,
             loss_type=loss_type,
             embed_size=16,
+            norm_embed=norm_embed,
             n_epochs=2,
             lr=1e-4,
             reg=reg,

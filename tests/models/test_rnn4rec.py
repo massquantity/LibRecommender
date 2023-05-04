@@ -28,11 +28,11 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "rnn_type, lr_decay, reg, num_neg, dropout_rate, "
+    "norm_embed, rnn_type, lr_decay, reg, num_neg, dropout_rate, "
     "hidden_units, use_layer_norm, recent_num, num_workers",
     [
-        ("lstm", False, None, 1, None, 1, False, 10, 0),
-        ("gru", True, 0.001, 3, 0.5, (32, 16), True, 6, 2),
+        (True, "lstm", False, None, 1, None, 1, False, 10, 0),
+        (False, "gru", True, 0.001, 3, 0.5, (32, 16), True, 6, 2),
     ],
 )
 def test_rnn4rec(
@@ -41,6 +41,7 @@ def test_rnn4rec(
     loss_type,
     sampler,
     neg_sampling,
+    norm_embed,
     rnn_type,
     lr_decay,
     reg,
@@ -80,6 +81,7 @@ def test_rnn4rec(
             rnn_type=rnn_type,
             loss_type=loss_type,
             embed_size=4,
+            norm_embed=norm_embed,
             n_epochs=1,
             lr=1e-4,
             lr_decay=lr_decay,
