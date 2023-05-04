@@ -55,7 +55,7 @@ class DeepWalk(GensimBase):
         n_walks=10,
         walk_length=10,
         window_size=5,
-        n_epochs=5,
+        n_epochs=10,
         n_threads=0,
         seed=42,
         lower_upper_bound=None,
