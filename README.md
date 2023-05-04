@@ -9,7 +9,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v1.json)](https://github.com/charliermarsh/ruff)
 [![Documentation Status](https://readthedocs.org/projects/librecommender/badge/?version=latest)](https://librecommender.readthedocs.io/en/latest/?badge=latest)
-![visitors](https://visitor-badge.glitch.me/badge?page_id=massquantity.LibRecommender&right_color=rgb(91,194,231))
+[![python versions](https://img.shields.io/pypi/pyversions/LibRecommender?logo=python&logoColor=ffffba)](https://pypi.org/project/LibRecommender/)
 [![License](https://img.shields.io/github/license/massquantity/LibRecommender?color=ff69b4)](https://github.com/massquantity/LibRecommender/blob/master/LICENSE)
 
 
@@ -209,7 +209,7 @@ LibRecommender has been tested under TensorFlow 1.15, 2.6, 2.10 and 2.12. If you
 The table below shows some compatible version combinations: 
 
 | Python |         Numpy          |   TensorFlow    |          OS           |
-| :----: | :--------------------: | :-------------: | :-------------------: |
+|:------:|:----------------------:|:---------------:|:---------------------:|
 |  3.6   |         1.19.5         |    1.15, 2.5    | linux, windows, macos |
 |  3.7   |     1.20.3, 1.21.6     | 1.15, 2.6, 2.10 | linux, windows, macos |
 |  3.8   |     1.22.4, 1.23.4     | 2.6, 2.10, 2.12 | linux, windows, macos |
