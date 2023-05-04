@@ -53,13 +53,13 @@ from tests.utils_save_load import save_load_model
 )
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize(
-    "lr_decay, reg, use_bn, dropout_rate, recent_num, random_num, hidden_units, num_workers",
+    "norm_embed, lr_decay, reg, use_bn, dropout_rate, recent_num, random_num, hidden_units, num_workers",
     [
-        (False, None, False, None, 10, None, 1, 0),
-        (True, 0.001, True, 0.5, None, 10, [16, 16], 1),
-        (True, 0.001, False, None, None, None, (4, 4, 4), 2),
-        (False, None, False, None, 10, None, "64,64", 0),
-        (True, 0.001, True, 0.5, None, 10, [1, 2, 4.22], 0),
+        (True, False, None, False, None, 10, None, 1, 0),
+        (False, True, 0.001, True, 0.5, None, 10, [16, 16], 1),
+        (True, True, 0.001, False, None, None, None, (4, 4, 4), 2),
+        (False, False, None, False, None, 10, None, "64,64", 0),
+        (False, True, 0.001, True, 0.5, None, 10, [1, 2, 4.22], 0),
     ],
 )
 @pytest.mark.parametrize("num_sampled_per_batch", [None, 1, 10])
@@ -68,6 +68,7 @@ from tests.utils_save_load import save_load_model
 def test_youtube_retrieval(
     config_feat_data_small,
     task,
+    norm_embed,
     lr_decay,
     reg,
     use_bn,
@@ -110,6 +111,7 @@ def test_youtube_retrieval(
             data_info=data_info,
             loss_type=loss_type,
             embed_size=4,
+            norm_embed=norm_embed,
             n_epochs=1,
             lr=1e-4,
             lr_decay=lr_decay,

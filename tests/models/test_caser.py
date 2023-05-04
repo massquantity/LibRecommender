@@ -27,11 +27,11 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "lr_decay, reg, num_neg, use_bn, dropout_rate, "
+    "norm_embed, lr_decay, reg, num_neg, use_bn, dropout_rate, "
     "nh_filters, nv_filters, random_num, num_workers",
     [
-        (False, None, 1, False, None, 2, 4, 10, 0),
-        (True, 0.001, 3, True, 0.5, 4, 8, None, 2),
+        (True, False, None, 1, False, None, 2, 4, 10, 0),
+        (False, True, 0.001, 3, True, 0.5, 4, 8, None, 2),
     ],
 )
 def test_caser(
@@ -40,6 +40,7 @@ def test_caser(
     loss_type,
     sampler,
     neg_sampling,
+    norm_embed,
     lr_decay,
     reg,
     num_neg,
@@ -78,6 +79,7 @@ def test_caser(
             data_info=data_info,
             loss_type=loss_type,
             embed_size=4,
+            norm_embed=norm_embed,
             n_epochs=1,
             lr=1e-4,
             lr_decay=lr_decay,

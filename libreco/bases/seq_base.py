@@ -4,6 +4,7 @@ import numpy as np
 
 from .embed_base import EmbedBase
 from ..batch.sequence import get_user_last_interacted
+from ..embedding import normalize_embeds
 from ..tfops import sess_config
 from ..utils.save_load import load_tf_variables
 from ..utils.validate import check_seq_mode
@@ -21,6 +22,7 @@ class SeqEmbedBase(EmbedBase):
         task,
         data_info,
         embed_size,
+        norm_embed,
         recent_num,
         random_num,
         lower_upper_bound=None,
@@ -28,6 +30,7 @@ class SeqEmbedBase(EmbedBase):
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
         self.sess = sess_config(tf_sess_config)
+        self.norm_embed = norm_embed
         self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
         self.recent_seqs, self.recent_seq_lens = self._set_recent_seqs()
         self.user_interacted_seq = None
@@ -55,6 +58,8 @@ class SeqEmbedBase(EmbedBase):
         user_vector = self.sess.run(self.user_vector, feed_dict)
         item_weights = self.sess.run(self.item_weights)
         item_biases = self.sess.run(self.item_biases)
+        if self.norm_embed:
+            item_weights = normalize_embeds(item_weights, backend="np")
 
         user_bias = np.ones([len(user_vector), 1], dtype=user_vector.dtype)
         item_bias = item_biases[:, None]

@@ -96,7 +96,10 @@ class GensimBase(EmbedBase):
 
     def set_embeddings(self):
         self.item_embed = np.array(
-            [self.gensim_model.wv.get_vector(str(i)) for i in range(self.n_items)]
+            [
+                self.gensim_model.wv.get_vector(str(i), norm=self.norm_embed)
+                for i in range(self.n_items)
+            ]
         )
         user_embed = []
         for u in range(self.n_users):
@@ -105,13 +108,13 @@ class GensimBase(EmbedBase):
             # user_embed.append(self.item_embed[items[-1]])
         self.user_embed = np.array(user_embed)
 
-        if self.norm_embed:
-            user_norms = np.linalg.norm(self.user_embed, axis=1, keepdims=True)
-            user_norms[user_norms == 0] = 1.0
-            self.user_embed /= user_norms
-            item_norms = np.linalg.norm(self.item_embed, axis=1, keepdims=True)
-            item_norms[item_norms == 0] = 1.0
-            self.item_embed /= item_norms
+        # if self.norm_embed:
+        #    user_norms = np.linalg.norm(self.user_embed, axis=1, keepdims=True)
+        #    user_norms[user_norms == 0] = 1.0
+        #    self.user_embed /= user_norms  # u = u / norm
+        #    item_norms = np.linalg.norm(self.item_embed, axis=1, keepdims=True)
+        #    item_norms[item_norms == 0] = 1.0
+        #    self.item_embed /= item_norms
 
     def save(self, path, model_name, inference_only=False, **_):
         if not os.path.isdir(path):

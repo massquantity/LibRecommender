@@ -4,6 +4,7 @@ import os
 import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
+from ..embedding import normalize_embeds
 from ..feature.multi_sparse import true_sparse_field_size
 from ..tfops import (
     dense_nn,
@@ -110,6 +111,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         data_info=None,
         loss_type="sampled_softmax",
         embed_size=16,
+        norm_embed=False,
         n_epochs=20,
         lr=0.001,
         lr_decay=False,
@@ -136,6 +138,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.all_args = locals()
         self.sess = sess_config(tf_sess_config)
         self.loss_type = loss_type
+        self.norm_embed = norm_embed
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
@@ -179,12 +182,17 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             self._build_dense()
 
         concat_features = tf.concat(self.concat_embed, axis=1)
-        self.user_vector = dense_nn(
+        user_vector = dense_nn(
             concat_features,
             self.hidden_units,
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
             is_training=self.is_training,
+        )
+        self.user_vector = (
+            normalize_embeds(user_vector, backend="tf")
+            if self.norm_embed
+            else user_vector
         )
         count_params()
 
@@ -270,12 +278,17 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.concat_embed.append(dense_embed)
 
     def _build_variables(self):
-        self.nce_weights = tf.get_variable(
+        nce_weights = tf.get_variable(
             name="nce_weights",
             # n_classes, embed_size
             shape=[self.n_items, self.embed_size],
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
+        )
+        self.nce_weights = (
+            normalize_embeds(nce_weights, backend="tf")
+            if self.norm_embed
+            else nce_weights
         )
         self.nce_biases = tf.get_variable(
             name="nce_biases",

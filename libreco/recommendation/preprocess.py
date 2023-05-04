@@ -27,7 +27,6 @@ def embed_from_seq(model, user_ids, seq, inner_id):
             is_training=False,
         )
     embed = model.sess.run(model.user_vector, feed_dict)
-    # embed = embed / np.linalg.norm(embed, axis=1, keepdims=True)
     bias = np.ones([1, 1], dtype=embed.dtype)
     return np.hstack([embed, bias])
 
