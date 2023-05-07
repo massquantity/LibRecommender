@@ -24,8 +24,10 @@ from .metrics import (
     ndcg_at_k,
     pr_auc_score,
     precision_at_k,
+    rec_coverage,
     recall_at_k,
     rmse,
+    roc_gauc_score,
 )
 from ..data import TransformedSet
 
@@ -124,6 +126,8 @@ def evaluate(
                     eval_result[m] = balanced_accuracy(y_true, y_prob)
                 elif m == "roc_auc":
                     eval_result[m] = roc_auc_score(y_true, y_prob)
+                elif m == "roc_gauc":
+                    eval_result[m] = roc_gauc_score(y_true, y_prob, data.user_indices)
                 elif m == "pr_auc":
                     eval_result[m] = pr_auc_score(y_true, y_prob)
         if LISTWISE_METRICS.intersection(metrics):
@@ -134,7 +138,10 @@ def evaluate(
             for m in metrics:
                 if m not in LISTWISE_METRICS:
                     continue
-                if m == "precision":
+                if m == "coverage":
+                    eval_result[m] = rec_coverage(y_recos, users, model.n_items)
+                    continue
+                elif m == "precision":
                     fn = precision_at_k
                 elif m == "recall":
                     fn = recall_at_k
@@ -176,7 +183,10 @@ def print_metrics(
         eval_metrics = metrics_fn(data=eval_data, metrics=metrics)
         for m, val in eval_metrics.items():
             if m == "loss":
-                m = loss_name
-            if m in LISTWISE_METRICS:
-                m = f"{m}@{k}"
-            print(f"\t eval {m}: {val:.4f}")
+                metric = loss_name
+            elif m in LISTWISE_METRICS:
+                metric = f"{m}@{k}"
+            else:
+                metric = m
+            str_val = f"{round(val, 2)}%" if m == "coverage" else f"{val:.4f}"
+            print(f"\t eval {metric}: {str_val}")

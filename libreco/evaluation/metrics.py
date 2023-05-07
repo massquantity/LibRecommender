@@ -1,14 +1,23 @@
 import numpy as np
+import pandas as pd
 from sklearn.metrics import (
     auc,
     balanced_accuracy_score,
     mean_squared_error,
     precision_recall_curve,
+    roc_auc_score,
 )
 
 RATING_METRICS = {"loss", "rmse", "mae", "r2"}
-POINTWISE_METRICS = {"loss", "log_loss", "balanced_accuracy", "roc_auc", "pr_auc"}
-LISTWISE_METRICS = {"precision", "recall", "map", "ndcg"}
+POINTWISE_METRICS = {
+    "loss",
+    "log_loss",
+    "balanced_accuracy",
+    "roc_auc",
+    "pr_auc",
+    "roc_gauc",
+}
+LISTWISE_METRICS = {"precision", "recall", "map", "ndcg", "coverage"}
 RANKING_METRICS = POINTWISE_METRICS | LISTWISE_METRICS
 
 
@@ -20,6 +29,32 @@ def rmse(y_true, y_pred):
 def balanced_accuracy(y_true, y_prob):
     y_pred = np.round(y_prob)
     return balanced_accuracy_score(y_true, y_pred)
+
+
+def roc_gauc_score(y_true, y_prob, user_indices):
+    # gauc = 0
+    # users = np.unique(user_indices)
+    # y_true, y_prob = np.array(y_true), np.array(y_prob)
+    # for u in users:
+    #    index = np.where(user_indices == u)[0]
+    #    user_auc = roc_auc_score(y_true[index], y_prob[index])
+    #    gauc += len(index) * user_auc
+    # return gauc / len(user_indices)
+
+    def _safe_roc_auc(y_true, y_score):
+        try:
+            auc = roc_auc_score(y_true, y_score)
+        except ValueError:  # only has one label
+            auc = 0.0
+        return auc
+
+    roc_data = pd.DataFrame({"label": y_true, "prob": y_prob, "user": user_indices})
+    gauc = (
+        roc_data.groupby("user")
+        .apply(lambda x: _safe_roc_auc(x["label"], x["prob"]) * len(x))
+        .tolist()
+    )
+    return sum(gauc) / len(user_indices)
 
 
 def pr_auc_score(y_true, y_prob):
@@ -71,3 +106,11 @@ def ndcg_at_k(y_true, y_reco, k):
     dcg = np.sum(rank_list / np.log2(np.arange(2, k + 2)))
     idcg = np.sum(ideal_list / np.log2(np.arange(2, k + 2)))
     return dcg / idcg
+
+
+def rec_coverage(y_reco_lists, users, n_items):
+    item_recs = set()
+    for u in users:
+        y_reco = y_reco_lists[u].tolist()
+        item_recs.update(y_reco)
+    return len(item_recs) / n_items * 100

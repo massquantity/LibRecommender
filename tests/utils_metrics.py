@@ -6,9 +6,11 @@ def get_metrics(task):
             "loss",
             "balanced_accuracy",
             "roc_auc",
+            "roc_gauc",
             "pr_auc",
             "precision",
             "recall",
             "map",
             "ndcg",
+            "coverage",
         ]
