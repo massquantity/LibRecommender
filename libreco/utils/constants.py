@@ -1,111 +1,78 @@
-PURE_MODELS = (
-    "UserCF",
-    "ItemCF",
-    "SVD",
-    "SVDpp",
-    "ALS",
-    "NCF",
-    "BPR",
-    "DeepWalk",
-    "NGCF",
-    "LightGCN",
-)
+from enum import Enum, unique
 
-FEAT_MODELS = (
-    "WideDeep",
-    "FM",
-    "DeepFM",
-    "AutoInt",
-    "GraphSage",
-    "GraphSageDGL",
-    "PinSage",
-    "PinSageDGL",
-)
 
-SEQUENCE_MODELS = (
-    "YouTubeRetrieval",
-    "YouTubeRanking",
-    "DIN",
-    "Item2Vec",
-    "RNN4Rec",
-    "Caser",
-    "WaveNet",
-)
+class StrEnum(str, Enum):
+    @classmethod
+    def contains(cls, x):
+        return x in cls.__members__.values()  # cls._member_names_
 
-GRAPH_MODELS = (
-    "DeepWalk",
-    "NGCF",
-    "LightGCN",
-    "GraphSage",
-    "GraphSageDGL",
-    "PinSage",
-    "PinSageDGL",
-)
 
-TF_FEAT_MODELS = (
-    "WideDeep",
-    "FM",
-    "DeepFM",
-    "YouTubeRanking",
-    "AutoInt",
-    "DIN",
-)
+@unique
+class FeatModels(StrEnum):
+    WIDEDEEP = "WideDeep"
+    FM = "FM"
+    DEEPFM = "DeepFM"
+    YOUTUBERETRIEVAL = "YouTubeRetrieval"
+    YOUTUBERANKING = "YouTubeRanking"
+    AUTOINT = "AutoInt"
+    DIN = "DIN"
+    GRAPHSAGE = "GraphSage"
+    GRAPHSAGEDGL = "GraphSageDGL"
+    PINSAGE = "PinSage"
+    PINSAGEDGL = "PinSageDGL"
 
-TF_TRAIN_MODELS = (
-    "SVD",
-    "SVDpp",
-    "NCF",
-    "BPR",
-    "WideDeep",
-    "FM",
-    "DeepFM",
-    "YouTubeRetrieval",
-    "YouTubeRanking",
-    "AutoInt",
-    "DIN",
-    "RNN4Rec",
-    "Caser",
-    "WaveNet",
-)
 
-FEAT_TRAIN_MODELS = (
-    "WideDeep",
-    "FM",
-    "DeepFM",
-    "AutoInt",
-    "YouTubeRetrieval",
-    "YouTubeRanking",
-    "DIN",
-    "GraphSage",
-    "GraphSageDGL",
-    "PinSage",
-    "PinSageDGL",
-)
+@unique
+class SequenceModels(StrEnum):
+    YOUTUBERETRIEVAL = "YouTubeRetrieval"
+    YOUTUBERANKING = "YouTubeRanking"
+    DIN = "DIN"
+    RNN4REC = "RNN4Rec"
+    CASER = "Caser"
+    WAVENET = "WaveNet"
 
-EMBEDDING_MODELS = (
-    "SVD",
-    "SVDpp",
-    "ALS",
-    "BPR",
-    "YouTubeRetrieval",
-    "Item2Vec",
-    "RNN4Rec",
-    "Caser",
-    "WaveNet",
-    "DeepWalk",
-    "NGCF",
-    "LightGCN",
-    "GraphSage",
-    "GraphSageDGL",
-    "PinSage",
-    "PinSageDGL",
-)
 
-SEQUENCE_RECOMMEND_MODELS = (
-    "YouTubeRetrieval",
-    "YouTubeRanking",
-    "DIN",
-    "RNN4Rec",
-    "Caser",
-    "WaveNet",
-)
+@unique
+class TfTrainModels(StrEnum):
+    SVD = "SVD"
+    SVDPP = "SVDpp"
+    NCF = "NCF"
+    BPR = "BPR"
+    WIDEDEEP = "WideDeep"
+    FM = "FM"
+    DEEPFM = "DeepFM"
+    YOUTUBERETRIEVAL = "YouTubeRetrieval"
+    YOUTUBERANKING = "YouTubeRanking"
+    AUTOINT = "AutoInt"
+    DIN = "DIN"
+    RNN4REC = "RNN4Rec"
+    CASER = "Caser"
+    WAVENET = "WaveNet"
+
+
+@unique
+class EmbeddingModels(StrEnum):
+    SVD = "SVD"
+    SVDPP = "SVDpp"
+    ALS = "ALS"
+    BPR = "BPR"
+    YOUTUBERETRIEVAL = "YouTubeRetrieval"
+    ITEM2VEC = "Item2Vec"
+    RNN4REC = "RNN4Rec"
+    CASER = "Caser"
+    WAVENET = "WaveNet"
+    DEEPWALK = "DeepWalk"
+    NGCF = "NGCF"
+    LIGHTGCN = "LightGCN"
+    GRAPHSAGE = "GraphSage"
+    GRAPHSAGEDGL = "GraphSageDGL"
+    PINSAGE = "PinSage"
+    PINSAGEDGL = "PinSageDGL"
+
+
+@unique
+class SageModels(StrEnum):
+    GRAPHSAGE = "GraphSage"
+    GRAPHSAGEDGL = "GraphSageDGL"
+    PINSAGE = "PinSage"
+    PINSAGEDGL = "PinSageDGL"

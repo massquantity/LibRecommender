@@ -51,12 +51,12 @@ def rebuild_tf_model(self, path, model_name, full_assign=True):
     for v in tf.trainable_variables():
         if user_variables is not None and v.name in user_variables:
             # remove oov values
-            old_var = variables[v.name][: old_n_users]
+            old_var = variables[v.name][:old_n_users]
             user_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
             update_ops.append(v.scatter_update(user_op))
 
         if item_variables is not None and v.name in item_variables:
-            old_var = variables[v.name][: old_n_items]
+            old_var = variables[v.name][:old_n_items]
             item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
             update_ops.append(v.scatter_update(item_op))
 
@@ -93,7 +93,7 @@ def rebuild_tf_model(self, path, model_name, full_assign=True):
                 optimizer_user_variables is not None
                 and v.name in optimizer_user_variables
             ):
-                old_var = variables[v.name][: old_n_users]
+                old_var = variables[v.name][:old_n_users]
                 user_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
                 update_ops.append(v.scatter_update(user_op))
 
@@ -101,7 +101,7 @@ def rebuild_tf_model(self, path, model_name, full_assign=True):
                 optimizer_item_variables is not None
                 and v.name in optimizer_item_variables
             ):
-                old_var = variables[v.name][: old_n_items]
+                old_var = variables[v.name][:old_n_items]
                 item_op = tf.IndexedSlices(old_var, tf.range(len(old_var)))
                 update_ops.append(v.scatter_update(item_op))
 

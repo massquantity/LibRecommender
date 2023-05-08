@@ -82,7 +82,7 @@ def compute_pair_scores(targets, items_pos, items_neg, repeat_positives=True):
             f"got {neg_len} and {pos_len}"
         )
     factor = int(neg_len / pos_len)
-    pos_scores = torch.einsum('ij,ij->i', targets, items_pos)
+    pos_scores = torch.einsum("ij,ij->i", targets, items_pos)
     if repeat_positives:
         pos_scores = pos_scores.repeat_interleave(factor)
     items_neg = items_neg.view(pos_len, factor, -1)

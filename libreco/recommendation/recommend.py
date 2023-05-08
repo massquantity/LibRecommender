@@ -51,7 +51,7 @@ def recommend_from_embedding(
         if seq is None or len(seq) == 0
         else embed_from_seq(model, user_ids, seq, inner_id)
     )
-    item_embeds = item_embeddings[:model.n_items]  # exclude item oov
+    item_embeds = item_embeddings[: model.n_items]  # exclude item oov
     preds = user_embed @ item_embeds.T
     return rank_recommendations(
         model.task,

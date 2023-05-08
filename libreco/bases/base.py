@@ -2,7 +2,6 @@
 import abc
 import time
 
-from ..utils.constants import FEAT_MODELS, PURE_MODELS, SEQUENCE_MODELS
 from ..utils.misc import colorize
 
 
@@ -21,7 +20,6 @@ class Base(abc.ABC):
 
     def __init__(self, task, data_info, lower_upper_bound=None):
         self.model_name = self.__class__.__name__
-        self.model_category = self._get_model_category()
         self.task = task
         self.data_info = data_info
         self.n_users = data_info.n_users
@@ -140,13 +138,3 @@ class Base(abc.ABC):
     def show_start_time():
         start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         print(f"Training start time: {colorize(start_time, 'magenta')}")
-
-    def _get_model_category(self):
-        if self.model_name in SEQUENCE_MODELS:
-            return "sequence"
-        elif self.model_name in FEAT_MODELS:
-            return "feat"
-        elif self.model_name in PURE_MODELS:
-            return "pure"
-        else:
-            raise ValueError(f"unknown model: {self.model_name}")

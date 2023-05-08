@@ -9,7 +9,7 @@ from .base import Base
 from ..prediction import predict_from_embedding
 from ..recommendation import cold_start_rec, construct_rec, recommend_from_embedding
 from ..training.dispatch import get_trainer
-from ..utils.constants import SEQUENCE_RECOMMEND_MODELS
+from ..utils.constants import SequenceModels
 from ..utils.misc import colorize
 from ..utils.save_load import (
     load_default_recs,
@@ -228,7 +228,7 @@ class EmbedBase(Base):
             Recommendation result with user ids as keys and array_like recommended items as values.
         """
         if seq is not None:
-            if self.model_name not in SEQUENCE_RECOMMEND_MODELS:
+            if not SequenceModels.contains(self.model_name):
                 raise ValueError(
                     f"`{self.model_name}` doesn't support arbitrary seq recommendation."
                 )

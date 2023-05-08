@@ -200,7 +200,7 @@ class SVDpp(EmbedBase):
         values = []
         for u in range(self.n_users):
             items = self.user_consumed[u]
-            u_data = items if self.recent_num is None else items[-self.recent_num:]
+            u_data = items if self.recent_num is None else items[-self.recent_num :]
             indices.extend([u] * len(u_data))
             values.extend(u_data)
         indices = np.array(indices)[:, None]

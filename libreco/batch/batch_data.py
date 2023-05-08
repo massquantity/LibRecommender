@@ -12,7 +12,7 @@ from .collators import (
     SparseCollator,
 )
 from .enums import Backend
-from ..utils.constants import FEAT_TRAIN_MODELS, TF_TRAIN_MODELS
+from ..utils.constants import FeatModels, SageModels, TfTrainModels
 
 
 class BatchData(torch.utils.data.Dataset):
@@ -43,10 +43,10 @@ class BatchData(torch.utils.data.Dataset):
 
 
 def get_batch_loader(model, data, neg_sampling, batch_size, shuffle, num_workers=0):
-    use_features = True if model.model_name in FEAT_TRAIN_MODELS else False
+    use_features = True if FeatModels.contains(model.model_name) else False
     factor = (
         model.num_walks * model.sample_walk_len
-        if "Sage" in model.model_name and model.paradigm == "i2i"
+        if SageModels.contains(model.model_name) and model.paradigm == "i2i"
         else None
     )
     batch_data = BatchData(data, use_features, factor)
@@ -64,10 +64,10 @@ def get_batch_loader(model, data, neg_sampling, batch_size, shuffle, num_workers
 
 def get_collate_fn(model, neg_sampling, num_workers):
     model_name, data_info = model.model_name, model.data_info
-    backend = Backend.TF if model_name in TF_TRAIN_MODELS else Backend.TORCH
+    backend = Backend.TF if TfTrainModels.contains(model_name) else Backend.TORCH
     if model_name == "YouTubeRetrieval":
         collate_fn = SparseCollator(model, data_info, backend)
-    elif "Sage" in model.model_name:
+    elif SageModels.contains(model_name):
         if model.use_dgl:
             assert num_workers == 0, "DGL models can't use multiprocessing data loader"
             collate_fn = GraphDGLCollator(model, data_info, backend)
@@ -88,7 +88,7 @@ def get_collate_fn(model, neg_sampling, num_workers):
 def adjust_batch_size(model, original_batch_size):
     if model.model_name == "YouTubeRetrieval":
         return original_batch_size
-    elif "Sage" in model.model_name and model.paradigm == "i2i":
+    elif SageModels.contains(model.model_name) and model.paradigm == "i2i":
         walk_len = model.sample_walk_len
         bs = original_batch_size / model.num_neg / model.num_walks / walk_len
         return max(1, int(bs))

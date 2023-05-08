@@ -236,7 +236,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         if (
             self.data_info.multi_sparse_combine_info
             and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")
-        ):
+        ):  # fmt: skip
             sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
                 sparse_features,
@@ -309,7 +309,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 interacted_items.extend(u_consumed_items)
             else:
                 interacted_indices.extend([u] * self.max_seq_len)
-                interacted_items.extend(u_consumed_items[-self.max_seq_len:])
+                interacted_items.extend(u_consumed_items[-self.max_seq_len :])
 
         interacted_indices = np.array(interacted_indices).reshape(-1, 1)
         indices = np.concatenate(

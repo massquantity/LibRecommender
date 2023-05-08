@@ -9,7 +9,7 @@ from ..prediction import predict_tf_feat
 from ..recommendation import cold_start_rec, construct_rec, recommend_tf_feat
 from ..tfops import modify_variable_names, sess_config, tf
 from ..training.dispatch import get_trainer
-from ..utils.constants import SEQUENCE_RECOMMEND_MODELS
+from ..utils.constants import SequenceModels
 from ..utils.save_load import (
     load_tf_model,
     load_tf_variables,
@@ -223,7 +223,7 @@ class TfBase(Base):
         recommendation : dict of {Union[int, str, array_like] : numpy.ndarray}
             Recommendation result with user ids as keys and array_like recommended items as values.
         """
-        if seq is not None and self.model_name not in SEQUENCE_RECOMMEND_MODELS:
+        if seq is not None and not SequenceModels.contains(self.model_name):
             raise ValueError(
                 f"`{self.model_name}` doesn't support arbitrary seq recommendation."
             )

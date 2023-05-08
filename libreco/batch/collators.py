@@ -25,6 +25,7 @@ from ..sampling import (
     pairs_from_random_walk,
     pos_probs_from_frequency,
 )
+from ..utils.constants import SequenceModels
 
 
 class BaseCollator:
@@ -46,7 +47,7 @@ class BaseCollator:
         self.item_dense_col_index = data_info.item_dense_col.index
         self.item_sparse_unique = data_info.item_sparse_unique
         self.item_dense_unique = data_info.item_dense_unique
-        self.has_seq = True if model.model_category == "sequence" else False
+        self.has_seq = True if SequenceModels.contains(model.model_name) else False
         self.seq_mode = model.seq_mode if self.has_seq else None
         self.max_seq_len = model.max_seq_len if self.has_seq else None
         self.separate_features = separate_features

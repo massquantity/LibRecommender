@@ -1,11 +1,9 @@
 from .tf_trainer import TensorFlowTrainer, WideDeepTrainer, YoutubeRetrievalTrainer
 from .torch_trainer import GraphTrainer, TorchTrainer
-from ..utils.constants import TF_TRAIN_MODELS
+from ..utils.constants import SageModels, TfTrainModels
 
 
 def get_trainer(model):
-    from ..bases import SageBase
-
     train_params = {
         "model": model,
         "task": model.task,
@@ -19,7 +17,7 @@ def get_trainer(model):
         "num_neg": model.__dict__.get("num_neg"),
     }
 
-    if model.model_name in TF_TRAIN_MODELS:
+    if TfTrainModels.contains(model.model_name):
         if model.model_name == "YouTubeRetrieval":
             train_params["num_sampled_per_batch"] = model.num_sampled_per_batch
             tf_trainer_cls = YoutubeRetrievalTrainer
@@ -37,7 +35,7 @@ def get_trainer(model):
                 "device": model.device,
             }
         )
-        if isinstance(model, SageBase):
+        if SageModels.contains(model.model_name):
             torch_trainer_cls = GraphTrainer
         else:
             torch_trainer_cls = TorchTrainer

@@ -5,7 +5,7 @@ from .trainer import BaseTrainer
 from ..batch import get_batch_loader, get_tf_feeds
 from ..evaluation import print_metrics
 from ..tfops import choose_tf_loss, lr_decay_config, tf, var_list_by_name
-from ..utils.constants import EMBEDDING_MODELS
+from ..utils.constants import EmbeddingModels
 from ..utils.misc import colorize, time_block
 
 
@@ -78,7 +78,7 @@ class TensorFlowTrainer(BaseTrainer):
                 )
                 print(f"\t {colorize(train_loss_str, 'green')}")
                 # get embedding for evaluation
-                if self.model.model_name in EMBEDDING_MODELS:
+                if EmbeddingModels.contains(self.model.model_name):
                     self.model.set_embeddings()
                 print_metrics(
                     model=self.model,

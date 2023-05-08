@@ -1,4 +1,5 @@
 from .version import tf
+from ..utils.constants import SequenceModels
 
 
 def multi_sparse_combine_embedding(
@@ -99,7 +100,7 @@ def get_feed_dict(
         feed_dict.update({model.sparse_indices: sparse_indices})
     if hasattr(model, "dense") and model.dense and dense_values is not None:
         feed_dict.update({model.dense_values: dense_values})
-    if model.model_category == "sequence":
+    if SequenceModels.contains(model.model_name):
         feed_dict.update(
             {
                 model.user_interacted_seq: user_interacted_seq,

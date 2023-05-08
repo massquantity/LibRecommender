@@ -1,4 +1,5 @@
 from .batch_unit import PairwiseBatch, PointwiseBatch, SparseBatch
+from ..utils.constants import SequenceModels
 
 
 def get_tf_feeds(model, data, is_training):
@@ -58,7 +59,7 @@ def _pointwise_feed_dict(model, data: PointwiseBatch, is_training):
         feed_dict.update({model.sparse_indices: data.sparse_indices})
     if hasattr(model, "dense") and model.dense:
         feed_dict.update({model.dense_values: data.dense_values})
-    if model.model_category == "sequence":
+    if SequenceModels.contains(model.model_name):
         feed_dict.update(
             {
                 model.user_interacted_seq: data.seqs.interacted_seq,
