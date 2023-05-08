@@ -4,5 +4,5 @@ requests
 pydantic
 aiohttp
 redis>=4.2.0
-faiss-cpu==1.7.2;python_version=='3.6'
-faiss-cpu>=1.5.2;python_version>'3.6'
+faiss-cpu==1.7.2 ; python_version == "3.6"
+faiss-cpu>=1.5.2 ; python_version > "3.6"

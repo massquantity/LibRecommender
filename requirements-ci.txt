@@ -1,6 +1,6 @@
 -r requirements.txt
 
 flake8
-ruff;python_version>'3.6'
+ruff ; python_version > "3.6"
 pytest
 coverage
