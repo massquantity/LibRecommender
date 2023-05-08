@@ -7,6 +7,6 @@ tensorflow>=1.15.0
 torch>=1.10.0
 gensim>=4.0.0
 tqdm
-nmslib
+nmslib ; python_version < "3.11"
 dgl -f https://data.dgl.ai/wheels/repo.html
-dataclasses;python_version=='3.6'
+dataclasses ; python_version == "3.6"
