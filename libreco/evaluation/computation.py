@@ -27,7 +27,7 @@ def compute_preds(model, data, batch_size):
     y_pred = list()
     y_label = list()
     for i in tqdm(range(0, len(data), batch_size), desc="eval_pointwise"):
-        user_indices, item_indices, labels = data[i: i + batch_size]
+        user_indices, item_indices, labels = data[i : i + batch_size]
         preds = model.predict(user_indices, item_indices, inner_id=True)
         y_pred.extend(preds)
         y_label.extend(labels)
@@ -41,7 +41,7 @@ def compute_probs(model, data, batch_size):
 def compute_recommends(model, users, k, num_batch_users):
     y_recommends = dict()
     for i in tqdm(range(0, len(users), num_batch_users), desc="eval_listwise"):
-        batch_users = users[i: i + num_batch_users]
+        batch_users = users[i : i + num_batch_users]
         batch_recs = model.recommend_user(
             user=batch_users,
             n_rec=k,
