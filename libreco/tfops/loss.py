@@ -6,27 +6,30 @@ def choose_tf_loss(model, task, loss_type):
         loss = tf.losses.mean_squared_error(
             labels=model.labels, predictions=model.output
         )
-    elif task == "ranking":
+    else:
         if loss_type == "cross_entropy":
-            assert hasattr(
-                model, "output"
-            ), f"can't use cross entropy loss in {model.model_name}"
+            assert hasattr(model, "output"), (
+                f"Binary cross entropy loss is unavailable in `{model.model_name}`"
+            )  # fmt: skip
             loss = tf.reduce_mean(
                 tf.nn.sigmoid_cross_entropy_with_logits(
                     labels=model.labels, logits=model.output
                 )
             )
         elif loss_type == "bpr":
-            assert hasattr(
-                model, "bpr_loss"
-            ), f"can't use bpr loss in {model.model_name}"
+            assert hasattr(model, "bpr_loss"), (
+                f"Bpr loss is unavailable in {model.model_name}"
+            )  # fmt: skip
             loss = -tf.reduce_mean(model.bpr_loss)
         elif loss_type == "focal":
             loss = tf.reduce_mean(focal_loss(labels=model.labels, logits=model.output))
+        elif loss_type == "softmax":
+            loss = tf.reduce_mean(
+                softmax_cross_entropy(model.user_vector, model.item_vector)
+            )
         else:
             raise ValueError(f"unknown loss_type for ranking: {loss_type}")
-    else:
-        raise ValueError("task must be `rating` or `ranking`.")
+
     return loss
 
 
@@ -38,3 +41,9 @@ def focal_loss(labels, logits, alpha=0.25, gamma=2.0):
     modulating_factor = tf.pow(1.0 - p_t, gamma)
     bce = tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=logits)
     return weighting_factor * modulating_factor * bce
+
+
+def softmax_cross_entropy(user_embeds, item_embeds):
+    logits = tf.matmul(user_embeds, item_embeds, transpose_b=True)
+    labels = tf.range(tf.shape(user_embeds)[0])
+    return tf.nn.sparse_softmax_cross_entropy_with_logits(labels, logits)
