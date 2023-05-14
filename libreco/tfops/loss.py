@@ -46,4 +46,4 @@ def focal_loss(labels, logits, alpha=0.25, gamma=2.0):
 def softmax_cross_entropy(user_embeds, item_embeds):
     logits = tf.matmul(user_embeds, item_embeds, transpose_b=True)
     labels = tf.range(tf.shape(user_embeds)[0])
-    return tf.nn.sparse_softmax_cross_entropy_with_logits(labels, logits)
+    return tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits)

@@ -68,6 +68,8 @@ def get_collate_fn(model, neg_sampling, num_workers):
     backend = Backend.TF if TfTrainModels.contains(model_name) else Backend.TORCH
     if model_name == "YouTubeRetrieval":
         collate_fn = SparseCollator(model, data_info, backend)
+    elif model_name == "TwoTower":
+        collate_fn = NormalCollator(model, data_info, backend, separate_features=True)
     elif SageModels.contains(model_name):
         if model.use_dgl:
             assert num_workers == 0, "DGL models can't use multiprocessing data loader"
