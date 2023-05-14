@@ -1,6 +1,7 @@
 import abc
 
 from ..batch import adjust_batch_size
+from ..utils.validate import is_listwise_training
 
 
 class BaseTrainer(abc.ABC):
@@ -29,7 +30,7 @@ class BaseTrainer(abc.ABC):
         self.num_neg = num_neg
 
     def _check_params(self):
-        if self.model.model_name != "YouTubeRetrieval":
+        if not is_listwise_training(self.model):
             n_items = self.model.data_info.n_items
             assert 0 < self.num_neg < n_items, (
                 f"`num_neg` should be positive and smaller than total items, "

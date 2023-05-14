@@ -13,6 +13,7 @@ from .collators import (
 )
 from .enums import Backend
 from ..utils.constants import FeatModels, SageModels, TfTrainModels
+from ..utils.validate import is_listwise_training
 
 
 class BatchData(torch.utils.data.Dataset):
@@ -86,7 +87,7 @@ def get_collate_fn(model, neg_sampling, num_workers):
 
 # consider negative sampling and random walks in batch_size
 def adjust_batch_size(model, original_batch_size):
-    if model.model_name == "YouTubeRetrieval":
+    if is_listwise_training(model):
         return original_batch_size
     elif SageModels.contains(model.model_name) and model.paradigm == "i2i":
         walk_len = model.sample_walk_len

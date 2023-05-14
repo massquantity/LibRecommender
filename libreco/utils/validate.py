@@ -160,3 +160,12 @@ def check_retrain_loaded_model(model):
 def check_eval(eval_data, k, n_items):
     if eval_data is not None and k > n_items:
         raise ValueError(f"eval `k` {k} exceeds num of items {n_items}")
+
+
+def is_listwise_training(model):
+    if model.model_name == "YouTubeRetrieval" or (
+        model.model_name == "TwoTower" and model.loss_type == "softmax"
+    ):
+        return True
+    else:
+        return False
