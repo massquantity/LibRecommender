@@ -144,13 +144,13 @@ class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
     def build_model(self):
         tf.set_random_seed(self.seed)
-        self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
         self._build_variables()
         self._build_user_embeddings()
         if self.task == "rating" or self.loss_type in ("cross_entropy", "focal"):
             self.user_indices = tf.placeholder(tf.int32, shape=[None])
             self.item_indices = tf.placeholder(tf.int32, shape=[None])
+            self.labels = tf.placeholder(tf.float32, shape=[None])
             item_vector = tf.nn.embedding_lookup(self.item_weights, self.item_indices)
             if self.norm_embed:
                 item_vector = normalize_embeds(item_vector, backend="tf")

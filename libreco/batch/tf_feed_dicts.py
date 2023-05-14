@@ -1,10 +1,17 @@
-from .batch_unit import PairwiseBatch, PointwiseBatch, SparseBatch
+from .batch_unit import (
+    PairwiseBatch,
+    PointwiseBatch,
+    PointwiseSepFeatBatch,
+    SparseBatch,
+)
 from ..utils.constants import SequenceModels
 
 
 def get_tf_feeds(model, data, is_training):
     if model.model_name == "YouTubeRetrieval":
         return _sparse_feed_dict(model, data, is_training)
+    elif isinstance(data, PointwiseSepFeatBatch):
+        return _separate_feed_dict(model, data, is_training)
     elif isinstance(data, PairwiseBatch):
         return _pairwise_feed_dict(model, data, is_training)
     else:
@@ -66,4 +73,21 @@ def _pointwise_feed_dict(model, data: PointwiseBatch, is_training):
                 model.user_interacted_len: data.seqs.interacted_len,
             }
         )
+    return feed_dict
+
+
+def _separate_feed_dict(model, data: PointwiseSepFeatBatch, is_training):
+    feed_dict = {
+        model.user_indices: data.users,
+        model.item_indices: data.items,
+        model.is_training: is_training,
+    }
+    if model.user_sparse:
+        feed_dict.update({model.user_sparse_indices: data.sparse_indices.user_feats})
+    if model.user_dense:
+        feed_dict.update({model.user_dense_values: data.dense_values.user_feats})
+    if model.item_sparse:
+        feed_dict.update({model.item_sparse_indices: data.sparse_indices.item_feats})
+    if model.item_dense:
+        feed_dict.update({model.item_dense_values: data.dense_values.item_feats})
     return feed_dict
