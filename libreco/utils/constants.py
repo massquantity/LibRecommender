@@ -20,6 +20,7 @@ class FeatModels(StrEnum):
     GRAPHSAGEDGL = "GraphSageDGL"
     PINSAGE = "PinSage"
     PINSAGEDGL = "PinSageDGL"
+    TWOTOWER = "TwoTower"
 
 
 @unique
@@ -48,6 +49,7 @@ class TfTrainModels(StrEnum):
     RNN4REC = "RNN4Rec"
     CASER = "Caser"
     WAVENET = "WaveNet"
+    TWOTOWER = "TwoTower"
 
 
 @unique
@@ -68,6 +70,7 @@ class EmbeddingModels(StrEnum):
     GRAPHSAGEDGL = "GraphSageDGL"
     PINSAGE = "PinSage"
     PINSAGEDGL = "PinSageDGL"
+    TWOTOWER = "TwoTower"
 
 
 @unique
