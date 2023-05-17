@@ -66,10 +66,11 @@ def get_batch_loader(model, data, neg_sampling, batch_size, shuffle, num_workers
 def get_collate_fn(model, neg_sampling, num_workers):
     model_name, data_info = model.model_name, model.data_info
     backend = Backend.TF if TfTrainModels.contains(model_name) else Backend.TORCH
+    separate_features = True if model_name == "TwoTower" else False
     if model_name == "YouTubeRetrieval":
         collate_fn = SparseCollator(model, data_info, backend)
-    elif model_name == "TwoTower":
-        collate_fn = NormalCollator(model, data_info, backend, separate_features=True)
+    elif model_name == "TwoTower" and model.loss_type == "softmax":
+        collate_fn = NormalCollator(model, data_info, backend, separate_features)
     elif SageModels.contains(model_name):
         if model.use_dgl:
             assert num_workers == 0, "DGL models can't use multiprocessing data loader"
@@ -77,10 +78,10 @@ def get_collate_fn(model, neg_sampling, num_workers):
         else:
             collate_fn = GraphCollator(model, data_info, backend)
     elif model.task == "rating" or not neg_sampling:
-        collate_fn = NormalCollator(model, data_info, backend)
+        collate_fn = NormalCollator(model, data_info, backend, separate_features)
     else:
         if model.loss_type in ("cross_entropy", "focal"):
-            collate_fn = PointwiseCollator(model, data_info, backend)
+            collate_fn = PointwiseCollator(model, data_info, backend, separate_features)
         else:
             repeat_positives = True if backend is Backend.TF else False
             collate_fn = PairwiseCollator(model, data_info, backend, repeat_positives)

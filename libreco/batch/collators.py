@@ -195,8 +195,8 @@ class SparseCollator(BaseCollator):
 
 
 class PointwiseCollator(BaseCollator):
-    def __init__(self, model, data_info, backend):
-        super().__init__(model, data_info, backend)
+    def __init__(self, model, data_info, backend, separate_features=False):
+        super().__init__(model, data_info, backend, separate_features)
         self.sampler = model.sampler
         self.num_neg = model.num_neg
 
@@ -212,7 +212,8 @@ class PointwiseCollator(BaseCollator):
         sparse_batch = self.get_pointwise_feats(batch, FeatType.SPARSE, item_batch)
         dense_batch = self.get_pointwise_feats(batch, FeatType.DENSE, item_batch)
         seq_batch = self.get_seqs(user_batch, item_batch)
-        batch_data = PointwiseBatch(
+        batch_cls = PointwiseSepFeatBatch if self.separate_features else PointwiseBatch
+        batch_data = batch_cls(
             users=user_batch,
             items=item_batch,
             labels=label_batch,
