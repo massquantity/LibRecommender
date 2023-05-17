@@ -8,7 +8,7 @@ from ..utils.constants import SequenceModels
 
 
 def get_tf_feeds(model, data, is_training):
-    if model.model_name == "YouTubeRetrieval":
+    if isinstance(data, SparseBatch):
         return _sparse_feed_dict(model, data, is_training)
     elif isinstance(data, PointwiseSepFeatBatch):
         return _separate_feed_dict(model, data, is_training)
@@ -47,8 +47,36 @@ def _pairwise_feed_dict(model, data: PairwiseBatch, is_training):
             model.item_indices_pos: data.item_pairs[0],
             model.item_indices_neg: data.item_pairs[1],
         }
+    elif model.model_name == "TwoTower":
+        feed_dict = {
+            model.user_indices: data.queries,
+            model.item_indices: data.item_pairs[0],
+            model.item_indices_neg: data.item_pairs[1],
+        }
+        if model.user_sparse:
+            feed_dict.update(
+                {model.user_sparse_indices: data.sparse_indices.query_feats}
+            )
+        if model.user_dense:
+            feed_dict.update({model.user_dense_values: data.dense_values.query_feats})
+        if model.item_sparse:
+            feed_dict.update(
+                {model.item_sparse_indices: data.sparse_indices.item_pos_feats}
+            )
+            feed_dict.update(
+                {model.item_sparse_indices_neg: data.sparse_indices.item_neg_feats}
+            )
+        if model.item_dense:
+            feed_dict.update(
+                {model.item_dense_values: data.dense_values.item_pos_feats}
+            )
+            feed_dict.update(
+                {model.item_dense_values_neg: data.dense_values.item_neg_feats}
+            )
     else:
-        raise ValueError("Only `BPR` and `RNN4Rec` use `bpr` loss in tf models")
+        raise ValueError(
+            "Only `BPR`, `RNN4Rec` and `TwoTower` use pairwise loss in tf models"
+        )
     if hasattr(model, "is_training"):
         feed_dict.update({model.is_training: is_training})
     return feed_dict
@@ -82,6 +110,10 @@ def _separate_feed_dict(model, data: PointwiseSepFeatBatch, is_training):
         model.item_indices: data.items,
         model.is_training: is_training,
     }
+    if hasattr(model, "labels"):
+        feed_dict.update({model.labels: data.labels})
+    if hasattr(model, "correction"):
+        feed_dict.update({model.correction: model.item_corrections[data.items]})
     if model.user_sparse:
         feed_dict.update({model.user_sparse_indices: data.sparse_indices.user_feats})
     if model.user_dense:
