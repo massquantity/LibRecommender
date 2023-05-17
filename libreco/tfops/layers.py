@@ -18,6 +18,7 @@ def dense_nn(
     bn_after_activation=True,
     dropout_rate=None,
     is_training=True,
+    reuse_layer=False,
     name="mlp",
 ):
     if activation is None:
@@ -25,12 +26,12 @@ def dense_nn(
     if np.isscalar(hidden_units):
         hidden_units = [hidden_units]
 
-    with tf.variable_scope(name):
+    with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
         if use_bn:
             net = tf.layers.batch_normalization(net, training=is_training)
         for i, units in enumerate(hidden_units, start=1):
             layer_name = name + "_layer" + str(i)
-            net = tf_dense(units, activation=None, name=layer_name)(net)
+            net = tf_dense(units, reuse=reuse_layer, name=layer_name)(net)
             if i != len(hidden_units):
                 if use_bn:
                     if bn_after_activation:
@@ -53,11 +54,12 @@ def tf_dense(
     activation=None,
     kernel_initializer="glorot_uniform",
     use_bias=True,
+    reuse=False,
     name=None,
     version=None,
 ):
     tf_version = _get_tf_version(version)
-    if tf_version >= "2.0.0":
+    if tf_version >= "2.0.0" and not reuse:
         net = tf.keras.layers.Dense(
             units=units,
             activation=activation,
