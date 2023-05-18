@@ -59,6 +59,7 @@ def tf_dense(
     version=None,
 ):
     tf_version = _get_tf_version(version)
+    # only tf1 layers can be reused
     if tf_version >= "2.0.0" and not reuse:
         net = tf.keras.layers.Dense(
             units=units,

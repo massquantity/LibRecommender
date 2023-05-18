@@ -37,6 +37,7 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         margin=1.0,
         use_correction=True,
         temperature=1.0,
+        remove_accidental_hits=False,
         seed=42,
         lower_upper_bound=None,
         tf_sess_config=None,
@@ -61,6 +62,7 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.margin = margin
         self.use_correction = use_correction
         self.temperature = temperature
+        self.remove_accidental_hits = remove_accidental_hits
         self.seed = seed
         self.user_sparse = True if data_info.user_sparse_col.name else False
         self.item_sparse = True if data_info.item_sparse_col.name else False
@@ -171,13 +173,14 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 concat_embeds.append(user_dense_embed)
             user_features = tf.concat(concat_embeds, axis=1)
 
+        reuse_layer = True if self.loss_type == "max_margin" else False
         user_vector = dense_nn(
             user_features,
             self.hidden_units,
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
             is_training=self.is_training,
-            reuse_layer=True,
+            reuse_layer=reuse_layer,
             name="user_tower",
         )
         return (
@@ -205,13 +208,14 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 concat_embeds.append(item_dense_embed)
             item_features = tf.concat(concat_embeds, axis=1)
 
+        reuse_layer = True if self.loss_type == "max_margin" else False
         item_vector = dense_nn(
             item_features,
             self.hidden_units,
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
             is_training=self.is_training,
-            reuse_layer=True,
+            reuse_layer=reuse_layer,
             name="item_tower",
         )
         return (
@@ -318,4 +322,14 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             correction = tf.clip_by_value(self.correction, 1e-8, 1.0)
             logQ = tf.reshape(tf.math.log(correction), (1, -1))
             logits -= logQ
-        return logits
+
+        if self.remove_accidental_hits:
+            row_items = tf.reshape(self.item_indices, (1, -1))
+            col_items = tf.reshape(self.item_indices, (-1, 1))
+            equal_items = tf.cast(tf.equal(row_items, col_items), tf.float32)
+            label_diag = tf.eye(tf.shape(logits)[0])
+            mask = tf.cast(equal_items - label_diag, tf.bool)
+            paddings = tf.fill(tf.shape(logits), tf.float32.min)
+            return tf.where(mask, paddings, logits)
+        else:
+            return logits
