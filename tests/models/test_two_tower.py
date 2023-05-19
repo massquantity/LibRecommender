@@ -27,10 +27,10 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "norm_embed, lr_decay, reg, use_bn, dropout_rate, hidden_units, num_workers",
+    "norm_embed, lr_decay, reg, use_bn, dropout_rate, hidden_units, remove_accidental_hits, num_workers",
     [
-        (True, False, None, True, None, 1, 0),
-        (False, True, 0.001, False, 0.5, (32, 16), 2),
+        (True, False, None, True, None, 1, True, 0),
+        (False, True, 0.001, False, 0.5, (32, 16), False, 2),
     ],
 )
 def test_two_tower(
@@ -47,6 +47,7 @@ def test_two_tower(
     use_bn,
     dropout_rate,
     hidden_units,
+    remove_accidental_hits,
     num_workers,
 ):
     if not sys.platform.startswith("linux") and num_workers > 0:
@@ -86,6 +87,7 @@ def test_two_tower(
             hidden_units=hidden_units,
             use_correction=use_correction,
             temperature=temperature,
+            remove_accidental_hits=remove_accidental_hits,
             tf_sess_config=None,
         )
         model.fit(
