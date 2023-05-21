@@ -38,11 +38,12 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         use_correction=True,
         temperature=1.0,
         remove_accidental_hits=False,
+        ssl_pattern=None,
+        alpha=0.1,
         seed=42,
-        lower_upper_bound=None,
         tf_sess_config=None,
     ):
-        super().__init__(task, data_info, embed_size, lower_upper_bound)
+        super().__init__(task, data_info, embed_size)
 
         self.all_args = locals()
         self.sess = sess_config(tf_sess_config)
@@ -63,6 +64,8 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.use_correction = use_correction
         self.temperature = temperature
         self.remove_accidental_hits = remove_accidental_hits
+        self.ssl_pattern = ssl_pattern
+        self.alpha = alpha
         self.seed = seed
         self.user_sparse = True if data_info.user_sparse_col.name else False
         self.item_sparse = True if data_info.item_sparse_col.name else False
@@ -75,18 +78,39 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             raise ValueError("`TwoTower` is only suitable for ranking")
         if self.loss_type not in ("cross_entropy", "max_margin", "softmax"):
             raise ValueError(f"Unsupported `loss_type`: {self.loss_type}")
+        if self.ssl_pattern is not None:
+            if self.ssl_pattern not in ("rfm", "rfm-complementary", "cfm"):
+                raise ValueError(
+                    f"`ssl` pattern supports `rfm`, `rfm-complementary` and `cfm`, "
+                    f"got {self.ssl_pattern}."
+                )
+            if not self.item_sparse:
+                raise ValueError(
+                    "`ssl`(self-supervised learning) relies on item sparse features, "
+                    "which are not available in training data."
+                )
+            if self.loss_type != "softmax":
+                raise ValueError(
+                    "`ssl`(self-supervised learning) can only be used in `softmax` loss."
+                )
 
     def build_model(self):
         tf.set_random_seed(self.seed)
         self._build_placeholders()
         self._build_variables()
-        self.user_vector = self.compute_user_embeddings()
-        self.item_vector = self.compute_item_embeddings()
+        self.user_vector = self.compute_user_embeddings("user")
+        self.item_vector = self.compute_item_embeddings("item")
         if self.loss_type == "cross_entropy":
             self.output = tf.reduce_sum(self.user_vector * self.item_vector, axis=1)
         if self.loss_type == "max_margin":
-            self.item_vector_neg = self.compute_item_embeddings(is_neg=True)
+            self.item_vector_neg = self.compute_item_embeddings("item_neg")
+        if self.ssl_pattern is not None:
+            self.ssl_left_vector = self.compute_ssl_embeddings("ssl_left")
+            self.ssl_right_vector = self.compute_ssl_embeddings("ssl_right")
         count_params()
+
+        # from pprint import pprint
+        # pprint(tf.trainable_variables())
 
     def _build_placeholders(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
@@ -124,6 +148,22 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                     tf.float32, shape=[None, len(self.data_info.item_dense_col.name)]
                 )
 
+        if self.ssl_pattern is not None:
+            # item_indices + sparse_indices
+            self.ssl_left_sparse_indices = tf.placeholder(
+                tf.int32, shape=[None, len(self.data_info.item_sparse_col.name) + 1]
+            )
+            self.ssl_right_sparse_indices = tf.placeholder(
+                tf.int32, shape=[None, len(self.data_info.item_sparse_col.name) + 1]
+            )
+            if self.item_dense:
+                self.ssl_left_dense_values = tf.placeholder(
+                    tf.float32, shape=[None, len(self.data_info.item_dense_col.name)]
+                )
+                self.ssl_right_dense_values = tf.placeholder(
+                    tf.float32, shape=[None, len(self.data_info.item_dense_col.name)]
+                )
+
     def _build_variables(self):
         self.user_feat = tf.get_variable(
             name="user_feat",
@@ -151,6 +191,7 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 initializer=tf.glorot_uniform_initializer(),
                 regularizer=self.reg,
             )
+
         if self.temperature <= 0.0:
             self.temperature_var = tf.get_variable(
                 name="temperature_var",
@@ -159,94 +200,100 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 trainable=True,
             )
 
-    def compute_user_embeddings(self):
-        user_embed = tf.nn.embedding_lookup(self.user_feat, self.user_indices)
-        if not self.user_sparse and not self.user_dense:
-            user_features = user_embed
-        else:
-            concat_embeds = [user_embed]
-            if self.user_sparse:
-                user_sparse_embed = self._compute_sparse_feats(is_user=True)
-                concat_embeds.append(user_sparse_embed)
-            if self.user_dense:
-                user_dense_embed = self._compute_dense_feats(is_user=True)
-                concat_embeds.append(user_dense_embed)
-            user_features = tf.concat(concat_embeds, axis=1)
-
-        reuse_layer = True if self.loss_type == "max_margin" else False
-        user_vector = dense_nn(
-            user_features,
-            self.hidden_units,
-            use_bn=self.use_bn,
-            dropout_rate=self.dropout_rate,
-            is_training=self.is_training,
-            reuse_layer=reuse_layer,
-            name="user_tower",
-        )
-        return (
-            normalize_embeds(user_vector, backend="tf")
-            if self.norm_embed
-            else user_vector
-        )
-
-    def compute_item_embeddings(self, is_neg=False):
-        item_indices = self.item_indices if not is_neg else self.item_indices_neg
-        item_embed = tf.nn.embedding_lookup(self.item_feat, item_indices)
-        if not self.item_sparse and not self.item_dense:
-            item_features = item_embed
-        else:
-            concat_embeds = [item_embed]
-            if self.item_sparse:
-                item_sparse_embed = self._compute_sparse_feats(
-                    is_user=False, is_item_neg=is_neg
-                )
-                concat_embeds.append(item_sparse_embed)
-            if self.item_dense:
-                item_dense_embed = self._compute_dense_feats(
-                    is_user=False, is_item_neg=is_neg
-                )
-                concat_embeds.append(item_dense_embed)
-            item_features = tf.concat(concat_embeds, axis=1)
-
-        reuse_layer = True if self.loss_type == "max_margin" else False
-        item_vector = dense_nn(
-            item_features,
-            self.hidden_units,
-            use_bn=self.use_bn,
-            dropout_rate=self.dropout_rate,
-            is_training=self.is_training,
-            reuse_layer=reuse_layer,
-            name="item_tower",
-        )
-        return (
-            normalize_embeds(item_vector, backend="tf")
-            if self.norm_embed
-            else item_vector
-        )
-
-    def _compute_sparse_feats(self, is_user, is_item_neg=False):
-        if is_user:
-            sparse_indices = self.user_sparse_indices
-        else:
-            sparse_indices = (
-                self.item_sparse_indices
-                if not is_item_neg
-                else self.item_sparse_indices_neg
+        if self.ssl_pattern is not None:
+            default_feat = tf.get_variable(
+                name="default_feat",
+                shape=[1, self.embed_size],
+                initializer=tf.zeros_initializer(),
+                trainable=False,
             )
-        sparse_embed = tf.nn.embedding_lookup(self.sparse_feat, sparse_indices)
+            self.ssl_feat = tf.concat(
+                [default_feat, self.item_feat, self.sparse_feat], axis=0
+            )
+
+    def compute_user_embeddings(self, category):
+        user_embed = tf.nn.embedding_lookup(self.user_feat, self.user_indices)
+        concat_embeds = [user_embed]
+        if self.user_sparse:
+            user_sparse_embed = self._compute_sparse_feats(category)
+            concat_embeds.append(user_sparse_embed)
+        if self.user_dense:
+            user_dense_embed = self._compute_dense_feats(category)
+            concat_embeds.append(user_dense_embed)
+
+        user_features = (
+            tf.concat(concat_embeds, axis=1)
+            if len(concat_embeds) > 1
+            else concat_embeds[0]
+        )
+        return self._shared_layers(user_features, "user_tower")
+
+    def compute_item_embeddings(self, category):
+        if category == "item":
+            item_embed = tf.nn.embedding_lookup(self.item_feat, self.item_indices)
+        elif category == "item_neg":
+            item_embed = tf.nn.embedding_lookup(self.item_feat, self.item_indices_neg)
+        else:
+            raise ValueError("Unknown item category")
+
+        concat_embeds = [item_embed]
+        if self.item_sparse:
+            item_sparse_embed = self._compute_sparse_feats(category)
+            concat_embeds.append(item_sparse_embed)
+        if self.item_dense:
+            item_dense_embed = self._compute_dense_feats(category)
+            concat_embeds.append(item_dense_embed)
+
+        item_features = (
+            tf.concat(concat_embeds, axis=1)
+            if len(concat_embeds) > 1
+            else concat_embeds[0]
+        )
+        return self._shared_layers(item_features, "item_tower")
+
+    def compute_ssl_embeddings(self, category):
+        ssl_embed = self._compute_sparse_feats(category)
+        if self.item_dense:
+            ssl_dense = self._compute_dense_feats(category)
+            ssl_embed = tf.concat([ssl_embed, ssl_dense], axis=1)
+        return self._shared_layers(ssl_embed, "item_tower")
+
+    def _compute_sparse_feats(self, category):
+        if category == "user":
+            sparse_indices = self.user_sparse_indices
+        elif category == "item":
+            sparse_indices = self.item_sparse_indices
+        elif category == "item_neg":
+            sparse_indices = self.item_sparse_indices_neg
+        elif category == "ssl_left":
+            sparse_indices = self.ssl_left_sparse_indices
+        elif category == "ssl_right":
+            sparse_indices = self.ssl_right_sparse_indices
+        else:
+            raise ValueError("Unknown sparse indices category.")
+
+        if category.startswith("ssl"):
+            sparse_embed = tf.nn.embedding_lookup(self.ssl_feat, sparse_indices)
+        else:
+            sparse_embed = tf.nn.embedding_lookup(self.sparse_feat, sparse_indices)
         return tf.keras.layers.Flatten()(sparse_embed)
 
-    def _compute_dense_feats(self, is_user, is_item_neg=False):
-        if is_user:
-            dense_values = self.user_dense_values
+    def _compute_dense_feats(self, category):
+        if category == "user":
             dense_col_indices = self.data_info.user_dense_col.index
+            dense_values = self.user_dense_values
         else:
-            dense_values = (
-                self.item_dense_values
-                if not is_item_neg
-                else self.item_dense_values_neg
-            )
             dense_col_indices = self.data_info.item_dense_col.index
+            if category == "item":
+                dense_values = self.item_dense_values
+            elif category == "item_neg":
+                dense_values = self.item_dense_values_neg
+            elif category == "ssl_left":
+                dense_values = self.ssl_left_dense_values
+            elif category == "ssl_right":
+                dense_values = self.ssl_right_dense_values
+            else:
+                raise ValueError("Unknown dense values category.")
         batch_size = tf.shape(dense_values)[0]
         dense_values = tf.expand_dims(dense_values, axis=2)
 
@@ -255,6 +302,18 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         dense_embed = tf.tile(dense_embed, [batch_size, 1, 1])
         # broadcast element-wise multiplication
         return tf.keras.layers.Flatten()(dense_values * dense_embed)
+
+    def _shared_layers(self, inputs, name):
+        embeds = dense_nn(
+            inputs,
+            self.hidden_units,
+            use_bn=self.use_bn,
+            dropout_rate=self.dropout_rate,
+            is_training=self.is_training,
+            reuse_layer=True,
+            name=name,
+        )
+        return normalize_embeds(embeds, backend="tf") if self.norm_embed else embeds
 
     def fit(
         self,
@@ -311,19 +370,23 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             item_feed_dict.update({self.item_dense_values: item_dense_values})
         self.item_embed = self.sess.run(self.item_vector, item_feed_dict)
 
-    def adjust_logits(self, logits):
+        if hasattr(self, "temperature_var"):
+            self.temperature = self.sess.run(self.temperature_var)
+            print(f"Learned temperature variable: {self.temperature}")
+
+    def adjust_logits(self, logits, all_adjust=True):
         temperature = (
             self.temperature_var
             if hasattr(self, "temperature_var")
             else self.temperature
         )
         logits = tf.math.divide_no_nan(logits, temperature)
-        if self.use_correction:
+        if self.use_correction and all_adjust:
             correction = tf.clip_by_value(self.correction, 1e-8, 1.0)
             logQ = tf.reshape(tf.math.log(correction), (1, -1))
             logits -= logQ
 
-        if self.remove_accidental_hits:
+        if self.remove_accidental_hits and all_adjust:
             row_items = tf.reshape(self.item_indices, (1, -1))
             col_items = tf.reshape(self.item_indices, (-1, 1))
             equal_items = tf.cast(tf.equal(row_items, col_items), tf.float32)

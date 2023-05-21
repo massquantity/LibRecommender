@@ -4,6 +4,7 @@ from .batch_unit import (
     PointwiseSepFeatBatch,
     SparseBatch,
 )
+from ..feature.ssl import rfm_mask_features
 from ..utils.constants import SequenceModels
 
 
@@ -122,4 +123,7 @@ def _separate_feed_dict(model, data: PointwiseSepFeatBatch, is_training):
         feed_dict.update({model.item_sparse_indices: data.sparse_indices.item_feats})
     if model.item_dense:
         feed_dict.update({model.item_dense_values: data.dense_values.item_feats})
+    if hasattr(model, "ssl_pattern") and model.ssl_pattern is not None:
+        ssl_feats = rfm_mask_features(model, len(data.items), model.ssl_pattern)
+        feed_dict.update(ssl_feats)
     return feed_dict

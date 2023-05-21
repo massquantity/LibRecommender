@@ -12,18 +12,20 @@ from tests.utils_save_load import save_load_model
 
 
 @pytest.mark.parametrize(
-    "task, loss_type, use_correction, temperature, sampler, neg_sampling",
+    "task, loss_type, use_correction, temperature, ssl_pattern, sampler, neg_sampling",
     [
-        ("rating", "softmax", True, 1.0, "random", True),
-        ("ranking", "whatever", True, 1.0, "random", True),
-        ("ranking", "softmax", True, 1.0, "random", None),
-        ("ranking", "cross_entropy", True, 1.0, "random", False),
-        ("ranking", "cross_entropy", True, 1.0, "random", True),
-        ("ranking", "max_margin", True, 1.0, "unconsumed", True),
-        ("ranking", "max_margin", True, 1.0, "unconsumed", False),
-        ("ranking", "softmax", True, 2.0, "popular", True),
-        ("ranking", "softmax", False, 0.0, "unconsumed", True),
-        ("ranking", "softmax", True, -1, "random", False),
+        ("rating", "softmax", True, 1.0, None, "random", True),
+        ("ranking", "whatever", True, 1.0, None, "random", True),
+        ("ranking", "softmax", True, 1.0, None, "random", None),
+        ("ranking", "cross_entropy", True, 1.0, None, "random", False),
+        ("ranking", "cross_entropy", True, 1.0, None, "random", True),
+        ("ranking", "max_margin", True, 1.0, None, "unconsumed", True),
+        ("ranking", "max_margin", True, 1.0, None, "unconsumed", False),
+        ("ranking", "cross_entropy", True, 1.0, "rfm", "random", False),
+        ("ranking", "softmax", True, 2.0, "whatever", "popular", True),
+        ("ranking", "softmax", True, 2.0, "rfm-complementary", "popular", True),
+        ("ranking", "softmax", False, 0.0, "rfm", "unconsumed", True),
+        ("ranking", "softmax", True, -1, None, "random", False),
     ],
 )
 @pytest.mark.parametrize(
@@ -39,6 +41,7 @@ def test_two_tower(
     loss_type,
     use_correction,
     temperature,
+    ssl_pattern,
     sampler,
     neg_sampling,
     norm_embed,
@@ -63,6 +66,9 @@ def test_two_tower(
     if task == "rating" or loss_type == "whatever":
         with pytest.raises(ValueError):
             _ = TwoTower(task, data_info, loss_type)
+    elif ssl_pattern == "whatever" or (ssl_pattern and loss_type != "softmax"):
+        with pytest.raises(ValueError):
+            _ = TwoTower(task, data_info, loss_type, ssl_pattern=ssl_pattern)
     elif neg_sampling is None:
         with pytest.raises(AssertionError):
             TwoTower(task, data_info).fit(train_data, neg_sampling)
@@ -88,6 +94,7 @@ def test_two_tower(
             use_correction=use_correction,
             temperature=temperature,
             remove_accidental_hits=remove_accidental_hits,
+            ssl_pattern=ssl_pattern,
             tf_sess_config=None,
         )
         model.fit(

@@ -36,6 +36,16 @@ def choose_tf_loss(model, task, loss_type):
             loss = tf.reduce_mean(
                 softmax_cross_entropy(model, model.user_vector, model.item_vector)
             )
+            if hasattr(model, "ssl_pattern") and model.ssl_pattern is not None:
+                ssl_loss = tf.reduce_mean(
+                    softmax_cross_entropy(
+                        model,
+                        model.ssl_left_vector,
+                        model.ssl_right_vector,
+                        all_adjust=False,
+                    )
+                )
+                loss += model.alpha * ssl_loss
         else:
             raise ValueError(f"unknown loss_type for ranking: {loss_type}")
 
@@ -58,8 +68,8 @@ def max_margin_loss(user_embeds, item_embeds, item_embeds_neg, margin):
     return tf.nn.relu(margin + neg_scores - pos_scores)
 
 
-def softmax_cross_entropy(model, user_embeds, item_embeds):
+def softmax_cross_entropy(model, user_embeds, item_embeds, all_adjust=True):
     logits = tf.matmul(user_embeds, item_embeds, transpose_b=True)
-    logits = model.adjust_logits(logits)
+    logits = model.adjust_logits(logits, all_adjust)
     labels = tf.range(tf.shape(user_embeds)[0])
     return tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits)
