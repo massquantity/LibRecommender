@@ -23,6 +23,7 @@ from tests.utils_save_load import save_load_model
         ("ranking", "max_margin", True, 1.0, None, "unconsumed", False),
         ("ranking", "cross_entropy", True, 1.0, "rfm", "random", False),
         ("ranking", "softmax", True, 2.0, "whatever", "popular", True),
+        ("ranking", "softmax", True, 0.1, "cfm", "random", True),
         ("ranking", "softmax", True, 2.0, "rfm-complementary", "popular", True),
         ("ranking", "softmax", False, 0.0, "rfm", "unconsumed", True),
         ("ranking", "softmax", True, -1, None, "random", False),
