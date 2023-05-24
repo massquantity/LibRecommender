@@ -3,6 +3,7 @@ import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
 from ..embedding import normalize_embeds
+from ..feature.ssl import get_mutual_info
 from ..tfops import dense_nn, dropout_config, reg_config, sess_config, tf
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
@@ -39,7 +40,7 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         temperature=1.0,
         remove_accidental_hits=False,
         ssl_pattern=None,
-        alpha=0.1,
+        alpha=0.2,
         seed=42,
         tf_sess_config=None,
     ):
@@ -108,9 +109,6 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             self.ssl_left_vector = self.compute_ssl_embeddings("ssl_left")
             self.ssl_right_vector = self.compute_ssl_embeddings("ssl_right")
         count_params()
-
-        # from pprint import pprint
-        # pprint(tf.trainable_variables())
 
     def _build_placeholders(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
@@ -332,6 +330,8 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             _, item_counts = np.unique(train_data.item_indices, return_counts=True)
             assert len(item_counts) == self.n_items
             self.item_corrections = item_counts / len(train_data)
+        if self.ssl_pattern is not None and self.ssl_pattern == "cfm":
+            self.sparse_feat_mutual_info = get_mutual_info(train_data, self.data_info)
 
         super().fit(
             train_data,
