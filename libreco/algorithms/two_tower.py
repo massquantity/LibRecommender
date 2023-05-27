@@ -11,6 +11,103 @@ from ..utils.validate import dense_field_size, sparse_feat_size
 
 
 class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
+    """*TwoTower* algorithm.
+
+    .. CAUTION::
+        TwoTower can only be used in ``ranking`` task.
+
+    .. versionadded:: 1.2.0
+
+    Parameters
+    ----------
+    task : {'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : :class:`~libreco.data.DataInfo` object
+        Object that contains useful information for training and inference.
+    loss_type : {'cross_entropy', 'max_margin', 'softmax'}, default: 'softmax'
+        Loss for model training.
+    embed_size: int, default: 16
+        Vector size of embeddings.
+    norm_embed : bool, default: False
+        Whether to normalize output embeddings.
+        It is generally recommended to normalize embeddings in ``TwoTower`` model.
+    n_epochs : int, default: 10
+        Number of epochs for training.
+    lr : float, default 0.001
+        Learning rate for training.
+    lr_decay : bool, default: False
+        Whether to use learning rate decay.
+    epsilon : float, default: 1e-5
+        A small constant added to the denominator to improve numerical stability in Adam optimizer.
+        According to the `official comment <https://github.com/tensorflow/tensorflow/blob/v1.15.0/tensorflow/python/training/adam.py#L64>`_,
+        the default value of `1e-8` for `epsilon` might not be a good default in general, so here we choose `1e-5`.
+        Users can try tuning this hyperparameter if the training is unstable.
+    reg : float or None, default: None
+        Regularization parameter, must be non-negative or None.
+    batch_size : int, default: 256
+        Batch size for training.
+    sampler : {'random', 'unconsumed', 'popular'}, default: 'random'
+        Negative sampling strategy. These strategies are only used in 'cross_entropy' and 'max_margin' loss.
+        For 'softmax' loss, in-batch sampling is leveraged based on Reference[1].
+
+        - ``'random'`` means random sampling.
+        - ``'unconsumed'`` samples items that the target user did not consume before.
+        - ``'popular'`` has a higher probability to sample popular items as negative samples.
+
+    num_neg : int, default: 1
+        Number of negative samples for each positive sample, only used in `ranking` task.
+    use_bn : bool, default: True
+        Whether to use batch normalization.
+    dropout_rate : float or None, default: None
+        Probability of an element to be zeroed. If it is None, dropout is not used.
+    hidden_units : int, list of int or tuple of (int,), default: (128, 64, 32)
+        Number of layers and corresponding layer size in MLP.
+
+        .. versionchanged:: 1.0.0
+           Accept type of ``int``, ``list`` or ``tuple``, instead of ``str``.
+
+    margin : float, default: 1.0
+        Margin used in `max_margin` loss.
+    use_correction : bool, default: True
+        Whether to use sampling bias correction in softmax loss described in Reference[1].
+    temperature : float, default: 1.0
+        Parameter added in logits when computing softmax. A typical value would be in the range [0.05, 0.5].
+        If one sets ``temperature <= 0``, it will be treated as a variable and learned during training.
+    remove_accidental_hits : bool, default: False
+        Whether to remove accidental hits of examples used as negatives. An accidental hit is defined as
+        a candidate that is used as an in-batch negative but has the same id with the positive candidate.
+        Note this could make the training slower.
+    ssl_pattern : {'rfm', 'rfm-complementary', 'cfm'} or None, default: None
+        Whether to use self-supervised learning technique described in References[2].
+        Note that self-supervised learning can only be used in softmax loss.
+
+        - ``'rfm'`` stands for *Random Feature Masking*.
+        - ``'rfm-complementary'`` stands for *Random Feature Masking* with complementary masking.
+        - ``'cfm'`` stands for *Correlated Feature Masking*.
+
+    alpha : int, default: 0.2
+        Parameter for controlling self-supervised loss weight in total loss during multi-task training.
+    seed : int, default: 42
+        Random seed.
+    tf_sess_config : dict or None, default: None
+        Optional TensorFlow session config, see `ConfigProto options
+        <https://github.com/tensorflow/tensorflow/blob/v2.10.0/tensorflow/core/protobuf/config.proto#L431>`_.
+
+    Raises
+    ------
+    ValueError
+        If ``ssl_pattern`` is not None and data doesn't have item sparse features.
+    ValueError
+        If ``ssl_pattern`` is not None and ``loss_type`` is not ``softmax``.
+
+    References
+    ----------
+    [1] *Xinyang Yi et al.* `Sampling-Bias-Corrected Neural Modeling for Large Corpus Item Recommendations
+    <https://storage.googleapis.com/pub-tools-public-publication-data/pdf/6c8a86c981a62b0126a11896b7f6ae0dae4c3566.pdf>`_.
+
+    [2] *Tiansheng Yao et al.* `Self-supervised Learning for Large-scale Item Recommendations
+    <https://arxiv.org/pdf/2007.12865.pdf>`_.
+    """
 
     user_variables = ["user_feat"]
     item_variables = ["item_feat"]
