@@ -80,7 +80,7 @@ class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     <https://arxiv.org/pdf/1511.06939.pdf>`_.
     """
 
-    item_variables = ["item_weights", "item_biases", "input_embed"]
+    item_variables = ["item_embeds", "item_biases", "input_embeds"]
 
     def __init__(
         self,
@@ -151,37 +151,38 @@ class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             self.user_indices = tf.placeholder(tf.int32, shape=[None])
             self.item_indices = tf.placeholder(tf.int32, shape=[None])
             self.labels = tf.placeholder(tf.float32, shape=[None])
-            item_vector = tf.nn.embedding_lookup(self.item_weights, self.item_indices)
+            user_embeds = self.user_embeds
+            item_embeds = tf.nn.embedding_lookup(self.item_embeds, self.item_indices)
+            item_biases = tf.nn.embedding_lookup(self.item_biases, self.item_indices)
             if self.norm_embed:
-                item_vector = normalize_embeds(item_vector, backend="tf")
-            item_bias = tf.nn.embedding_lookup(self.item_biases, self.item_indices)
-            self.output = (
-                tf.reduce_sum(tf.multiply(self.user_vector, item_vector), axis=1)
-                + item_bias
-            )
+                user_embeds, item_embeds = normalize_embeds(
+                    user_embeds, item_embeds, backend="tf"
+                )
+            self.output = tf.reduce_sum(user_embeds * item_embeds, axis=1) + item_biases
+
         elif self.loss_type == "bpr":
             self.item_indices_pos = tf.placeholder(tf.int32, shape=[None])
             self.item_indices_neg = tf.placeholder(tf.int32, shape=[None])
+            user_embeds = self.user_embeds
             item_embed_pos = tf.nn.embedding_lookup(
-                self.item_weights, self.item_indices_pos
+                self.item_embeds, self.item_indices_pos
             )
             item_embed_neg = tf.nn.embedding_lookup(
-                self.item_weights, self.item_indices_neg
+                self.item_embeds, self.item_indices_neg
             )
-            if self.norm_embed:
-                item_embed_pos, item_embed_neg = normalize_embeds(
-                    item_embed_pos, item_embed_neg, backend="tf"
-                )
             item_bias_pos = tf.nn.embedding_lookup(
                 self.item_biases, self.item_indices_pos
             )
             item_bias_neg = tf.nn.embedding_lookup(
                 self.item_biases, self.item_indices_neg
             )
-
+            if self.norm_embed:
+                user_embeds, item_embed_pos, item_embed_neg = normalize_embeds(
+                    user_embeds, item_embed_pos, item_embed_neg, backend="tf"
+                )
             item_diff = tf.subtract(item_bias_pos, item_bias_neg) + tf.reduce_sum(
                 tf.multiply(
-                    self.user_vector, tf.subtract(item_embed_pos, item_embed_neg)
+                    self.user_embeds, tf.subtract(item_embed_pos, item_embed_neg)
                 ),
                 axis=1,
             )
@@ -197,16 +198,16 @@ class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             initializer=tf.zeros_initializer(),
             regularizer=self.reg,
         )
-        self.item_weights = tf.get_variable(
-            name="item_weights",
+        self.item_embeds = tf.get_variable(
+            name="item_embeds",
             shape=[self.n_items, self.embed_size],
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
         # input_embed for rnn_layer, include padding value
-        self.input_embed = tf.get_variable(
-            name="input_embed",
+        self.input_embeds = tf.get_variable(
+            name="input_embeds",
             shape=[self.n_items + 1, self.hidden_units[0]],
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
@@ -218,7 +219,7 @@ class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         )
         self.user_interacted_len = tf.placeholder(tf.int64, shape=[None])
         seq_item_embed = tf.nn.embedding_lookup(
-            self.input_embed, self.user_interacted_seq
+            self.input_embeds, self.user_interacted_seq
         )
         rnn_output = tf_rnn(
             inputs=seq_item_embed,
@@ -230,9 +231,4 @@ class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             use_ln=self.use_ln,
             is_training=self.is_training,
         )
-        user_vector = tf_dense(units=self.embed_size, activation=None)(rnn_output)
-        self.user_vector = (
-            normalize_embeds(user_vector, backend="tf")
-            if self.norm_embed
-            else user_vector
-        )
+        self.user_embeds = tf_dense(units=self.embed_size, activation=None)(rnn_output)

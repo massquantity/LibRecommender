@@ -35,7 +35,7 @@ def normalize_prediction(preds, model, cold_start, unknown_num, unknown_index):
 def predict_from_embedding(model, user, item, cold_start, inner_id):
     user, item = convert_id(model, user, item, inner_id)
     unknown_num, unknown_index, user, item = check_unknown(model, user, item)
-    preds = np.sum(np.multiply(model.user_embed[user], model.item_embed[item]), axis=1)
+    preds = np.sum(model.user_embeds_np[user] * model.item_embeds_np[item], axis=1)
     return normalize_prediction(preds, model, cold_start, unknown_num, unknown_index)
 
 

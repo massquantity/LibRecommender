@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from libreco.algorithms import ALS, LightGCN
+from libreco.algorithms import ALS, LightGCN, RNN4Rec
 from tests.utils_data import set_ranking_labels
 
 
@@ -81,3 +81,23 @@ def ptest_knn(model, pd_data):
 def compare_diff(a, b):
     diff = set(a).symmetric_difference(b)
     return len(diff)
+
+
+def test_get_embeddings(pure_data_small):
+    pd_data, train_data, eval_data, data_info = pure_data_small
+
+    model = RNN4Rec("ranking", data_info, embed_size=16, n_epochs=1)
+    model.fit(train_data, neg_sampling=True, verbose=2, shuffle=True)
+    assert model.get_user_embedding().shape[0] == model.n_users
+    assert model.get_user_embedding(include_bias=False).shape[1] == model.embed_size
+    assert model.get_user_embedding(include_bias=True).shape[1] == model.embed_size + 1
+
+    assert model.get_user_embedding(user=1, include_bias=False).size == model.embed_size
+    assert model.get_user_embedding(user=2, include_bias=True).size == model.embed_size + 1
+
+    assert model.get_item_embedding().shape[0] == model.n_items
+    assert model.get_item_embedding(include_bias=False).shape[1] == model.embed_size
+    assert model.get_item_embedding(include_bias=True).shape[1] == model.embed_size + 1
+
+    assert model.get_item_embedding(item=3, include_bias=False).size == model.embed_size
+    assert model.get_item_embedding(item=4, include_bias=True).size == model.embed_size + 1

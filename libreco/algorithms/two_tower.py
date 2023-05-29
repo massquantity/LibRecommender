@@ -196,15 +196,15 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         tf.set_random_seed(self.seed)
         self._build_placeholders()
         self._build_variables()
-        self.user_vector = self.compute_user_embeddings("user")
-        self.item_vector = self.compute_item_embeddings("item")
+        self.user_embeds = self.compute_user_embeddings("user")
+        self.item_embeds = self.compute_item_embeddings("item")
         if self.loss_type == "cross_entropy":
-            self.output = tf.reduce_sum(self.user_vector * self.item_vector, axis=1)
+            self.output = tf.reduce_sum(self.user_embeds * self.item_embeds, axis=1)
         if self.loss_type == "max_margin":
-            self.item_vector_neg = self.compute_item_embeddings("item_neg")
+            self.item_embeds_neg = self.compute_item_embeddings("item_neg")
         if self.ssl_pattern is not None:
-            self.ssl_left_vector = self.compute_ssl_embeddings("ssl_left")
-            self.ssl_right_vector = self.compute_ssl_embeddings("ssl_right")
+            self.ssl_left_embeds = self.compute_ssl_embeddings("ssl_left")
+            self.ssl_right_embeds = self.compute_ssl_embeddings("ssl_right")
         count_params()
 
     def _build_placeholders(self):
@@ -453,7 +453,7 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         if self.user_dense:
             user_dense_values = self.data_info.user_dense_unique[:-1]
             user_feed_dict.update({self.user_dense_values: user_dense_values})
-        self.user_embed = self.sess.run(self.user_vector, user_feed_dict)
+        self.user_embeds_np = self.sess.run(self.user_embeds, user_feed_dict)
 
         item_feed_dict = {
             self.item_indices: np.arange(self.n_items),
@@ -465,7 +465,7 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         if self.item_dense:
             item_dense_values = self.data_info.item_dense_unique[:-1]
             item_feed_dict.update({self.item_dense_values: item_dense_values})
-        self.item_embed = self.sess.run(self.item_vector, item_feed_dict)
+        self.item_embeds_np = self.sess.run(self.item_embeds, item_feed_dict)
 
         if hasattr(self, "temperature_var"):
             self.temperature = self.sess.run(self.temperature_var)

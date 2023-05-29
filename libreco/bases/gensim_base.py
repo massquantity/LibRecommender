@@ -74,8 +74,8 @@ class GensimBase(EmbedBase):
             model=self,
             user_ids=[self.n_users],
             n_rec=min(2000, self.n_items),
-            user_embeddings=self.user_embed,
-            item_embeddings=self.item_embed,
+            user_embeddings=self.user_embeds_np,
+            item_embeddings=self.item_embeds_np,
             seq=None,
             filter_consumed=False,
             random_rec=False,
@@ -95,7 +95,7 @@ class GensimBase(EmbedBase):
             print("=" * 30)
 
     def set_embeddings(self):
-        self.item_embed = np.array(
+        self.item_embeds_np = np.array(
             [
                 self.gensim_model.wv.get_vector(str(i), norm=self.norm_embed)
                 for i in range(self.n_items)
@@ -104,9 +104,9 @@ class GensimBase(EmbedBase):
         user_embed = []
         for u in range(self.n_users):
             items = self.user_consumed[u]
-            user_embed.append(np.mean(self.item_embed[items], axis=0))
+            user_embed.append(np.mean(self.item_embeds_np[items], axis=0))
             # user_embed.append(self.item_embed[items[-1]])
-        self.user_embed = np.array(user_embed)
+        self.user_embeds_np = np.array(user_embed)
 
         # if self.norm_embed:
         #    user_norms = np.linalg.norm(self.user_embed, axis=1, keepdims=True)
@@ -125,7 +125,9 @@ class GensimBase(EmbedBase):
         if inference_only:
             variable_path = os.path.join(path, model_name)
             np.savez_compressed(
-                variable_path, user_embed=self.user_embed, item_embed=self.item_embed
+                variable_path,
+                user_embed=self.user_embeds_np,
+                item_embed=self.item_embeds_np,
             )
         else:
             model_path = os.path.join(path, f"{model_name}_gensim.pkl")

@@ -26,22 +26,22 @@ def choose_tf_loss(model, task, loss_type):
         elif loss_type == "max_margin":
             loss = tf.reduce_mean(
                 max_margin_loss(
-                    model.user_vector,
-                    model.item_vector,
-                    model.item_vector_neg,
+                    model.user_embeds,
+                    model.item_embeds,
+                    model.item_embeds_neg,
                     model.margin,
                 )
             )
         elif loss_type == "softmax":
             loss = tf.reduce_mean(
-                softmax_cross_entropy(model, model.user_vector, model.item_vector)
+                softmax_cross_entropy(model, model.user_embeds, model.item_embeds)
             )
             if hasattr(model, "ssl_pattern") and model.ssl_pattern is not None:
                 ssl_loss = tf.reduce_mean(
                     softmax_cross_entropy(
                         model,
-                        model.ssl_left_vector,
-                        model.ssl_right_vector,
+                        model.ssl_left_embeds,
+                        model.ssl_right_embeds,
                         all_adjust=False,
                     )
                 )
