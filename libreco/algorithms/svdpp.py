@@ -189,8 +189,8 @@ class SVDpp(EmbedBase):
         user_bias[:, 0] = bu
         item_bias = np.ones([len(qi), 2], dtype=qi.dtype)
         item_bias[:, 1] = bi
-        self.user_embed = np.hstack([puj, user_bias])
-        self.item_embed = np.hstack([qi, item_bias])
+        self.user_embeds_np = np.hstack([puj, user_bias])
+        self.item_embeds_np = np.hstack([qi, item_bias])
 
     def _set_sparse_interaction(self):
         assert self.recent_num is None or (

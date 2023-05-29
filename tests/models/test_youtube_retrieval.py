@@ -1,5 +1,3 @@
-import sys
-
 import pytest
 import tensorflow as tf
 from numpy.testing import assert_array_equal
@@ -51,26 +49,31 @@ from tests.utils_save_load import save_load_model
     ],
     indirect=True,
 )
-@pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize(
-    "norm_embed, lr_decay, reg, use_bn, dropout_rate, recent_num, random_num, hidden_units, num_workers",
+    "task, loss_type, neg_sampling",
     [
-        (True, False, None, False, None, 10, None, 1, 0),
-        (False, True, 0.001, True, 0.5, None, 10, [16, 16], 1),
-        (True, True, 0.001, False, None, None, None, (4, 4, 4), 2),
-        (False, False, None, False, None, 10, None, "64,64", 0),
-        (False, True, 0.001, True, 0.5, None, 10, [1, 2, 4.22], 0),
+        ("rating", "nce", True),
+        ("ranking", "unknown", True),
+        ("ranking", "nce", "wrong_labels"),
+        ("ranking", "sampled_softmax", True),
+        ("ranking", "sampled_softmax", False),
+        ("ranking", "nce", True),
     ],
 )
-@pytest.mark.parametrize("num_sampled_per_batch", [None, 1, 10])
-@pytest.mark.parametrize("neg_sampling", ["wrong_labels", False, True])
-@pytest.mark.parametrize("loss_type", ["nce", "sampled_softmax", "unknown"])
+@pytest.mark.parametrize(
+    "norm_embed, use_bn, dropout_rate, recent_num, random_num, hidden_units, num_sampled_per_batch",
+    [
+        (True, False, None, 10, None, 1, None),
+        (False, True, 0.5, None, 10, [16, 16], 1),
+        (True, False, None, None, None, (4, 4, 4), 10),
+        (False, False, None, 10, None, "64,64", None),
+        (False, True, 0.5, None, 10, [1, 2, 4.22], -1),
+    ],
+)
 def test_youtube_retrieval(
     config_feat_data_small,
     task,
     norm_embed,
-    lr_decay,
-    reg,
     use_bn,
     dropout_rate,
     num_sampled_per_batch,
@@ -79,12 +82,7 @@ def test_youtube_retrieval(
     recent_num,
     random_num,
     hidden_units,
-    num_workers,
 ):
-    if not sys.platform.startswith("linux") and num_workers > 0:
-        pytest.skip(
-            "Windows and macOS use `spawn` in multiprocessing, which does not work well in pytest"
-        )
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = config_feat_data_small
     if neg_sampling is False:
@@ -114,8 +112,6 @@ def test_youtube_retrieval(
             norm_embed=norm_embed,
             n_epochs=1,
             lr=1e-4,
-            lr_decay=lr_decay,
-            reg=reg,
             batch_size=10,
             use_bn=use_bn,
             dropout_rate=dropout_rate,
@@ -133,7 +129,6 @@ def test_youtube_retrieval(
             eval_data=eval_data,
             metrics=get_metrics(task),
             eval_user_num=200,
-            num_workers=num_workers,
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)

@@ -26,7 +26,7 @@ def embed_from_seq(model, user_ids, seq, inner_id):
             user_interacted_len=seq_len,
             is_training=False,
         )
-    embed = model.sess.run(model.user_vector, feed_dict)
+    embed = model.sess.run(model.user_embeds, feed_dict)
     bias = np.ones([1, 1], dtype=embed.dtype)
     return np.hstack([embed, bias])
 

@@ -3,6 +3,7 @@ from tqdm import tqdm
 
 from .trainer import BaseTrainer
 from ..batch import get_batch_loader, get_tf_feeds
+from ..embedding import normalize_embeds
 from ..evaluation import print_metrics
 from ..tfops import choose_tf_loss, lr_decay_config, tf, var_list_by_name
 from ..utils.constants import EmbeddingModels
@@ -173,13 +174,14 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
             else None
         )
 
+        user_embeds, item_embeds, item_biases = self._get_loss_inputs()
         if self.loss_type == "nce":
             self.loss = tf.reduce_mean(
                 tf.nn.nce_loss(
-                    weights=self.model.nce_weights,
-                    biases=self.model.nce_biases,
+                    weights=item_embeds,
+                    biases=item_biases,
                     labels=labels,
-                    inputs=self.model.user_vector,
+                    inputs=user_embeds,
                     num_sampled=num_sampled_per_batch,
                     num_classes=self.model.n_items,
                     num_true=1,
@@ -191,10 +193,10 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
         elif self.loss_type == "sampled_softmax":
             self.loss = tf.reduce_mean(
                 tf.nn.sampled_softmax_loss(
-                    weights=self.model.nce_weights,
-                    biases=self.model.nce_biases,
+                    weights=item_embeds,
+                    biases=item_biases,
                     labels=labels,
-                    inputs=self.model.user_vector,
+                    inputs=user_embeds,
                     num_sampled=num_sampled_per_batch,
                     num_classes=self.model.n_items,
                     num_true=1,
@@ -224,6 +226,16 @@ class YoutubeRetrievalTrainer(TensorFlowTrainer):
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         self.training_op = tf.group([optimizer_op, update_ops])
         self.sess.run(tf.global_variables_initializer())
+
+    def _get_loss_inputs(self):
+        item_biases = self.model.item_biases
+        if self.model.norm_embed:
+            user_embeds, item_embeds = normalize_embeds(
+                self.model.user_embeds, self.model.item_embeds, backend="tf"
+            )
+            return user_embeds, item_embeds, item_biases
+        else:
+            return self.model.user_embeds, self.model.item_embeds, item_biases
 
 
 class WideDeepTrainer(TensorFlowTrainer):

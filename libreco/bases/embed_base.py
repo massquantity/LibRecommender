@@ -42,8 +42,8 @@ class EmbedBase(Base):
 
     def __init__(self, task, data_info, embed_size, lower_upper_bound=None):
         super().__init__(task, data_info, lower_upper_bound)
-        self.user_embed = None
-        self.item_embed = None
+        self.user_embeds_np = None
+        self.item_embeds_np = None
         self.embed_size = embed_size
         self.num_threads = os.cpu_count()
         self.trainer = None
@@ -53,6 +53,7 @@ class EmbedBase(Base):
         self.item_norm = None
         self.sim_type = None
         self.approximate = False
+        self.include_bias = False
         self.model_built = False
         self.trainer = None
         self.loaded = False
@@ -148,8 +149,8 @@ class EmbedBase(Base):
             model=self,
             user_ids=[self.n_users],
             n_rec=min(2000, self.n_items),
-            user_embeddings=self.user_embed,
-            item_embeddings=self.item_embed,
+            user_embeddings=self.user_embeds_np,
+            item_embeddings=self.item_embeds_np,
             seq=None,
             filter_consumed=False,
             random_rec=False,
@@ -254,8 +255,8 @@ class EmbedBase(Base):
                 self,
                 user_ids,
                 n_rec,
-                self.user_embed,
-                self.item_embed,
+                self.user_embeds_np,
+                self.item_embeds_np,
                 seq,
                 filter_consumed,
                 random_rec,
@@ -270,7 +271,7 @@ class EmbedBase(Base):
         pass
 
     def assign_embedding_oov(self):
-        for v_name in ("user_embed", "item_embed"):
+        for v_name in ("user_embeds_np", "item_embeds_np"):
             embed = getattr(self, v_name)
             if embed.ndim == 1:
                 new_embed = np.append(embed, np.mean(embed))
@@ -305,8 +306,8 @@ class EmbedBase(Base):
             variable_path = os.path.join(path, model_name)
             np.savez_compressed(
                 file=variable_path,
-                user_embed=self.user_embed,
-                item_embed=self.item_embed,
+                user_embed=self.user_embeds_np,
+                item_embed=self.item_embeds_np,
             )
         elif hasattr(self, "sess"):
             save_tf_variables(self.sess, path, model_name, inference_only=False)
@@ -341,8 +342,8 @@ class EmbedBase(Base):
         model = cls(**hparams)
         model.loaded = True
         model.default_recs = load_default_recs(path, model_name)
-        model.user_embed = variables["user_embed"]
-        model.item_embed = variables["item_embed"]
+        model.user_embeds_np = variables["user_embed"]
+        model.item_embeds_np = variables["item_embed"]
         return model
 
     def get_user_id(self, user):
@@ -355,13 +356,15 @@ class EmbedBase(Base):
             raise ValueError(f"unknown item: {item}")
         return self.data_info.item2id[item]
 
-    def get_user_embedding(self, user=None):
+    def get_user_embedding(self, user=None, include_bias=False):
         """Get user embedding(s) from the model.
 
         Parameters
         ----------
-        user : int or str or None
+        user : int or str or None, default: None
             Query user id. If it is None, all user embeddings will be returned.
+        include_bias : bool, default: False
+            Whether to include bias term in returned embeddings.
 
         Returns
         -------
@@ -376,20 +379,28 @@ class EmbedBase(Base):
             If the model has not been trained.
         """
         assert (
-            self.user_embed is not None
+            self.user_embeds_np is not None
         ), "call `model.fit()` before getting user embeddings"
+        user_embeds = (
+            self.user_embeds_np[:-1]
+            if include_bias
+            else self.user_embeds_np[:-1, : self.embed_size]
+        )
         if user is None:
-            return self.user_embed[:-1, : self.embed_size]  # remove oov
-        user_id = self.get_user_id(user)
-        return self.user_embed[user_id, : self.embed_size]
+            return user_embeds
+        else:
+            user_id = self.get_user_id(user)
+            return user_embeds[user_id]
 
-    def get_item_embedding(self, item=None):
+    def get_item_embedding(self, item=None, include_bias=False):
         """Get item embedding(s) from the model.
 
         Parameters
         ----------
-        item : int or str or None
+        item : int or str or None, default: None
             Query item id. If it is None, all item embeddings will be returned.
+        include_bias : bool, default: False
+            Whether to include bias term in returned embeddings.
 
         Returns
         -------
@@ -404,12 +415,18 @@ class EmbedBase(Base):
             If the model has not been trained.
         """
         assert (
-            self.item_embed is not None
+            self.item_embeds_np is not None
         ), "call `model.fit()` before getting item embeddings"
+        item_embeds = (
+            self.item_embeds_np[:-1]
+            if include_bias
+            else self.item_embeds_np[:-1, : self.embed_size]
+        )
         if item is None:
-            return self.item_embed[:-1, : self.embed_size]
-        item_id = self.get_item_id(item)
-        return self.item_embed[item_id, : self.embed_size]
+            return item_embeds
+        else:
+            item_id = self.get_item_id(item)
+            return item_embeds[item_id]
 
     def init_knn(
         self, approximate, sim_type, M=100, ef_construction=200, ef_search=200
@@ -443,7 +460,9 @@ class EmbedBase(Base):
         """
         if sim_type == "cosine":
             space = "cosinesimil"
+            self.include_bias = False
         elif sim_type == "inner-product":
+            self.include_bias = True
             space = "negdotprod"
         else:
             raise ValueError(
@@ -475,12 +494,20 @@ class EmbedBase(Base):
                 raise
             else:
                 print("using approximate searching mode...")
-            self.user_index = _create_index(self.get_user_embedding())
-            self.item_index = _create_index(self.get_item_embedding())
+            self.user_index = _create_index(
+                self.get_user_embedding(include_bias=self.include_bias)
+            )
+            self.item_index = _create_index(
+                self.get_item_embedding(include_bias=self.include_bias)
+            )
         elif sim_type == "cosine":
-            self.user_norm = np.linalg.norm(self.get_user_embedding(), axis=1)
+            self.user_norm = np.linalg.norm(
+                self.get_user_embedding(include_bias=self.include_bias), axis=1
+            )
             self.user_norm[self.user_norm == 0] = 1.0
-            self.item_norm = np.linalg.norm(self.get_item_embedding(), axis=1)
+            self.item_norm = np.linalg.norm(
+                self.get_item_embedding(include_bias=self.include_bias), axis=1
+            )
             self.item_norm[self.item_norm == 0] = 1.0
         self.approximate = approximate
         self.sim_type = sim_type
@@ -500,12 +527,12 @@ class EmbedBase(Base):
         similar users : list
             A list of k similar users.
         """
-        query = self.get_user_embedding(user)
+        query = self.get_user_embedding(user, include_bias=self.include_bias)
         if self.approximate:
             ids, _ = self.user_index.knnQuery(query, k)
             return [self.data_info.id2user[i] for i in ids]
 
-        embeds = self.get_user_embedding()
+        embeds = self.get_user_embedding(include_bias=self.include_bias)
         sim = query.dot(embeds.T)
         if self.sim_type == "cosine":
             user_id = self.get_user_id(user)
@@ -530,12 +557,12 @@ class EmbedBase(Base):
         similar items : list
             A list of k similar items.
         """
-        query = self.get_item_embedding(item)
+        query = self.get_item_embedding(item, include_bias=self.include_bias)
         if self.approximate:
             ids, _ = self.item_index.knnQuery(query, k)
             return [self.data_info.id2item[i] for i in ids]
 
-        embeds = self.get_item_embedding()
+        embeds = self.get_item_embedding(include_bias=self.include_bias)
         sim = query.dot(embeds.T)
         if self.sim_type == "cosine":
             item_id = self.get_item_id(item)

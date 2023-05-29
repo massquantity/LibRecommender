@@ -91,8 +91,8 @@ def test_als(pure_data_small, task, neg_sampling, reg, alpha):
         with pytest.raises(ValueError):
             least_squares(
                 train_data.sparse_interaction,
-                X=model.user_embed,
-                Y=model.item_embed,
+                X=model.user_embeds_np,
+                Y=model.item_embeds_np,
                 reg=5.0,
                 embed_size=16,
                 num=model.n_users,
@@ -101,8 +101,8 @@ def test_als(pure_data_small, task, neg_sampling, reg, alpha):
         with pytest.raises(ValueError):
             least_squares_cg(
                 train_data.sparse_interaction,
-                X=model.user_embed,
-                Y=model.item_embed,
+                X=model.user_embeds_np,
+                Y=model.item_embeds_np,
                 reg=5.0,
                 embed_size=16,
                 num=model.n_users,
@@ -113,8 +113,8 @@ def test_als(pure_data_small, task, neg_sampling, reg, alpha):
         if task == "rating":
             least_squares(
                 train_data.sparse_interaction,
-                X=model.user_embed,
-                Y=model.item_embed,
+                X=model.user_embeds_np,
+                Y=model.item_embeds_np,
                 reg=5.0,
                 embed_size=16,
                 num=model.n_users,
@@ -122,8 +122,8 @@ def test_als(pure_data_small, task, neg_sampling, reg, alpha):
             )
             least_squares_cg(
                 train_data.sparse_interaction,
-                X=model.user_embed,
-                Y=model.item_embed,
+                X=model.user_embeds_np,
+                Y=model.item_embeds_np,
                 reg=5.0,
                 embed_size=16,
                 num=model.n_users,
@@ -134,8 +134,8 @@ def test_als(pure_data_small, task, neg_sampling, reg, alpha):
         if task == "ranking":
             least_squares(
                 train_data.sparse_interaction.T.tocsr(),
-                X=model.item_embed,
-                Y=model.user_embed,
+                X=model.item_embeds_np,
+                Y=model.user_embeds_np,
                 reg=5.0,
                 embed_size=16,
                 num=model.n_items,
@@ -143,8 +143,8 @@ def test_als(pure_data_small, task, neg_sampling, reg, alpha):
             )
             least_squares_cg(
                 train_data.sparse_interaction.T.tocsr(),
-                X=model.item_embed,
-                Y=model.user_embed,
+                X=model.item_embeds_np,
+                Y=model.user_embeds_np,
                 reg=5.0,
                 embed_size=16,
                 num=model.n_items,

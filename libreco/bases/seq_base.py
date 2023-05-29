@@ -35,8 +35,8 @@ class SeqEmbedBase(EmbedBase):
         self.recent_seqs, self.recent_seq_lens = self._set_recent_seqs()
         self.user_interacted_seq = None
         self.user_interacted_len = None
-        self.user_vector = None
-        self.item_weights = None
+        self.user_embeds = None
+        self.item_embeds = None
         self.item_biases = None
 
     def build_model(self):
@@ -55,16 +55,18 @@ class SeqEmbedBase(EmbedBase):
         }
         if hasattr(self, "user_indices"):
             feed_dict[self.user_indices] = np.arange(self.n_users)
-        user_vector = self.sess.run(self.user_vector, feed_dict)
-        item_weights = self.sess.run(self.item_weights)
+        user_embeds = self.sess.run(self.user_embeds, feed_dict)
+        item_embeds = self.sess.run(self.item_embeds)
         item_biases = self.sess.run(self.item_biases)
         if self.norm_embed:
-            item_weights = normalize_embeds(item_weights, backend="np")
+            user_embeds, item_embeds = normalize_embeds(
+                user_embeds, item_embeds, backend="np"
+            )
 
-        user_bias = np.ones([len(user_vector), 1], dtype=user_vector.dtype)
-        item_bias = item_biases[:, None]
-        self.user_embed = np.hstack([user_vector, user_bias])
-        self.item_embed = np.hstack([item_weights, item_bias])
+        user_biases = np.ones([len(user_embeds), 1], dtype=user_embeds.dtype)
+        item_biases = item_biases[:, None]
+        self.user_embeds_np = np.hstack([user_embeds, user_biases])
+        self.item_embeds_np = np.hstack([item_embeds, item_biases])
 
     def save(self, path, model_name, inference_only=False, **_):
         super().save(path, model_name, inference_only=False)
@@ -72,14 +74,14 @@ class SeqEmbedBase(EmbedBase):
             embed_path = os.path.join(path, model_name)
             np.savez_compressed(
                 file=embed_path,
-                user_embed=self.user_embed,
-                item_embed=self.item_embed,
+                user_embed=self.user_embeds_np,
+                item_embed=self.item_embeds_np,
             )
 
     @classmethod
     def load(cls, path, model_name, data_info, **kwargs):
         model = load_tf_variables(cls, path, model_name, data_info)
         embeddings = np.load(os.path.join(path, f"{model_name}.npz"))
-        model.user_embed = embeddings["user_embed"]
-        model.item_embed = embeddings["item_embed"]
+        model.user_embeds_np = embeddings["user_embed"]
+        model.item_embeds_np = embeddings["item_embed"]
         return model

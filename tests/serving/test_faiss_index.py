@@ -12,7 +12,7 @@ def test_faiss_index(embed_model):
 
     save_faiss_index(SAVE_PATH, embed_model, 80, 10)
     index = faiss.read_index(os.path.join(SAVE_PATH, "faiss_index.bin"))
-    _, ids = index.search(embed_model.user_embed[0].reshape(1, -1), 10)
+    _, ids = index.search(embed_model.user_embeds_np[0].reshape(1, -1), 10)
     assert ids.shape == (1, 10)
     assert index.ntotal == embed_model.n_items
     assert index.d == embed_model.embed_size + 1  # embed + bias

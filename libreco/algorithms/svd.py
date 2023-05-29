@@ -152,5 +152,5 @@ class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         item_bias[:, 1] = bi
         if self.norm_embed:
             pu, qi = normalize_embeds(pu, qi, backend="np")
-        self.user_embed = np.hstack([pu, user_bias])
-        self.item_embed = np.hstack([qi, item_bias])
+        self.user_embeds_np = np.hstack([pu, user_bias])
+        self.item_embeds_np = np.hstack([qi, item_bias])

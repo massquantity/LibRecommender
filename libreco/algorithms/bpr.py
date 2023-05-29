@@ -141,20 +141,20 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     def _build_model_cython(self):
         np_rng = np.random.default_rng(self.seed)
         # last dimension is item bias, so for user all set to 1.0
-        self.user_embed = truncated_normal(
+        self.user_embeds_np = truncated_normal(
             np_rng,
             shape=(self.n_users, self.embed_size + 1),
             mean=0.0,
             scale=0.03,
         )
-        self.user_embed[:, self.embed_size] = 1.0
-        self.item_embed = truncated_normal(
+        self.user_embeds_np[:, self.embed_size] = 1.0
+        self.item_embeds_np = truncated_normal(
             np_rng,
             shape=(self.n_items, self.embed_size + 1),
             mean=0.0,
             scale=0.03,
         )
-        self.item_embed[:, self.embed_size] = 0.0
+        self.item_embeds_np[:, self.embed_size] = 0.0
 
     def _build_model_tf(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
@@ -281,13 +281,14 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 eval_batch_size=eval_batch_size,
                 eval_user_num=eval_user_num,
             )
+
         self.assign_embedding_oov()
         self.default_recs = recommend_from_embedding(
             model=self,
             user_ids=[self.n_users],
             n_rec=min(2000, self.n_items),
-            user_embeddings=self.user_embed,
-            item_embeddings=self.item_embed,
+            user_embeddings=self.user_embeds_np,
+            item_embeddings=self.item_embeds_np,
             seq=None,
             filter_consumed=False,
             random_rec=False,
@@ -314,8 +315,8 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         if self.optimizer == "sgd":
             trainer = partial(bpr_update)
         elif self.optimizer == "momentum":
-            user_velocity = np.zeros_like(self.user_embed, dtype=np.float32)
-            item_velocity = np.zeros_like(self.item_embed, dtype=np.float32)
+            user_velocity = np.zeros_like(self.user_embeds_np, dtype=np.float32)
+            item_velocity = np.zeros_like(self.item_embeds_np, dtype=np.float32)
             momentum = 0.9
             trainer = partial(
                 bpr_update,
@@ -325,10 +326,10 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             )
         elif self.optimizer == "adam":
             # Refer to the `Deep Learning` book, which is called first and second moment
-            user_1st_moment = np.zeros_like(self.user_embed, dtype=np.float32)
-            item_1st_moment = np.zeros_like(self.item_embed, dtype=np.float32)
-            user_2nd_moment = np.zeros_like(self.user_embed, dtype=np.float32)
-            item_2nd_moment = np.zeros_like(self.item_embed, dtype=np.float32)
+            user_1st_moment = np.zeros_like(self.user_embeds_np, dtype=np.float32)
+            item_1st_moment = np.zeros_like(self.item_embeds_np, dtype=np.float32)
+            user_2nd_moment = np.zeros_like(self.user_embeds_np, dtype=np.float32)
+            item_2nd_moment = np.zeros_like(self.item_embeds_np, dtype=np.float32)
             trainer = partial(
                 bpr_update,
                 u_1st_mom=user_1st_moment,
@@ -354,8 +355,8 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                     user_indices=user_indices,
                     item_indices=item_indices,
                     sparse_interaction=train_data.sparse_interaction,
-                    user_embed=self.user_embed,
-                    item_embed=self.item_embed,
+                    user_embed=self.user_embeds_np,
+                    item_embed=self.item_embeds_np,
                     lr=self.lr,
                     reg=self.reg or 0.0,
                     n_users=self.n_users,
@@ -389,5 +390,5 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             user_embed, item_embed = normalize_embeds(
                 user_embed, item_embed, backend="np"
             )
-        self.user_embed = np.hstack([user_embed, user_bias])
-        self.item_embed = np.hstack([item_embed, item_bias])
+        self.user_embeds_np = np.hstack([user_embed, user_bias])
+        self.item_embeds_np = np.hstack([item_embed, item_bias])

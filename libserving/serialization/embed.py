@@ -27,8 +27,8 @@ def save_embed(path: str, model: EmbedBase):
     save_model_name(path, model)
     save_id_mapping(path, model.data_info)
     save_user_consumed(path, model.data_info)
-    save_vectors(path, model.user_embed, model.n_users, "user_embed.json")
-    save_vectors(path, model.item_embed, model.n_items, "item_embed.json")
+    save_vectors(path, model.user_embeds_np, model.n_users, "user_embed.json")
+    save_vectors(path, model.item_embeds_np, model.n_items, "item_embed.json")
 
 
 def save_vectors(path: str, embeds: np.ndarray, num: int, name: str):
@@ -44,7 +44,7 @@ def save_faiss_index(path: str, model: EmbedBase, nlist: int = 80, nprobe: int =
 
     check_path_exists(path)
     index_path = os.path.join(path, "faiss_index.bin")
-    item_embeds = model.item_embed[: model.n_items].astype(np.float32)
+    item_embeds = model.item_embeds_np[: model.n_items].astype(np.float32)
     d = item_embeds.shape[1]
     quantizer = faiss.IndexFlatIP(d)
     index = faiss.IndexIVFFlat(quantizer, d, nlist, faiss.METRIC_INNER_PRODUCT)

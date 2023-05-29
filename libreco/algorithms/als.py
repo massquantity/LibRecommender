@@ -83,10 +83,10 @@ class ALS(EmbedBase):
 
     def build_model(self):
         np_rng = np.random.default_rng(self.seed)
-        self.user_embed = truncated_normal(
+        self.user_embeds_np = truncated_normal(
             np_rng, shape=[self.n_users, self.embed_size], mean=0.0, scale=0.03
         )
-        self.item_embed = truncated_normal(
+        self.item_embeds_np = truncated_normal(
             np_rng, shape=[self.n_items, self.embed_size], mean=0.0, scale=0.03
         )
 
@@ -151,15 +151,15 @@ class ALS(EmbedBase):
             with time_block(f"Epoch {epoch}", verbose):
                 trainer(
                     interaction=user_interaction,
-                    X=self.user_embed,
-                    Y=self.item_embed,
+                    X=self.user_embeds_np,
+                    Y=self.item_embeds_np,
                     reg=self.reg,
                     num_threads=self.n_threads,
                 )
                 trainer(
                     interaction=item_interaction,
-                    X=self.item_embed,
-                    Y=self.user_embed,
+                    X=self.item_embeds_np,
+                    Y=self.user_embeds_np,
                     reg=self.reg,
                     num_threads=self.n_threads,
                 )
@@ -182,8 +182,8 @@ class ALS(EmbedBase):
             model=self,
             user_ids=[self.n_users],
             n_rec=min(2000, self.n_items),
-            user_embeddings=self.user_embed,
-            item_embeddings=self.item_embed,
+            user_embeddings=self.user_embeds_np,
+            item_embeddings=self.item_embeds_np,
             seq=None,
             filter_consumed=False,
             random_rec=False,
@@ -212,7 +212,9 @@ class ALS(EmbedBase):
         save_default_recs(self, path, model_name)
         variable_path = os.path.join(path, model_name)
         np.savez_compressed(
-            variable_path, user_embed=self.user_embed, item_embed=self.item_embed
+            variable_path,
+            user_embed=self.user_embeds_np,
+            item_embed=self.item_embeds_np,
         )
 
     def set_embeddings(self):  # pragma: no cover
@@ -232,9 +234,9 @@ class ALS(EmbedBase):
         variables = np.load(variable_path)
         # remove oov values
         old_var = variables["user_embed"][:-1]
-        self.user_embed[: len(old_var)] = old_var
+        self.user_embeds_np[: len(old_var)] = old_var
         old_var = variables["item_embed"][:-1]
-        self.item_embed[: len(old_var)] = old_var
+        self.item_embeds_np[: len(old_var)] = old_var
 
 
 def least_squares(sparse_interaction, X, Y, reg, embed_size, num, mode):

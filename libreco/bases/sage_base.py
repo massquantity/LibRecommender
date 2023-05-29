@@ -145,11 +145,11 @@ class SageBase(EmbedBase):
             item_data = item_data.to_device(self.device)
             item_reprs = self.get_item_repr(item_data)
             item_embed.append(item_reprs.detach().cpu().numpy())
-        self.item_embed = np.concatenate(item_embed, axis=0)
-        self.user_embed = self.get_user_embeddings()
+        self.item_embeds_np = np.concatenate(item_embed, axis=0)
+        self.user_embeds_np = self._compute_user_embeddings()
 
     @torch.no_grad()
-    def get_user_embeddings(self):
+    def _compute_user_embeddings(self):
         self.torch_model.eval()
         user_embed = []
         if self.paradigm == "u2i":
@@ -163,6 +163,6 @@ class SageBase(EmbedBase):
         else:
             for u in range(self.n_users):
                 items = self.user_consumed[u]
-                user_embed.append(np.mean(self.item_embed[items], axis=0))
+                user_embed.append(np.mean(self.item_embeds_np[items], axis=0))
                 # user_embed.append(self.item_embed[items[-1]])
             return np.array(user_embed)

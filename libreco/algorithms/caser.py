@@ -73,7 +73,7 @@ class Caser(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     """
 
     user_variables = ["user_feat"]
-    item_variables = ["item_weights", "item_biases", "input_embed"]
+    item_variables = ["item_embeds", "item_biases", "input_embeds"]
 
     def __init__(
         self,
@@ -132,14 +132,14 @@ class Caser(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self._build_variables()
         self._build_user_embeddings()
 
-        item_vector = tf.nn.embedding_lookup(self.item_weights, self.item_indices)
+        user_embeds = self.user_embeds
+        item_embeds = tf.nn.embedding_lookup(self.item_embeds, self.item_indices)
+        item_biases = tf.nn.embedding_lookup(self.item_biases, self.item_indices)
         if self.norm_embed:
-            item_vector = normalize_embeds(item_vector, backend="tf")
-        item_bias = tf.nn.embedding_lookup(self.item_biases, self.item_indices)
-        self.output = (
-            tf.reduce_sum(tf.multiply(self.user_vector, item_vector), axis=1)
-            + item_bias
-        )
+            user_embeds, item_embeds = normalize_embeds(
+                user_embeds, item_embeds, backend="tf"
+            )
+        self.output = tf.reduce_sum(user_embeds * item_embeds, axis=1) + item_biases
         count_params()
 
     def _build_placeholders(self):
@@ -166,16 +166,16 @@ class Caser(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             shape=[self.n_items],
             initializer=tf.zeros_initializer(),
         )
-        self.item_weights = tf.get_variable(
-            name="item_weights",
+        self.item_embeds = tf.get_variable(
+            name="item_embeds",
             shape=[self.n_items, self.embed_size * 2],
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
         # input_embed for cnn_layer, include padding value
-        self.input_embed = tf.get_variable(
-            name="input_embed",
+        self.input_embeds = tf.get_variable(
+            name="input_embeds",
             shape=[self.n_items + 1, self.embed_size],
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
@@ -185,7 +185,7 @@ class Caser(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         user_repr = tf.nn.embedding_lookup(self.user_feat, self.user_indices)
         # B * seq * K
         seq_item_embed = tf.nn.embedding_lookup(
-            self.input_embed, self.user_interacted_seq
+            self.input_embeds, self.user_interacted_seq
         )
 
         convs_out = []
@@ -224,9 +224,4 @@ class Caser(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
         convs_out = tf.concat(convs_out, axis=1)
         convs_out = tf_dense(units=self.embed_size, activation=tf.nn.relu)(convs_out)
-        user_vector = tf.concat([user_repr, convs_out], axis=1)
-        self.user_vector = (
-            normalize_embeds(user_vector, backend="tf")
-            if self.norm_embed
-            else user_vector
-        )
+        self.user_embeds = tf.concat([user_repr, convs_out], axis=1)
