@@ -81,16 +81,18 @@ def ptest_seq_recommends(model, pd_data):
     user1, user2 = users[0], users[1]
     with pytest.raises(
         ValueError,
-        match="Batch recommend doesn't support arbitrary item sequence*",
+        match="Batch inference doesn't support arbitrary item sequence*",
     ):
         model.recommend_user([user1, user2], 3, seq=[1, 2, 3])
-    with pytest.raises(AssertionError):
+    with pytest.raises(
+        (ValueError, AssertionError),
+        match="`seq` must be list or numpy.ndarray."
+    ):
         model.recommend_user(user1, 3, seq=(1, 2))
 
     seq1 = [1, 23, "898", 0, -1, -3, 7]
     seq2 = []
     reco_take_one = model.recommend_user(user=user1, n_rec=7, seq=seq1)[user1]
     reco_take_two = model.recommend_user(user=user2, n_rec=7, seq=seq2)[user2]
-    reco_take_the = model.recommend_user(user=[user2], n_rec=7, seq=seq2)[user2]
-    assert len(reco_take_one) == len(reco_take_two) == len(reco_take_the) == 7
+    assert len(reco_take_one) == len(reco_take_two) == 7
     return reco_take_one

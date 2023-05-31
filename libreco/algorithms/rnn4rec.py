@@ -1,12 +1,12 @@
 """Implementation of RNN4Rec model."""
-from ..bases import ModelMeta, SeqEmbedBase
+from ..bases import DynEmbedBase, ModelMeta
 from ..embedding import normalize_embeds
 from ..tfops import dropout_config, reg_config, tf, tf_dense, tf_rnn
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
 
 
-class RNN4Rec(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
+class RNN4Rec(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     """*RNN4Rec* algorithm.
 
     .. NOTE::

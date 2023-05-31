@@ -1,34 +1,31 @@
 """Implementation of YouTubeRetrieval."""
-import os
-
 import numpy as np
 
-from ..bases import EmbedBase, ModelMeta
+from ..bases import DynEmbedBase, ModelMeta
 from ..embedding import normalize_embeds
 from ..feature.multi_sparse import true_sparse_field_size
+from ..recommendation import check_dynamic_rec_feats
+from ..recommendation.preprocess import process_embed_feat, process_sparse_embed_seq
 from ..tfops import (
     dense_nn,
     dropout_config,
+    get_sparse_feed_dict,
     multi_sparse_combine_embedding,
     reg_config,
-    sess_config,
     tf,
 )
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
-from ..utils.save_load import load_tf_variables
 from ..utils.validate import (
-    check_dense_values,
     check_multi_sparse,
     check_seq_mode,
-    check_sparse_indices,
     dense_field_size,
     sparse_feat_size,
     sparse_field_size,
 )
 
 
-class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
+class YouTubeRetrieval(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     """*YouTubeRetrieval* algorithm.
 
     .. NOTE::
@@ -130,15 +127,13 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         lower_upper_bound=None,
         tf_sess_config=None,
     ):
-        super().__init__(task, data_info, embed_size, lower_upper_bound)
+        super().__init__(task, data_info, embed_size, norm_embed)
 
         assert task == "ranking", "YouTube-type models is only suitable for ranking"
         if len(data_info.item_col) > 0:
             raise ValueError("The `YouTuBeRetrieval` model assumes no item features.")
         self.all_args = locals()
-        self.sess = sess_config(tf_sess_config)
         self.loss_type = loss_type
-        self.norm_embed = norm_embed
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
@@ -153,9 +148,9 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.seed = seed
         self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
         self.recent_seq_indices, self.recent_seq_values = self._set_recent_seqs()
-        self.sparse = check_sparse_indices(data_info)
-        self.dense = check_dense_values(data_info)
-        if self.sparse:
+        self.user_sparse = True if data_info.user_sparse_col.name else False
+        self.user_dense = True if data_info.user_dense_col.name else False
+        if self.user_sparse:
             self.sparse_feature_size = sparse_feat_size(data_info)
             self.sparse_field_size = sparse_field_size(data_info)
             self.multi_sparse_combiner = check_multi_sparse(
@@ -164,7 +159,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             self.true_sparse_field_size = true_sparse_field_size(
                 data_info, self.sparse_field_size, self.multi_sparse_combiner
             )
-        if self.dense:
+        if self.user_dense:
             self.dense_field_size = dense_field_size(data_info)
 
     def build_model(self):
@@ -176,9 +171,9 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
         self._build_item_interaction()
         self._build_variables()
-        if self.sparse:
+        if self.user_sparse:
             self._build_sparse()
-        if self.dense:
+        if self.user_dense:
             self._build_dense()
 
         concat_features = tf.concat(self.concat_embed, axis=1)
@@ -218,7 +213,7 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.concat_embed.append(pooled_embed)
 
     def _build_sparse(self):
-        self.sparse_indices = tf.placeholder(
+        self.user_sparse_indices = tf.placeholder(
             tf.int32, shape=[None, self.sparse_field_size]
         )
         sparse_features = tf.get_variable(
@@ -235,12 +230,14 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             sparse_embed = multi_sparse_combine_embedding(
                 self.data_info,
                 sparse_features,
-                self.sparse_indices,
+                self.user_sparse_indices,
                 self.multi_sparse_combiner,
                 self.embed_size,
             )
         else:
-            sparse_embed = tf.nn.embedding_lookup(sparse_features, self.sparse_indices)
+            sparse_embed = tf.nn.embedding_lookup(
+                sparse_features, self.user_sparse_indices
+            )
 
         sparse_embed = tf.reshape(
             sparse_embed, [-1, self.true_sparse_field_size * self.embed_size]
@@ -248,13 +245,13 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.concat_embed.append(sparse_embed)
 
     def _build_dense(self):
-        self.dense_values = tf.placeholder(
+        self.user_dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size]
         )
         dense_values_reshape = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1]
+            self.user_dense_values, [-1, self.dense_field_size, 1]
         )
-        batch_size = tf.shape(self.dense_values)[0]
+        batch_size = tf.shape(self.user_dense_values)[0]
 
         dense_features = tf.get_variable(
             name="dense_features",
@@ -306,47 +303,38 @@ class YouTubeRetrieval(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         )
         return indices, np.array(interacted_items, dtype=np.int64)
 
-    def set_embeddings(self):
-        feed_dict = {
-            self.item_interaction_indices: self.recent_seq_indices,
-            self.item_interaction_values: self.recent_seq_values,
-            self.modified_batch_size: self.n_users,
-            self.is_training: False,
-        }
-        if self.sparse:
-            user_sparse_indices = self.data_info.user_sparse_unique[:-1]
-            feed_dict.update({self.sparse_indices: user_sparse_indices})
-        if self.dense:
-            user_dense_values = self.data_info.user_dense_unique[:-1]
-            feed_dict.update({self.dense_values: user_dense_values})
+    def dyn_user_embedding(
+        self,
+        user,
+        user_feats=None,
+        seq=None,
+        include_bias=False,
+        inner_id=False,
+    ):
+        check_dynamic_rec_feats(self.model_name, user, user_feats, seq)
+        user_id = self.convert_array_id(user, inner_id) if user is not None else None
+        sparse_indices, dense_values = process_embed_feat(
+            self.data_info, user_id, user_feats
+        )
+        item_interaction_indices, item_interaction_values = process_sparse_embed_seq(
+            self, user_id, seq, inner_id
+        )
+        batch_size = self.n_users if user_id is None else 1
 
+        feed_dict = get_sparse_feed_dict(
+            model=self,
+            sparse_tensor_indices=item_interaction_indices,
+            sparse_tensor_values=item_interaction_values,
+            user_sparse_indices=sparse_indices,
+            user_dense_values=dense_values,
+            batch_size=batch_size,
+            is_training=False,
+        )
         user_embeds = self.sess.run(self.user_embeds, feed_dict)
-        item_embeds = self.sess.run(self.item_embeds)
-        item_biases = self.sess.run(self.item_biases)
         if self.norm_embed:
-            user_embeds, item_embeds = normalize_embeds(
-                user_embeds, item_embeds, backend="np"
-            )
-
-        user_biases = np.ones([len(user_embeds), 1], dtype=user_embeds.dtype)
-        item_biases = item_biases[:, None]
-        self.user_embeds_np = np.hstack([user_embeds, user_biases])
-        self.item_embeds_np = np.hstack([item_embeds, item_biases])
-
-    def save(self, path, model_name, inference_only=False, **_):
-        super().save(path, model_name, inference_only=False)
-        if inference_only:
-            embed_path = os.path.join(path, model_name)
-            np.savez_compressed(
-                file=embed_path,
-                user_embed=self.user_embeds_np,
-                item_embed=self.item_embeds_np,
-            )
-
-    @classmethod
-    def load(cls, path, model_name, data_info, **kwargs):
-        model = load_tf_variables(cls, path, model_name, data_info)
-        embeddings = np.load(os.path.join(path, f"{model_name}.npz"))
-        model.user_embeds_np = embeddings["user_embed"]
-        model.item_embeds_np = embeddings["item_embed"]
-        return model
+            user_embeds = normalize_embeds(user_embeds, backend="np")
+        if include_bias:
+            # add pseudo bias
+            user_biases = np.ones([len(user_embeds), 1], dtype=user_embeds.dtype)
+            user_embeds = np.hstack([user_embeds, user_biases])
+        return user_embeds if user_id is None else np.squeeze(user_embeds, axis=0)
