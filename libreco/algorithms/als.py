@@ -184,7 +184,6 @@ class ALS(EmbedBase):
             n_rec=min(2000, self.n_items),
             user_embeddings=self.user_embeds_np,
             item_embeddings=self.item_embeds_np,
-            seq=None,
             filter_consumed=False,
             random_rec=False,
         ).flatten()
