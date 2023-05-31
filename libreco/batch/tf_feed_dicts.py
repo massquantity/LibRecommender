@@ -27,10 +27,10 @@ def _sparse_feed_dict(model, data: SparseBatch, is_training):
         model.item_indices: data.items,
         model.is_training: is_training,
     }
-    if hasattr(model, "sparse") and model.sparse:
-        feed_dict.update({model.sparse_indices: data.sparse_indices})
-    if hasattr(model, "dense") and model.dense:
-        feed_dict.update({model.dense_values: data.dense_values})
+    if hasattr(model, "user_sparse") and model.user_sparse:
+        feed_dict.update({model.user_sparse_indices: data.sparse_indices})
+    if hasattr(model, "user_dense") and model.user_dense:
+        feed_dict.update({model.user_dense_values: data.dense_values})
     return feed_dict
 
 

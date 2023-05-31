@@ -1,7 +1,8 @@
 import numpy as np
 
-from .preprocess import embed_from_seq, process_tf_feat
+from .preprocess import process_tf_feat
 from .ranking import rank_recommendations
+from ..utils.constants import SequenceModels
 
 
 def construct_rec(data_info, user_ids, computed_recs, inner_id):
@@ -35,22 +36,34 @@ def construct_rec(data_info, user_ids, computed_recs, inner_id):
 #    return list(recs_and_scores)
 
 
+def check_dynamic_rec_feats(model_name, user, user_feats, seq):
+    if seq is not None and not SequenceModels.contains(model_name):
+        raise ValueError(f"`{model_name}` doesn't support arbitrary seq inference.")
+    if not np.isscalar(user):
+        if user_feats is not None:
+            raise ValueError(
+                f"Batch inference doesn't support assigning arbitrary features: {user}"
+            )
+        if seq is not None:
+            raise ValueError(
+                f"Batch inference doesn't support arbitrary item sequence: {user}"
+            )
+    if seq is not None and not isinstance(seq, (list, np.ndarray)):
+        raise ValueError("`seq` must be list or numpy.ndarray.")
+    if user_feats is not None and not isinstance(user_feats, dict):
+        raise ValueError("`user_feats` must be `dict`.")
+
+
 def recommend_from_embedding(
     model,
-    user_ids,
+    user_ids,  # shape should be [1, d] to preserve output shape
     n_rec,
     user_embeddings,
     item_embeddings,
-    seq,
     filter_consumed,
     random_rec,
-    inner_id=False,
 ):
-    user_embed = (
-        user_embeddings[user_ids]
-        if seq is None or len(seq) == 0
-        else embed_from_seq(model, user_ids, seq, inner_id)
-    )
+    user_embed = user_embeddings[user_ids]
     item_embeds = item_embeddings[: model.n_items]  # exclude item oov
     preds = user_embed @ item_embeds.T
     return rank_recommendations(

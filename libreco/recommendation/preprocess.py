@@ -1,34 +1,42 @@
 import numpy as np
 
 from ..prediction.preprocess import get_cached_seqs, set_temp_feats
-from ..tfops import get_feed_dict, get_sparse_feed_dict
+from ..tfops import get_feed_dict
 
 
-def embed_from_seq(model, user_ids, seq, inner_id):
-    if model.model_name == "YouTubeRetrieval":
-        sparse_tensor_indices, sparse_tensor_values = build_sparse_seq(
-            seq, model, inner_id
-        )
-        feed_dict = get_sparse_feed_dict(
-            model=model,
-            sparse_tensor_indices=sparse_tensor_indices,
-            sparse_tensor_values=sparse_tensor_values,
-            user_ids=user_ids,
-            batch_size=1,
-            is_training=False,
-        )
+def process_sparse_embed_seq(model, user_id, seq, inner_id):
+    if user_id is None:
+        seq_indices = model.recent_seq_indices
+        seq_values = model.recent_seq_values
+    elif seq is not None and len(seq) > 0:
+        seq_indices, seq_values = build_sparse_seq(seq, model, inner_id)
     else:
+        # user_id is array_like
+        user_id = user_id.item()
+        if user_id != model.n_items:
+            seq = model.user_consumed[user_id]
+            seq_indices, seq_values = build_sparse_seq(seq, model, inner_id=True)
+        else:
+            # -1 will be pruned in `tf.nn.safe_embedding_lookup_sparse`
+            seq_indices = np.zeros((1, 2), dtype=np.int64)
+            seq_values = np.array([-1], dtype=np.int64)
+    return seq_indices, seq_values
+
+
+def process_embed_seq(model, user_id, seq, inner_id):
+    if user_id is None:
+        seq = model.recent_seqs
+        seq_len = model.recent_seq_lens
+    elif seq is not None and len(seq) > 0:
         seq, seq_len = build_rec_seq(seq, model, inner_id)
-        feed_dict = get_feed_dict(
-            model=model,
-            user_indices=np.array(user_ids, dtype=np.int32),
-            user_interacted_seq=seq,
-            user_interacted_len=seq_len,
-            is_training=False,
-        )
-    embed = model.sess.run(model.user_embeds, feed_dict)
-    bias = np.ones([1, 1], dtype=embed.dtype)
-    return np.hstack([embed, bias])
+    else:
+        # user_id is array_like
+        if user_id.item() != model.n_items:
+            seq, seq_len = get_cached_seqs(model, user_id, repeat=False)
+        else:
+            seq = np.full((1, model.max_seq_len), model.n_items, dtype=np.int32)
+            seq_len = np.array([1], dtype=np.float32)
+    return seq, seq_len
 
 
 def build_rec_seq(seq, model, inner_id, repeat=False):
@@ -49,6 +57,28 @@ def build_sparse_seq(seq, model, inner_id):
     seq = [i if i < model.n_items else -1 for i in seq[-seq_len:]]
     sparse_tensor_values = np.array(seq, dtype=np.int64)
     return sparse_tensor_indices, sparse_tensor_values
+
+
+def process_embed_feat(data_info, user_id, user_feats):
+    sparse_indices = dense_values = None
+    if user_id is not None:
+        if data_info.user_sparse_unique is not None:
+            sparse_indices = data_info.user_sparse_unique[user_id]
+            if user_feats is not None:
+                # do not modify the original features
+                sparse_indices = sparse_indices.copy()
+                _set_user_sparse_indices(data_info, sparse_indices, user_feats)
+        if data_info.user_dense_unique is not None:
+            dense_values = data_info.user_dense_unique[user_id]
+            if user_feats is not None:
+                dense_values = dense_values.copy()
+                _set_user_dense_values(data_info, dense_values, user_feats)
+    else:
+        if data_info.user_sparse_unique is not None:
+            sparse_indices = data_info.user_sparse_unique[:-1]
+        if data_info.user_dense_unique is not None:
+            dense_values = data_info.user_dense_unique[:-1]
+    return sparse_indices, dense_values
 
 
 def process_tf_feat(model, user_ids, user_feats, seq, inner_id):
@@ -138,3 +168,39 @@ def _extract_seq(seq, model, inner_id):
         seq = [model.data_info.item2id.get(i, model.n_items) for i in seq]
     seq_len = min(model.max_seq_len, len(seq))
     return seq, seq_len
+
+
+def _set_user_sparse_indices(data_info, user_sparse_indices, feat_dict):
+    """Set user sparse features according to the provided `feat_dict`.
+
+    If the provided feature is not a user sparse feature or the value in a provided feature
+    doesn't exist in training data(through `idx_mapping`), this feature will be ignored.
+    """
+    col_mapping = data_info.col_name_mapping
+    sparse_idx_mapping = data_info.sparse_idx_mapping
+    offsets = data_info.sparse_offset
+    user_sparse_cols = data_info.user_sparse_col.name
+    for col, val in feat_dict.items():
+        if col not in user_sparse_cols:
+            continue
+        if "multi_sparse" in col_mapping and col in col_mapping["multi_sparse"]:
+            main_col = col_mapping["multi_sparse"][col]
+            idx_mapping = sparse_idx_mapping[main_col]
+        else:
+            idx_mapping = sparse_idx_mapping[col]
+
+        if val in idx_mapping:
+            user_field_idx = user_sparse_cols.index(col)
+            feat_idx = idx_mapping[val]
+            all_field_idx = col_mapping["sparse_col"][col]
+            # shape: [1, d]
+            user_sparse_indices[0, user_field_idx] = feat_idx + offsets[all_field_idx]
+
+
+def _set_user_dense_values(data_info, user_dense_values, feat_dict):
+    user_dense_cols = data_info.user_dense_col.name
+    for col, val in feat_dict.items():
+        if col not in user_dense_cols:
+            continue
+        user_field_idx = user_dense_cols.index(col)
+        user_dense_values[0, user_field_idx] = val

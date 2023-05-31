@@ -1,5 +1,4 @@
 from .version import tf
-from ..utils.constants import SequenceModels
 
 
 def multi_sparse_combine_embedding(
@@ -82,7 +81,11 @@ def get_feed_dict(
     item_indices=None,
     labels=None,
     sparse_indices=None,
+    user_sparse_indices=None,
+    item_sparse_indices=None,
     dense_values=None,
+    user_dense_values=None,
+    item_dense_values=None,
     user_interacted_seq=None,
     user_interacted_len=None,
     is_training=False,
@@ -96,11 +99,19 @@ def get_feed_dict(
         feed_dict.update({model.labels: labels})
     if hasattr(model, "is_training"):
         feed_dict.update({model.is_training: is_training})
-    if hasattr(model, "sparse") and model.sparse and sparse_indices is not None:
+    if hasattr(model, "sparse_indices") and sparse_indices is not None:
         feed_dict.update({model.sparse_indices: sparse_indices})
-    if hasattr(model, "dense") and model.dense and dense_values is not None:
+    if hasattr(model, "user_sparse_indices") and user_sparse_indices is not None:
+        feed_dict.update({model.user_sparse_indices: user_sparse_indices})
+    if hasattr(model, "item_sparse_indices") and item_sparse_indices is not None:
+        feed_dict.update({model.item_sparse_indices: item_sparse_indices})
+    if hasattr(model, "dense_values") and dense_values is not None:
         feed_dict.update({model.dense_values: dense_values})
-    if SequenceModels.contains(model.model_name):
+    if hasattr(model, "user_dense_values") and user_dense_values is not None:
+        feed_dict.update({model.user_dense_values: user_dense_values})
+    if hasattr(model, "item_dense_values") and item_dense_values is not None:
+        feed_dict.update({model.item_dense_values: item_dense_values})
+    if user_interacted_seq is not None:
         feed_dict.update(
             {
                 model.user_interacted_seq: user_interacted_seq,
@@ -114,7 +125,8 @@ def get_sparse_feed_dict(
     model,
     sparse_tensor_indices,
     sparse_tensor_values,
-    user_ids,
+    user_sparse_indices=None,
+    user_dense_values=None,
     batch_size=1,
     is_training=False,
 ):
@@ -124,10 +136,8 @@ def get_sparse_feed_dict(
         model.modified_batch_size: batch_size,
         model.is_training: is_training,
     }
-    if hasattr(model, "sparse") and model.sparse:
-        sparse_indices = model.data_info.user_sparse_unique[user_ids]
-        feed_dict.update({model.sparse_indices: sparse_indices})
-    if hasattr(model, "dense") and model.dense:
-        dense_values = model.data_info.user_dense_unique[user_ids]
-        feed_dict.update({model.dense_values: dense_values})
+    if hasattr(model, "user_sparse_indices") and user_sparse_indices is not None:
+        feed_dict.update({model.user_sparse_indices: user_sparse_indices})
+    if hasattr(model, "user_dense_values") and user_dense_values is not None:
+        feed_dict.update({model.user_dense_values: user_dense_values})
     return feed_dict

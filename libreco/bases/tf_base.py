@@ -2,14 +2,16 @@
 import abc
 import os
 
-import numpy as np
-
 from .base import Base
 from ..prediction import predict_tf_feat
-from ..recommendation import cold_start_rec, construct_rec, recommend_tf_feat
+from ..recommendation import (
+    check_dynamic_rec_feats,
+    cold_start_rec,
+    construct_rec,
+    recommend_tf_feat,
+)
 from ..tfops import modify_variable_names, sess_config, tf
 from ..training.dispatch import get_trainer
-from ..utils.constants import SequenceModels
 from ..utils.save_load import (
     load_tf_model,
     load_tf_variables,
@@ -196,10 +198,10 @@ class TfBase(Base):
             Number of recommendations to return.
         user_feats : dict or None, default: None
             Extra user features for recommendation.
-        seq : list or numpy.ndarray
+        seq : list or numpy.ndarray or None, default: None
             Extra item sequence for recommendation. If the sequence length is larger than
             `recent_num` hyperparameter specified in the model, it will be truncated.
-            If it is smaller, it will be padded.
+            If smaller, it will be padded.
 
             .. versionadded:: 1.1.0
 
@@ -223,19 +225,7 @@ class TfBase(Base):
         recommendation : dict of {Union[int, str, array_like] : numpy.ndarray}
             Recommendation result with user ids as keys and array_like recommended items as values.
         """
-        if seq is not None and not SequenceModels.contains(self.model_name):
-            raise ValueError(
-                f"`{self.model_name}` doesn't support arbitrary seq recommendation."
-            )
-        if not np.isscalar(user) and len(user) > 1:
-            if user_feats is not None:
-                raise ValueError(
-                    f"Batch recommend doesn't support assigning arbitrary features: {user}"
-                )
-            if seq is not None:
-                raise ValueError(
-                    f"Batch recommend doesn't support arbitrary item sequence: {user}"
-                )
+        check_dynamic_rec_feats(self.model_name, user, user_feats, seq)
         if self.model_name == "NCF" and user_feats is not None:
             raise ValueError("`NCF` can't use features.")
 
