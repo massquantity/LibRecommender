@@ -2,12 +2,13 @@ import sys
 
 import pytest
 import tensorflow as tf
+from numpy.testing import assert_array_equal
 
 from libreco.algorithms import TwoTower
 from tests.utils_data import set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
-from tests.utils_reco import ptest_recommends
+from tests.utils_reco import ptest_dyn_recommends, ptest_recommends
 from tests.utils_save_load import save_load_model
 
 
@@ -108,9 +109,12 @@ def test_two_tower(
             num_workers=num_workers,
         )
         ptest_preds(model, task, pd_data, with_feats=False)
-        ptest_recommends(model, data_info, pd_data, with_feats=False)
+        ptest_recommends(model, data_info, pd_data, with_feats=True)
+        dyn_rec = ptest_dyn_recommends(model, pd_data)
 
         # test save and load model
         loaded_model, loaded_data_info = save_load_model(TwoTower, model, data_info)
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
-        ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
+        ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=True)
+        loaded_dyn_rec = ptest_dyn_recommends(loaded_model, pd_data)
+        assert_array_equal(dyn_rec, loaded_dyn_rec)

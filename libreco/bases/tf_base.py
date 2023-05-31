@@ -2,6 +2,8 @@
 import abc
 import os
 
+import numpy as np
+
 from .base import Base
 from ..prediction import predict_tf_feat
 from ..recommendation import (
@@ -190,6 +192,15 @@ class TfBase(Base):
     ):
         """Recommend a list of items for given user(s).
 
+        If both ``user_feats`` and ``seq`` are ``None``, the model will use the stored features
+        for recommendation, and the ``cold_start`` strategy will be used for unknown users.
+
+        If either ``user_feats`` or ``seq`` is provided, the model will use them for recommendation.
+        In this case, if the ``user`` is unknown, it will be set to padding id, which means
+        the ``cold_start`` strategy will not be applied.
+        This situation is common when one wants to recommend for an unknown user based on
+        user features or behavior sequence.
+
         Parameters
         ----------
         user : int or str or array_like
@@ -225,26 +236,44 @@ class TfBase(Base):
         recommendation : dict of {Union[int, str, array_like] : numpy.ndarray}
             Recommendation result with user ids as keys and array_like recommended items as values.
         """
-        check_dynamic_rec_feats(self.model_name, user, user_feats, seq)
         if self.model_name == "NCF" and user_feats is not None:
             raise ValueError("`NCF` can't use features.")
 
-        result_recs = dict()
-        user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
-        if unknown_users:
-            cold_recs = cold_start_rec(
-                self.data_info,
-                self.default_recs,
-                cold_start,
-                unknown_users,
-                n_rec,
-                inner_id,
-            )
-            result_recs.update(cold_recs)
-        if user_ids:
+        if user_feats is None and seq is None:
+            result_recs = dict()
+            user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
+            if unknown_users:
+                cold_recs = cold_start_rec(
+                    self.data_info,
+                    self.default_recs,
+                    cold_start,
+                    unknown_users,
+                    n_rec,
+                    inner_id,
+                )
+                result_recs.update(cold_recs)
+            if user_ids:
+                computed_recs = recommend_tf_feat(
+                    self,
+                    user_ids,
+                    n_rec,
+                    user_feats,
+                    seq,
+                    filter_consumed,
+                    random_rec,
+                    inner_id,
+                )
+                user_recs = construct_rec(
+                    self.data_info, user_ids, computed_recs, inner_id
+                )
+                result_recs.update(user_recs)
+        else:
+            # must be a single user if `user_feats` or `seq` is provided
+            check_dynamic_rec_feats(self.model_name, user, user_feats, seq)
+            user_id = self._convert_id(user, inner_id)
             computed_recs = recommend_tf_feat(
                 self,
-                user_ids,
+                [user_id],
                 n_rec,
                 user_feats,
                 seq,
@@ -252,9 +281,27 @@ class TfBase(Base):
                 random_rec,
                 inner_id,
             )
-            user_recs = construct_rec(self.data_info, user_ids, computed_recs, inner_id)
-            result_recs.update(user_recs)
+            rec_items = (
+                computed_recs[0]
+                if inner_id
+                else np.array([self.data_info.id2item[i] for i in computed_recs[0]])
+            )
+            result_recs = {user: rec_items}
+
         return result_recs
+
+    def _convert_id(self, user, inner_id):
+        """Convert a single user to inner user id.
+
+        If the user doesn't exist, it will be converted to padding id.
+        """
+        assert np.isscalar(user), f"User to convert must be scalar, got: {user}"
+        if inner_id:
+            if not isinstance(user, (int, np.integer)):
+                raise ValueError(f"`inner id` user must be int, got {user}")
+            return user if 0 <= user < self.n_users else self.n_users
+        else:
+            return self.data_info.user2id.get(user, self.n_users)
 
     def assign_tf_variables_oov(self):
         (

@@ -2,7 +2,7 @@
 import numpy as np
 
 from ..bases import ModelMeta, TfBase
-from ..batch.sequence import get_user_last_interacted
+from ..batch.sequence import get_recent_seqs
 from ..feature.multi_sparse import true_sparse_field_size
 from ..tfops import (
     dense_nn,
@@ -150,7 +150,13 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         self.dropout_rate = dropout_config(dropout_rate)
         self.hidden_units = hidden_units_config(hidden_units)
         self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
-        self.recent_seqs, self.recent_seq_lens = self._set_recent_seqs()
+        self.recent_seqs, self.recent_seq_lens = get_recent_seqs(
+            self.n_users,
+            self.user_consumed,
+            self.n_items,
+            self.max_seq_len,
+            dtype=np.float32,
+        )
         self.seed = seed
         self.sparse = check_sparse_indices(data_info)
         self.dense = check_dense_values(data_info)
@@ -280,12 +286,3 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
             dense_embed, [-1, self.dense_field_size * self.embed_size]
         )
         self.concat_embed.append(dense_embed)
-
-    def _set_recent_seqs(self):
-        recent_seqs, recent_seq_lens = get_user_last_interacted(
-            self.n_users, self.user_consumed, self.n_items, self.max_seq_len
-        )
-        oov = np.full(self.max_seq_len, self.n_items, dtype=np.int32)
-        recent_seqs = np.vstack([recent_seqs, oov])
-        recent_seq_lens = np.append(recent_seq_lens, [1])
-        return recent_seqs, recent_seq_lens

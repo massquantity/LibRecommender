@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from .embed_base import EmbedBase
-from ..batch.sequence import get_user_last_interacted
+from ..batch.sequence import get_recent_seqs
 from ..embedding import normalize_embeds
 from ..recommendation import check_dynamic_rec_feats, rank_recommendations
 from ..recommendation.preprocess import process_embed_feat, process_embed_seq
@@ -41,18 +41,21 @@ class DynEmbedBase(EmbedBase):
         self.user_embeds = None
         self.item_embeds = None
         self.item_biases = None
-        if SequenceModels.contains(self.model_name):
+        if (
+            SequenceModels.contains(self.model_name)
+            and self.model_name != "YouTubeRetrieval"
+        ):
             self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
-            self.recent_seqs, self.recent_seq_lens = self._set_recent_seqs()
+            self.recent_seqs, self.recent_seq_lens = get_recent_seqs(
+                self.n_users,
+                self.user_consumed,
+                self.n_items,
+                self.max_seq_len,
+                dtype=np.int64,
+            )
 
     def build_model(self):
         raise NotImplementedError
-
-    def _set_recent_seqs(self):
-        recent_seqs, recent_seq_lens = get_user_last_interacted(
-            self.n_users, self.user_consumed, self.n_items, self.max_seq_len
-        )
-        return recent_seqs, recent_seq_lens.astype(np.int64)
 
     def convert_array_id(self, user, inner_id):
         """Convert a single user to inner user id.
@@ -81,8 +84,14 @@ class DynEmbedBase(EmbedBase):
     ):
         """Recommend a list of items for given user(s).
 
-        Dynamic embedding models can use arbitrary user features or item sequences
-        for embedding generation and recommendation.
+        If both ``user_feats`` and ``seq`` are ``None``, the model will use the precomputed
+        embeddings for recommendation, and the ``cold_start`` strategy will be used for unknown users.
+
+        If either ``user_feats`` or ``seq`` is provided, the model will generate user embedding
+        dynamically for recommendation. In this case, if the ``user`` is unknown,
+        it will be set to padding id, which means the ``cold_start`` strategy will not be applied.
+        This situation is common when one wants to recommend for an unknown user based on
+        user features or behavior sequence.
 
         Parameters
         ----------
@@ -163,6 +172,8 @@ class DynEmbedBase(EmbedBase):
         inner_id=False,
     ):
         """Generate user embedding based on given user features or item sequence.
+
+        .. versionadded:: 1.2.0
 
         Parameters
         ----------

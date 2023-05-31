@@ -155,7 +155,7 @@ class Caser(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     def _build_variables(self):
         self.user_feat = tf.get_variable(
             name="user_feat",
-            shape=[self.n_users, self.embed_size],
+            shape=[self.n_users + 1, self.embed_size],
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )

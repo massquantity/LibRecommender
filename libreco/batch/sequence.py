@@ -72,17 +72,20 @@ def get_interacted_seq(
 
 
 # most recent num items a user has interacted, assume already sorted by time.
-def get_user_last_interacted(n_users, user_consumed, pad_index, recent_num=10):
-    u_last_interacted = np.full((n_users, recent_num), pad_index, dtype=np.int32)
-    interacted_len = []
+def get_recent_seqs(n_users, user_consumed, pad_index, max_seq_len, dtype):
+    recent_seqs = np.full((n_users, max_seq_len), pad_index, dtype=np.int32)
+    recent_seq_lens = []
     for u in range(n_users):
         u_consumed_items = user_consumed[u]
         u_items_len = len(u_consumed_items)
-        if u_items_len < recent_num:
-            u_last_interacted[u, -u_items_len:] = u_consumed_items
-            interacted_len.append(float(u_items_len))
+        if u_items_len < max_seq_len:
+            recent_seqs[u, -u_items_len:] = u_consumed_items
+            recent_seq_lens.append(float(u_items_len))
         else:
-            u_last_interacted[u] = u_consumed_items[-recent_num:]
-            interacted_len.append(float(recent_num))
+            recent_seqs[u] = u_consumed_items[-max_seq_len:]
+            recent_seq_lens.append(float(max_seq_len))
 
-    return u_last_interacted, np.array(interacted_len)
+    oov = np.full(max_seq_len, pad_index, dtype=np.int32)
+    recent_seqs = np.vstack([recent_seqs, oov])
+    recent_seq_lens = np.append(recent_seq_lens, [1])
+    return recent_seqs, np.array(recent_seq_lens).astype(dtype)

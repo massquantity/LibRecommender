@@ -13,7 +13,7 @@ def process_sparse_embed_seq(model, user_id, seq, inner_id):
     else:
         # user_id is array_like
         user_id = user_id.item()
-        if user_id != model.n_items:
+        if user_id != model.n_users:
             seq = model.user_consumed[user_id]
             seq_indices, seq_values = build_sparse_seq(seq, model, inner_id=True)
         else:
@@ -25,17 +25,13 @@ def process_sparse_embed_seq(model, user_id, seq, inner_id):
 
 def process_embed_seq(model, user_id, seq, inner_id):
     if user_id is None:
-        seq = model.recent_seqs
-        seq_len = model.recent_seq_lens
+        seq = model.recent_seqs[:-1]
+        seq_len = model.recent_seq_lens[:-1]
     elif seq is not None and len(seq) > 0:
         seq, seq_len = build_rec_seq(seq, model, inner_id)
     else:
-        # user_id is array_like
-        if user_id.item() != model.n_items:
-            seq, seq_len = get_cached_seqs(model, user_id, repeat=False)
-        else:
-            seq = np.full((1, model.max_seq_len), model.n_items, dtype=np.int32)
-            seq_len = np.array([1], dtype=np.float32)
+        # embed cached seqs include oov
+        seq, seq_len = get_cached_seqs(model, user_id, repeat=False)
     return seq, seq_len
 
 
@@ -109,7 +105,9 @@ def process_tf_feat(model, user_ids, user_feats, seq, inner_id):
     if seq is not None and len(seq) > 0:
         seqs, seq_len = build_rec_seq(seq, model, inner_id, repeat=True)
     else:
+        # tf cached seqs include oov
         seqs, seq_len = get_cached_seqs(model, user_ids, repeat=True)
+
     return get_feed_dict(
         model=model,
         user_indices=user_indices,
