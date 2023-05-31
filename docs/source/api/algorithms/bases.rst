@@ -31,7 +31,7 @@ Base Classes
    :inherited-members:
    :show-inheritance:
 
-.. autoclass:: libreco.bases.SeqEmbedBase
+.. autoclass:: libreco.bases.DynEmbedBase
    :members:
    :inherited-members:
    :show-inheritance:
