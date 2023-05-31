@@ -8,7 +8,7 @@ from libreco.algorithms import RNN4Rec
 from tests.utils_data import set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
-from tests.utils_reco import ptest_recommends, ptest_seq_recommends
+from tests.utils_reco import ptest_dyn_recommends, ptest_recommends
 from tests.utils_save_load import save_load_model
 
 
@@ -106,13 +106,13 @@ def test_rnn4rec(
         )
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)
-        seq_rec = ptest_seq_recommends(model, pd_data)
+        dyn_rec = ptest_dyn_recommends(model, pd_data)
 
         # test save and load model
         loaded_model, loaded_data_info = save_load_model(RNN4Rec, model, data_info)
         ptest_preds(loaded_model, task, pd_data, with_feats=False)
         ptest_recommends(loaded_model, loaded_data_info, pd_data, with_feats=False)
-        loaded_seq_rec = ptest_seq_recommends(loaded_model, pd_data)
-        assert_array_equal(seq_rec, loaded_seq_rec)
+        loaded_dyn_rec = ptest_dyn_recommends(loaded_model, pd_data)
+        assert_array_equal(dyn_rec, loaded_dyn_rec)
         with pytest.raises(RuntimeError):
             loaded_model.fit(train_data, neg_sampling)

@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 
+from libreco.utils.constants import FeatModels, SequenceModels
+
 
 def recommend_in_former_consumed(data_info, reco, user):
     user_id = data_info.user2id[user]
@@ -76,23 +78,61 @@ def ptest_recommends(model, data_info, pd_data, with_feats):
             )
 
 
-def ptest_seq_recommends(model, pd_data):
+def ptest_dyn_recommends(model, pd_data):
     users = pd_data.user.tolist()
-    user1, user2 = users[0], users[1]
-    with pytest.raises(
-        ValueError,
-        match="Batch inference doesn't support arbitrary item sequence*",
-    ):
-        model.recommend_user([user1, user2], 3, seq=[1, 2, 3])
-    with pytest.raises(
-        (ValueError, AssertionError),
-        match="`seq` must be list or numpy.ndarray."
-    ):
-        model.recommend_user(user1, 3, seq=(1, 2))
+    user1, user2, cold_user = users[0], users[1], -100
+    if SequenceModels.contains(model.model_name):
+        with pytest.raises(
+            ValueError,
+            match="Batch inference doesn't support arbitrary item sequence*",
+        ):
+            model.recommend_user([user1, user2], 3, seq=[1, 2, 3])
+        with pytest.raises(
+            (ValueError, AssertionError),
+            match="`seq` must be list or numpy.ndarray."
+        ):
+            model.recommend_user(user1, 3, seq=(1, 2))
 
-    seq1 = [1, 23, "898", 0, -1, -3, 7]
-    seq2 = []
-    reco_take_one = model.recommend_user(user=user1, n_rec=7, seq=seq1)[user1]
-    reco_take_two = model.recommend_user(user=user2, n_rec=7, seq=seq2)[user2]
-    assert len(reco_take_one) == len(reco_take_two) == 7
-    return reco_take_one
+    if not SequenceModels.contains(model.model_name):
+        with pytest.raises(
+            ValueError,
+            match=".*doesn't support arbitrary seq inference.",
+        ):
+            model.recommend_user(user1, 3, seq=[1, 2, 3])
+
+    if FeatModels.contains(model.model_name):
+        feat1 = {"sex": "male", "age": 100}
+        feat2 = {"sex": "dem", "age": 10000}
+        feat3 = {}
+    else:
+        feat1 = feat2 = feat3 = None
+
+    if SequenceModels.contains(model.model_name):
+        seq1 = [1, 23, "898", 0, -1, -3, 7]
+        seq2 = []
+        seq3 = [10000, "898", 0, -1, -3, 7]
+    else:
+        seq1 = seq2 = seq3 = None
+
+    reco1 = model.recommend_user(
+        user=user1, n_rec=7, user_feats=feat1, seq=seq1
+    )[user1]
+    reco2 = model.recommend_user(
+        user=user2, n_rec=7, user_feats=feat2, seq=seq2
+    )[user2]
+    reco3 = model.recommend_user(
+        user=user2, n_rec=7, user_feats=feat3, seq=seq3
+    )[user2]
+    assert len(reco1) == len(reco2) == len(reco3) == 7
+
+    cold1 = model.recommend_user(
+        user=cold_user, n_rec=7, user_feats=feat1, seq=seq1
+    )[cold_user]
+    cold2 = model.recommend_user(
+        user=cold_user, n_rec=7, user_feats=feat2, seq=seq2
+    )[cold_user]
+    cold3 = model.recommend_user(
+        user=cold_user, n_rec=7, user_feats=feat3, seq=seq3
+    )[cold_user]
+    assert len(cold1) == len(cold2) == len(cold3) == 7
+    return reco1
