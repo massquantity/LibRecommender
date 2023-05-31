@@ -9,7 +9,6 @@ from .base import Base
 from ..prediction import predict_from_embedding
 from ..recommendation import cold_start_rec, construct_rec, recommend_from_embedding
 from ..training.dispatch import get_trainer
-from ..utils.constants import SequenceModels
 from ..utils.misc import colorize
 from ..utils.save_load import (
     load_default_recs,
@@ -151,7 +150,6 @@ class EmbedBase(Base):
             n_rec=min(2000, self.n_items),
             user_embeddings=self.user_embeds_np,
             item_embeddings=self.item_embeds_np,
-            seq=None,
             filter_consumed=False,
             random_rec=False,
         ).flatten()
@@ -187,7 +185,6 @@ class EmbedBase(Base):
         self,
         user,
         n_rec,
-        seq=None,
         cold_start="average",
         inner_id=False,
         filter_consumed=True,
@@ -201,13 +198,6 @@ class EmbedBase(Base):
             User id or batch of user ids to recommend.
         n_rec : int
             Number of recommendations to return.
-        seq : list or numpy.ndarray
-            Extra item sequence for recommendation. If the sequence length is larger than
-            `recent_num` hyperparameter specified in the model, it will be truncated.
-            If it is smaller, it will be padded.
-
-            .. versionadded:: 1.1.0
-
         cold_start : {'popular', 'average'}, default: 'average'
             Cold start strategy.
 
@@ -228,16 +218,6 @@ class EmbedBase(Base):
         recommendation : dict of {Union[int, str, array_like] : numpy.ndarray}
             Recommendation result with user ids as keys and array_like recommended items as values.
         """
-        if seq is not None:
-            if not SequenceModels.contains(self.model_name):
-                raise ValueError(
-                    f"`{self.model_name}` doesn't support arbitrary seq recommendation."
-                )
-            if not np.isscalar(user) and len(user) > 1:
-                raise ValueError(
-                    f"Batch recommend doesn't support arbitrary item sequence: {user}"
-                )
-
         result_recs = dict()
         user_ids, unknown_users = check_unknown_user(self.data_info, user, inner_id)
         if unknown_users:
@@ -257,10 +237,8 @@ class EmbedBase(Base):
                 n_rec,
                 self.user_embeds_np,
                 self.item_embeds_np,
-                seq,
                 filter_consumed,
                 random_rec,
-                inner_id,
             )
             user_recs = construct_rec(self.data_info, user_ids, computed_recs, inner_id)
             result_recs.update(user_recs)

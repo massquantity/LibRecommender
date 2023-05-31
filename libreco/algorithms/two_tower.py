@@ -1,16 +1,16 @@
 """Implementation of TwoTower model."""
 import numpy as np
 
-from ..bases import EmbedBase, ModelMeta
+from ..bases import DynEmbedBase, ModelMeta
 from ..embedding import normalize_embeds
 from ..feature.ssl import get_mutual_info
-from ..tfops import dense_nn, dropout_config, reg_config, sess_config, tf
+from ..tfops import dense_nn, dropout_config, reg_config, tf
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
 from ..utils.validate import dense_field_size, sparse_feat_size
 
 
-class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
+class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     """*TwoTower* algorithm.
 
     .. CAUTION::
@@ -141,12 +141,10 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         seed=42,
         tf_sess_config=None,
     ):
-        super().__init__(task, data_info, embed_size)
+        super().__init__(task, data_info, embed_size, norm_embed)
 
         self.all_args = locals()
-        self.sess = sess_config(tf_sess_config)
         self.loss_type = loss_type
-        self.norm_embed = norm_embed
         self.n_epochs = n_epochs
         self.lr = lr
         self.lr_decay = lr_decay
@@ -443,33 +441,10 @@ class TwoTower(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         )
 
     def set_embeddings(self):
-        user_feed_dict = {
-            self.user_indices: np.arange(self.n_users),
-            self.is_training: False,
-        }
-        if self.user_sparse:
-            user_sparse_indices = self.data_info.user_sparse_unique[:-1]
-            user_feed_dict.update({self.user_sparse_indices: user_sparse_indices})
-        if self.user_dense:
-            user_dense_values = self.data_info.user_dense_unique[:-1]
-            user_feed_dict.update({self.user_dense_values: user_dense_values})
-        self.user_embeds_np = self.sess.run(self.user_embeds, user_feed_dict)
-
-        item_feed_dict = {
-            self.item_indices: np.arange(self.n_items),
-            self.is_training: False,
-        }
-        if self.item_sparse:
-            item_sparse_indices = self.data_info.item_sparse_unique[:-1]
-            item_feed_dict.update({self.item_sparse_indices: item_sparse_indices})
-        if self.item_dense:
-            item_dense_values = self.data_info.item_dense_unique[:-1]
-            item_feed_dict.update({self.item_dense_values: item_dense_values})
-        self.item_embeds_np = self.sess.run(self.item_embeds, item_feed_dict)
-
+        super().set_embeddings()
         if hasattr(self, "temperature_var"):
-            self.temperature = self.sess.run(self.temperature_var)
-            print(f"Learned temperature variable: {self.temperature}")
+            learned_temperature = self.sess.run(self.temperature_var)
+            print(f"Learned temperature variable: {learned_temperature}")
 
     def adjust_logits(self, logits, all_adjust=True):
         temperature = (

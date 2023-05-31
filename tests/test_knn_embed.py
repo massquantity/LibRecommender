@@ -101,3 +101,19 @@ def test_get_embeddings(pure_data_small):
 
     assert model.get_item_embedding(item=3, include_bias=False).size == model.embed_size
     assert model.get_item_embedding(item=4, include_bias=True).size == model.embed_size + 1
+
+    all_embed = model.get_user_embedding(user=None)
+    dyn_embed = model.dyn_user_embedding(user=None)
+    assert all_embed.shape == dyn_embed.shape
+    with pytest.raises(ValueError):
+        model.dyn_user_embedding(user=[1, 2, 3], seq=[0, 0])
+
+    # test squeezed single user embedding
+    user = pd_data.user.tolist()[0]
+    user_embed = model.dyn_user_embedding(user, seq=[0])
+    assert len(user_embed) == dyn_embed.shape[1]
+
+    user_embed = model.dyn_user_embedding(
+        user, user_feats={"aa": "bb"}, seq=[0, 10], include_bias=True, inner_id=True
+    )
+    assert len(user_embed) == dyn_embed.shape[1] + 1

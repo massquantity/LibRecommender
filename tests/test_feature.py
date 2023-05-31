@@ -33,6 +33,7 @@ from libreco.prediction.preprocess import (
     set_temp_feats,
 )
 from libreco.recommendation.preprocess import _get_original_feats as get_rec_feats
+from libreco.recommendation.preprocess import process_embed_feat
 
 
 def test_invalid_features():
@@ -580,7 +581,7 @@ def test_get_features_from_data_info(feature_data_pair):
         sparse_indices,
         np.array([[1, 3, 8, 6, 13, 10, 11], [2, 5, 9, 9, 11, 13, 11]]),
     )
-    assert_array_equal(dense_values, np.array([[3.], [2.]]))
+    assert_array_equal(dense_values, np.array([[3.0], [2.0]]))
 
     users, items, sparse_indices, dense_values = get_original_feats(
         data_info, user=0, item=0, sparse=True, dense=False
@@ -597,7 +598,7 @@ def test_get_features_from_data_info(feature_data_pair):
         data_info, user=0, item=0, sparse=False, dense=True
     )
     assert sparse_indices is None
-    assert_array_equal(dense_values, np.array([[2.]]))
+    assert_array_equal(dense_values, np.array([[2.0]]))
 
 
 def test_set_temp_features(feature_data_pair):
@@ -610,9 +611,9 @@ def test_set_temp_features(feature_data_pair):
         data_info, sparse_indices, dense_values, feats
     )
     assert_array_equal(sparse_indices, np.array([[1, 3, 8, 6, 11, 13, 11]]))
-    assert_array_equal(dense_values, np.array([[3.]]))
+    assert_array_equal(dense_values, np.array([[3.0]]))
     assert_array_equal(sparse_indices_new, np.array([[1, 3, 8, 8, 11, 10, 11]]))
-    assert_array_equal(dense_values_new, np.array([[10.]]))
+    assert_array_equal(dense_values_new, np.array([[10.0]]))
 
 
 def test_features_from_batch(feature_data_pair):
@@ -633,7 +634,7 @@ def test_features_from_batch(feature_data_pair):
         sparse_indices,
         np.array([[1, 5, 6, 9, 13, 12, 13], [0, 5, 9, 9, 13, 13, 10]]),
     )
-    assert_array_equal(dense_values, np.array([[4.], [5.]]))
+    assert_array_equal(dense_values, np.array([[4.0], [5.0]]))
 
 
 def test_get_recommend_features(feature_data_pair):
@@ -651,7 +652,7 @@ def test_get_recommend_features(feature_data_pair):
             ]
         ),
     )
-    assert_array_equal(dense_values, np.array([[2.], [2.], [2.]]))
+    assert_array_equal(dense_values, np.array([[2.0], [2.0], [2.0]]))
 
     sparse_indices, dense_values = get_rec_feats(
         data_info, user=3, n_items=3, sparse=True, dense=False
@@ -672,4 +673,14 @@ def test_get_recommend_features(feature_data_pair):
         data_info, user=2, n_items=1, sparse=False, dense=True
     )
     assert sparse_indices is None
-    assert_array_equal(dense_values, np.array([[3.]]))
+    assert_array_equal(dense_values, np.array([[3.0]]))
+
+
+def test_process_embed_feat(feature_data_pair):
+    _, _, data_info, _ = feature_data_pair
+    user_id = np.array([1])
+    user_feats = {"sex": "out", "occ": "a", "actor1": "out", "actor2": 77, "age": 11}
+    sparse_indices, dense_values = process_embed_feat(data_info, user_id, user_feats)
+
+    assert_array_equal(sparse_indices, np.array([[1, 4, 6, 8]]))
+    assert_array_equal(dense_values, np.array([[11.0]]))

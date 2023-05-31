@@ -1,11 +1,11 @@
 """Implementation of WaveNet."""
-from ..bases import ModelMeta, SeqEmbedBase
+from ..bases import DynEmbedBase, ModelMeta
 from ..embedding import normalize_embeds
 from ..tfops import conv_nn, dropout_config, max_pool, reg_config, tf, tf_dense
 from ..utils.misc import count_params
 
 
-class WaveNet(SeqEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
+class WaveNet(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     """*WaveNet* algorithm.
 
     Parameters
