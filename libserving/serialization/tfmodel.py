@@ -93,10 +93,11 @@ def save_tf_serving_model(path: str, model: TfBase, version: int):
         tags=[tf.saved_model.tag_constants.SERVING],
         signature_def_map={"predict": prediction_signature},
         clear_devices=True,
+        strip_default_attrs=True,
     )
 
     builder.save()
-    print(f"{colorize('Done tf exporting!', 'green', highlight=True)}")
+    print(f"\n{colorize('Done tf exporting!', 'green', highlight=True)}\n")
 
 
 def check_model_exists(export_path: str):  # pragma: no cover
@@ -122,11 +123,11 @@ def build_inputs_outputs(model: TfBase):
         "user_indices": tf.saved_model.build_tensor_info(model.user_indices),
         "item_indices": tf.saved_model.build_tensor_info(model.item_indices),
     }
-    if hasattr(model, "sparse"):
+    if hasattr(model, "sparse") and model.sparse:
         input_dict.update(
             {"sparse_indices": tf.saved_model.build_tensor_info(model.sparse_indices)}
         )
-    if hasattr(model, "dense"):
+    if hasattr(model, "dense") and model.dense:
         input_dict.update(
             {"dense_values": tf.saved_model.build_tensor_info(model.dense_values)}
         )
