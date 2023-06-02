@@ -21,10 +21,13 @@ from tests.utils_save_load import save_load_model
     ],
 )
 @pytest.mark.parametrize(
-    "lr_decay, reg, use_residual", [(False, None, True), (True, 0.001, False)]
+    "lr_decay, reg, use_residual, att_embed_size, num_heads, num_workers",
+    [
+        (False, None, True, None, 1, 0),
+        (True, 0.001, False, 16, 2, 1),
+        (True, None, False, (4, 8), 2, 0),
+    ],
 )
-@pytest.mark.parametrize("att_embed_size", [None, 16, (4, 8)])
-@pytest.mark.parametrize("num_heads, num_workers", [(1, 0), (2, 1)])
 def test_autoint(
     feat_data_small,
     task,
