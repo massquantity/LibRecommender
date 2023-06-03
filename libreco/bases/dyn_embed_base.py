@@ -7,7 +7,7 @@ from ..batch.sequence import get_recent_seqs
 from ..embedding import normalize_embeds
 from ..recommendation import check_dynamic_rec_feats, rank_recommendations
 from ..recommendation.preprocess import process_embed_feat, process_embed_seq
-from ..tfops import get_feed_dict, sess_config
+from ..tfops import get_feed_dict, sess_config, tf
 from ..utils.constants import SequenceModels
 from ..utils.save_load import load_tf_variables
 from ..utils.validate import check_seq_mode
@@ -238,6 +238,7 @@ class DynEmbedBase(EmbedBase):
         return user_embeds if user_id is None else np.squeeze(user_embeds, axis=0)
 
     def set_embeddings(self):
+        self._assign_user_oov()
         self.user_embeds_np = self.dyn_user_embedding(user=None, include_bias=True)
 
         if self.model_name != "TwoTower":
@@ -266,6 +267,19 @@ class DynEmbedBase(EmbedBase):
             item_biases = self.sess.run(self.item_biases)[:, None]
             item_embeds = np.hstack([item_embeds, item_biases])
         self.item_embeds_np = item_embeds
+
+    def _assign_user_oov(self):
+        """Assign mean user embedding to padding index, used in cold-start scenario."""
+        if hasattr(self, "user_feat"):
+            mean_op = tf.IndexedSlices(
+                tf.reduce_mean(
+                    tf.gather(self.user_feat, tf.range(self.n_users)),
+                    axis=0,
+                    keepdims=True,
+                ),
+                [self.n_users],
+            )
+            self.sess.run(self.user_feat.scatter_update(mean_op))
 
     def save(self, path, model_name, inference_only=False, **_):
         super().save(path, model_name, inference_only=False)
