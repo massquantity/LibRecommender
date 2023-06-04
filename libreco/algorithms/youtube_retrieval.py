@@ -184,6 +184,7 @@ class YouTubeRetrieval(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             dropout_rate=self.dropout_rate,
             is_training=self.is_training,
         )
+        self.serving_topk = self.build_topk()
         count_params()
 
     def _build_item_interaction(self):

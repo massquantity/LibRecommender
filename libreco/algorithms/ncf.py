@@ -157,3 +157,4 @@ class NCF(TfBase, metaclass=ModelMeta):
         )
         concat_layer = tf.concat([gmf_layer, mlp_layer], axis=1)
         self.output = tf.reshape(tf_dense(units=1)(concat_layer), [-1])
+        self.serving_topk = self.build_topk(self.output)

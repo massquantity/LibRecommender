@@ -176,6 +176,7 @@ class DeepFM(TfBase, metaclass=ModelMeta):
 
         concat_layer = tf.concat([linear_term, pairwise_term, deep_term], axis=1)
         self.output = tf.squeeze(tf_dense(units=1, activation=None)(concat_layer))
+        self.serving_topk = self.build_topk(self.output)
         count_params()
 
     def _build_user_item(self):

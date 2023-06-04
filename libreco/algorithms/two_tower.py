@@ -196,6 +196,7 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self._build_variables()
         self.user_embeds = self.compute_user_embeddings("user")
         self.item_embeds = self.compute_item_embeddings("item")
+        self.serving_topk = self.build_topk()
         if self.loss_type == "cross_entropy":
             self.output = tf.reduce_sum(self.user_embeds * self.item_embeds, axis=1)
         if self.loss_type == "max_margin":
@@ -204,6 +205,7 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             self.ssl_left_embeds = self.compute_ssl_embeddings("ssl_left")
             self.ssl_right_embeds = self.compute_ssl_embeddings("ssl_right")
         count_params()
+        # print([x for x in tf.get_default_graph().get_operations() if x.type == "Placeholder"])
 
     def _build_placeholders(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])

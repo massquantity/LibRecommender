@@ -281,6 +281,21 @@ class DynEmbedBase(EmbedBase):
             )
             self.sess.run(self.user_feat.scatter_update(mean_op))
 
+    def build_topk(self):
+        self.k = tf.placeholder(tf.int32, shape=(), name="k")
+        if self.norm_embed and self.model_name != "TwoTower":
+            user_embeds, item_embeds = normalize_embeds(
+                self.user_embeds, self.item_embeds, backend="tf"
+            )
+        else:
+            user_embeds, item_embeds = self.user_embeds, self.item_embeds
+        user_embeds = tf.squeeze(user_embeds, axis=0)
+        preds = tf.linalg.matvec(item_embeds, user_embeds)
+        if self.item_biases is not None:
+            preds += self.item_biases
+        _, indices = tf.math.top_k(preds, self.k, sorted=True)
+        return indices
+
     def save(self, path, model_name, inference_only=False, **_):
         super().save(path, model_name, inference_only=False)
         if inference_only:

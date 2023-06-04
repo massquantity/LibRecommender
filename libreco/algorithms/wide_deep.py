@@ -179,6 +179,7 @@ class WideDeep(TfBase, metaclass=ModelMeta):
         )
         deep_term = tf_dense(units=1, name="deep_term")(deep_layer)
         self.output = tf.squeeze(tf.add(wide_term, deep_term))
+        self.serving_topk = self.build_topk(self.output)
         count_params()
 
     def _build_user_item(self):
