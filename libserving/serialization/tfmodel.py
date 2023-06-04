@@ -1,18 +1,15 @@
 import os
-import shutil
-import sys
 
 from libreco.bases import TfBase
-from libreco.data import DataInfo
-from libreco.data.data_info import EmptyFeature
 from libreco.tfops import tf
 from libreco.utils.misc import colorize
 
 from .common import (
+    check_model_exists,
     check_path_exists,
+    save_features,
     save_id_mapping,
     save_model_name,
-    save_to_json,
     save_user_consumed,
 )
 
@@ -35,37 +32,6 @@ def save_tf(path: str, model: TfBase, version: int = 1):
     save_user_consumed(path, model.data_info)
     save_features(path, model.data_info, model)
     save_tf_serving_model(path, model, version)
-
-
-def save_features(path: str, data_info: DataInfo, model: TfBase):
-    feats = {"n_items": data_info.n_items}
-    if data_info.col_name_mapping:
-        if data_info.user_sparse_col != EmptyFeature:
-            _check_num_match(data_info.user_sparse_unique, data_info.n_users)
-            feats["user_sparse_col_index"] = data_info.user_sparse_col.index
-            feats["user_sparse_values"] = data_info.user_sparse_unique[:-1].tolist()
-        if data_info.item_sparse_col != EmptyFeature:
-            _check_num_match(data_info.item_sparse_unique, data_info.n_items)
-            feats["item_sparse_col_index"] = data_info.item_sparse_col.index
-            feats["item_sparse_values"] = data_info.item_sparse_unique[:-1].tolist()
-        if data_info.user_dense_col != EmptyFeature:
-            _check_num_match(data_info.user_dense_unique, data_info.n_users)
-            feats["user_dense_col_index"] = data_info.user_dense_col.index
-            feats["user_dense_values"] = data_info.user_dense_unique[:-1].tolist()
-        if data_info.item_dense_col != EmptyFeature:
-            _check_num_match(data_info.item_dense_unique, data_info.n_items)
-            feats["item_dense_col_index"] = data_info.item_dense_col.index
-            feats["item_dense_values"] = data_info.item_dense_unique[:-1].tolist()
-
-    if hasattr(model, "max_seq_len"):
-        feats["max_seq_len"] = model.max_seq_len
-    feature_path = os.path.join(path, "features.json")
-    save_to_json(feature_path, feats)
-
-
-# include oov
-def _check_num_match(v, num):
-    assert len(v) == num + 1, f"feature sizes don't match, got {len(v)} and {num + 1}"
 
 
 def save_tf_serving_model(path: str, model: TfBase, version: int):
@@ -100,25 +66,7 @@ def save_tf_serving_model(path: str, model: TfBase, version: int):
     print(f"\n{colorize('Done tf exporting!', 'green', highlight=True)}\n")
 
 
-def check_model_exists(export_path: str):  # pragma: no cover
-    answered = False
-    while not answered:
-        print_str = (
-            f"Could not export model because '{export_path}' "
-            f"already exists, would you like to remove it? [Y/n]"
-        )
-        print(f"{colorize(print_str, 'red')}", end="")
-        choice = input().lower()
-        if choice in ["yes", "y"]:
-            shutil.rmtree(export_path)
-            answered = True
-        elif choice in ["no", "n"]:
-            print(f"{colorize('refused to remove, then exit...', 'red')}")
-            sys.exit(0)
-
-
-# noinspection PyUnresolvedReferences
-def build_inputs_outputs(model: TfBase):
+def build_inputs_outputs(model):
     input_dict = {
         "user_indices": tf.saved_model.build_tensor_info(model.user_indices),
         "item_indices": tf.saved_model.build_tensor_info(model.item_indices),
