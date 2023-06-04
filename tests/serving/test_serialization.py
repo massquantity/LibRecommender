@@ -2,6 +2,7 @@ import json
 import os
 
 import pytest
+# noinspection PyUnresolvedReferences
 from tensorflow.core.protobuf.meta_graph_pb2 import MetaGraphDef
 
 from libreco.bases import CfBase, TfBase
@@ -150,7 +151,7 @@ def check_features(path, model, redis_client):
         assert len(feats["user_sparse_col_index"]) == len(
             feats["user_sparse_values"][0]
         )
-        assert len(feats["user_sparse_values"]) == data_info.n_users
+        assert len(feats["user_sparse_values"]) == data_info.n_users + 1
 
         user_sparse_col_index_redis = load_from_redis(
             redis_client, name="user_sparse_col_index", mode="dict-list"
@@ -166,7 +167,7 @@ def check_features(path, model, redis_client):
         assert len(feats["item_sparse_col_index"]) == len(
             feats["item_sparse_values"][0]
         )
-        assert len(feats["item_sparse_values"]) == data_info.n_items
+        assert len(feats["item_sparse_values"]) == data_info.n_items + 1
 
         item_sparse_col_index_redis = load_from_redis(
             redis_client, name="item_sparse_col_index", mode="dict-list"
@@ -180,7 +181,7 @@ def check_features(path, model, redis_client):
 
     if "user_dense_col_index" in feats:
         assert len(feats["user_dense_col_index"]) == len(feats["user_dense_values"][0])
-        assert len(feats["user_dense_values"]) == data_info.n_users
+        assert len(feats["user_dense_values"]) == data_info.n_users + 1
 
         user_dense_col_index_redis = load_from_redis(
             redis_client, name="user_dense_col_index", mode="dict-list"
@@ -194,7 +195,7 @@ def check_features(path, model, redis_client):
 
     if "item_dense_col_index" in feats:
         assert len(feats["item_dense_col_index"]) == len(feats["item_dense_values"][0])
-        assert len(feats["item_dense_values"]) == data_info.n_items
+        assert len(feats["item_dense_values"]) == data_info.n_items + 1
 
         item_dense_col_index_redis = load_from_redis(
             redis_client, name="item_dense_col_index", mode="dict-list"
