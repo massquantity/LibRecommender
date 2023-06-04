@@ -172,6 +172,7 @@ class FM(TfBase, metaclass=ModelMeta):
             )
         pairwise_term = tf_dense(units=1, activation=tf.nn.elu)(pairwise_term)
         self.output = tf.squeeze(tf.add(linear_term, pairwise_term))
+        self.serving_topk = self.build_topk(self.output)
         count_params()
 
     def _build_user_item(self):

@@ -348,6 +348,11 @@ class TfBase(Base):
 
         self.sess.run(update_ops)
 
+    def build_topk(self, outputs):
+        self.k = tf.placeholder(tf.int32, shape=())
+        _, indices = tf.math.top_k(outputs, self.k, sorted=True)
+        return indices
+
     def save(self, path, model_name, manual=True, inference_only=False):
         """Save TF model for inference or retraining.
 

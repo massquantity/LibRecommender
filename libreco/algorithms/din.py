@@ -200,6 +200,7 @@ class DIN(TfBase, metaclass=ModelMeta):
             name="mlp",
         )
         self.output = tf.reshape(tf_dense(units=1)(mlp_layer), [-1])
+        self.serving_topk = self.build_topk(self.output)
         count_params()
 
     def _build_placeholders(self):

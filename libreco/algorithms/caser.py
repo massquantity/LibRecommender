@@ -130,7 +130,7 @@ class Caser(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         tf.set_random_seed(self.seed)
         self._build_placeholders()
         self._build_variables()
-        self._build_user_embeddings()
+        self.user_embeds = self._build_user_embeddings()
 
         user_embeds = self.user_embeds
         item_embeds = tf.nn.embedding_lookup(self.item_embeds, self.item_indices)
@@ -140,6 +140,7 @@ class Caser(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 user_embeds, item_embeds, backend="tf"
             )
         self.output = tf.reduce_sum(user_embeds * item_embeds, axis=1) + item_biases
+        self.serving_topk = self.build_topk()
         count_params()
 
     def _build_placeholders(self):
@@ -224,4 +225,4 @@ class Caser(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
         convs_out = tf.concat(convs_out, axis=1)
         convs_out = tf_dense(units=self.embed_size, activation=tf.nn.relu)(convs_out)
-        self.user_embeds = tf.concat([user_repr, convs_out], axis=1)
+        return tf.concat([user_repr, convs_out], axis=1)

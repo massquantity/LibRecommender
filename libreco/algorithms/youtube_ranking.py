@@ -228,6 +228,7 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
             is_training=self.is_training,
         )
         self.output = tf.reshape(tf_dense(units=1)(mlp_layer), [-1])
+        self.serving_topk = self.build_topk(self.output)
         count_params()
 
     def _build_sparse(self):

@@ -166,6 +166,7 @@ class AutoInt(TfBase, metaclass=ModelMeta):
             )
         attention_layer = tf.keras.layers.Flatten()(attention_layer)
         self.output = tf.squeeze(tf_dense(units=1)(attention_layer))
+        self.serving_topk = self.build_topk(self.output)
 
     def _build_user_item(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])

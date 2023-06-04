@@ -146,9 +146,9 @@ class RNN4Rec(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         tf.set_random_seed(self.seed)
         self.is_training = tf.placeholder_with_default(False, shape=[])
         self._build_variables()
-        self._build_user_embeddings()
+        self.user_embeds = self._build_user_embeddings()
+        self.serving_topk = self.build_topk()
         if self.task == "rating" or self.loss_type in ("cross_entropy", "focal"):
-            self.user_indices = tf.placeholder(tf.int32, shape=[None])
             self.item_indices = tf.placeholder(tf.int32, shape=[None])
             self.labels = tf.placeholder(tf.float32, shape=[None])
             user_embeds = self.user_embeds
@@ -231,4 +231,4 @@ class RNN4Rec(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             use_ln=self.use_ln,
             is_training=self.is_training,
         )
-        self.user_embeds = tf_dense(units=self.embed_size, activation=None)(rnn_output)
+        return tf_dense(units=self.embed_size, activation=None)(rnn_output)

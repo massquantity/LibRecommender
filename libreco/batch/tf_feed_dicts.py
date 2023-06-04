@@ -84,11 +84,13 @@ def _pairwise_feed_dict(model, data: PairwiseBatch, is_training):
 
 
 def _pointwise_feed_dict(model, data: PointwiseBatch, is_training):
-    feed_dict = {
-        model.user_indices: data.users,
-        model.item_indices: data.items,
-        model.labels: data.labels,
-    }
+    feed_dict = dict()
+    if hasattr(model, "user_indices"):
+        feed_dict.update({model.user_indices: data.users})
+    if hasattr(model, "item_indices"):
+        feed_dict.update({model.item_indices: data.items})
+    if hasattr(model, "labels"):
+        feed_dict.update({model.labels: data.labels})
     if hasattr(model, "is_training"):
         feed_dict.update({model.is_training: is_training})
     if hasattr(model, "sparse") and model.sparse:
