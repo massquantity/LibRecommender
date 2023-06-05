@@ -37,6 +37,8 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         Loss for model training.
     embed_size: int, default: 16
         Vector size of embeddings.
+    norm_embed : bool, default: False
+        Whether to l2 normalize output embeddings.
     n_epochs: int, default: 10
         Number of epochs for training.
     lr : float, default 0.001
