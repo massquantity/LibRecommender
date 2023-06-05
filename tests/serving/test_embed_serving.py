@@ -2,14 +2,13 @@ import subprocess
 import time
 from pathlib import Path
 
-import redis
 import requests
 
 from libserving.serialization import embed2redis, save_embed, save_faiss_index
 from tests.utils_data import SAVE_PATH, remove_path
 
 
-def test_embed_serving(embed_model):
+def test_embed_serving(embed_model, close_server):
     save_embed(SAVE_PATH, embed_model)
     embed2redis(SAVE_PATH)
     faiss_path = str(Path(__file__).parents[2] / "libserving" / "embed_model")
@@ -32,10 +31,4 @@ def test_embed_serving(embed_model):
         timeout=1,
     )
     assert len(list(response.json().values())[0]) == 3
-
-    subprocess.run(["pkill", "sanic"], check=False)
     remove_path(faiss_path)
-    r = redis.Redis()
-    r.flushdb()
-    r.close()
-    time.sleep(1)

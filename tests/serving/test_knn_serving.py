@@ -2,7 +2,6 @@ import subprocess
 import time
 
 import pytest
-import redis
 import requests
 
 from libreco.bases import CfBase
@@ -11,7 +10,7 @@ from tests.utils_data import SAVE_PATH
 
 
 @pytest.mark.parametrize("knn_model", ["UserCF", "ItemCF"], indirect=True)
-def test_knn_serving(knn_model):
+def test_knn_serving(knn_model, close_server):
     assert isinstance(knn_model, CfBase)
     save_knn(SAVE_PATH, knn_model, k=10)
     knn2redis(SAVE_PATH)
@@ -31,9 +30,3 @@ def test_knn_serving(knn_model):
         "http://localhost:8000/knn/recommend", json={"user": 33, "n_rec": 3}, timeout=1
     )
     assert len(list(response.json().values())[0]) == 3
-
-    subprocess.run(["pkill", "sanic"], check=False)
-    r = redis.Redis()
-    r.flushdb()
-    r.close()
-    time.sleep(1)

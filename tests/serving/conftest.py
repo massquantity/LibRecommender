@@ -1,10 +1,12 @@
+import subprocess
+import time
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 import redis
-import tensorflow
+import tensorflow as tf
 
 from libreco.algorithms import ALS, DIN, NCF, ItemCF, UserCF
 from libreco.data import DatasetFeat
@@ -19,6 +21,17 @@ def redis_client():
     yield r
     r.flushdb()
     r.close()
+
+
+@pytest.fixture
+def close_server():
+    yield
+    subprocess.run(["pkill", "sanic"], check=False)
+    subprocess.run("kill $(lsof -t -i:8501 -sTCP:LISTEN)", shell=True, check=False)
+    r = redis.Redis()
+    r.flushdb()
+    r.close()
+    time.sleep(1)
 
 
 @pytest.fixture
@@ -44,7 +57,7 @@ def embed_model(prepare_pure_data):
 
 @pytest.fixture
 def tf_model(prepare_pure_data, request):
-    tensorflow.compat.v1.reset_default_graph()
+    tf.compat.v1.reset_default_graph()
     remove_path(SAVE_PATH)
     if request.param == "pure":
         _, train_data, _, data_info = prepare_pure_data

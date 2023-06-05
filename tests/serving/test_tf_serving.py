@@ -2,7 +2,6 @@ import subprocess
 import time
 
 import pytest
-import redis
 import requests
 
 from libreco.bases import TfBase
@@ -13,7 +12,7 @@ from tests.utils_data import SAVE_PATH
 @pytest.mark.parametrize(
     "tf_model", ["pure", "feat-all", "feat-user", "feat-item"], indirect=True
 )
-def test_tf_serving(tf_model):
+def test_tf_serving(tf_model, close_server):
     assert isinstance(tf_model, TfBase)
     save_tf(SAVE_PATH, tf_model, version=1)
     tf2redis(SAVE_PATH)
@@ -34,10 +33,3 @@ def test_tf_serving(tf_model):
         "http://localhost:8000/tf/recommend", json={"user": 33, "n_rec": 3}, timeout=1
     )
     assert len(list(response.json().values())[0]) == 3
-
-    subprocess.run(["pkill", "sanic"], check=False)
-    subprocess.run("kill $(lsof -t -i:8501 -sTCP:LISTEN)", shell=True, check=False)
-    r = redis.Redis()
-    r.flushdb()
-    r.close()
-    time.sleep(1)
