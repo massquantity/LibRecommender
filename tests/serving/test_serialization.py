@@ -1,7 +1,9 @@
 import json
 import os
 
+import numpy as np
 import pytest
+
 # noinspection PyUnresolvedReferences
 from tensorflow.core.protobuf.meta_graph_pb2 import MetaGraphDef
 
@@ -10,8 +12,10 @@ from libreco.tfops import tf
 from libserving.serialization import (
     embed2redis,
     knn2redis,
+    online2redis,
     save_embed,
     save_knn,
+    save_online,
     save_tf,
     tf2redis,
 )
@@ -76,6 +80,21 @@ def test_tf_serialization(tf_model, redis_client):
             sess, [tf.saved_model.tag_constants.SERVING], SAVE_MODEL_PATH
         )
     assert isinstance(loaded_model, MetaGraphDef)
+
+
+@pytest.mark.parametrize(
+    "online_model",
+    ["pure", "user_feat", "separate", "multi_sparse", "item_feat", "all"],
+    indirect=True,
+)
+def test_online_serialization(online_model, redis_client):
+    save_online(SAVE_PATH, online_model, version=1)
+    online2redis(SAVE_PATH)
+    check_model_name(SAVE_PATH, online_model, redis_client)
+    check_id_mapping(SAVE_PATH, online_model, redis_client)
+    check_user_consumed(SAVE_PATH, online_model, redis_client)
+    check_features(SAVE_PATH, online_model, redis_client)
+    check_user_sparse_mapping(online_model, redis_client)
 
 
 def check_model_name(path, model, redis_client):
@@ -230,3 +249,32 @@ def load_from_redis(redis_client, name, mode):
             raise ValueError(f"unknown mode: {mode}")
     else:
         raise KeyError(f"{name} doesn't exist in redis")
+
+
+def check_user_sparse_mapping(model, redis_client):
+    data_info = model.data_info
+    if data_info.user_sparse_col.name:
+        for field_idx, col in enumerate(data_info.user_sparse_col.name):
+            assert field_idx == int(redis_client.hget("user_sparse_fields", col))
+            idx_mapping_redis = redis_client.hgetall(f"user_sparse_idx_mapping__{col}")
+            idx_mapping_redis = {k: int(v) for k, v in idx_mapping_redis.items()}
+            assert get_val_idx_mapping(data_info, col) == idx_mapping_redis
+
+
+def get_val_idx_mapping(data_info, col):
+    col_mapping = data_info.col_name_mapping
+    sparse_idx_mapping = data_info.sparse_idx_mapping  # {col: {val: idx}}
+    if "multi_sparse" in col_mapping and col in col_mapping["multi_sparse"]:
+        main_col = col_mapping["multi_sparse"][col]
+        idx_mapping = sparse_idx_mapping[main_col]
+    else:
+        idx_mapping = sparse_idx_mapping[col]
+
+    all_field_idx = col_mapping["sparse_col"][col]
+    feat_offset = data_info.sparse_offset[all_field_idx]
+    val_idx_mapping = dict()
+    for val, idx in idx_mapping.items():
+        val = val.item() if isinstance(val, np.integer) else val
+        idx = int(idx + feat_offset)
+        val_idx_mapping[val] = idx
+    return val_idx_mapping

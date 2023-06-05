@@ -81,6 +81,29 @@ def tf2redis(path: str, host: str = "localhost", port: int = 6379, db: int = 0):
         features2redis(path, r)
 
 
+def online2redis(path: str, host: str = "localhost", port: int = 6379, db: int = 0):
+    """Save online computing model to redis.
+
+    Parameters
+    ----------
+    path : str
+        Model saving path.
+    host : str, default: "localhost"
+        Redis host.
+    port : int, default: 6379
+        Redis port
+    db : int, default: 0
+        Redis db number
+    """
+    with redis_connection(host, port, db) as r:
+        model_name2redis(path, r)
+        id_mapping2redis(path, r)
+        user_consumed2redis(path, r)
+        features2redis(path, r)
+        user_sparse2redis(path, r)
+        user_dense2redis(path, r)
+
+
 def model_name2redis(path: str, r: redis.Redis):
     model_name_path = os.path.join(path, "model_name.json")
     with open(model_name_path) as f:
@@ -91,11 +114,14 @@ def model_name2redis(path: str, r: redis.Redis):
 def id_mapping2redis(path: str, r: redis.Redis):
     user2id_path = os.path.join(path, "user2id.json")
     id2item_path = os.path.join(path, "id2item.json")
-    with open(user2id_path) as f1, open(id2item_path) as f2:
+    item2id_path = os.path.join(path, "item2id.json")
+    with open(user2id_path) as f1, open(id2item_path) as f2, open(item2id_path) as f3:
         user2id = ujson.load(f1)
         id2item = ujson.load(f2)
+        item2id = ujson.load(f3)
     r.hset("user2id", mapping=user2id)
     r.hset("id2item", mapping=id2item)
+    r.hset("item2id", mapping=item2id)
 
 
 def user_consumed2redis(path: str, r: redis.Redis):
@@ -133,6 +159,7 @@ def features2redis(path: str, r: redis.Redis):
     with open(feature_path) as f:
         feats = ujson.load(f)
 
+    r.set("n_users", feats["n_users"])
     r.set("n_items", feats["n_items"])
     if "max_seq_len" in feats:
         r.set("max_seq_len", feats["max_seq_len"])
@@ -168,3 +195,28 @@ def features2redis(path: str, r: redis.Redis):
         for vals in feats["item_dense_values"]:
             pipe.rpush("item_dense_values", ujson.dumps(vals))
         pipe.execute()
+
+
+def user_sparse2redis(path: str, r: redis.Redis):
+    user_sparse_fields_path = os.path.join(path, "user_sparse_fields.json")
+    if os.path.exists(user_sparse_fields_path):
+        with open(user_sparse_fields_path) as f:
+            user_sparse_fields = ujson.load(f)
+        r.hset("user_sparse_fields", mapping=user_sparse_fields)
+
+    user_sparse_idx_mapping_path = os.path.join(path, "user_sparse_idx_mapping.json")
+    if os.path.exists(user_sparse_idx_mapping_path):
+        with open(user_sparse_idx_mapping_path) as f:
+            user_sparse_idx_mapping = ujson.load(f)
+
+        for col, idx_mapping in user_sparse_idx_mapping.items():
+            col_name = f"user_sparse_idx_mapping__{col}"
+            r.hset(col_name, mapping=idx_mapping)
+
+
+def user_dense2redis(path: str, r: redis.Redis):
+    user_dense_fields_path = os.path.join(path, "user_dense_fields.json")
+    if os.path.exists(user_dense_fields_path):
+        with open(user_dense_fields_path) as f:
+            user_dense_fields = ujson.load(f)
+        r.hset("user_dense_fields", mapping=user_dense_fields)
