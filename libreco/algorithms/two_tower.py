@@ -29,7 +29,7 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     embed_size: int, default: 16
         Vector size of embeddings.
     norm_embed : bool, default: False
-        Whether to normalize output embeddings.
+        Whether to l2 normalize output embeddings.
         It is generally recommended to normalize embeddings in ``TwoTower`` model.
     n_epochs : int, default: 10
         Number of epochs for training.
@@ -47,8 +47,8 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     batch_size : int, default: 256
         Batch size for training.
     sampler : {'random', 'unconsumed', 'popular'}, default: 'random'
-        Negative sampling strategy. These strategies are only used in 'cross_entropy' and 'max_margin' loss.
-        For 'softmax' loss, in-batch sampling is leveraged based on Reference[1].
+        Negative sampling strategy. These strategies are only used in ``cross_entropy`` and ``max_margin`` loss.
+        For ``softmax`` loss, in-batch sampling is leveraged based on Reference[1].
 
         - ``'random'`` means random sampling.
         - ``'unconsumed'`` samples items that the target user did not consume before.
@@ -62,10 +62,6 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         Probability of an element to be zeroed. If it is None, dropout is not used.
     hidden_units : int, list of int or tuple of (int,), default: (128, 64, 32)
         Number of layers and corresponding layer size in MLP.
-
-        .. versionchanged:: 1.0.0
-           Accept type of ``int``, ``list`` or ``tuple``, instead of ``str``.
-
     margin : float, default: 1.0
         Margin used in `max_margin` loss.
     use_correction : bool, default: True
@@ -83,7 +79,7 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
         - ``'rfm'`` stands for *Random Feature Masking*.
         - ``'rfm-complementary'`` stands for *Random Feature Masking* with complementary masking.
-        - ``'cfm'`` stands for *Correlated Feature Masking*.
+        - ``'cfm'`` stands for *Correlated Feature Masking*. In this case mutual information is used according to the paper.
 
     alpha : int, default: 0.2
         Parameter for controlling self-supervised loss weight in total loss during multi-task training.
