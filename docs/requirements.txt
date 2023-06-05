@@ -1,4 +1,5 @@
 sphinx==6.1.3
+sphinx_copybutton==0.5.2
 sphinx-inline-tabs==2022.1.2b11
 furo==2022.12.7
 numpy==1.23.4
