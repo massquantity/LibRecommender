@@ -136,6 +136,7 @@ def check_features(path, model, redis_client):
     with open(feature_path) as f:
         feats = json.load(f)
 
+    assert feats["n_users"] == data_info.n_users
     assert feats["n_items"] == data_info.n_items
     n_items_redis = load_from_redis(redis_client, name="n_items", mode="dict")
     assert n_items_redis == data_info.n_items
@@ -148,9 +149,7 @@ def check_features(path, model, redis_client):
         assert max_seq_len_redis == model.max_seq_len
 
     if "user_sparse_col_index" in feats:
-        assert len(feats["user_sparse_col_index"]) == len(
-            feats["user_sparse_values"][0]
-        )
+        assert len(feats["user_sparse_col_index"]) == len(feats["user_sparse_values"][0])  # fmt: skip
         assert len(feats["user_sparse_values"]) == data_info.n_users + 1
 
         user_sparse_col_index_redis = load_from_redis(
@@ -164,9 +163,7 @@ def check_features(path, model, redis_client):
         assert redis_client.hexists("feature", "user_sparse")
 
     if "item_sparse_col_index" in feats:
-        assert len(feats["item_sparse_col_index"]) == len(
-            feats["item_sparse_values"][0]
-        )
+        assert len(feats["item_sparse_col_index"]) == len(feats["item_sparse_values"][0])  # fmt: skip
         assert len(feats["item_sparse_values"]) == data_info.n_items + 1
 
         item_sparse_col_index_redis = load_from_redis(
