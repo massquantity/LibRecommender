@@ -8,7 +8,18 @@ import pytest
 import redis
 import tensorflow as tf
 
-from libreco.algorithms import ALS, DIN, NCF, ItemCF, UserCF
+from libreco.algorithms import (
+    ALS,
+    DIN,
+    FM,
+    NCF,
+    ItemCF,
+    RNN4Rec,
+    TwoTower,
+    UserCF,
+    WideDeep,
+    YouTubeRetrieval,
+)
 from libreco.data import DatasetFeat
 from tests.utils_data import SAVE_PATH, remove_path
 
@@ -94,3 +105,65 @@ def tf_model(prepare_pure_data, request):
         model = DIN("ranking", data_info, n_epochs=1, batch_size=2048)
         model.fit(train_data, neg_sampling=True, verbose=2)
         return model
+
+
+@pytest.fixture
+def online_model(make_synthetic_data, request):
+    tf.compat.v1.reset_default_graph()
+
+    pd_data = make_synthetic_data
+    if request.param == "pure":
+        features = dict()
+        model = RNN4Rec
+    elif request.param == "user_feat":
+        features = {
+            "sparse_col": ["sex", "occupation"],
+            "dense_col": ["age"],
+            "user_col": ["sex", "occupation", "age"],
+        }
+        model = YouTubeRetrieval
+    elif request.param == "separate":
+        features = {
+            "sparse_col": ["genre3", "genre2", "occupation", "genre1", "sex"],
+            "dense_col": ["age", "profit"],
+            "user_col": ["age", "sex", "occupation"],
+            "item_col": ["genre1", "genre3", "genre2", "profit"],
+        }
+        model = TwoTower
+    elif request.param == "multi_sparse":
+        features = {
+            "sparse_col": ["sex", "occupation"],
+            "multi_sparse_col": [["genre1", "genre2", "genre3"]],
+            "dense_col": ["age", "profit"],
+            "user_col": ["genre1", "genre2", "genre3", "sex"],
+            "item_col": ["age", "occupation", "profit"],
+        }
+        model = WideDeep
+    elif request.param == "item_feat":
+        features = {
+            "sparse_col": ["genre3", "genre2", "sex", "genre1"],
+            "dense_col": ["age", "profit"],
+            "user_col": ["age"],
+            "item_col": ["genre1", "genre3", "genre2", "sex", "profit"],
+        }
+        model = FM
+    elif request.param == "all":
+        features = {
+            "sparse_col": ["genre3", "genre2", "sex", "occupation", "genre1"],
+            "dense_col": ["age", "profit"],
+            "user_col": ["sex", "age", "occupation"],
+            "item_col": ["genre1", "genre3", "genre2", "profit"],
+        }
+        model = DIN
+    else:
+        raise ValueError(f"Unknown type `{request.param}`")
+
+    train_data, data_info = DatasetFeat.build_trainset(
+        train_data=pd_data,
+        pad_val=["missing"],
+        **features,
+    )
+    model = model("ranking", data_info, embed_size=4, n_epochs=1, batch_size=50)
+    model.fit(train_data, neg_sampling=True, verbose=2)
+    yield model
+    remove_path(SAVE_PATH)

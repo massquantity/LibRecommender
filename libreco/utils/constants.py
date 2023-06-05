@@ -79,3 +79,12 @@ class SageModels(StrEnum):
     GRAPHSAGEDGL = "GraphSageDGL"
     PINSAGE = "PinSage"
     PINSAGEDGL = "PinSageDGL"
+
+
+@unique
+class UserEmbedModels(StrEnum):
+    """Models can only generate user embeddings dynamically."""
+    YOUTUBERETRIEVAL = "YouTubeRetrieval"
+    RNN4REC = "RNN4Rec"
+    CASER = "Caser"
+    WAVENET = "WaveNet"
