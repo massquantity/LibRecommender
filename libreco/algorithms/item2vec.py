@@ -20,7 +20,7 @@ class Item2Vec(GensimBase):
     embed_size: int, default: 16
         Vector size of embeddings.
     norm_embed : bool, default: False
-        Whether to normalize output embeddings.
+        Whether to l2 normalize output embeddings.
     window_size : int, default: 5
         Maximum item distance within a sequence during training.
     n_epochs: int, default: 10

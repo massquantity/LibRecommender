@@ -24,7 +24,7 @@ class DeepWalk(GensimBase):
     embed_size: int, default: 16
         Vector size of embeddings.
     norm_embed : bool, default: False
-        Whether to normalize output embeddings.
+        Whether to l2 normalize output embeddings.
     n_walks : int, default: 10
         Number of walks for every item.
     walk_length : int, default: 10
