@@ -30,6 +30,24 @@ Before searching, one should call :func:`~libreco.bases.EmbedBase.init_knn` to i
 Set ``approximate=True`` if you can use nmslib, otherwise set ``approximate=False``.
 The ``sim_type`` parameter should either be ``cosine`` or ``inner-product``.
 
+
+Dynamic Embedding Generation
+----------------------------
+It is also common to generate user embeddings based on features or behavior sequences.
+Once the user embedding has been generated, you can use it to perform similarity search with all the item embeddings.
+
+This can be useful in the cold-start scenario, so LibRecommender provides API for dynamic user embeddings:
+
+.. code-block:: python3
+
+   >>> model = RNN4Rec(task="ranking", norm_embed=True, ...)
+   >>> model.fit(train_data, ...)
+   >>> user_embed = model.dyn_user_embedding(user=1, seq=[0, 10])
+
+   >>> model2 = YouTubeRetrieval(task="ranking", norm_embed=False, ...)
+   >>> model2.fit(train_data, ...)
+   >>> user_embed = model2.dyn_user_embedding(user="cold user", user_feats={"sex": "F"}, seq=[0, 10])
+
 .. SeeAlso::
 
    `knn_embedding_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/knn_embedding_example.py>`_

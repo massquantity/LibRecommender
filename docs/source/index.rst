@@ -111,6 +111,7 @@ The two tabs below demonstrate the process of train, evaluate, predict, recommen
 
    serving_guide/python
    serving_guide/rust
+   serving_guide/online
 
 .. toctree::
    :maxdepth: 1
