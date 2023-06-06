@@ -217,3 +217,44 @@ whereas the DGL version can use ``mean``, ``gcn``, ``pool``, ``lstm``, thanks to
     >>>     aggregator_type="mean",  # or "gcn", "pool", "lstm"
     >>> )
     >>> model.fit(train_data)
+
+
+TwoTower
+--------
+
+TwoTower is a widely employed algorithm family designed for addressing large-scale retrieval problems.
+In LibRecommender, we provide support for three different types of losses: ``cross_entropy``, ``max_margin`` and ``softmax``.
+These losses correspond to pointwise loss, pairwise loss and listwise loss, respectively.
+The ``softmax`` loss corresponds to *in-batch softmax* training method described in the paper
+`Sampling-Bias-Corrected Neural Modeling for Large Corpus Item Recommendations <https://storage.googleapis.com/pub-tools-public-publication-data/pdf/6c8a86c981a62b0126a11896b7f6ae0dae4c3566.pdf>`_.
+
+Based on the paper's findings, incorporating embedding normalization and temperature adjustments can enhance metrics.
+As a result, it is recommended to specify the ``norm_embed`` and ``temperature`` hyperparameters during the construction of the model.
+
+In addition, We have implemented the self-supervised learning technique introduced in the paper
+`Self-supervised Learning for Large-scale Item Recommendations <https://arxiv.org/pdf/2007.12865.pdf>`_.
+This approach can be particularly beneficial for training long-tail items, which may lack user feedback
+in the original training data. One can use it by setting the ``ssl_pattern`` hyperparameter.
+It is important to note that self-supervised learning relies on item sparse features,
+so if your data does not contain any sparse features for items, this technique cannot be employed.
+
+.. code-block:: python3
+
+    >>> # must provide item sparse cols if `ssl_pattern` is not None
+    >>> sparse_col = ["sex", "occupation", "genre1", "genre2", "genre3"]
+    >>> dense_col = ["age"]
+    >>> user_col = ["sex", "age", "occupation"]
+    >>> item_col = ["genre1", "genre2", "genre3"]
+    >>> train_data, data_info = DatasetFeat.build_trainset(train, user_col, item_col, sparse_col, dense_col)
+
+    >>> model = TwoTower(
+    >>>     "ranking",
+    >>>     data_info,
+    >>>     loss_type="softmax",
+    >>>     embed_size=16,
+    >>>     norm_embed=True,
+    >>>     use_correction=True,
+    >>>     temperature=0.1,
+    >>>     ssl_pattern=None,  # options: "rfm", "rfm-complementary", "cfm"
+    >>> )
+    >>> model.fit(train_data, neg_sampling=True)
