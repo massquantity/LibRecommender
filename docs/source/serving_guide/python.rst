@@ -149,7 +149,8 @@ Embed-based Model
 Embed-based models perform similarity searching on embeddings to make recommendation,
 so we only need to save a bunch of embeddings. This kind of model includes
 ``SVD``, ``SVD++``, ``ALS``, ``BPR``, ``YouTubeRetrieval``, ``Item2Vec``, ``DeepWalk``,
-``RNN4Rec``, ``Caser``, ``WaveNet``, ``NGCF``, ``LightGCN``, ``GraphSage``, ``PinSage``.
+``RNN4Rec``, ``Caser``, ``WaveNet``, ``NGCF``, ``LightGCN``, ``GraphSage``, ``PinSage``,
+``TwoTower``.
 
 In practice, to speed up serving, some ANN(Approximate Nearest Neighbors) libraries
 are often used to find similar embeddings. Here in ``libserving``, we use
@@ -187,7 +188,7 @@ The following code will train faiss index on model's item embeddings and save to
     $ curl -d '{"user": 1, "n_rec": 10}' -X POST http://127.0.0.1:8000/embed/recommend
     # {'Recommend result for user 1': ['593', '1270', '318', '2858', '1196', '2571', '1617', '260', '1200', '457']}
 
-
+.. _tf-models:
 
 TensorFlow-based Model
 ----------------------

@@ -27,6 +27,7 @@ h1 {
 #model-retrain h1,
 #python-serving-guide h1,
 #rust-serving-guide h1,
+#online-computing-serving h1,
 #internal h1,
 #implementation-details h1 {
     color: #4A7077;
