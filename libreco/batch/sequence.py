@@ -57,7 +57,7 @@ def get_interacted_seq(
             # first item has no historical interaction, fill in with pad_index
             batch_interacted_len.append(1.0)
         elif position < num:
-            batch_interacted[j, -position:] = consumed_items[:position]
+            batch_interacted[j, :position] = consumed_items[:position]
             batch_interacted_len.append(float(position))
         else:
             if mode == "recent":
@@ -79,7 +79,7 @@ def get_recent_seqs(n_users, user_consumed, pad_index, max_seq_len, dtype):
         u_consumed_items = user_consumed[u]
         u_items_len = len(u_consumed_items)
         if u_items_len < max_seq_len:
-            recent_seqs[u, -u_items_len:] = u_consumed_items
+            recent_seqs[u, :u_items_len] = u_consumed_items
             recent_seq_lens.append(float(u_items_len))
         else:
             recent_seqs[u] = u_consumed_items[-max_seq_len:]
