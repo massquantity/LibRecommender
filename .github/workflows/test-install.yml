@@ -27,8 +27,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel setuptools
-          python -m pip install $(sed "/nmslib*/d;/dgl*/d" requirements.txt)
+          python -m pip install $(sed "/nmslib*/d;/dgl*/d;/dataclasses*/d" requirements.txt | tr -d ' ')
           python -m pip install -e .
+
+      - name: Install dataclasses
+        run: |
+          python -m pip install dataclasses
+        if: matrix.python-version == '3.6'
 
       - name: Test install
         run: python -c "import libreco; print('libreco --', libreco.__version__)"
