@@ -38,7 +38,7 @@ def process_embed_seq(model, user_id, seq, inner_id):
 def build_rec_seq(seq, model, inner_id, repeat=False):
     seq, seq_len = _extract_seq(seq, model, inner_id)
     recent_seq = np.full((1, model.max_seq_len), model.n_items, dtype=np.int32)
-    recent_seq[0, -seq_len:] = seq[-seq_len:]
+    recent_seq[0, :seq_len] = seq[-seq_len:]
     seq_len = np.array([seq_len], dtype=np.float32)
     if repeat:
         recent_seq = np.repeat(recent_seq, model.n_items, axis=0)
