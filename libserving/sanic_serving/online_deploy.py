@@ -241,15 +241,16 @@ async def update_user_sparse_feats(
 
 
 async def update_user_dense_feats(
-    user_dense_vals: List[float],
-    user_dense_feats: Dict[str, float],
+    user_dense_vals: List[Union[float, int]],
+    user_dense_feats: Dict[str, Union[float, int]],
     r: redis.Redis,
 ) -> List[List[float]]:
     for col, val in user_dense_feats.items():
         field_index = int(await r.hget("user_dense_fields", col))
         # if not isinstance(val, (int, float)):
         #    logger.warning(f"Possible invalid val `{val}`: `{type(val)}` in dense feature `{col}`")
-        user_dense_vals[field_index] = float(val)
+        type_fn = type(user_dense_vals[0])
+        user_dense_vals[field_index] = type_fn(val)
     return user_dense_vals
 
 
@@ -374,7 +375,7 @@ async def get_seq(
     else:
         seq = np.full(max_seq_len, n_items, dtype=np.int32)
         if item_id_seq:
-            seq[-seq_len:] = item_id_seq[-seq_len:]
+            seq[:seq_len] = item_id_seq[-seq_len:]
 
         if model_name in CROSS_FEAT_MODELS:
             seq = np.tile(seq, (n_items, 1)).tolist()
