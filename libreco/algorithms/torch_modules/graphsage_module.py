@@ -10,17 +10,11 @@ from ...utils.validate import (
 )
 
 
-class GraphSageModel(nn.Module):
+class GraphSageModelBase(nn.Module):
     def __init__(
-        self,
-        paradigm,
-        data_info,
-        embed_size,
-        batch_size,
-        num_layers,
-        dropout_rate,
+        self, paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
     ):
-        super(GraphSageModel, self).__init__()
+        super(GraphSageModelBase, self).__init__()
         self.paradigm = paradigm
         self.embed_size = embed_size
         self.batch_size = batch_size
@@ -30,9 +24,6 @@ class GraphSageModel(nn.Module):
         item_input_dim = (len(data_info.item_col) + 1) * embed_size
         self.item_proj = nn.Linear(item_input_dim, embed_size)
         self.item_dense_col_indices = data_info.item_dense_col.index
-        self.w_linears = nn.ModuleList(
-            [nn.Linear(embed_size * 2, embed_size) for _ in range(num_layers)]
-        )
         if paradigm == "u2i":
             self.user_embeds = nn.Embedding(data_info.n_users, embed_size)
             user_input_dim = (len(data_info.user_col) + 1) * embed_size
@@ -46,10 +37,8 @@ class GraphSageModel(nn.Module):
             self.dense_embeds = nn.Parameter(
                 torch.empty(dense_field_size(data_info), embed_size)
             )
-        self.init_parameters()
 
     def init_parameters(self):
-        gain = nn.init.calculate_gain("relu")
         if self.paradigm == "u2i":
             nn.init.xavier_uniform_(self.user_embeds.weight)
             nn.init.xavier_uniform_(self.user_proj.weight)
@@ -57,55 +46,10 @@ class GraphSageModel(nn.Module):
         nn.init.xavier_uniform_(self.item_embeds.weight)
         nn.init.xavier_uniform_(self.item_proj.weight)
         nn.init.zeros_(self.item_proj.bias)
-        for i, w in enumerate(self.w_linears):
-            if i == self.num_layers - 1:
-                nn.init.xavier_uniform_(w.weight)
-            else:
-                nn.init.xavier_uniform_(w.weight, gain=gain)
-            nn.init.zeros_(w.bias)
         if self.sparse:
             nn.init.xavier_uniform_(self.sparse_embeds.weight)
         if self.dense:
             nn.init.xavier_uniform_(self.dense_embeds)
-
-    def forward(
-        self,
-        items,
-        sparse_indices,
-        dense_values,
-        neighbors,
-        neighbor_sparse_indices,
-        neighbor_dense_values,
-        offsets,
-        weights=None,
-    ):
-        # paper author's implementation: https://github.com/williamleif/GraphSAGE/blob/master/graphsage/models.py#L299
-        hidden = [
-            self.get_raw_features(items, sparse_indices, dense_values, is_user=False)
-        ]
-        for n, s, d in zip(neighbors, neighbor_sparse_indices, neighbor_dense_values):
-            hidden.append(self.get_raw_features(n, s, d, is_user=False))
-        for layer in range(self.num_layers):
-            w_linear = self.w_linears[layer]
-            next_hidden = []
-            depth = self.num_layers - layer
-            for k in range(depth):
-                current_embeds = self.dropout(hidden[k])
-                neighbor_embeds = self.dropout(hidden[k + 1])
-                mean_neighbors = F.embedding_bag(
-                    torch.arange(neighbor_embeds.shape[0]).to(neighbor_embeds.device),
-                    neighbor_embeds,
-                    offsets=offsets[k],
-                    mode="mean",
-                )
-                h = torch.cat([current_embeds, mean_neighbors], dim=1)
-                if layer == self.num_layers - 1:
-                    h = w_linear(h)
-                else:
-                    h = F.relu(w_linear(h))
-                next_hidden.append(h)
-            hidden = next_hidden
-        return hidden[0]
 
     def user_repr(self, users, sparse_indices, dense_values):
         return self.get_raw_features(users, sparse_indices, dense_values, is_user=True)
@@ -138,7 +82,75 @@ class GraphSageModel(nn.Module):
         return proj_features
 
 
-class GraphSageDGLModel(GraphSageModel):
+class GraphSageModel(GraphSageModelBase):
+    def __init__(
+        self,
+        paradigm,
+        data_info,
+        embed_size,
+        batch_size,
+        num_layers,
+        dropout_rate,
+    ):
+        super().__init__(
+            paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
+        )
+        self.w_linears = nn.ModuleList(
+            [nn.Linear(embed_size * 2, embed_size) for _ in range(num_layers)]
+        )
+        self.init_parameters()
+
+    def init_parameters(self):
+        super().init_parameters()
+        gain = nn.init.calculate_gain("relu")
+        for i, w in enumerate(self.w_linears):
+            if i == self.num_layers - 1:
+                nn.init.xavier_uniform_(w.weight)
+            else:
+                nn.init.xavier_uniform_(w.weight, gain=gain)
+            nn.init.zeros_(w.bias)
+
+    # paper author's implementation: https://github.com/williamleif/GraphSAGE/blob/master/graphsage/models.py#L299
+    def forward(
+        self,
+        items,
+        sparse_indices,
+        dense_values,
+        neighbors,
+        neighbor_sparse_indices,
+        neighbor_dense_values,
+        offsets,
+        weights=None,
+    ):
+        hidden = [
+            self.get_raw_features(items, sparse_indices, dense_values, is_user=False)
+        ]
+        for n, s, d in zip(neighbors, neighbor_sparse_indices, neighbor_dense_values):
+            hidden.append(self.get_raw_features(n, s, d, is_user=False))
+        for layer in range(self.num_layers):
+            w_linear = self.w_linears[layer]
+            next_hidden = []
+            depth = self.num_layers - layer
+            for k in range(depth):
+                current_embeds = self.dropout(hidden[k])
+                neighbor_embeds = self.dropout(hidden[k + 1])
+                mean_neighbors = F.embedding_bag(
+                    torch.arange(neighbor_embeds.shape[0]).to(neighbor_embeds.device),
+                    neighbor_embeds,
+                    offsets=offsets[k],
+                    mode="mean",
+                )
+                h = torch.cat([current_embeds, mean_neighbors], dim=1)
+                if layer == self.num_layers - 1:
+                    h = w_linear(h)
+                else:
+                    h = F.relu(w_linear(h))
+                next_hidden.append(h)
+            hidden = next_hidden
+        return hidden[0]
+
+
+class GraphSageDGLModel(GraphSageModelBase):
     def __init__(
         self,
         paradigm,
@@ -169,6 +181,7 @@ class GraphSageDGLModel(GraphSageModel):
                 for _ in range(num_layers)
             ]
         )
+        self.init_parameters()
 
     def forward(self, blocks, nodes, sparse_indices, dense_values, *_):
         h = self.get_raw_features(nodes, sparse_indices, dense_values, is_user=False)
