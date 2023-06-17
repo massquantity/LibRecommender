@@ -6,12 +6,8 @@ from .graphsage_module import GraphSageModelBase
 
 
 class PinSageModelBase(GraphSageModelBase):
-    def __init__(
-        self, paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
-    ):
-        super(PinSageModelBase, self).__init__(
-            paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
-        )
+    def __init__(self, paradigm, data_info, embed_size, batch_size, num_layers):
+        super().__init__(paradigm, data_info, embed_size, batch_size, num_layers)
         self.G1 = nn.Linear(embed_size, embed_size)
         self.G2 = nn.Linear(embed_size, embed_size, bias=False)
         if paradigm == "u2i":
@@ -40,9 +36,8 @@ class PinSageModel(PinSageModelBase):
     def __init__(
         self, paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
     ):
-        super().__init__(
-            paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
-        )
+        super().__init__(paradigm, data_info, embed_size, batch_size, num_layers)
+        self.dropout = nn.Dropout(dropout_rate)
         self.q_linears = nn.ModuleList(
             [nn.Linear(embed_size, embed_size) for _ in range(num_layers)]
         )
@@ -105,49 +100,51 @@ class PinSageDGLModel(PinSageModelBase):
     def __init__(
         self, paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
     ):
-        super().__init__(
-            paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
-        )
-
-        self.q_linears = nn.ModuleList(
-            [nn.Linear(embed_size, embed_size) for _ in range(num_layers)]
-        )
-        self.w_linears = nn.ModuleList(
-            [nn.Linear(embed_size * 2, embed_size) for _ in range(num_layers)]
+        super().__init__(paradigm, data_info, embed_size, batch_size, num_layers)
+        self.layers = nn.ModuleList(
+            [PinSageConv(embed_size, dropout_rate) for _ in range(num_layers)]
         )
         self.init_parameters()
 
-    def init_parameters(self):
-        super().init_parameters()
-        gain = nn.init.calculate_gain("relu")
-        for q, w in zip(self.q_linears, self.w_linears):
-            nn.init.xavier_uniform_(q.weight, gain=gain)
-            nn.init.zeros_(q.bias)
-            nn.init.xavier_uniform_(w.weight, gain=gain)
-            nn.init.zeros_(w.bias)
-
     def forward(self, blocks, nodes, sparse_indices, dense_values, *_):
+        h = self.get_raw_features(nodes, sparse_indices, dense_values, is_user=False)
+        for layer, block in zip(self.layers, blocks):
+            h = layer(block, h)  # h_src[:blocks[-1].num_dst_nodes()]
+        return self.final_linear(h)
+
+    def final_linear(self, x):
+        return self.G2(F.relu(self.G1(x)))
+
+
+class PinSageConv(nn.Module):
+    def __init__(self, embed_size, dropout_rate):
+        super().__init__()
+        self.dropout = nn.Dropout(dropout_rate)
+        self.q_linear = nn.Linear(embed_size, embed_size)
+        self.w_linear = nn.Linear(embed_size * 2, embed_size)
+        self.init_parameters()
+
+    def init_parameters(self):
+        gain = nn.init.calculate_gain("relu")
+        nn.init.xavier_uniform_(self.q_linear.weight, gain=gain)
+        nn.init.zeros_(self.q_linear.bias)
+        nn.init.xavier_uniform_(self.w_linear.weight, gain=gain)
+        nn.init.zeros_(self.w_linear.bias)
+
+    def forward(self, graph, h_src):
         import dgl.function as dfn
 
-        h_src = self.get_raw_features(
-            nodes, sparse_indices, dense_values, is_user=False
-        )
-        for layer, block in enumerate(blocks):
-            q_linear, w_linear = self.q_linears[layer], self.w_linears[layer]
-            h_dst = h_src[: block.num_dst_nodes()]
-            with block.local_scope():
-                block.srcdata["n"] = self.dropout(F.relu(q_linear(h_src)))
-                block.edata["w"] = block.edata["weights"].float()
-                block.update_all(dfn.u_mul_e("n", "w", "m"), dfn.sum("m", "n"))
-                block.update_all(dfn.copy_e("w", "m"), dfn.sum("m", "ws"))
-                n = block.dstdata["n"]
-                ws = block.dstdata["ws"].unsqueeze(1).clamp(min=1)
-                z = torch.cat([h_dst, n / ws], dim=1)
-                z = F.relu(w_linear(z))
-                z_norm = z.norm(dim=1, keepdim=True)
-                default_norm = torch.tensor(1.0).to(z_norm)
-                z_norm = torch.where(z_norm == 0, default_norm, z_norm)
-                z = z / z_norm
-            h_src = z
-        items = h_src  # h_src[:blocks[-1].num_dst_nodes()]
-        return self.G2(F.relu(self.G1(items)))
+        with graph.local_scope():
+            h_dst = h_src[: graph.num_dst_nodes()]
+            graph.srcdata["n"] = self.dropout(F.relu(self.q_linear(h_src)))
+            graph.edata["w"] = graph.edata["weights"].float()
+            graph.update_all(dfn.u_mul_e("n", "w", "m"), dfn.sum("m", "n"))
+            graph.update_all(dfn.copy_e("w", "m"), dfn.sum("m", "ws"))
+            n = graph.dstdata["n"]
+            ws = graph.dstdata["ws"].unsqueeze(1).clamp(min=1)
+            z = torch.cat([h_dst, n / ws], dim=1)
+            z = F.relu(self.w_linear(z))
+            z_norm = z.norm(dim=1, keepdim=True)
+            default_norm = torch.tensor(1.0).to(z_norm)
+            z_norm = torch.where(z_norm == 0, default_norm, z_norm)
+            return z / z_norm

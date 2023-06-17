@@ -11,15 +11,12 @@ from ...utils.validate import (
 
 
 class GraphSageModelBase(nn.Module):
-    def __init__(
-        self, paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
-    ):
+    def __init__(self, paradigm, data_info, embed_size, batch_size, num_layers):
         super(GraphSageModelBase, self).__init__()
         self.paradigm = paradigm
         self.embed_size = embed_size
         self.batch_size = batch_size
         self.num_layers = num_layers
-        self.dropout = nn.Dropout(dropout_rate)
         self.item_embeds = nn.Embedding(data_info.n_items, embed_size)
         item_input_dim = (len(data_info.item_col) + 1) * embed_size
         self.item_proj = nn.Linear(item_input_dim, embed_size)
@@ -84,17 +81,10 @@ class GraphSageModelBase(nn.Module):
 
 class GraphSageModel(GraphSageModelBase):
     def __init__(
-        self,
-        paradigm,
-        data_info,
-        embed_size,
-        batch_size,
-        num_layers,
-        dropout_rate,
+        self, paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
     ):
-        super().__init__(
-            paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
-        )
+        super().__init__(paradigm, data_info, embed_size, batch_size, num_layers)
+        self.dropout = nn.Dropout(dropout_rate)
         self.w_linears = nn.ModuleList(
             [nn.Linear(embed_size * 2, embed_size) for _ in range(num_layers)]
         )
@@ -164,9 +154,7 @@ class GraphSageDGLModel(GraphSageModelBase):
         # noinspection PyUnresolvedReferences
         from dgl.nn import SAGEConv
 
-        super().__init__(
-            paradigm, data_info, embed_size, batch_size, num_layers, dropout_rate
-        )
+        super().__init__(paradigm, data_info, embed_size, batch_size, num_layers)
         self.layers = nn.ModuleList(
             [
                 SAGEConv(
