@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 from ..bases import EmbedBase
 from ..graph import NeighborWalker
+from ..graph.inference import full_neighbor_embeddings
 from ..graph.message import ItemMessage, ItemMessageDGL, UserMessage
 from ..torchops import device_config
 
@@ -52,6 +53,7 @@ class SageBase(EmbedBase):
         seed=42,
         device="cuda",
         lower_upper_bound=None,
+        full_inference=False,
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
@@ -77,6 +79,7 @@ class SageBase(EmbedBase):
         self.start_node = start_node
         self.focus_start = focus_start
         self.neighbor_walker = None
+        self.full_inference = full_inference
         self.seed = seed
         self.device = device_config(device)
         self.use_dgl = "DGL" in self.model_name
@@ -135,17 +138,20 @@ class SageBase(EmbedBase):
     def set_embeddings(self):
         assert isinstance(self.neighbor_walker, NeighborWalker)
         self.torch_model.eval()
-        item_embed = []
-        all_items = list(range(self.n_items))
-        for i in tqdm(range(0, self.n_items, self.batch_size), desc="item embedding"):
-            batch_items = all_items[i : i + self.batch_size]
-            if self.use_dgl:
-                batch_items = torch.tensor(batch_items, dtype=torch.long)
-            item_data = self.neighbor_walker(batch_items)
-            item_data = item_data.to_device(self.device)
-            item_reprs = self.get_item_repr(item_data)
-            item_embed.append(item_reprs.detach().cpu().numpy())
-        self.item_embeds_np = np.concatenate(item_embed, axis=0)
+        if self.full_inference and self.use_dgl:
+            self.item_embeds_np = full_neighbor_embeddings(self)
+        else:
+            item_embed = []
+            all_items = list(range(self.n_items))
+            for i in tqdm(range(0, self.n_items, self.batch_size), desc="item embeds"):
+                batch_items = all_items[i : i + self.batch_size]
+                if self.use_dgl:
+                    batch_items = torch.tensor(batch_items, dtype=torch.long)
+                item_data = self.neighbor_walker(batch_items)
+                item_data = item_data.to_device(self.device)
+                item_reprs = self.get_item_repr(item_data)
+                item_embed.append(item_reprs.detach().cpu().numpy())
+            self.item_embeds_np = np.concatenate(item_embed, axis=0)
         self.user_embeds_np = self._compute_user_embeddings()
 
     @torch.no_grad()

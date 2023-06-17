@@ -93,6 +93,8 @@ class PinSageDGL(SageBase, metaclass=ModelMeta, backend="torch"):
         parameter ``start_node`` and ``focus_start`` is oversampling unpopular items.
         If you set ``start_node='popular'`` and ``focus_start=True``, unpopular items will
         be kept in positive samples, which may increase diversity.
+    full_inference : bool, default: False
+        Whether to get item embedding by aggregating over all neighbor embeddings.
     seed : int, default: 42
         Random seed.
     device : {'cpu', 'cuda'}, default: 'cuda'
@@ -147,6 +149,7 @@ class PinSageDGL(SageBase, metaclass=ModelMeta, backend="torch"):
         sampler="random",
         start_node="random",
         focus_start=False,
+        full_inference=False,
         seed=42,
         device="cuda",
         lower_upper_bound=None,
@@ -178,6 +181,7 @@ class PinSageDGL(SageBase, metaclass=ModelMeta, backend="torch"):
             seed,
             device,
             lower_upper_bound,
+            full_inference,
         )
         self.all_args = locals()
         self.neighbor_walk_len = neighbor_walk_len

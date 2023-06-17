@@ -51,6 +51,7 @@ from tests.utils_save_load import save_load_model
     "margin,"
     "start_node,"
     "focus_start,"
+    "full_inference,"
     "num_workers",
     [
         (
@@ -68,6 +69,7 @@ from tests.utils_save_load import save_load_model
             0.5,
             1.0,
             "random",
+            False,
             False,
             0,
         ),
@@ -87,6 +89,7 @@ from tests.utils_save_load import save_load_model
             0.0,
             "unpopular",
             True,
+            True,
             0,
         ),
         (
@@ -104,6 +107,7 @@ from tests.utils_save_load import save_load_model
             0.5,
             1.0,
             "random",
+            False,
             False,
             2,
         ),
@@ -132,6 +136,7 @@ def test_pinsage(
     margin,
     start_node,
     focus_start,
+    full_inference,
     num_workers,
 ):
     if not sys.platform.startswith("linux") and num_workers > 0:
@@ -204,6 +209,7 @@ def test_pinsage(
             margin=margin,
             start_node=start_node,
             focus_start=focus_start,
+            full_inference=full_inference,
         )
         model.fit(
             train_data,
