@@ -16,19 +16,30 @@ pub struct TfAppState {
     semaphore: std::sync::Arc<Semaphore>,
 }
 
-pub fn init_tf_state(model_type: &str) -> ServingResult<Option<web::Data<TfAppState>>> {
-    match model_type {
-        "tf" => {
-            let client = reqwest::Client::new();
-            let default_limit = num_cpus::get_physical() * 4;
-            let request_limit =
-                std::env::var("REQUEST_LIMIT").map_or(Ok(default_limit), |s| s.parse::<usize>())?;
-            log::debug!("tf serving request limit: {request_limit}");
-            let semaphore = std::sync::Arc::new(Semaphore::new(request_limit));
-            Ok(Some(web::Data::new(TfAppState { client, semaphore })))
-        }
-        _ => Ok(None),
-    }
+// pub fn init_tf_state(model_type: &str) -> ServingResult<Option<web::Data<TfAppState>>> {
+//    match model_type {
+//        "tf" => {
+//            let client = reqwest::Client::new();
+//            let default_limit = num_cpus::get_physical() * 4;
+//            let request_limit =
+//                std::env::var("REQUEST_LIMIT").map_or(Ok(default_limit), |s| s.parse::<usize>())?;
+//            log::debug!("tf serving request limit: {request_limit}");
+//            let semaphore = std::sync::Arc::new(Semaphore::new(request_limit));
+//            Ok(Some(web::Data::new(TfAppState { client, semaphore })))
+//        }
+//        _ => Ok(None),
+//    }
+// }
+
+pub fn init_tf_state() -> TfAppState {
+    let client = reqwest::Client::new();
+    let default_limit = num_cpus::get_physical() * 4;
+    let request_limit = std::env::var("REQUEST_LIMIT")
+        .map_or(Ok(default_limit), |s| s.parse::<usize>())
+        .expect("Failed to parse env `REQUEST_LIMIT`");
+    log::debug!("tf serving request limit: {request_limit}");
+    let semaphore = std::sync::Arc::new(Semaphore::new(request_limit));
+    TfAppState { client, semaphore }
 }
 
 #[post("/tf/recommend")]
@@ -111,12 +122,12 @@ mod tests {
     use actix_web::{dev::Service, middleware::Logger, test, App};
     use pretty_assertions::assert_eq;
 
-    #[test]
-    #[should_panic(expected = "called `Option::unwrap()` on a `None` value")]
-    async fn test_tf_state() {
-        assert!(init_tf_state("tf").unwrap().is_some());
-        init_tf_state("ooo").unwrap().unwrap();
-    }
+    // #[test]
+    // #[should_panic(expected = "called `Option::unwrap()` on a `None` value")]
+    // async fn test_tf_state() {
+    //    assert!(init_tf_state("tf").unwrap().is_some());
+    //    init_tf_state("ooo").unwrap().unwrap();
+    // }
 
     #[actix_web::test]
     async fn test_tf_serving() -> Result<(), Box<dyn std::error::Error>> {
@@ -124,12 +135,12 @@ mod tests {
         env_logger::init();
         let logger = Logger::default();
         let redis_pool = create_redis_pool(String::from("localhost"))?;
-        let tf_state = init_tf_state("tf")?.unwrap();
+        let tf_state = init_tf_state();
         let app = test::init_service(
             App::new()
                 .wrap(logger)
                 .app_data(web::Data::new(redis_pool))
-                .app_data(tf_state)
+                .app_data(web::Data::new(tf_state))
                 .service(tf_serving),
         )
         .await;
@@ -165,11 +176,11 @@ mod tests {
     #[actix_web::test]
     async fn test_invalid_request() {
         let redis_pool = create_redis_pool(String::from("localhost")).unwrap();
-        let tf_state = init_tf_state("tf").unwrap().unwrap();
+        let tf_state = init_tf_state();
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(redis_pool))
-                .app_data(tf_state)
+                .app_data(web::Data::new(tf_state))
                 .service(tf_serving),
         )
         .await;

@@ -14,16 +14,23 @@ use crate::redis_ops::{check_exists, get_multi_str, get_str, get_vec};
 
 pub type EmbedAppState = Mutex<RefCell<IndexImpl>>;
 
-pub fn init_embed_state(model_type: &str) -> ServingResult<Option<web::Data<EmbedAppState>>> {
-    match model_type {
-        "embed" => {
-            let index_path = find_index_path(None)?;
-            read_index(index_path)
-                .map_err(ServingError::FaissError)
-                .map(|index| Some(web::Data::new(Mutex::new(RefCell::new(index)))))
-        }
-        _ => Ok(None),
-    }
+// pub fn init_embed_state(model_type: &str) -> ServingResult<Option<web::Data<EmbedAppState>>> {
+//    match model_type {
+//        "embed" => {
+//            let index_path = find_index_path(None)?;
+//            read_index(index_path)
+//                .map_err(ServingError::FaissError)
+//                .map(|index| Some(web::Data::new(Mutex::new(RefCell::new(index)))))
+//        }
+//        _ => Ok(None),
+//    }
+// }
+
+pub fn init_emb_state() -> EmbedAppState {
+    let index_path = find_index_path(None).expect("Failed to find faiss index.");
+    read_index(index_path)
+        .map(|index| Mutex::new(RefCell::new(index)))
+        .expect("Failed to load faiss index.")
 }
 
 #[post("/embed/recommend")]
@@ -100,12 +107,12 @@ mod tests {
     use actix_web::{dev::Service, middleware::Logger, test, App};
     use pretty_assertions::assert_eq;
 
-    #[test]
-    #[should_panic(expected = "called `Option::unwrap()` on a `None` value")]
-    async fn test_embed_state() {
-        assert!(init_embed_state("embed").unwrap().is_some());
-        init_embed_state("ooo").unwrap().unwrap();
-    }
+    // #[test]
+    // #[should_panic(expected = "called `Option::unwrap()` on a `None` value")]
+    // async fn test_embed_state() {
+    //    assert!(init_embed_state("embed").unwrap().is_some());
+    // init_embed_state("ooo").unwrap().unwrap();
+    // }
 
     #[actix_web::test]
     async fn test_embed_serving() -> Result<(), Box<dyn std::error::Error>> {
@@ -113,12 +120,12 @@ mod tests {
         env_logger::init();
         let logger = Logger::default();
         let redis_pool = create_redis_pool(String::from("localhost"))?;
-        let embed_state = init_embed_state("embed")?.unwrap();
+        let embed_state = init_emb_state();
         let app = test::init_service(
             App::new()
                 .wrap(logger)
                 .app_data(web::Data::new(redis_pool))
-                .app_data(embed_state)
+                .app_data(web::Data::new(embed_state))
                 .service(embed_serving),
         )
         .await;
@@ -150,11 +157,11 @@ mod tests {
     #[actix_web::test]
     async fn test_invalid_request() {
         let redis_pool = create_redis_pool(String::from("localhost")).unwrap();
-        let embed_state = init_embed_state("embed").unwrap().unwrap();
+        let embed_state = init_emb_state();
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(redis_pool))
-                .app_data(embed_state)
+                .app_data(web::Data::new(embed_state))
                 .service(embed_serving),
         )
         .await;
