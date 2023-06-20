@@ -1,11 +1,16 @@
 use actix_web::http::{header::ContentType, StatusCode};
 use actix_web::{http, middleware::Logger, web, App, HttpResponse, HttpServer};
+use once_cell::sync::Lazy;
 
-use actix_serving::embed_deploy::{init_embed_state, EmbedAppState};
+use actix_serving::embed_deploy::{init_emb_state, EmbedAppState};
 use actix_serving::errors::ServingError;
 use actix_serving::redis_ops;
 use actix_serving::tf_deploy::{init_tf_state, TfAppState};
 use actix_serving::{embed_serving, knn_serving, tf_serving};
+
+static EMB_STATE: Lazy<web::Data<EmbedAppState>> = Lazy::new(|| web::Data::new(init_emb_state()));
+
+static TF_STATE: Lazy<web::Data<TfAppState>> = Lazy::new(|| web::Data::new(init_tf_state()));
 
 fn get_env() -> Result<(String, u16, usize, String), ServingError> {
     let host = std::env::var("REDIS_HOST").unwrap_or_else(|_| String::from("127.0.0.1"));
@@ -45,8 +50,6 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let model_type = std::env::var("MODEL_TYPE").expect("Failed to get `MODEL_TYPE` from env");
-    let embed_state: Option<web::Data<EmbedAppState>> = init_embed_state(&model_type)?;
-    let tf_state: Option<web::Data<TfAppState>> = init_tf_state(&model_type)?;
     let redis_pool = web::Data::new(redis_ops::create_redis_pool(redis_host)?);
     // create the shared `web::Data` outside the `HttpServer::new` closure
     // https://docs.rs/actix-web/4.2.1/actix_web/struct.App.html#shared-mutable-state
@@ -58,21 +61,13 @@ async fn main() -> std::io::Result<()> {
 
         match model_type.as_str() {
             "knn" => app.service(knn_serving),
-            "embed" => {
-                // let faiss_index = RefCell::new(load_faiss_index());
-                let index_state = embed_state
-                    .as_ref()
-                    .expect("Failed to load faiss index in embed serving");
-                app.app_data(web::Data::clone(index_state))
-                    .service(embed_serving)
-            }
-            "tf" => {
-                let client_state = tf_state
-                    .as_ref()
-                    .expect("Failed to get reqwest client in tf serving");
-                app.app_data(web::Data::clone(client_state))
-                    .service(tf_serving)
-            }
+            // let faiss_index = RefCell::new(load_faiss_index());
+            "embed" => app
+                .app_data(web::Data::clone(&EMB_STATE))
+                .service(embed_serving),
+            "tf" => app
+                .app_data(web::Data::clone(&TF_STATE))
+                .service(tf_serving),
             other => {
                 eprintln!("Unknown model type: `{other}`");
                 std::process::exit(1)
