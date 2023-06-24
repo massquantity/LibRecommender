@@ -90,7 +90,7 @@ filterwarnings = [
 line-length = 88
 target-version = "py38"
 show-source = true
-ignore = ["E501"]
+ignore = ["E501", "RUF012"]
 select = [
     # pyflakes
     "F",

@@ -29,22 +29,17 @@ def _remove_duplicates(user_consumed, item_consumed):
     return user_dedup, item_dedup
 
 
-def update_consumed(new_data_info, data_info, merge_behavior):
+def update_consumed(
+    user_indices, item_indices, n_users, n_items, old_info, merge_behavior
+):
+    user_consumed, item_consumed = interaction_consumed(user_indices, item_indices)
     if merge_behavior:
-        new_data_info.user_consumed = _merge_dedup(
-            new_data_info.user_consumed, new_data_info.n_users, data_info.user_consumed
-        )
-        new_data_info.item_consumed = _merge_dedup(
-            new_data_info.item_consumed, new_data_info.n_items, data_info.item_consumed
-        )
+        user_consumed = _merge_dedup(user_consumed, n_users, old_info.user_consumed)
+        item_consumed = _merge_dedup(item_consumed, n_items, old_info.item_consumed)
     else:
-        new_data_info.user_consumed = _fill_empty(
-            new_data_info.user_consumed, new_data_info.n_users, data_info.user_consumed
-        )
-        new_data_info.item_consumed = _fill_empty(
-            new_data_info.item_consumed, new_data_info.n_items, data_info.item_consumed
-        )
-    return new_data_info
+        user_consumed = _fill_empty(user_consumed, n_users, old_info.user_consumed)
+        item_consumed = _fill_empty(item_consumed, n_items, old_info.item_consumed)
+    return user_consumed, item_consumed
 
 
 def _merge_dedup(new_consumed, num, old_consumed):

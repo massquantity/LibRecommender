@@ -1,15 +1,15 @@
 """Classes for Storing Various Data Information."""
 import inspect
 import json
-import os
+import pickle
 from collections import namedtuple
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 import numpy as np
 import pandas as pd
 
-from .consumed import interaction_consumed
 from ..feature.update import (
     get_row_id_masks,
     update_new_dense_feats,
@@ -69,10 +69,10 @@ class DataInfo:
         Unique sparse features for all items in train data.
     item_dense_unique : numpy.ndarray or None, default: None
         Unique dense features for all items in train data.
-    user_indices : numpy.ndarray or None, default: None
-        Mapped inner user indices from train data.
-    item_indices : numpy.ndarray or None, default: None
-        Mapped inner item indices from train data.
+    user_consumed : dict of {int : list} or None, default: None
+        All consumed items by each user.
+    item_consumed : dict of {int : list} or None, default: None
+        All consumed users by each item.
     user_unique_vals : numpy.ndarray or None, default: None
         All the unique users in train data.
     item_unique_vals : numpy.ndarray or None, default: None
@@ -110,8 +110,8 @@ class DataInfo:
         user_dense_unique=None,
         item_sparse_unique=None,
         item_dense_unique=None,
-        user_indices=None,
-        item_indices=None,
+        user_consumed=None,
+        item_consumed=None,
         user_unique_vals=None,
         item_unique_vals=None,
         sparse_unique_vals=None,
@@ -126,9 +126,8 @@ class DataInfo:
         self.user_dense_unique = user_dense_unique
         self.item_sparse_unique = item_sparse_unique
         self.item_dense_unique = item_dense_unique
-        self.user_consumed, self.item_consumed = interaction_consumed(
-            user_indices, item_indices
-        )
+        self.user_consumed = user_consumed
+        self.item_consumed = item_consumed
         self.user_unique_vals = user_unique_vals
         self.item_unique_vals = item_unique_vals
         self.sparse_unique_vals = sparse_unique_vals
@@ -440,27 +439,30 @@ class DataInfo:
         model_name : str
             Name of the saved file.
         """
-        if not os.path.isdir(path):
+        path = Path(path)
+        if not path.is_dir():
             print(f"file folder {path} doesn't exists, creating a new one...")
-            os.makedirs(path)
+            path.mkdir()
         if self.col_name_mapping is not None:
-            name_mapping_path = os.path.join(
-                path, f"{model_name}_data_info_name_mapping.json"
-            )
-            with open(name_mapping_path, "w") as f:
+            with open(path / f"{model_name}_data_info_name_mapping.json", "w") as f:
                 json.dump(
                     self.all_args["col_name_mapping"],
                     f,
                     separators=(",", ":"),
                     indent=4,
                 )
+        if self.user_consumed is not None:
+            with open(path / f"{model_name}_user_consumed.pkl", "wb") as f:
+                pickle.dump(self.user_consumed, f, protocol=pickle.HIGHEST_PROTOCOL)
+        if self.item_consumed is not None:
+            with open(path / f"{model_name}_item_consumed.pkl", "wb") as f:
+                pickle.dump(self.item_consumed, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-        other_path = os.path.join(path, f"{model_name}_data_info")
         hparams = dict()
         arg_names = inspect.signature(self.__init__).parameters.keys()
         for arg in arg_names:
             if (
-                arg == "col_name_mapping"
+                arg in ("col_name_mapping", "user_consumed", "item_consumed")
                 or arg not in self.all_args
                 or self.all_args[arg] is None
             ):
@@ -478,7 +480,7 @@ class DataInfo:
             else:
                 hparams[arg] = self.all_args[arg]
 
-        np.savez_compressed(other_path, **hparams)
+        np.savez_compressed(path / f"{model_name}_data_info", **hparams)
 
     @classmethod
     def load(cls, path, model_name):
@@ -491,19 +493,26 @@ class DataInfo:
         model_name : str
             Name of the saved file.
         """
-        if not os.path.exists(path):
+        path = Path(path)
+        if not path.exists():
             raise OSError(f"file folder {path} doesn't exists...")
 
         hparams = dict()
-        name_mapping_path = os.path.join(
-            path, f"{model_name}_data_info_name_mapping.json"
-        )
-        if os.path.exists(name_mapping_path):
+        name_mapping_path = path / f"{model_name}_data_info_name_mapping.json"
+        if name_mapping_path.exists():
             with open(name_mapping_path, "r") as f:
                 hparams["col_name_mapping"] = json.load(f)
 
-        other_path = os.path.join(path, f"{model_name}_data_info.npz")
-        info = np.load(other_path, allow_pickle=True)
+        user_consumed_path = path / f"{model_name}_user_consumed.pkl"
+        if user_consumed_path.exists():
+            with open(user_consumed_path, "rb") as f:
+                hparams["user_consumed"] = pickle.load(f)
+        item_consumed_path = path / f"{model_name}_item_consumed.pkl"
+        if item_consumed_path.exists():
+            with open(item_consumed_path, "rb") as f:
+                hparams["item_consumed"] = pickle.load(f)
+
+        info = np.load(path / f"{model_name}_data_info.npz", allow_pickle=True)
         info = dict(info.items())
         for arg in info:
             if arg == "interaction_data":
@@ -556,6 +565,7 @@ def store_old_info(data_info):
             # multi_sparse case, second to last cols are redundant.
             # Used in `rebuild_tf_model`, `rebuild_torch_model`
             sparse_len.append(-1)
+
     return OldInfo(
         data_info.n_users,
         data_info.n_items,

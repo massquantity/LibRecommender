@@ -103,8 +103,8 @@ def test_torchmodel_retrain_feat():
     # ========================== load and retrain =============================
     new_data_info = DataInfo.load(SAVE_PATH, model_name="graphsage_model")
 
-    # use second half data as second training part
-    second_half_data = all_data[(len(all_data) // 2) :]
+    # use first half of second half data as second training part
+    second_half_data = all_data[(len(all_data) // 2) : (len(all_data) * 3 // 4)]
     train_data_orig, eval_data_orig = split_by_ratio_chrono(
         second_half_data, test_size=0.2
     )
@@ -171,5 +171,70 @@ def test_torchmodel_retrain_feat():
     )
 
     assert new_eval_result["roc_auc"] != eval_result["roc_auc"]
+
+    new_data_info.save(path=SAVE_PATH, model_name="graphsage_model")
+    new_model.save(
+        path=SAVE_PATH, model_name="graphsage_model", manual=True, inference_only=False
+    )
+
+    # ========================== load and retrain 2 =============================
+    new_data_info = DataInfo.load(SAVE_PATH, model_name="graphsage_model")
+
+    # use second half of second half data as second training part
+    third_half_data = all_data[(len(all_data) * 3 // 4) :]
+    train_data_orig, eval_data_orig = split_by_ratio_chrono(
+        third_half_data, test_size=0.2
+    )
+    train_data, new_data_info = DatasetFeat.merge_trainset(
+        train_data_orig, new_data_info, merge_behavior=True
+    )
+    eval_data = DatasetFeat.merge_evalset(eval_data_orig, new_data_info)
+    print(new_data_info)
+
+    new_model = GraphSage(
+        "ranking",
+        new_data_info,
+        loss_type="focal",
+        paradigm="i2i",
+        embed_size=16,
+        n_epochs=1,
+        lr=1e-4,
+        lr_decay=False,
+        epsilon=1e-8,
+        amsgrad=False,
+        reg=None,
+        batch_size=2048,
+        num_neg=1,
+        dropout_rate=0.0,
+        num_layers=1,
+        num_neighbors=10,
+        num_walks=10,
+        sample_walk_len=5,
+        margin=1.0,
+        sampler="random",
+        start_node="random",
+        focus_start=False,
+        seed=42,
+    )
+    new_model.rebuild_model(path=SAVE_PATH, model_name="graphsage_model")
+    new_model.fit(
+        train_data,
+        neg_sampling=True,
+        verbose=2,
+        shuffle=True,
+        eval_data=eval_data,
+        metrics=[
+            "loss",
+            "balanced_accuracy",
+            "roc_auc",
+            "pr_auc",
+            "precision",
+            "recall",
+            "map",
+            "ndcg",
+        ],
+    )
+    ptest_preds(new_model, "ranking", second_half_data, with_feats=False)
+    ptest_recommends(new_model, new_data_info, second_half_data, with_feats=False)
 
     remove_path(SAVE_PATH)
