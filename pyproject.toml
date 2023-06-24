@@ -11,7 +11,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "LibRecommender"
-version = "1.2.0"
+version = "1.2.1"
 description = "Versatile end-to-end recommender system."
 authors = [
     { name = "massquantity", email = "jinxin_madie@163.com" },
