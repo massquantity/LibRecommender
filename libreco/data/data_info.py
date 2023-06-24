@@ -10,7 +10,6 @@ from typing import Any, Dict, Iterable, List
 import numpy as np
 import pandas as pd
 
-from .consumed import interaction_consumed
 from ..feature.update import (
     get_row_id_masks,
     update_new_dense_feats,
@@ -70,10 +69,10 @@ class DataInfo:
         Unique sparse features for all items in train data.
     item_dense_unique : numpy.ndarray or None, default: None
         Unique dense features for all items in train data.
-    user_indices : numpy.ndarray or None, default: None
-        Mapped inner user indices from train data.
-    item_indices : numpy.ndarray or None, default: None
-        Mapped inner item indices from train data.
+    user_consumed : dict of {int : list} or None, default: None
+        All consumed items by each user.
+    item_consumed : dict of {int : list} or None, default: None
+        All consumed users by each item.
     user_unique_vals : numpy.ndarray or None, default: None
         All the unique users in train data.
     item_unique_vals : numpy.ndarray or None, default: None
@@ -111,8 +110,8 @@ class DataInfo:
         user_dense_unique=None,
         item_sparse_unique=None,
         item_dense_unique=None,
-        user_indices=None,
-        item_indices=None,
+        user_consumed=None,
+        item_consumed=None,
         user_unique_vals=None,
         item_unique_vals=None,
         sparse_unique_vals=None,
@@ -127,9 +126,8 @@ class DataInfo:
         self.user_dense_unique = user_dense_unique
         self.item_sparse_unique = item_sparse_unique
         self.item_dense_unique = item_dense_unique
-        self.user_consumed, self.item_consumed = interaction_consumed(
-            user_indices, item_indices
-        )
+        self.user_consumed = user_consumed
+        self.item_consumed = item_consumed
         self.user_unique_vals = user_unique_vals
         self.item_unique_vals = item_unique_vals
         self.sparse_unique_vals = sparse_unique_vals

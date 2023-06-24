@@ -4,7 +4,7 @@ import itertools
 
 import numpy as np
 
-from .consumed import update_consumed
+from .consumed import interaction_consumed, update_consumed
 from .data_info import DataInfo, store_old_info
 from .transformed import TransformedSet
 from ..feature.column_mapping import col_name2index
@@ -246,10 +246,11 @@ class DatasetPure(_Dataset):
             is_train=True,
             is_ordered=True,
         )
+        user_consumed, item_consumed = interaction_consumed(user_indices, item_indices)
         data_info = DataInfo(
             interaction_data=train_data[["user", "item", "label"]],
-            user_indices=user_indices,
-            item_indices=item_indices,
+            user_consumed=user_consumed,
+            item_consumed=item_consumed,
             user_unique_vals=cls.user_unique_vals,
             item_unique_vals=cls.item_unique_vals,
         )
@@ -303,14 +304,22 @@ class DatasetPure(_Dataset):
             is_train=True,
             is_ordered=False,
         )
+        user_consumed, item_consumed = update_consumed(
+            user_indices,
+            item_indices,
+            len(cls.user_unique_vals),
+            len(cls.item_unique_vals),
+            data_info,
+            merge_behavior,
+        )
+
         new_data_info = DataInfo(
             interaction_data=train_data[["user", "item", "label"]],
-            user_indices=user_indices,
-            item_indices=item_indices,
+            user_consumed=user_consumed,
+            item_consumed=item_consumed,
             user_unique_vals=cls.user_unique_vals,
             item_unique_vals=cls.item_unique_vals,
         )
-        new_data_info = update_consumed(new_data_info, data_info, merge_behavior)
         new_data_info.old_info = store_old_info(data_info)
         cls.train_called = True
         return merge_transformed, new_data_info
@@ -511,6 +520,7 @@ class DatasetFeat(_Dataset):
             col_name_mapping["multi_sparse"] = multi_sparse_col_map(multi_sparse_col)
 
         interaction_data = train_data[["user", "item", "label"]]
+        user_consumed, item_consumed = interaction_consumed(user_indices, item_indices)
         data_info = DataInfo(
             col_name_mapping,
             interaction_data,
@@ -518,8 +528,8 @@ class DatasetFeat(_Dataset):
             user_dense_unique,
             item_sparse_unique,
             item_dense_unique,
-            user_indices,
-            item_indices,
+            user_consumed,
+            item_consumed,
             cls.user_unique_vals,
             cls.item_unique_vals,
             cls.sparse_unique_vals,
@@ -632,6 +642,15 @@ class DatasetFeat(_Dataset):
         )
 
         interaction_data = train_data[["user", "item", "label"]]
+        user_consumed, item_consumed = update_consumed(
+            user_indices,
+            item_indices,
+            len(cls.user_unique_vals),
+            len(cls.item_unique_vals),
+            data_info,
+            merge_behavior,
+        )
+
         new_data_info = DataInfo(
             data_info.col_name_mapping,
             interaction_data,
@@ -639,8 +658,8 @@ class DatasetFeat(_Dataset):
             user_dense_unique,
             item_sparse_unique,
             item_dense_unique,
-            user_indices,
-            item_indices,
+            user_consumed,
+            item_consumed,
             cls.user_unique_vals,
             cls.item_unique_vals,
             cls.sparse_unique_vals,
@@ -649,7 +668,6 @@ class DatasetFeat(_Dataset):
             cls.multi_sparse_unique_vals,
             multi_sparse_info,
         )
-        new_data_info = update_consumed(new_data_info, data_info, merge_behavior)
         new_data_info.old_info = store_old_info(data_info)
         cls.train_called = True
         return merge_transformed, new_data_info
