@@ -139,7 +139,10 @@ class ALS(EmbedBase):
 
         check_fitting(self, train_data, eval_data, neg_sampling, k)
         self.show_start_time()
-        self.build_model()
+        if not self.model_built:
+            self.build_model()
+            self.model_built = True
+
         user_interaction = train_data.sparse_interaction  # sparse.csr_matrix
         item_interaction = user_interaction.T.tocsr()
         if self.task == "ranking":
@@ -177,6 +180,7 @@ class ALS(EmbedBase):
                     seed=self.seed,
                 )
                 print("=" * 30)
+
         self.assign_embedding_oov()
         self.default_recs = recommend_from_embedding(
             model=self,
@@ -229,6 +233,9 @@ class ALS(EmbedBase):
         model_name : str
             Name of the saved model file.
         """
+        self.model_built = True
+        self.build_model()
+
         variable_path = os.path.join(path, f"{model_name}.npz")
         variables = np.load(variable_path)
         # remove oov values
