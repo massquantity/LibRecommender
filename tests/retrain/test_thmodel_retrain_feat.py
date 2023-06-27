@@ -234,7 +234,7 @@ def test_torchmodel_retrain_feat():
             "ndcg",
         ],
     )
-    ptest_preds(new_model, "ranking", second_half_data, with_feats=False)
-    ptest_recommends(new_model, new_data_info, second_half_data, with_feats=False)
+    ptest_preds(new_model, "ranking", third_half_data, with_feats=False)
+    ptest_recommends(new_model, new_data_info, third_half_data, with_feats=False)
 
     remove_path(SAVE_PATH)
