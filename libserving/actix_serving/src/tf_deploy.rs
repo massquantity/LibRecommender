@@ -1,13 +1,13 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use actix_web::{post, web, Responder};
 use deadpool_redis::{redis::AsyncCommands, Pool};
-use serde_json::{json, Value};
+use serde_json::json;
 use tokio::sync::Semaphore;
 
 use crate::common::{Param, Prediction, Recommendation};
 use crate::errors::{ServingError, ServingResult};
-use crate::features::{build_features, build_last_interaction, get_raw_features, get_seq_feature};
+use crate::features::{build_cross_features, CrossFeats};
 use crate::redis_ops::{check_exists, get_multi_str, get_str, get_vec};
 
 #[derive(Clone)]
@@ -57,22 +57,20 @@ pub async fn tf_serving(
     }
     let user_id = get_str(&mut conn, "user2id", &user, "hget").await?;
     let model_name = get_str(&mut conn, "model_name", "none", "get").await?;
-    let n_items: usize = conn.get("n_items").await?;
-    let user_consumed: Vec<usize> = get_vec(&mut conn, "user_consumed", &user).await?;
-    let raw_feats = get_raw_features(&user_id, &mut conn).await?;
-    let mut all_data: HashMap<String, Value> = HashMap::new();
+    let n_items: u32 = conn.get("n_items").await?;
+    let user_consumed: Vec<u32> = get_vec(&mut conn, "user_consumed", &user).await?;
 
-    build_features(&mut all_data, &raw_feats, &user_id, n_items)?;
-    let max_seq_len = get_seq_feature(&mut conn, &model_name).await?;
-    build_last_interaction(&mut all_data, max_seq_len, n_items, &user_consumed);
-    let scores = request_tf_serving(&all_data, &model_name, state).await?;
+    let features =
+        build_cross_features(&model_name, &user_id, n_items, &user_consumed, &mut conn).await?;
+    // let feature_json = serde_json::to_value(features)?;
+    let scores = request_tf_serving(features, &model_name, state).await?;
     let item_ids = rank_items_by_score(&scores, n_rec, &user_consumed);
     let recs = get_multi_str(&mut conn, "id2item", &item_ids).await?;
     Ok(web::Json(Recommendation { rec_list: recs }))
 }
 
 async fn request_tf_serving(
-    data: &HashMap<String, Value>,
+    features: CrossFeats,
     model_name: &str,
     state: web::Data<TfAppState>,
 ) -> Result<Vec<f32>, reqwest::Error> {
@@ -84,7 +82,7 @@ async fn request_tf_serving(
     );
     let req = json!({
         "signature_name": "predict",
-        "inputs": data,
+        "inputs": features,
     });
     let permit = state.semaphore.acquire().await.unwrap();
     let resp = state.client.post(url).json(&req).send().await?;
@@ -94,8 +92,8 @@ async fn request_tf_serving(
     Ok(preds)
 }
 
-fn rank_items_by_score(scores: &[f32], n_rec: usize, user_consumed: &[usize]) -> Vec<usize> {
-    let user_consumed_set: HashSet<&usize> = HashSet::from_iter(user_consumed);
+fn rank_items_by_score(scores: &[f32], n_rec: usize, user_consumed: &[u32]) -> Vec<usize> {
+    let user_consumed_set: HashSet<&u32> = HashSet::from_iter(user_consumed);
     let mut rank_items = scores
         .iter()
         .enumerate()
@@ -104,7 +102,7 @@ fn rank_items_by_score(scores: &[f32], n_rec: usize, user_consumed: &[usize]) ->
     rank_items
         .into_iter()
         .filter_map(|(i, _)| {
-            if !user_consumed_set.contains(&i) {
+            if !user_consumed_set.contains(&(i as u32)) {
                 Some(i)
             } else {
                 None
