@@ -82,6 +82,9 @@ The serving related dependencies are listed in `main README <https://github.com/
 
 + `redis-py <https://github.com/redis/redis-py>`_ introduced async support since 4.2.0.
 
++ Pydantic has introduced breaking changes in `V2 <https://docs.pydantic.dev/latest/migration/>`_.
+  Consider upgrading to ``pydantic >= 2.0`` if you encounter validation errors.
+
 + According to the `official doc <https://github.com/facebookresearch/faiss/blob/main/INSTALL.md>`__, faiss can't be installed from pip directly.
   But someone has built wheel packages, refer to `faiss-wheels <https://github.com/kyamagu/faiss-wheels>`_.
   So now the pip option is available for faiss.

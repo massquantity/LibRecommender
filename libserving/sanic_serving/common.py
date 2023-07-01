@@ -8,10 +8,10 @@ from sanic.request import Request
 
 
 class Params(BaseModel, extra=Extra.forbid):
-    user: str
+    user: Union[str, int]
     n_rec: int
-    user_feats: Optional[Dict[str, Union[str, int, float]]]
-    seq: Optional[List[str]]
+    user_feats: Optional[Dict[str, Union[str, int, float]]] = None
+    seq: Optional[List[Union[str, int]]] = None
 
 
 def validate(model: Type[object]):
