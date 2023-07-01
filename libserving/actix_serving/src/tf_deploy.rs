@@ -60,8 +60,16 @@ pub async fn tf_serving(
     let n_items: u32 = conn.get("n_items").await?;
     let user_consumed: Vec<u32> = get_vec(&mut conn, "user_consumed", &user).await?;
 
-    let features =
-        build_cross_features(&model_name, &user_id, n_items, &user_consumed, &mut conn).await?;
+    let features = build_cross_features(
+        &model_name,
+        &user_id,
+        n_items,
+        &user_consumed,
+        &mut conn,
+        None,
+        None,
+    )
+    .await?;
     // let feature_json = serde_json::to_value(features)?;
     let scores = request_tf_serving(features, &model_name, state).await?;
     let item_ids = rank_items_by_score(&scores, n_rec, &user_consumed);
