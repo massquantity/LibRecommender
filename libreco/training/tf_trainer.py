@@ -66,8 +66,9 @@ class TensorFlowTrainer(BaseTrainer):
                     f"{self.sess.run(self.lr)}"
                 )
             with time_block(f"Epoch {epoch}", verbose):
+                disable = True if verbose <= 0 else False
                 train_total_loss = []
-                for batch_data in tqdm(data_loader, desc="train"):
+                for batch_data in tqdm(data_loader, desc="train", disable=disable):
                     fetches = (self.loss, self.training_op)
                     feed_dict = get_tf_feeds(self.model, batch_data, is_training=True)
                     train_loss, _ = self.sess.run(fetches, feed_dict)

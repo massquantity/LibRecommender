@@ -100,8 +100,11 @@ class TorchTrainer(BaseTrainer):
                 )
             with time_block(f"Epoch {epoch}", verbose):
                 self.torch_model.train()
+                disable = True if verbose <= 0 else False
                 train_total_loss = []
-                for i, batch_data in enumerate(tqdm(data_loader, desc="train")):
+                for i, batch_data in enumerate(
+                    tqdm(data_loader, desc="train", disable=disable)
+                ):
                     loss = self._compute_loss(batch_data)
                     self.optimizer.zero_grad()
                     loss.backward()
