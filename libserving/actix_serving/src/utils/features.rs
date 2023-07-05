@@ -14,48 +14,53 @@ use crate::redis_ops::{get_str, RedisFeatKeys};
 
 #[skip_serializing_none]
 #[derive(Debug, Serialize)]
-pub(crate) struct SeqEmbedFeats {
-    user_indices: Option<Vec<u32>>,
-    #[serde(rename(serialize = "user_interacted_seq"))]
-    seqs: Vec<Vec<u32>>,
-    #[serde(rename(serialize = "user_interacted_len"))]
-    seq_lens: Vec<u32>,
-}
+#[serde(untagged)]
+pub(crate) enum Features {
+    EmbedSeq {
+        user_indices: Option<Vec<u32>>,
+        #[serde(rename(serialize = "user_interacted_seq"))]
+        seqs: Vec<Vec<u32>>,
+        #[serde(rename(serialize = "user_interacted_len"))]
+        seq_lens: Vec<u32>,
+        #[serde(rename(serialize = "k"))]
+        cand_num: Option<u32>,
+    },
 
-#[skip_serializing_none]
-#[derive(Debug, Serialize)]
-pub(crate) struct SparseSeqFeats {
-    user_indices: Vec<u32>,
-    user_sparse_indices: Option<Vec<Vec<u32>>>,
-    user_dense_values: Option<Vec<Vec<f32>>>,
-    item_interaction_indices: Vec<Vec<i64>>,
-    item_interaction_values: Vec<i64>,
-    #[serde(rename(serialize = "modified_batch_size"))]
-    batch_size: u32,
-}
+    SparseSeq {
+        user_indices: Vec<u32>,
+        user_sparse_indices: Option<Vec<Vec<u32>>>,
+        user_dense_values: Option<Vec<Vec<f32>>>,
+        item_interaction_indices: Vec<Vec<i64>>,
+        item_interaction_values: Vec<i64>,
+        #[serde(rename(serialize = "modified_batch_size"))]
+        batch_size: u32,
+        #[serde(rename(serialize = "k"))]
+        cand_num: Option<u32>,
+    },
 
-#[skip_serializing_none]
-#[derive(Debug, Serialize)]
-pub(crate) struct SeparateFeats {
-    user_indices: Vec<u32>,
-    item_indices: Vec<u32>,
-    user_sparse_indices: Option<Vec<Vec<u32>>>,
-    user_dense_values: Option<Vec<Vec<f32>>>,
-    item_sparse_indices: Option<Vec<Vec<u32>>>,
-    item_dense_values: Option<Vec<Vec<f32>>>,
-}
+    Separate {
+        user_indices: Vec<u32>,
+        item_indices: Vec<u32>,
+        user_sparse_indices: Option<Vec<Vec<u32>>>,
+        user_dense_values: Option<Vec<Vec<f32>>>,
+        item_sparse_indices: Option<Vec<Vec<u32>>>,
+        item_dense_values: Option<Vec<Vec<f32>>>,
+        #[serde(rename(serialize = "k"))]
+        cand_num: Option<u32>,
+    },
 
-#[skip_serializing_none]
-#[derive(Debug, Serialize)]
-pub(crate) struct CrossFeats {
-    user_indices: Vec<u32>,
-    item_indices: Vec<u32>,
-    sparse_indices: Option<Vec<Vec<u32>>>,
-    dense_values: Option<Vec<Vec<f32>>>,
-    #[serde(rename(serialize = "user_interacted_seq"))]
-    seqs: Option<Vec<Vec<u32>>>,
-    #[serde(rename(serialize = "user_interacted_len"))]
-    seq_lens: Option<Vec<u32>>,
+    Cross {
+        user_indices: Vec<u32>,
+        item_indices: Vec<u32>,
+        sparse_indices: Option<Vec<Vec<u32>>>,
+        dense_values: Option<Vec<Vec<f32>>>,
+        #[serde(rename(serialize = "user_interacted_seq"))]
+        seqs: Option<Vec<Vec<u32>>>,
+        #[serde(rename(serialize = "user_interacted_len"))]
+        seq_lens: Option<Vec<u32>>,
+        #[serde(rename(serialize = "k"))]
+        cand_num: Option<u32>,
+    },
 }
 
 pub(crate) async fn build_seq_embed_features(
