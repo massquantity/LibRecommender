@@ -8,7 +8,7 @@ try:
     import nmslib  # noqa: F401
 
     approximate = True
-    print_str = "use `nmslib` for similarity search"
+    print_str = "using `nmslib` for similarity search"
     print(f"{colorize(print_str, 'cyan')}")
 except (ImportError, ModuleNotFoundError):
     approximate = False
@@ -54,3 +54,7 @@ if __name__ == "__main__":
 
     print(" 3 most similar users for user 1: ", rnn.search_knn_users(user=1, k=3))
     print(" 3 most similar items for item 2: ", rnn.search_knn_items(item=2, k=3))
+    print()
+
+    user_embed = rnn.dyn_user_embedding(user=1, seq=[0, 10, 100])
+    print("generate embedding for user 1: ", user_embed)

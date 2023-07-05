@@ -6,7 +6,6 @@ import tensorflow as tf
 from libreco.algorithms import (
     ALS,
     BPR,
-    LightGCN,
     NCF,
     NGCF,
     SVD,
@@ -14,6 +13,7 @@ from libreco.algorithms import (
     DeepWalk,
     Item2Vec,
     ItemCF,
+    LightGCN,
     RNN4Rec,
     SVDpp,
     UserCF,
