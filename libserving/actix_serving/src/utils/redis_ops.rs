@@ -8,6 +8,13 @@ use serde::de::DeserializeOwned;
 
 use crate::errors::{ServingError, ServingResult};
 
+pub struct RedisFeatKeys {
+    pub user_index: &'static str,
+    pub item_index: &'static str,
+    pub user_value: &'static str,
+    pub item_value: &'static str,
+}
+
 pub fn create_redis_pool(host: String) -> ServingResult<Pool> {
     let cfg = Config::from_url(format!("redis://{}:6379", host));
     cfg.create_pool(Some(Runtime::Tokio1))

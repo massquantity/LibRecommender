@@ -12,6 +12,12 @@ use crate::constants::{
 use crate::errors::{ServingError, ServingResult};
 use crate::redis_ops::{get_str, RedisFeatKeys};
 
+pub(crate) struct DynFeats {
+    pub(crate) user_feats: Option<HashMap<String, Value>>,
+    pub(crate) seq: Option<Vec<Value>>,
+    pub(crate) candidate_num: u32,
+}
+
 #[skip_serializing_none]
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
@@ -69,8 +75,8 @@ pub(crate) async fn build_seq_embed_features(
     n_items: u32,
     user_consumed: &[u32],
     conn: &mut RedisConnection,
-    user_seq: Option<Vec<Value>>,
-) -> ServingResult<SeqEmbedFeats> {
+    dyn_feats: Option<&DynFeats>,
+) -> ServingResult<Features> {
     let num = n_items as usize;
     let id = user_id.parse::<u32>()?;
 
@@ -79,12 +85,18 @@ pub(crate) async fn build_seq_embed_features(
     } else {
         None
     };
+
+    let (user_seq, cand_num) = match dyn_feats {
+        Some(df) => (&df.seq, Some(df.candidate_num)),
+        None => (&None, None),
+    };
     let (seqs, seq_lens) = get_seq(model_name, user_consumed, num, conn, user_seq).await?;
 
-    let features = SeqEmbedFeats {
+    let features = Features::EmbedSeq {
         user_indices,
         seqs,
         seq_lens,
+        cand_num,
     };
 
     Ok(features)
@@ -95,11 +107,15 @@ pub(crate) async fn build_sparse_seq_features(
     n_items: u32,
     user_consumed: &[u32],
     conn: &mut RedisConnection,
-    user_feats: Option<HashMap<String, Value>>,
-    user_seq: Option<Vec<Value>>,
-) -> ServingResult<SparseSeqFeats> {
+    dyn_feats: Option<&DynFeats>,
+) -> ServingResult<Features> {
     let id = user_id.parse::<u32>()?;
     let user_indices = vec![id];
+
+    let (user_feats, user_seq, cand_num) = match dyn_feats {
+        Some(df) => (&df.user_feats, &df.seq, Some(df.candidate_num)),
+        None => (&None, &None, None),
+    };
 
     let (user_sparse_feats, user_dense_feats) = split_user_feats(user_feats, conn).await?;
     let user_sparse_indices = if conn.exists("user_sparse_values").await? {
@@ -116,13 +132,14 @@ pub(crate) async fn build_sparse_seq_features(
     let (item_interaction_indices, item_interaction_values) =
         get_sparse_seq(user_consumed, n_items, conn, user_seq).await?;
 
-    let features = SparseSeqFeats {
+    let features = Features::SparseSeq {
         user_indices,
         user_sparse_indices,
         user_dense_values,
         item_interaction_indices,
         item_interaction_values,
         batch_size: 1,
+        cand_num,
     };
 
     Ok(features)
@@ -132,12 +149,17 @@ pub(crate) async fn build_separate_features(
     user_id: &str,
     n_items: u32,
     conn: &mut RedisConnection,
-    user_feats: Option<HashMap<String, Value>>,
-) -> ServingResult<SeparateFeats> {
+    dyn_feats: Option<&DynFeats>,
+) -> ServingResult<Features> {
     let num = n_items as usize;
     let id = user_id.parse::<u32>()?;
     let user_indices = vec![id];
     let item_indices = (0..n_items).collect::<Vec<u32>>();
+
+    let (user_feats, cand_num) = match dyn_feats {
+        Some(df) => (&df.user_feats, Some(df.candidate_num)),
+        None => (&None, None),
+    };
 
     let (user_sparse_feats, user_dense_feats) = split_user_feats(user_feats, conn).await?;
     let user_sparse_indices = if conn.exists("user_sparse_values").await? {
@@ -162,13 +184,14 @@ pub(crate) async fn build_separate_features(
         None
     };
 
-    let features = SeparateFeats {
+    let features = Features::Separate {
         user_indices,
         item_indices,
         user_sparse_indices,
         user_dense_values,
         item_sparse_indices,
         item_dense_values,
+        cand_num,
     };
 
     Ok(features)
@@ -180,13 +203,17 @@ pub(crate) async fn build_cross_features(
     n_items: u32,
     user_consumed: &[u32],
     conn: &mut RedisConnection,
-    user_feats: Option<HashMap<String, Value>>,
-    user_seq: Option<Vec<Value>>,
-) -> ServingResult<CrossFeats> {
+    dyn_feats: Option<&DynFeats>,
+) -> ServingResult<Features> {
     let num = n_items as usize;
     let id = user_id.parse::<u32>()?;
     let user_indices = vec![id; num];
     let item_indices = (0..n_items).collect::<Vec<u32>>();
+
+    let (user_feats, user_seq, cand_num) = match dyn_feats {
+        Some(df) => (&df.user_feats, &df.seq, Some(df.candidate_num)),
+        None => (&None, &None, None),
+    };
     let (user_sparse_feats, user_dense_feats) = split_user_feats(user_feats, conn).await?;
 
     let sparse_indices: Option<Vec<Vec<u32>>> =
@@ -202,13 +229,14 @@ pub(crate) async fn build_cross_features(
         (None, None)
     };
 
-    let features = CrossFeats {
+    let features = Features::Cross {
         user_indices,
         item_indices,
         sparse_indices,
         dense_values,
         seqs,
         seq_lens,
+        cand_num,
     };
     // let feature_json = serde_json::to_value(features)?;
     Ok(features)
@@ -352,7 +380,7 @@ async fn get_sparse_seq(
     user_consumed: &[u32],
     n_items: u32,
     conn: &mut RedisConnection,
-    user_seq: Option<Vec<Value>>,
+    user_seq: &Option<Vec<Value>>,
 ) -> ServingResult<(Vec<Vec<i64>>, Vec<i64>)> {
     let max_seq_len: usize = conn.get("max_seq_len").await?;
     let user_seq = json_to_seq(user_seq, n_items, conn).await?;
@@ -383,7 +411,7 @@ async fn get_seq(
     user_consumed: &[u32],
     n_items: usize,
     conn: &mut RedisConnection,
-    user_seq: Option<Vec<Value>>,
+    user_seq: &Option<Vec<Value>>,
 ) -> ServingResult<(Vec<Vec<u32>>, Vec<u32>)> {
     if !conn.exists("max_seq_len").await? {
         eprintln!("{} has missing `max_seq_len`", model_name);
@@ -421,13 +449,13 @@ async fn get_seq(
 }
 
 async fn split_user_feats(
-    user_features: Option<HashMap<String, Value>>,
+    user_features: &Option<HashMap<String, Value>>,
     conn: &mut RedisConnection,
 ) -> ServingResult<(Vec<(usize, u32)>, Vec<(usize, f32)>)> {
     let mut user_sparse_feats: Vec<(usize, u32)> = Vec::new();
     let mut user_dense_feats: Vec<(usize, f32)> = Vec::new();
     if let Some(user_feats) = user_features {
-        for (col, val) in user_feats.iter() {
+        for (col, val) in user_feats {
             if let Some(sparse_idx_val) = json_to_sparse_index(val, col, conn).await? {
                 user_sparse_feats.push(sparse_idx_val);
             } else if let Some(dense_idx_val) = json_to_dense_value(val, col, conn).await? {
@@ -492,13 +520,13 @@ async fn json_to_dense_value(
 }
 
 async fn json_to_seq(
-    seq_values: Option<Vec<Value>>,
+    seq_values: &Option<Vec<Value>>,
     n_items: u32,
     conn: &mut RedisConnection,
 ) -> ServingResult<Vec<u32>> {
     let mut seq = Vec::new();
     if let Some(seq_vals) = seq_values {
-        for v in seq_vals.iter() {
+        for v in seq_vals {
             let mut item = n_items;
             if let Some(i) = json_to_str(v) {
                 if conn.hexists("item2id", &i).await? {
