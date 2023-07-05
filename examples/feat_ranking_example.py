@@ -12,6 +12,7 @@ from libreco.algorithms import (
     GraphSageDGL,
     PinSage,
     PinSageDGL,
+    TwoTower,
     WideDeep,
     YouTubeRanking,
     YouTubeRetrieval,
@@ -285,6 +286,38 @@ if __name__ == "__main__":
     print("prediction: ", deepfm.predict(user=1, item=2333))
     print("recommendation: ", deepfm.recommend_user(user=1, n_rec=7))
 
+    reset_state("TwoTower")
+    two_tower = TwoTower(
+        "ranking",
+        data_info,
+        loss_type="softmax",
+        embed_size=16,
+        norm_embed=True,
+        n_epochs=2,
+        lr=1e-3,
+        lr_decay=False,
+        reg=None,
+        batch_size=2048,
+        num_neg=1,
+        use_bn=False,
+        dropout_rate=None,
+        hidden_units=(128, 64, 32),
+        use_correction=True,
+        temperature=0.1,
+        ssl_pattern=None,
+        tf_sess_config=None,
+    )
+    two_tower.fit(
+        train_data,
+        neg_sampling=True,
+        verbose=2,
+        shuffle=True,
+        eval_data=eval_data,
+        metrics=metrics,
+    )
+    print("prediction: ", two_tower.predict(user=1, item=2333))
+    print("recommendation: ", two_tower.recommend_user(user=1, n_rec=7))
+
     reset_state("AutoInt")
     autoint = AutoInt(
         "ranking",
@@ -292,8 +325,8 @@ if __name__ == "__main__":
         loss_type="cross_entropy",
         embed_size=16,
         n_epochs=2,
-        att_embed_size=(8, 8, 8),
-        num_heads=4,
+        att_embed_size=(4, 4),
+        num_heads=2,
         use_residual=False,
         lr=1e-3,
         lr_decay=False,
@@ -394,7 +427,7 @@ if __name__ == "__main__":
         "ranking",
         data_info,
         embed_size=16,
-        n_epochs=3,
+        n_epochs=2,
         lr=1e-4,
         lr_decay=False,
         reg=None,
