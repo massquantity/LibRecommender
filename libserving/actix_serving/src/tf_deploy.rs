@@ -7,13 +7,13 @@ use tokio::sync::Semaphore;
 
 use crate::common::{Param, Prediction, Recommendation};
 use crate::errors::{ServingError, ServingResult};
-use crate::features::{build_cross_features, CrossFeats};
+use crate::features::{build_cross_features, Features};
 use crate::redis_ops::{check_exists, get_multi_str, get_str, get_vec};
 
 #[derive(Clone)]
 pub struct TfAppState {
-    client: reqwest::Client,
-    semaphore: std::sync::Arc<Semaphore>,
+    pub client: reqwest::Client,
+    pub semaphore: std::sync::Arc<Semaphore>,
 }
 
 // pub fn init_tf_state(model_type: &str) -> ServingResult<Option<web::Data<TfAppState>>> {
@@ -67,7 +67,6 @@ pub async fn tf_serving(
         &user_consumed,
         &mut conn,
         None,
-        None,
     )
     .await?;
     // let feature_json = serde_json::to_value(features)?;
@@ -78,7 +77,7 @@ pub async fn tf_serving(
 }
 
 async fn request_tf_serving(
-    features: CrossFeats,
+    features: Features,
     model_name: &str,
     state: web::Data<TfAppState>,
 ) -> Result<Vec<f32>, reqwest::Error> {

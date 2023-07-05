@@ -2,8 +2,8 @@ use actix_web::http::{header::ContentType, StatusCode};
 use actix_web::{http, middleware::Logger, web, App, HttpResponse, HttpServer};
 use once_cell::sync::Lazy;
 
+use actix_serving::common::get_env;
 use actix_serving::embed_deploy::{init_emb_state, EmbedAppState};
-use actix_serving::errors::ServingError;
 use actix_serving::redis_ops;
 use actix_serving::tf_deploy::{init_tf_state, TfAppState};
 use actix_serving::{embed_serving, knn_serving, tf_serving};
@@ -11,16 +11,6 @@ use actix_serving::{embed_serving, knn_serving, tf_serving};
 static EMB_STATE: Lazy<web::Data<EmbedAppState>> = Lazy::new(|| web::Data::new(init_emb_state()));
 
 static TF_STATE: Lazy<web::Data<TfAppState>> = Lazy::new(|| web::Data::new(init_tf_state()));
-
-fn get_env() -> Result<(String, u16, usize, String), ServingError> {
-    let host = std::env::var("REDIS_HOST").unwrap_or_else(|_| String::from("127.0.0.1"));
-    let port = std::env::var("PORT")
-        .map_err(|e| ServingError::EnvError(e, "PORT"))?
-        .parse::<u16>()?;
-    let workers = std::env::var("WORKERS").map_or(Ok(4), |w| w.parse::<usize>())?;
-    let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| String::from("info"));
-    Ok((host, port, workers, log_level))
-}
 
 async fn not_found_handler(
     path: web::Path<String>,
