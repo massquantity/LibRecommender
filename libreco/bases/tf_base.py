@@ -85,8 +85,12 @@ class TfBase(Base):
                and ONLY contains positive labels. Otherwise, it should be False.
 
         verbose : int, default: 1
-            Print verbosity. If `eval_data` is provided, setting it to higher than 1
-            will print evaluation metrics during training.
+            Print verbosity.
+
+            - ``verbose <= 0``: Print nothing.
+            - ``verbose == 1``: Print progress bar and training time.
+            - ``verbose > 1`` : Print evaluation metrics if ``eval_data`` is provided.
+
         shuffle : bool, default: True
             Whether to shuffle the training data.
         eval_data : :class:`~libreco.data.TransformedSet` object, default: None
