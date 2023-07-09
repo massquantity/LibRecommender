@@ -79,12 +79,14 @@ and the models support sequence recommendations are ``RNN4Rec``, ``Caser``, ``Wa
    >>>                      user_feats={"sex": "F", "occupation": 2, "age": 23},
    >>>                      seq=[1, 22, 333])
 
-Please note that batch recommendation cannot be used with dynamic features and sequences, so the following code will raise an error:
-
-.. code-block:: python3
-
-   >>> model.recommend_user(user=[1, 2, 3, 0], n_rec=7, user_feats={"sex": "F", "occupation": 2, "age": 23})
-
 .. SeeAlso::
 
     `seq_example.py <https://github.com/massquantity/LibRecommender/blob/master/examples/seq_example.py>`_
+
+.. error::
+
+    Please note that batch recommendation cannot be used with dynamic features and sequences, so the following code will raise an error:
+
+    .. code-block:: python3
+
+       >>> model.recommend_user(user=[1, 2, 3, 0], n_rec=7, user_feats={"sex": "F", "occupation": 2, "age": 23})
