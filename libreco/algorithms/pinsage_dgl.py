@@ -8,7 +8,7 @@ from ..graph import NeighborWalkerDGL, build_u2i_hetero_graph, check_dgl
 
 @check_dgl
 class PinSageDGL(SageBase, metaclass=ModelMeta, backend="torch"):
-    """*PinSageDGL* algorithm.
+    """*PinSageDGL* algorithm. See :ref:`PinSage` for more details.
 
     .. NOTE::
         This algorithm is implemented in `DGL <https://github.com/dmlc/dgl>`_.

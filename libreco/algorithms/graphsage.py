@@ -5,7 +5,7 @@ from ..graph import NeighborWalker
 
 
 class GraphSage(SageBase, metaclass=ModelMeta, backend="torch"):
-    """*GraphSage* algorithm.
+    """*GraphSage* algorithm. See :ref:`GraphSage` for more details.
 
     .. NOTE::
         This algorithm is implemented in PyTorch.
