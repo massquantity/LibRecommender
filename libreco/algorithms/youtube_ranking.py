@@ -26,7 +26,7 @@ from ..utils.validate import (
 
 
 class YouTubeRanking(TfBase, metaclass=ModelMeta):
-    """*YouTubeRanking* algorithm.
+    """*YouTubeRanking* algorithm. See :ref:`YouTubeRetrieval / YouTubeRanking` for more details.
 
     .. NOTE::
         The algorithm implemented mainly corresponds to the ranking phase

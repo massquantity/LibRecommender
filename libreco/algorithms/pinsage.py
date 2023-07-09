@@ -5,7 +5,7 @@ from ..graph import NeighborWalker
 
 
 class PinSage(SageBase, metaclass=ModelMeta, backend="torch"):
-    """*PinSage* algorithm.
+    """*PinSage* algorithm. See :ref:`PinSage` for more details.
 
     .. NOTE::
         This algorithm is implemented in PyTorch.

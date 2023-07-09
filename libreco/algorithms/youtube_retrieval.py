@@ -26,7 +26,7 @@ from ..utils.validate import (
 
 
 class YouTubeRetrieval(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
-    """*YouTubeRetrieval* algorithm.
+    """*YouTubeRetrieval* algorithm. See :ref:`YouTubeRetrieval / YouTubeRanking` for more details.
 
     .. NOTE::
         The algorithm implemented mainly corresponds to the candidate generation

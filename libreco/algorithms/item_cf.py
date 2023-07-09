@@ -9,7 +9,7 @@ from ..bases import CfBase
 
 
 class ItemCF(CfBase):
-    """*Item Collaborative Filtering* algorithm.
+    """*Item Collaborative Filtering* algorithm. See :ref:`UserCF / ItemCF` for more details.
 
     Parameters
     ----------

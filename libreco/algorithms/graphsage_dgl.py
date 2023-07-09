@@ -13,7 +13,7 @@ from ..graph import (
 
 @check_dgl
 class GraphSageDGL(SageBase, metaclass=ModelMeta, backend="torch"):
-    """*GraphSageDGL* algorithm.
+    """*GraphSageDGL* algorithm. See :ref:`GraphSage` for more details.
 
     .. NOTE::
         This algorithm is implemented in `DGL <https://github.com/dmlc/dgl>`_.

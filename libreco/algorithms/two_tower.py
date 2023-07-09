@@ -11,7 +11,7 @@ from ..utils.validate import dense_field_size, sparse_feat_size
 
 
 class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
-    """*TwoTower* algorithm.
+    """*TwoTower* algorithm. See :ref:`TwoTower` for more details.
 
     .. CAUTION::
         TwoTower can only be used in ``ranking`` task.

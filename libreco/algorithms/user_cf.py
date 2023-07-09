@@ -12,7 +12,7 @@ from ..utils.misc import colorize
 
 
 class UserCF(CfBase):
-    """*User Collaborative Filtering* algorithm.
+    """*User Collaborative Filtering* algorithm. See :ref:`UserCF / ItemCF` for more details.
 
     Parameters
     ----------
