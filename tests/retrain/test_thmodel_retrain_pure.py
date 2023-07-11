@@ -11,7 +11,7 @@ from tests.utils_reco import ptest_recommends
 
 
 def test_torchmodel_retrain_pure():
-    data_path = Path(__file__).parents[1] / "sample_data" / "sample_movielens_rating.dat"
+    data_path = Path(__file__).parents[1] / "sample_data" / "sample_movielens_rating.dat"  # fmt: skip
     all_data = pd.read_csv(
         data_path, sep="::", names=["user", "item", "label", "time"], engine="python"
     )

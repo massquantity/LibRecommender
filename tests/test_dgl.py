@@ -13,6 +13,7 @@ def test_dgl(prepare_feat_data, monkeypatch):
         m.setitem(sys.modules, "dgl", None)
         with pytest.raises(ModuleNotFoundError):
             from libreco.algorithms import PinSageDGL
+
             _ = PinSageDGL("ranking", data_info)
 
     @check_dgl

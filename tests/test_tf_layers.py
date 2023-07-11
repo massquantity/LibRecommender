@@ -34,21 +34,36 @@ def test_shared_dense(random_data, dim):
     with tf.Session() as sess:
         output = shared_dense(random_data, 3, name="layer1")
         output2 = shared_dense(random_data, 3, name="layer1")
+        output3 = tf_dense(3, name="layer2")(random_data)
+        output4 = tf_dense(3, name="layer2")(random_data)
         sess.run(tf.global_variables_initializer())
+
         assert sess.run(output).shape == (100, 3)
         assert sess.run(output2).shape == (100, 3)
+        assert sess.run(output3).shape == (100, 3)
+        assert sess.run(output4).shape == (100, 3)
 
-        with tf.variable_scope("shared_dense", reuse=tf.AUTO_REUSE):
-            v1 = tf.get_variable("layer1", shape=(10, 3))
-            v2 = tf.get_variable("layer1", shape=(10, 3))
-            assert v1 is v2
+        with tf.variable_scope("shared_dense", reuse=True):
+            with tf.variable_scope("layer1"):
+                v1 = tf.get_variable("kernel")
+                v2 = tf.get_variable("kernel")
+        with tf.variable_scope("", reuse=True):
+            v3 = tf.get_variable("shared_dense/layer1/kernel")
+            assert v1 is v2 is v3
 
-        with pytest.raises(ValueError), tf.variable_scope("shared_dense"):
-            tf.get_variable("layer1", shape=(10, 3))
-            tf.get_variable("layer1", shape=(10, 3))
+        msg = "Variable {} does not exist, or was not created with tf.get_variable()*"
+        with pytest.raises(ValueError, match=msg.format("shared_dense/layer1_1/kernel")):  # fmt: skip
+            with tf.variable_scope("shared_dense", reuse=True):
+                with tf.variable_scope("layer1_1"):
+                    tf.get_variable("kernel")
 
-        with pytest.raises(ValueError):
-            tf.get_variable("shared_dense/layer1", shape=(10, 3))
+        with pytest.raises(ValueError, match=msg.format("layer2/kernel")):
+            with tf.variable_scope("layer2", reuse=True):
+                tf.get_variable("kernel")
+
+        var_names = [v.name for v in tf.trainable_variables()]
+        assert "layer2/kernel:0" in var_names
+        assert "layer2_1/kernel:0" in var_names
 
 
 @pytest.mark.parametrize("dim", [3])

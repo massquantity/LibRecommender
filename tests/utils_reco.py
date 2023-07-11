@@ -88,8 +88,7 @@ def ptest_dyn_recommends(model, pd_data):
         ):
             model.recommend_user([user1, user2], 3, seq=[1, 2, 3])
         with pytest.raises(
-            (ValueError, AssertionError),
-            match="`seq` must be list or numpy.ndarray."
+            (ValueError, AssertionError), match="`seq` must be list or numpy.ndarray."
         ):
             model.recommend_user(user1, 3, seq=(1, 2))
 
@@ -114,25 +113,13 @@ def ptest_dyn_recommends(model, pd_data):
     else:
         seq1 = seq2 = seq3 = None
 
-    reco1 = model.recommend_user(
-        user=user1, n_rec=7, user_feats=feat1, seq=seq1
-    )[user1]
-    reco2 = model.recommend_user(
-        user=user2, n_rec=7, user_feats=feat2, seq=seq2
-    )[user2]
-    reco3 = model.recommend_user(
-        user=user2, n_rec=7, user_feats=feat3, seq=seq3
-    )[user2]
+    reco1 = model.recommend_user(user=user1, n_rec=7, user_feats=feat1, seq=seq1)[user1]
+    reco2 = model.recommend_user(user=user2, n_rec=7, user_feats=feat2, seq=seq2)[user2]
+    reco3 = model.recommend_user(user=user2, n_rec=7, user_feats=feat3, seq=seq3)[user2]
     assert len(reco1) == len(reco2) == len(reco3) == 7
 
-    cold1 = model.recommend_user(
-        user=cold_user, n_rec=7, user_feats=feat1, seq=seq1
-    )[cold_user]
-    cold2 = model.recommend_user(
-        user=cold_user, n_rec=7, user_feats=feat2, seq=seq2
-    )[cold_user]
-    cold3 = model.recommend_user(
-        user=cold_user, n_rec=7, user_feats=feat3, seq=seq3
-    )[cold_user]
+    cold1 = model.recommend_user(user=cold_user, n_rec=7, user_feats=feat1, seq=seq1)[cold_user]  # fmt: skip
+    cold2 = model.recommend_user(user=cold_user, n_rec=7, user_feats=feat2, seq=seq2)[cold_user]  # fmt: skip
+    cold3 = model.recommend_user(user=cold_user, n_rec=7, user_feats=feat3, seq=seq3)[cold_user]  # fmt: skip
     assert len(cold1) == len(cold2) == len(cold3) == 7
     return reco1
