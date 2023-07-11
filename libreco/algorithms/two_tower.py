@@ -4,7 +4,8 @@ import numpy as np
 from ..bases import DynEmbedBase, ModelMeta
 from ..embedding import normalize_embeds
 from ..feature.ssl import get_mutual_info
-from ..tfops import dense_nn, dropout_config, reg_config, tf
+from ..layers import dense_nn
+from ..tfops import dropout_config, reg_config, tf
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
 from ..utils.validate import dense_field_size, sparse_feat_size

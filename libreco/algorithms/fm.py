@@ -1,13 +1,8 @@
 """Implementation of FM."""
 from ..bases import ModelMeta, TfBase
 from ..feature.multi_sparse import true_sparse_field_size
-from ..tfops import (
-    dropout_config,
-    multi_sparse_combine_embedding,
-    reg_config,
-    tf,
-    tf_dense,
-)
+from ..layers import tf_dense
+from ..tfops import dropout_config, multi_sparse_combine_embedding, reg_config, tf
 from ..utils.misc import count_params
 from ..utils.validate import (
     check_dense_values,

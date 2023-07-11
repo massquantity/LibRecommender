@@ -1,6 +1,7 @@
 """Implementation of NCF."""
 from ..bases import ModelMeta, TfBase
-from ..tfops import dense_nn, dropout_config, reg_config, tf, tf_dense
+from ..layers import dense_nn, tf_dense
+from ..tfops import dropout_config, reg_config, tf
 from ..torchops import hidden_units_config
 
 
