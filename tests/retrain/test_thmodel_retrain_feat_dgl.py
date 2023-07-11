@@ -13,7 +13,7 @@ from tests.utils_reco import ptest_recommends
 
 def test_torchmodel_retrain_feat_dgl():
     tf.compat.v1.reset_default_graph()
-    data_path = Path(__file__).parents[1] / "sample_data" / "sample_movielens_merged.csv"
+    data_path = Path(__file__).parents[1] / "sample_data" / "sample_movielens_merged.csv"  # fmt: skip
     all_data = pd.read_csv(data_path, sep=",", header=0)
     # use first half data as first training part
     first_half_data = all_data[: (len(all_data) // 2)]

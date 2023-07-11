@@ -14,7 +14,7 @@ from tests.utils_reco import ptest_recommends
 
 def test_tfmodel_retrain_feat():
     tf.compat.v1.reset_default_graph()
-    data_path = Path(__file__).parents[1] / "sample_data" / "sample_movielens_merged.csv"
+    data_path = Path(__file__).parents[1] / "sample_data" / "sample_movielens_merged.csv"  # fmt: skip
     all_data = pd.read_csv(data_path, sep=",", header=0)
     # use first half data as first training part
     first_half_data = all_data[: (len(all_data) // 2)]
@@ -141,7 +141,7 @@ def test_tfmodel_retrain_feat():
     ptest_preds(new_model, "ranking", second_half_data, with_feats=False)
     ptest_recommends(new_model, new_data_info, second_half_data, with_feats=False)
 
-    with pytest.raises(ValueError, match="`data` must be `pandas.DataFrame` or `TransformedSet`"):
+    with pytest.raises(ValueError, match="`data` must be `pandas.DataFrame` or `TransformedSet`"):  # fmt: skip
         _ = evaluate(new_model, eval_data_orig["user"], neg_sampling=True)
 
     new_eval_result = evaluate(

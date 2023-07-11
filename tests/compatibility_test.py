@@ -13,6 +13,7 @@ if __name__ == "__main__":
     print(libreco)
     from libreco.algorithms._als import als_update
     from libreco.utils._similarities import forward_cosine, invert_cosine
+
     print("Cython functions: ", invert_cosine, forward_cosine, als_update)
 
     cur_path = Path(".").parent

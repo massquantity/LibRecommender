@@ -89,6 +89,7 @@ def test_rank_reco():
 
 def test_rank_random():
     user_ids = [1, 2]
+    # fmt: off
     preds = np.array([-0.1, -1e8, 0, 0.1, 0.01, 1e8, -0.01, 1e7, 0.1, 0.01])  # inf probs
     n_rec = 2
     n_items = 5
