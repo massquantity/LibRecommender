@@ -1,6 +1,6 @@
 """Implementation of NCF."""
 from ..bases import ModelMeta, TfBase
-from ..layers import dense_nn, tf_dense
+from ..layers import dense_nn, embedding_lookup, tf_dense
 from ..tfops import dropout_config, reg_config, tf
 from ..torchops import hidden_units_config
 
@@ -69,8 +69,8 @@ class NCF(TfBase, metaclass=ModelMeta):
     <https://arxiv.org/pdf/1708.05031.pdf>`_.
     """
 
-    user_variables = ["user_gmf", "user_mlp"]
-    item_variables = ["item_gmf", "item_mlp"]
+    user_variables = ("embedding/user_embeds_var",)
+    item_variables = ("embedding/item_embeds_var",)
 
     def __init__(
         self,
@@ -117,38 +117,23 @@ class NCF(TfBase, metaclass=ModelMeta):
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
 
-        user_gmf = tf.get_variable(
-            name="user_gmf",
-            shape=[self.n_users + 1, self.embed_size],
+        user_embeds = embedding_lookup(
+            indices=self.user_indices,
+            var_name="user_embeds_var",
+            var_shape=(self.n_users + 1, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        item_gmf = tf.get_variable(
-            name="item_gmf",
-            shape=[self.n_items + 1, self.embed_size],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-        user_mlp = tf.get_variable(
-            name="user_mlp",
-            shape=[self.n_users + 1, self.embed_size],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-        item_mlp = tf.get_variable(
-            name="item_mlp",
-            shape=[self.n_items + 1, self.embed_size],
+        item_embeds = embedding_lookup(
+            indices=self.item_indices,
+            var_name="item_embeds_var",
+            var_shape=(self.n_items + 1, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
-        user_gmf_embed = tf.nn.embedding_lookup(user_gmf, self.user_indices)
-        item_gmf_embed = tf.nn.embedding_lookup(item_gmf, self.item_indices)
-        user_mlp_embed = tf.nn.embedding_lookup(user_mlp, self.user_indices)
-        item_mlp_embed = tf.nn.embedding_lookup(item_mlp, self.item_indices)
-
-        gmf_layer = tf.multiply(user_gmf_embed, item_gmf_embed)
-        mlp_input = tf.concat([user_mlp_embed, item_mlp_embed], axis=1)
+        gmf_layer = tf.multiply(user_embeds, item_embeds)
+        mlp_input = tf.concat([user_embeds, item_embeds], axis=1)
         mlp_layer = dense_nn(
             mlp_input,
             self.hidden_units,

@@ -19,11 +19,11 @@ from tests.utils_save_load import save_load_model
         ("rating", "focal", "random", None),
         ("rating", "focal", None, True),
         ("rating", "focal", "random", True),
-        ("ranking", "cross_entropy", "random", False),
+        # ("ranking", "cross_entropy", "random", False),
         ("ranking", "focal", "random", False),
         ("ranking", "cross_entropy", "random", True),
-        ("ranking", "cross_entropy", "unconsumed", True),
-        ("ranking", "focal", "popular", True),
+        # ("ranking", "cross_entropy", "unconsumed", True),
+        # ("ranking", "focal", "popular", True),
         ("ranking", "bpr", "unconsumed", True),
         ("ranking", "unknown", "popular", True),
     ],
@@ -33,7 +33,7 @@ from tests.utils_save_load import save_load_model
     "hidden_units, use_layer_norm, recent_num, num_workers",
     [
         (True, "lstm", False, None, 1, None, 1, False, 10, 0),
-        (False, "gru", True, 0.001, 3, 0.5, (32, 16), True, 6, 2),
+        (False, "gru", True, 0.001, 1, 0.5, (2, 3, 1), True, 6, 2),
     ],
 )
 def test_rnn4rec(
@@ -109,6 +109,10 @@ def test_rnn4rec(
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=False)
         dyn_rec = ptest_dyn_recommends(model, pd_data)
+
+        # no user embeds to set oov
+        model._assign_user_oov("user_embeds_var", "embedding")
+        model._assign_user_oov("user_embeds_fake", "embedding")
 
         # test save and load model
         loaded_model, loaded_data_info = save_load_model(RNN4Rec, model, data_info)

@@ -3,6 +3,7 @@ import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
 from ..embedding import normalize_embeds
+from ..layers import embedding_lookup
 from ..tfops import reg_config, sess_config, tf
 
 
@@ -62,8 +63,8 @@ class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     <https://datajobs.com/data-science-repo/Recommender-Systems-[Netflix].pdf>`_.
     """
 
-    user_variables = ["bu_var", "pu_var"]
-    item_variables = ["bi_var", "qi_var"]
+    user_variables = ("embedding/bu_var", "embedding/pu_var")
+    item_variables = ("embedding/bi_var", "embedding/qi_var")
 
     def __init__(
         self,
@@ -105,49 +106,50 @@ class SVD(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
 
-        self.bu_var = tf.get_variable(
-            name="bu_var",
-            shape=[self.n_users],
+        bias_user = embedding_lookup(
+            indices=self.user_indices,
+            var_name="bu_var",
+            var_shape=[self.n_users],
             initializer=tf.zeros_initializer(),
             regularizer=self.reg,
         )
-        self.bi_var = tf.get_variable(
-            name="bi_var",
-            shape=[self.n_items],
+        bias_item = embedding_lookup(
+            indices=self.item_indices,
+            var_name="bi_var",
+            var_shape=[self.n_items],
             initializer=tf.zeros_initializer(),
             regularizer=self.reg,
         )
-        self.pu_var = tf.get_variable(
-            name="pu_var",
-            shape=[self.n_users, self.embed_size],
+        embed_user = embedding_lookup(
+            indices=self.user_indices,
+            var_name="pu_var",
+            var_shape=(self.n_users, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        self.qi_var = tf.get_variable(
-            name="qi_var",
-            shape=[self.n_items, self.embed_size],
+        embed_item = embedding_lookup(
+            indices=self.item_indices,
+            var_name="qi_var",
+            var_shape=(self.n_items, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
-        bias_user = tf.nn.embedding_lookup(self.bu_var, self.user_indices)
-        bias_item = tf.nn.embedding_lookup(self.bi_var, self.item_indices)
-        embed_user = tf.nn.embedding_lookup(self.pu_var, self.user_indices)
-        embed_item = tf.nn.embedding_lookup(self.qi_var, self.item_indices)
         if self.norm_embed:
             embed_user, embed_item = normalize_embeds(
                 embed_user, embed_item, backend="tf"
             )
         self.output = (
-            bias_user
-            + bias_item
-            + tf.reduce_sum(tf.multiply(embed_user, embed_item), axis=1)
+            bias_user + bias_item + tf.einsum("ij,ij->i", embed_user, embed_item)
         )
 
     def set_embeddings(self):
-        bu, bi, pu, qi = self.sess.run(
-            [self.bu_var, self.bi_var, self.pu_var, self.qi_var]
-        )
+        with tf.variable_scope("embedding", reuse=True):
+            bu = self.sess.run(tf.get_variable("bu_var"))
+            bi = self.sess.run(tf.get_variable("bi_var"))
+            pu = self.sess.run(tf.get_variable("pu_var"))
+            qi = self.sess.run(tf.get_variable("qi_var"))
+
         user_bias = np.ones([len(pu), 2], dtype=pu.dtype)
         user_bias[:, 0] = bu
         item_bias = np.ones([len(qi), 2], dtype=qi.dtype)

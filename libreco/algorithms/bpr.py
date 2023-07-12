@@ -7,6 +7,7 @@ import numpy as np
 from ..bases import EmbedBase, ModelMeta
 from ..embedding import normalize_embeds
 from ..evaluation import print_metrics
+from ..layers import embedding_lookup
 from ..recommendation import recommend_from_embedding
 from ..tfops import reg_config, sess_config, tf
 from ..training.dispatch import get_trainer
@@ -87,8 +88,8 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     <https://arxiv.org/ftp/arxiv/papers/1205/1205.2618.pdf>`_.
     """
 
-    user_variables = ["user_embed_var"]
-    item_variables = ["item_embed_var", "item_bias_var"]
+    user_variables = ("embedding/user_embeds_var",)
+    item_variables = ("embedding/item_embeds_var", "embedding/item_bias_var")
 
     def __init__(
         self,
@@ -163,43 +164,39 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.item_indices_pos = tf.placeholder(tf.int32, shape=[None])
         self.item_indices_neg = tf.placeholder(tf.int32, shape=[None])
 
-        self.user_embed_var = tf.get_variable(
-            name="user_embed_var",
-            shape=[self.n_users, self.embed_size],
+        embed_user = embedding_lookup(
+            indices=self.user_indices,
+            var_name="user_embeds_var",
+            var_shape=(self.n_users, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        self.item_embed_var = tf.get_variable(
-            name="item_embed_var",
-            shape=[self.n_items, self.embed_size],
+        embed_item_pos = embedding_lookup(
+            indices=self.item_indices_pos,
+            var_name="item_embeds_var",
+            var_shape=(self.n_items, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        self.item_bias_var = tf.get_variable(
-            name="item_bias_var",
-            shape=[self.n_items],
-            initializer=tf.zeros_initializer(),
+        bias_item_pos = embedding_lookup(
+            indices=self.item_indices_pos,
+            var_name="item_bias_var",
+            var_shape=[self.n_items],
+            initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
-        embed_user = tf.nn.embedding_lookup(self.user_embed_var, self.user_indices)
-        embed_item_pos = tf.nn.embedding_lookup(
-            self.item_embed_var, self.item_indices_pos
+        embed_item_neg = embedding_lookup(
+            indices=self.item_indices_neg, var_name="item_embeds_var", reuse_layer=True
         )
-        embed_item_neg = tf.nn.embedding_lookup(
-            self.item_embed_var, self.item_indices_neg
+        bias_item_neg = embedding_lookup(
+            indices=self.item_indices_neg, var_name="item_bias_var", reuse_layer=True
         )
+
         if self.norm_embed:
             embed_user, embed_item_pos, embed_item_neg = normalize_embeds(
                 embed_user, embed_item_pos, embed_item_neg, backend="tf"
             )
-
-        bias_item_pos = tf.nn.embedding_lookup(
-            self.item_bias_var, self.item_indices_pos
-        )
-        bias_item_neg = tf.nn.embedding_lookup(
-            self.item_bias_var, self.item_indices_neg
-        )
 
         item_diff = tf.subtract(bias_item_pos, bias_item_neg) + tf.reduce_sum(
             tf.multiply(embed_user, tf.subtract(embed_item_pos, embed_item_neg)), axis=1
@@ -270,7 +267,8 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 eval_user_num,
                 num_workers,
             )
-            self.set_embeddings()
+            if self.user_embeds_np is None:
+                self.set_embeddings()  # maybe already executed in trainers
         else:
             self._fit_cython(
                 train_data=train_data,
@@ -381,9 +379,11 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 print("=" * 30)
 
     def set_embeddings(self):
-        item_bias, user_embed, item_embed = self.sess.run(
-            [self.item_bias_var, self.user_embed_var, self.item_embed_var]
-        )
+        with tf.variable_scope("embedding", reuse=True):
+            user_embed = self.sess.run(tf.get_variable("user_embeds_var"))
+            item_embed = self.sess.run(tf.get_variable("item_embeds_var"))
+            item_bias = self.sess.run(tf.get_variable("item_bias_var"))
+
         # to be compatible with cython version, bias is concatenated with embedding
         user_bias = np.ones([len(user_embed), 1], dtype=user_embed.dtype)
         item_bias = item_bias[:, None]

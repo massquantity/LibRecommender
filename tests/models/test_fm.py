@@ -80,7 +80,7 @@ def test_fm(
             task=task,
             data_info=data_info,
             loss_type=loss_type,
-            embed_size=16,
+            embed_size=4,
             n_epochs=1,
             lr=1e-4,
             lr_decay=lr_decay,

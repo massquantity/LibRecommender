@@ -1,8 +1,49 @@
 from .version import tf
 
 
+def compute_sparse_feats(
+    data_info,
+    multi_sparse_combiner,
+    all_sparse_indices,
+    var_name,
+    var_shape,
+    initializer=None,
+    regularizer=None,
+    reuse_layer=None,
+    scope_name="embedding",
+    flatten=False,
+):
+    reuse = tf.AUTO_REUSE if reuse_layer else None
+    with tf.variable_scope(scope_name, reuse=reuse):
+        embed_var = tf.get_variable(
+            name=var_name,
+            shape=var_shape,
+            initializer=initializer,
+            regularizer=regularizer,
+        )
+
+    if (
+        data_info.multi_sparse_combine_info
+        and multi_sparse_combiner in ("sum", "mean", "sqrtn")
+    ):  # fmt: skip
+        embed_size = var_shape[1] if len(var_shape) == 2 else 1
+        sparse_embeds = multi_sparse_combine_embedding(
+            data_info,
+            embed_var,
+            all_sparse_indices,
+            multi_sparse_combiner,
+            embed_size,
+        )
+    else:
+        sparse_embeds = tf.nn.embedding_lookup(embed_var, all_sparse_indices)
+
+    if flatten:
+        sparse_embeds = tf.keras.layers.Flatten()(sparse_embeds)
+    return sparse_embeds
+
+
 def multi_sparse_combine_embedding(
-    data_info, variables, all_sparse_indices, combiner, embed_size
+    data_info, embed_var, all_sparse_indices, combiner, embed_size
 ):
     field_offsets = data_info.multi_sparse_combine_info.field_offset
     field_lens = data_info.multi_sparse_combine_info.field_len
@@ -12,7 +53,7 @@ def multi_sparse_combine_embedding(
     # only one multi_sparse feature and no sparse features
     if sparse_end == 0 and len(field_offsets) == 1:
         result = multi_sparse_alone(
-            variables,
+            embed_var,
             all_sparse_indices,
             combiner,
             embed_size,
@@ -23,7 +64,7 @@ def multi_sparse_combine_embedding(
     else:
         if sparse_end > 0:
             sparse_indices = all_sparse_indices[:, :sparse_end]
-            sparse_embedding = tf.nn.embedding_lookup(variables, sparse_indices)
+            sparse_embedding = tf.nn.embedding_lookup(embed_var, sparse_indices)
             result = [sparse_embedding]
         else:
             result = []
@@ -31,7 +72,7 @@ def multi_sparse_combine_embedding(
         for offset, length, oov in zip(field_offsets, field_lens, feat_oovs):
             result.append(
                 multi_sparse_alone(
-                    variables,
+                    embed_var,
                     all_sparse_indices,
                     combiner,
                     embed_size,
@@ -45,18 +86,18 @@ def multi_sparse_combine_embedding(
 
 
 def multi_sparse_alone(
-    variables, all_sparse_indices, combiner, embed_size, offset, length, oov
+    embed_var, all_sparse_indices, combiner, embed_size, offset, length, oov
 ):
-    variable_dim = len(variables.get_shape().as_list())
+    variable_dim = len(embed_var.get_shape().as_list())
     # oov feats are padded to 0-vector
     oov_indices = [oov] if variable_dim == 1 else oov
     zero_padding_op = tf.scatter_update(
-        variables, oov_indices, tf.zeros([embed_size], dtype=tf.float32)
+        embed_var, oov_indices, tf.zeros([embed_size], dtype=tf.float32)
     )
     multi_sparse_indices = all_sparse_indices[:, offset : offset + length]
 
     with tf.control_dependencies([zero_padding_op]):
-        multi_sparse_embed = tf.nn.embedding_lookup(variables, multi_sparse_indices)
+        multi_sparse_embed = tf.nn.embedding_lookup(embed_var, multi_sparse_indices)
 
     res_embed = tf.reduce_sum(multi_sparse_embed, axis=1, keepdims=True)
     if combiner in ("mean", "sqrtn"):
@@ -73,6 +114,36 @@ def multi_sparse_alone(
         res_embed = tf.div_no_nan(res_embed, multi_sparse_lens)
 
     return res_embed
+
+
+def compute_dense_feats(
+    dense_values,
+    var_name,
+    var_shape,
+    initializer=None,
+    regularizer=None,
+    reuse_layer=None,
+    scope_name="embedding",
+    flatten=False,
+):
+    if len(var_shape) == 2:
+        dense_values = dense_values[:, :, tf.newaxis]
+    reuse = tf.AUTO_REUSE if reuse_layer else None
+    with tf.variable_scope(scope_name, reuse=reuse):
+        embed_var = tf.get_variable(
+            name=var_name,
+            shape=var_shape,
+            initializer=initializer,
+            regularizer=regularizer,
+        )
+
+    batch_size = tf.shape(dense_values)[0]
+    multiple = [batch_size, 1] if len(var_shape) == 1 else [batch_size, 1, 1]
+    embed_var = tf.tile(tf.expand_dims(embed_var, axis=0), multiple)
+    dense_embeds = embed_var * dense_values
+    if flatten:
+        dense_embeds = tf.keras.layers.Flatten()(dense_embeds)
+    return dense_embeds
 
 
 def get_feed_dict(

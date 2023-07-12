@@ -146,7 +146,9 @@ class EmbedBase(Base):
             eval_user_num,
             num_workers,
         )
-        self.set_embeddings()
+
+        if self.user_embeds_np is None:
+            self.set_embeddings()  # maybe already executed in trainers
         self.assign_embedding_oov()
         self.default_recs = recommend_from_embedding(
             model=self,

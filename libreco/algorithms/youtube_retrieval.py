@@ -4,13 +4,14 @@ import numpy as np
 from ..bases import DynEmbedBase, ModelMeta
 from ..embedding import normalize_embeds
 from ..feature.multi_sparse import true_sparse_field_size
-from ..layers import dense_nn
+from ..layers import dense_nn, sparse_embeds_pooling
 from ..recommendation import check_dynamic_rec_feats
 from ..recommendation.preprocess import process_embed_feat, process_sparse_embed_seq
 from ..tfops import (
+    compute_dense_feats,
+    compute_sparse_feats,
     dropout_config,
     get_sparse_feed_dict,
-    multi_sparse_combine_embedding,
     reg_config,
     tf,
 )
@@ -100,9 +101,13 @@ class YouTubeRetrieval(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     <https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>`_.
     """
 
-    item_variables = ["item_interaction_features", "item_embeds", "item_biases"]
-    sparse_variables = ["sparse_features"]
-    dense_variables = ["dense_features"]
+    item_variables = (
+        "embedding/seq_embeds_var",
+        "embedding/item_embeds_var",
+        "embedding/item_bias_var",
+    )
+    sparse_variables = ("embedding/sparse_embeds_var",)
+    dense_variables = ("embedding/dense_embeds_var",)
 
     def __init__(
         self,
@@ -195,55 +200,35 @@ class YouTubeRetrieval(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         # `batch_size` may change during training, especially first item in sequence
         self.modified_batch_size = tf.placeholder(tf.int32, shape=[])
 
-        item_interaction_features = tf.get_variable(
-            name="item_interaction_features",
-            shape=[self.n_items, self.embed_size],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
         sparse_item_interaction = tf.SparseTensor(
             self.item_interaction_indices,
             self.item_interaction_values,
-            [self.modified_batch_size, self.n_items],
+            (self.modified_batch_size, self.n_items),
         )
-        pooled_embed = tf.nn.safe_embedding_lookup_sparse(
-            item_interaction_features,
+        pooled_embed = sparse_embeds_pooling(
             sparse_item_interaction,
-            sparse_weights=None,
-            combiner="sqrtn",
-            default_id=None,
-        )  # unknown user will return 0-vector
+            var_name="seq_embeds_var",
+            var_shape=(self.n_items, self.embed_size),
+            initializer=tf.glorot_uniform_initializer(),
+            regularizer=self.reg,
+            reuse_layer=False,
+            scope_name="embedding",
+        )
         self.concat_embed.append(pooled_embed)
 
     def _build_sparse(self):
         self.user_sparse_indices = tf.placeholder(
             tf.int32, shape=[None, self.sparse_field_size]
         )
-        sparse_features = tf.get_variable(
-            name="sparse_features",
-            shape=[self.sparse_feature_size, self.embed_size],
+        sparse_embed = compute_sparse_feats(
+            self.data_info,
+            self.multi_sparse_combiner,
+            self.user_sparse_indices,
+            var_name="sparse_embeds_var",
+            var_shape=(self.sparse_feature_size, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
-        )
-
-        if (
-            self.data_info.multi_sparse_combine_info
-            and self.multi_sparse_combiner in ("sum", "mean", "sqrtn")
-        ):  # fmt: skip
-            sparse_embed = multi_sparse_combine_embedding(
-                self.data_info,
-                sparse_features,
-                self.user_sparse_indices,
-                self.multi_sparse_combiner,
-                self.embed_size,
-            )
-        else:
-            sparse_embed = tf.nn.embedding_lookup(
-                sparse_features, self.user_sparse_indices
-            )
-
-        sparse_embed = tf.reshape(
-            sparse_embed, [-1, self.true_sparse_field_size * self.embed_size]
+            flatten=True,
         )
         self.concat_embed.append(sparse_embed)
 
@@ -251,41 +236,31 @@ class YouTubeRetrieval(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.user_dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size]
         )
-        dense_values_reshape = tf.reshape(
-            self.user_dense_values, [-1, self.dense_field_size, 1]
-        )
-        batch_size = tf.shape(self.user_dense_values)[0]
-
-        dense_features = tf.get_variable(
-            name="dense_features",
-            shape=[self.dense_field_size, self.embed_size],
+        dense_embed = compute_dense_feats(
+            self.user_dense_values,
+            var_name="dense_embeds_var",
+            var_shape=(self.dense_field_size, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
-        )
-
-        dense_embed = tf.expand_dims(dense_features, axis=0)
-        # B * F2 * K
-        dense_embed = tf.tile(dense_embed, [batch_size, 1, 1])
-        dense_embed = tf.multiply(dense_embed, dense_values_reshape)
-        dense_embed = tf.reshape(
-            dense_embed, [-1, self.dense_field_size * self.embed_size]
+            flatten=True,
         )
         self.concat_embed.append(dense_embed)
 
     def _build_variables(self):
-        self.item_embeds = tf.get_variable(
-            name="item_embeds",
-            shape=[self.n_items, self.embed_size],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-        self.item_biases = tf.get_variable(
-            name="item_biases",
-            shape=[self.n_items],
-            initializer=tf.zeros_initializer(),
-            regularizer=self.reg,
-            trainable=True,
-        )
+        with tf.variable_scope("embedding"):
+            self.item_embeds = tf.get_variable(
+                name="item_embeds_var",
+                shape=[self.n_items, self.embed_size],
+                initializer=tf.glorot_uniform_initializer(),
+                regularizer=self.reg,
+            )
+            self.item_biases = tf.get_variable(
+                name="item_bias_var",
+                shape=[self.n_items],
+                initializer=tf.zeros_initializer(),
+                regularizer=self.reg,
+                trainable=True,
+            )
 
     def _set_recent_seqs(self):
         interacted_indices = []

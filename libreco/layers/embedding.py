@@ -57,7 +57,7 @@ def seq_embeds_pooling(
     n_items,
     var_name,
     var_shape,
-    initializer,
+    initializer=None,
     regularizer=None,
     reuse_layer=None,
     scope_name="seq_embeds_pooling",
