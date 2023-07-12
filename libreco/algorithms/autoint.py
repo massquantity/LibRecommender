@@ -1,8 +1,9 @@
 """Implementation of AutoInt."""
 from ..bases import ModelMeta, TfBase
 from ..feature.multi_sparse import true_sparse_field_size
-from ..layers import embedding_lookup, tf_dense
+from ..layers import embedding_lookup, multi_head_attention, tf_dense
 from ..tfops import (
+    attention_config,
     compute_dense_feats,
     compute_sparse_feats,
     dropout_config,
@@ -64,7 +65,7 @@ class AutoInt(TfBase, metaclass=ModelMeta):
     dropout_rate : float or None, default: None
         Probability of an element to be zeroed. If it is None, dropout is not used.
     att_embed_size : int, list of int or tuple of (int,), default: (8, 8, 8)
-        Embedding size in each attention layer. If it is `int`, one layer is used.
+        Head embedding size in each attention layer. If it is `int`, one layer is used.
     num_heads : int, default: 2
         Number of heads in multi-head attention.
     use_residual : bool, default: True
@@ -129,8 +130,8 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         self.num_neg = num_neg
         self.use_bn = use_bn
         self.dropout_rate = dropout_config(dropout_rate)
-        # `att_embed_size` also decides the num of attention layer
-        self.att_embed_size, self.att_layer_num = self._att_config(att_embed_size)
+        # `att_head_dims` also decides the num of attention layer
+        self.att_head_dims, self.att_layer_num = attention_config(att_embed_size)
         self.num_heads = num_heads
         self.use_residual = use_residual
         self.seed = seed
@@ -160,13 +161,15 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         if self.dense:
             self._build_dense()
 
-        attention_layer = tf.concat(self.concat_embed, axis=1)
-        for i in range(self.att_layer_num):
-            attention_layer = self.multi_head_attention(
-                attention_layer, self.att_embed_size[i]
+        att_block = tf.concat(self.concat_embed, axis=1)
+        for head_dim in self.att_head_dims:
+            # self-attention
+            att_block = multi_head_attention(
+                att_block, att_block, self.num_heads, head_dim, self.use_residual
             )
-        attention_layer = tf.keras.layers.Flatten()(attention_layer)
-        self.output = tf.squeeze(tf_dense(units=1)(attention_layer))
+
+        attention_layer = tf.keras.layers.Flatten()(att_block)
+        self.output = tf.squeeze(tf_dense(units=1)(attention_layer), axis=-1)
         self.serving_topk = self.build_topk(self.output)
 
     def _build_user_item(self):
@@ -219,68 +222,3 @@ class AutoInt(TfBase, metaclass=ModelMeta):
             flatten=False,
         )
         self.concat_embed.append(dense_embed)
-
-    # inputs: B * F * Ki, new_embed_size: K, num_heads: H
-    def multi_head_attention(self, inputs, new_embed_size):
-        mh_emb_size = self.num_heads * new_embed_size
-        # B * F * (K*H)
-        queries = tf_dense(
-            units=mh_emb_size,
-            activation=None,
-            kernel_initializer=tf.glorot_uniform_initializer(),
-            use_bias=False,
-        )(inputs)
-        keys = tf_dense(
-            units=mh_emb_size,
-            activation=None,
-            kernel_initializer=tf.glorot_uniform_initializer(),
-            use_bias=False,
-        )(inputs)
-        values = tf_dense(
-            units=mh_emb_size,
-            activation=None,
-            kernel_initializer=tf.glorot_uniform_initializer(),
-            use_bias=False,
-        )(inputs)
-        if self.use_residual:
-            residual = tf_dense(
-                units=mh_emb_size,
-                activation=None,
-                kernel_initializer=tf.glorot_uniform_initializer(),
-                use_bias=False,
-            )(inputs)
-
-        # H * B * F * K
-        queries = tf.stack(tf.split(queries, self.num_heads, axis=2))
-        keys = tf.stack(tf.split(keys, self.num_heads, axis=2))
-        values = tf.stack(tf.split(values, self.num_heads, axis=2))
-
-        # H * B * F * F
-        weights = queries @ tf.transpose(keys, [0, 1, 3, 2])
-        # weights = weights / np.sqrt(new_embed_size)
-        weights = tf.nn.softmax(weights)
-        # H * B * F * K
-        outputs = weights @ values
-        # 1 * B * F * (K*H)
-        outputs = tf.concat(tf.split(outputs, self.num_heads, axis=0), axis=-1)
-        # B * F * (K*H)
-        outputs = tf.squeeze(outputs, axis=0)
-        if self.use_residual:
-            # noinspection PyUnboundLocalVariable
-            outputs += residual
-        outputs = tf.nn.relu(outputs)
-        return outputs
-
-    @staticmethod
-    def _att_config(att_embed_size):
-        if not att_embed_size:
-            att_embed_size = (8, 8, 8)
-            att_layer_num = 3
-        elif isinstance(att_embed_size, int):
-            att_embed_size = [att_embed_size]
-            att_layer_num = 1
-        elif isinstance(att_embed_size, (list, tuple)):
-            att_layer_num = len(att_embed_size)
-        else:
-            raise ValueError("att_embed_size must be int or list")
-        return att_embed_size, att_layer_num

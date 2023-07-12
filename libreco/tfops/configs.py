@@ -3,6 +3,20 @@ import multiprocessing
 from .version import tf
 
 
+def attention_config(att_embed_size):
+    if not att_embed_size:
+        att_embed_size = (8, 8, 8)
+        att_layer_num = 3
+    elif isinstance(att_embed_size, int):
+        att_embed_size = [att_embed_size]
+        att_layer_num = 1
+    elif isinstance(att_embed_size, (list, tuple)):
+        att_layer_num = len(att_embed_size)
+    else:
+        raise ValueError("att_embed_size must be int or list")
+    return att_embed_size, att_layer_num
+
+
 def reg_config(reg):
     if not reg:
         return None
