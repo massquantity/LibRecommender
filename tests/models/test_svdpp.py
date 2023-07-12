@@ -5,6 +5,7 @@ import tensorflow as tf
 
 from libreco.algorithms import SVDpp
 from libreco.data import DatasetPure
+from tests.models.utils_tf import ptest_tf_variables
 from tests.utils_data import SAVE_PATH, set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
@@ -91,6 +92,7 @@ def test_svdpp(
                 metrics=get_metrics(task),
                 num_workers=num_workers,
             )
+            ptest_tf_variables(model)
             ptest_preds(model, task, pd_data, with_feats=False)
             ptest_recommends(model, data_info, pd_data, with_feats=False)
             model.save(SAVE_PATH, "svdpp_model", manual=True, inference_only=False)
