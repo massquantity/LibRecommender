@@ -1,7 +1,16 @@
 import numpy as np
 import pytest
+from numpy.testing import assert_array_equal
 
-from libreco.layers import conv_nn, dense_nn, max_pool, shared_dense, tf_dense, tf_rnn
+from libreco.layers import (
+    conv_nn,
+    dense_nn,
+    layer_normalization,
+    max_pool,
+    shared_dense,
+    tf_dense,
+    tf_rnn,
+)
 from libreco.tfops import dropout_config, reg_config, tf
 
 
@@ -120,6 +129,15 @@ def test_rnn_layer(random_data, dim):
         sess.run(tf.global_variables_initializer())
         assert sess.run(output).shape == (100, 8)
         assert sess.run(output2).shape == (100, 16)
+
+
+def test_layer_norm():
+    with tf.Session() as sess:
+        inputs = tf.constant(np.arange(10).reshape(5, 2) * 10, dtype=tf.float32)
+        outputs = layer_normalization(inputs)
+        sess.run(tf.global_variables_initializer())
+        labels = np.array([-1, 1] * 5, dtype=np.float32).reshape(5, 2)
+        assert_array_equal(sess.run(outputs), labels)
 
 
 def test_config():

@@ -2,8 +2,7 @@
 import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
-from ..embedding import normalize_embeds
-from ..layers import embedding_lookup
+from ..layers import embedding_lookup, normalize_embeds
 from ..tfops import reg_config, sess_config, tf
 
 

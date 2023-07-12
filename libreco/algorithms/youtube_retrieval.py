@@ -2,9 +2,8 @@
 import numpy as np
 
 from ..bases import DynEmbedBase, ModelMeta
-from ..embedding import normalize_embeds
 from ..feature.multi_sparse import true_sparse_field_size
-from ..layers import dense_nn, sparse_embeds_pooling
+from ..layers import dense_nn, normalize_embeds, sparse_embeds_pooling
 from ..recommendation import check_dynamic_rec_feats
 from ..recommendation.preprocess import process_embed_feat, process_sparse_embed_seq
 from ..tfops import (

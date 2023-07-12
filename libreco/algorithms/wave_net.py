@@ -1,7 +1,6 @@
 """Implementation of WaveNet."""
 from ..bases import DynEmbedBase, ModelMeta
-from ..embedding import normalize_embeds
-from ..layers import conv_nn, embedding_lookup, max_pool, tf_dense
+from ..layers import conv_nn, embedding_lookup, max_pool, normalize_embeds, tf_dense
 from ..tfops import dropout_config, reg_config, tf
 from ..utils.misc import count_params
 

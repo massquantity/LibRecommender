@@ -4,7 +4,7 @@ import numpy as np
 
 from .embed_base import EmbedBase
 from ..batch.sequence import get_recent_seqs
-from ..embedding import normalize_embeds
+from ..layers import normalize_embeds
 from ..recommendation import check_dynamic_rec_feats, rank_recommendations
 from ..recommendation.preprocess import process_embed_feat, process_embed_seq
 from ..tfops import get_feed_dict, get_variable_from_graph, sess_config, tf
