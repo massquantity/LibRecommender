@@ -9,6 +9,7 @@ from numpy.testing import assert_array_equal
 
 from libreco.algorithms import DIN
 from libreco.data import DatasetFeat, split_by_ratio_chrono
+from tests.models.utils_tf import ptest_tf_variables
 from tests.utils_data import set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_multi_sparse_models import fit_multi_sparse
@@ -107,6 +108,7 @@ def test_din(
             eval_user_num=40,
             num_workers=num_workers,
         )
+        ptest_tf_variables(model)
         ptest_preds(model, task, pd_data, with_feats=True)
         ptest_recommends(model, data_info, pd_data, with_feats=True)
         ptest_dyn_recommends(model, pd_data)

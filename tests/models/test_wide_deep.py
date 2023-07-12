@@ -4,6 +4,7 @@ import pytest
 import tensorflow as tf
 
 from libreco.algorithms import WideDeep
+from tests.models.utils_tf import ptest_tf_variables
 from tests.utils_data import set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_multi_sparse_models import fit_multi_sparse
@@ -102,6 +103,7 @@ def test_wide_deep(
             eval_user_num=200,
             num_workers=num_workers,
         )
+        ptest_tf_variables(model)
         ptest_preds(model, task, pd_data, with_feats=True)
         ptest_recommends(model, data_info, pd_data, with_feats=True)
         with pytest.raises(ValueError):

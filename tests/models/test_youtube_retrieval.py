@@ -3,6 +3,7 @@ import tensorflow as tf
 from numpy.testing import assert_array_equal
 
 from libreco.algorithms import YouTubeRetrieval
+from tests.models.utils_tf import ptest_tf_variables
 from tests.utils_data import SAVE_PATH, remove_path, set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
@@ -129,6 +130,7 @@ def test_youtube_retrieval(
             metrics=get_metrics(task),
             eval_user_num=200,
         )
+        ptest_tf_variables(model)
         ptest_preds(model, task, pd_data, with_feats=False)
         ptest_recommends(model, data_info, pd_data, with_feats=True)
         dyn_rec = ptest_dyn_recommends(model, pd_data)
