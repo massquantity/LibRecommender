@@ -5,9 +5,8 @@ from functools import partial
 import numpy as np
 
 from ..bases import EmbedBase, ModelMeta
-from ..embedding import normalize_embeds
 from ..evaluation import print_metrics
-from ..layers import embedding_lookup
+from ..layers import embedding_lookup, normalize_embeds
 from ..recommendation import recommend_from_embedding
 from ..tfops import reg_config, sess_config, tf
 from ..training.dispatch import get_trainer

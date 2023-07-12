@@ -1,7 +1,6 @@
 """Implementation of RNN4Rec model."""
 from ..bases import DynEmbedBase, ModelMeta
-from ..embedding import normalize_embeds
-from ..layers import embedding_lookup, tf_dense, tf_rnn
+from ..layers import embedding_lookup, normalize_embeds, tf_dense, tf_rnn
 from ..tfops import dropout_config, reg_config, tf
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params

@@ -3,8 +3,8 @@ from tqdm import tqdm
 
 from .trainer import BaseTrainer
 from ..batch import get_batch_loader, get_tf_feeds
-from ..embedding import normalize_embeds
 from ..evaluation import print_metrics
+from ..layers import normalize_embeds
 from ..tfops import choose_tf_loss, lr_decay_config, tf, var_list_by_name
 from ..utils.constants import EmbeddingModels
 from ..utils.misc import colorize, time_block
