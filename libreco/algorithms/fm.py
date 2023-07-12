@@ -1,8 +1,14 @@
 """Implementation of FM."""
 from ..bases import ModelMeta, TfBase
 from ..feature.multi_sparse import true_sparse_field_size
-from ..layers import tf_dense
-from ..tfops import dropout_config, multi_sparse_combine_embedding, reg_config, tf
+from ..layers import embedding_lookup, tf_dense
+from ..tfops import (
+    compute_dense_feats,
+    compute_sparse_feats,
+    dropout_config,
+    reg_config,
+    tf,
+)
 from ..utils.misc import count_params
 from ..utils.validate import (
     check_dense_values,
@@ -80,10 +86,10 @@ class FM(TfBase, metaclass=ModelMeta):
     <https://arxiv.org/pdf/1708.05027.pdf>`_.
     """
 
-    user_variables = ["linear_user_feat", "pairwise_user_feat"]
-    item_variables = ["linear_item_feat", "pairwise_item_feat"]
-    sparse_variables = ["linear_sparse_feat", "pairwise_sparse_feat"]
-    dense_variables = ["linear_dense_feat", "pairwise_dense_feat"]
+    user_variables = ("embedding/user_linear_var", "embedding/user_embeds_var")
+    item_variables = ("embedding/item_linear_var", "embedding/item_embeds_var")
+    sparse_variables = ("embedding/sparse_linear_var", "embedding/sparse_embeds_var")
+    dense_variables = ("embedding/dense_linear_var", "embedding/dense_embeds_var")
 
     def __init__(
         self,
@@ -174,89 +180,61 @@ class FM(TfBase, metaclass=ModelMeta):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
 
-        linear_user_feat = tf.get_variable(
-            name="linear_user_feat",
-            shape=[self.n_users + 1, 1],
+        linear_user_embeds = embedding_lookup(
+            indices=self.user_indices,
+            var_name="user_linear_var",
+            var_shape=(self.n_users + 1, 1),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        linear_item_feat = tf.get_variable(
-            name="linear_item_feat",
-            shape=[self.n_items + 1, 1],
+        linear_item_embeds = embedding_lookup(
+            indices=self.item_indices,
+            var_name="item_linear_var",
+            var_shape=(self.n_items + 1, 1),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        pairwise_user_feat = tf.get_variable(
-            name="pairwise_user_feat",
-            shape=[self.n_users + 1, self.embed_size],
+        user_embeds = embedding_lookup(
+            indices=self.user_indices,
+            var_name="user_embeds_var",
+            var_shape=(self.n_users + 1, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        pairwise_item_feat = tf.get_variable(
-            name="pairwise_item_feat",
-            shape=[self.n_items + 1, self.embed_size],
+        item_embeds = embedding_lookup(
+            indices=self.item_indices,
+            var_name="item_embeds_var",
+            var_shape=(self.n_items + 1, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-
-        # print(linear_embed.get_shape().as_list())
-        linear_user_embed = tf.nn.embedding_lookup(linear_user_feat, self.user_indices)
-        linear_item_embed = tf.nn.embedding_lookup(linear_item_feat, self.item_indices)
-        self.linear_embed.extend([linear_user_embed, linear_item_embed])
-
-        pairwise_user_embed = tf.expand_dims(
-            tf.nn.embedding_lookup(pairwise_user_feat, self.user_indices), axis=1
+        self.linear_embed.extend([linear_user_embeds, linear_item_embeds])
+        self.pairwise_embed.extend(
+            [user_embeds[:, tf.newaxis, :], item_embeds[:, tf.newaxis, :]]
         )
-        pairwise_item_embed = tf.expand_dims(
-            tf.nn.embedding_lookup(pairwise_item_feat, self.item_indices), axis=1
-        )
-        self.pairwise_embed.extend([pairwise_user_embed, pairwise_item_embed])
 
     def _build_sparse(self):
         self.sparse_indices = tf.placeholder(
             tf.int32, shape=[None, self.sparse_field_size]
         )
-
-        linear_sparse_feat = tf.get_variable(
-            name="linear_sparse_feat",
-            shape=[self.sparse_feature_size],
+        linear_sparse_embed = compute_sparse_feats(
+            self.data_info,
+            self.multi_sparse_combiner,
+            self.sparse_indices,
+            var_name="sparse_linear_var",
+            var_shape=[self.sparse_feature_size],
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        pairwise_sparse_feat = tf.get_variable(
-            name="pairwise_sparse_feat",
-            shape=[self.sparse_feature_size, self.embed_size],
+        pairwise_sparse_embed = compute_sparse_feats(
+            self.data_info,
+            self.multi_sparse_combiner,
+            self.sparse_indices,
+            var_name="sparse_embeds_var",
+            var_shape=(self.sparse_feature_size, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-
-        if self.data_info.multi_sparse_combine_info and self.multi_sparse_combiner in (
-            "sum",
-            "mean",
-            "sqrtn",
-        ):
-            linear_sparse_embed = multi_sparse_combine_embedding(
-                self.data_info,
-                linear_sparse_feat,
-                self.sparse_indices,
-                self.multi_sparse_combiner,
-                embed_size=1,
-            )
-            pairwise_sparse_embed = multi_sparse_combine_embedding(
-                self.data_info,
-                pairwise_sparse_feat,
-                self.sparse_indices,
-                self.multi_sparse_combiner,
-                self.embed_size,
-            )
-        else:
-            linear_sparse_embed = tf.nn.embedding_lookup(  # B * F1
-                linear_sparse_feat, self.sparse_indices
-            )
-            pairwise_sparse_embed = tf.nn.embedding_lookup(  # B * F1 * K
-                pairwise_sparse_feat, self.sparse_indices
-            )
-
         self.linear_embed.append(linear_sparse_embed)
         self.pairwise_embed.append(pairwise_sparse_embed)
 
@@ -264,32 +242,19 @@ class FM(TfBase, metaclass=ModelMeta):
         self.dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size]
         )
-        dense_values_reshape = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1]
-        )
-        batch_size = tf.shape(self.dense_values)[0]
-
-        linear_dense_feat = tf.get_variable(
-            name="linear_dense_feat",
-            shape=[self.dense_field_size],
+        linear_dense_embed = compute_dense_feats(
+            self.dense_values,
+            var_name="dense_linear_var",
+            var_shape=[self.dense_field_size],
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        pairwise_dense_feat = tf.get_variable(
-            name="pairwise_dense_feat",
-            shape=[self.dense_field_size, self.embed_size],
+        pairwise_dense_embed = compute_dense_feats(
+            self.dense_values,
+            var_name="dense_embeds_var",
+            var_shape=(self.dense_field_size, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-
-        # B * F2
-        linear_dense_embed = tf.tile(linear_dense_feat, [batch_size])
-        linear_dense_embed = tf.reshape(linear_dense_embed, [-1, self.dense_field_size])
-        linear_dense_embed = tf.multiply(linear_dense_embed, self.dense_values)
-
-        pairwise_dense_embed = tf.expand_dims(pairwise_dense_feat, axis=0)
-        # B * F2 * K
-        pairwise_dense_embed = tf.tile(pairwise_dense_embed, [batch_size, 1, 1])
-        pairwise_dense_embed = tf.multiply(pairwise_dense_embed, dense_values_reshape)
         self.linear_embed.append(linear_dense_embed)
         self.pairwise_embed.append(pairwise_dense_embed)

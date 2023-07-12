@@ -10,6 +10,11 @@ def var_list_by_name(names):
     return var_dict
 
 
+def get_variable_from_graph(var_name, scope_name):
+    with tf.variable_scope(scope_name, reuse=True):
+        return tf.get_variable(var_name)
+
+
 def modify_variable_names(model, trainable):
     user_var, item_var, sparse_var, dense_var = None, None, None, None
     manual_var = None

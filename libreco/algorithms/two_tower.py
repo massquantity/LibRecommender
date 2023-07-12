@@ -106,10 +106,10 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     <https://arxiv.org/pdf/2007.12865.pdf>`_.
     """
 
-    user_variables = ["user_feat"]
-    item_variables = ["item_feat"]
-    sparse_variables = ["sparse_feat"]
-    dense_variables = ["dense_feat"]
+    user_variables = ("embedding/user_embeds_var",)
+    item_variables = ("embedding/item_embeds_var",)
+    sparse_variables = ("embedding/sparse_embeds_var",)
+    dense_variables = ("embedding/dense_embeds_var",)
 
     def __init__(
         self,
@@ -257,32 +257,33 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
                 )
 
     def _build_variables(self):
-        self.user_feat = tf.get_variable(
-            name="user_feat",
-            shape=[self.n_users + 1, self.embed_size],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-        self.item_feat = tf.get_variable(
-            name="item_feat",
-            shape=[self.n_items, self.embed_size],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-        if self.user_sparse or self.item_sparse:
-            self.sparse_feat = tf.get_variable(
-                name="sparse_feat",
-                shape=[sparse_feat_size(self.data_info), self.embed_size],
+        with tf.variable_scope("embedding"):
+            self.user_embeds_var = tf.get_variable(
+                name="user_embeds_var",
+                shape=(self.n_users + 1, self.embed_size),
                 initializer=tf.glorot_uniform_initializer(),
                 regularizer=self.reg,
             )
-        if self.user_dense or self.item_dense:
-            self.dense_feat = tf.get_variable(
-                name="dense_feat",
-                shape=[dense_field_size(self.data_info), self.embed_size],
+            self.item_embeds_var = tf.get_variable(
+                name="item_embeds_var",
+                shape=(self.n_items, self.embed_size),
                 initializer=tf.glorot_uniform_initializer(),
                 regularizer=self.reg,
             )
+            if self.user_sparse or self.item_sparse:
+                self.sparse_embeds_var = tf.get_variable(
+                    name="sparse_embeds_var",
+                    shape=(sparse_feat_size(self.data_info), self.embed_size),
+                    initializer=tf.glorot_uniform_initializer(),
+                    regularizer=self.reg,
+                )
+            if self.user_dense or self.item_dense:
+                self.dense_embeds_var = tf.get_variable(
+                    name="dense_embeds_var",
+                    shape=(dense_field_size(self.data_info), self.embed_size),
+                    initializer=tf.glorot_uniform_initializer(),
+                    regularizer=self.reg,
+                )
 
         if self.temperature <= 0.0:
             self.temperature_var = tf.get_variable(
@@ -293,18 +294,18 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             )
 
         if self.ssl_pattern is not None:
-            default_feat = tf.get_variable(
-                name="default_feat",
+            default_var = tf.get_variable(
+                name="default_var",
                 shape=[1, self.embed_size],
                 initializer=tf.zeros_initializer(),
                 trainable=False,
             )
-            self.ssl_feat = tf.concat(
-                [default_feat, self.item_feat, self.sparse_feat], axis=0
+            self.ssl_embeds_var = tf.concat(
+                [default_var, self.item_embeds_var, self.sparse_embeds_var], axis=0
             )
 
     def compute_user_embeddings(self, category):
-        user_embed = tf.nn.embedding_lookup(self.user_feat, self.user_indices)
+        user_embed = tf.nn.embedding_lookup(self.user_embeds_var, self.user_indices)
         concat_embeds = [user_embed]
         if self.user_sparse:
             user_sparse_embed = self._compute_sparse_feats(category)
@@ -322,9 +323,11 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
 
     def compute_item_embeddings(self, category):
         if category == "item":
-            item_embed = tf.nn.embedding_lookup(self.item_feat, self.item_indices)
+            item_embed = tf.nn.embedding_lookup(self.item_embeds_var, self.item_indices)
         elif category == "item_neg":
-            item_embed = tf.nn.embedding_lookup(self.item_feat, self.item_indices_neg)
+            item_embed = tf.nn.embedding_lookup(
+                self.item_embeds_var, self.item_indices_neg
+            )
         else:
             raise ValueError("Unknown item category")
 
@@ -365,9 +368,11 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             raise ValueError("Unknown sparse indices category.")
 
         if category.startswith("ssl"):
-            sparse_embed = tf.nn.embedding_lookup(self.ssl_feat, sparse_indices)
+            sparse_embed = tf.nn.embedding_lookup(self.ssl_embeds_var, sparse_indices)
         else:
-            sparse_embed = tf.nn.embedding_lookup(self.sparse_feat, sparse_indices)
+            sparse_embed = tf.nn.embedding_lookup(
+                self.sparse_embeds_var, sparse_indices
+            )
         return tf.keras.layers.Flatten()(sparse_embed)
 
     def _compute_dense_feats(self, category):
@@ -387,13 +392,11 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
             else:
                 raise ValueError("Unknown dense values category.")
         batch_size = tf.shape(dense_values)[0]
-        dense_values = tf.expand_dims(dense_values, axis=2)
-
-        dense_embed = tf.gather(self.dense_feat, dense_col_indices, axis=0)
+        dense_embed = tf.gather(self.dense_embeds_var, dense_col_indices, axis=0)
         dense_embed = tf.expand_dims(dense_embed, axis=0)
         dense_embed = tf.tile(dense_embed, [batch_size, 1, 1])
         # broadcast element-wise multiplication
-        return tf.keras.layers.Flatten()(dense_values * dense_embed)
+        return tf.keras.layers.Flatten()(dense_values[:, :, tf.newaxis] * dense_embed)
 
     def _shared_layers(self, inputs, name):
         embeds = dense_nn(

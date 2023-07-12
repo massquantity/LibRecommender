@@ -111,6 +111,10 @@ def test_wave_net(
         ptest_recommends(model, data_info, pd_data, with_feats=False)
         dyn_rec = ptest_dyn_recommends(model, pd_data)
 
+        model._assign_user_oov("user_embeds_var", "embedding")
+        with pytest.raises(ValueError):
+            model._assign_user_oov("user_embeds_fake", "embedding")
+
         # test save and load model
         loaded_model, loaded_data_info = save_load_model(WaveNet, model, data_info)
         ptest_preds(loaded_model, task, pd_data, with_feats=False)

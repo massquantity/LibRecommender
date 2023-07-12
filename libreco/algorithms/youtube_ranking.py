@@ -4,8 +4,14 @@ import numpy as np
 from ..bases import ModelMeta, TfBase
 from ..batch.sequence import get_recent_seqs
 from ..feature.multi_sparse import true_sparse_field_size
-from ..layers import dense_nn, tf_dense
-from ..tfops import dropout_config, multi_sparse_combine_embedding, reg_config, tf
+from ..layers import dense_nn, embedding_lookup, seq_embeds_pooling, tf_dense
+from ..tfops import (
+    compute_dense_feats,
+    compute_sparse_feats,
+    dropout_config,
+    reg_config,
+    tf,
+)
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
 from ..utils.validate import (
@@ -97,10 +103,10 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
     <https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf>`_.
     """
 
-    user_variables = ["user_features"]
-    item_variables = ["item_features"]
-    sparse_variables = ["sparse_features"]
-    dense_variables = ["dense_features"]
+    user_variables = ("embedding/user_embeds_var",)
+    item_variables = ("embedding/item_embeds_var",)
+    sparse_variables = ("embedding/sparse_embeds_var",)
+    dense_variables = ("embedding/dense_embeds_var",)
 
     def __init__(
         self,
@@ -176,37 +182,31 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         self.user_interacted_len = tf.placeholder(tf.float32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
-        self.concat_embed = []
 
-        user_features = tf.get_variable(
-            name="user_features",
-            shape=[self.n_users + 1, self.embed_size],
+        user_embed = embedding_lookup(
+            indices=self.user_indices,
+            var_name="user_embeds_var",
+            var_shape=(self.n_users + 1, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        item_features = tf.get_variable(
-            name="item_features",
-            shape=[self.n_items + 1, self.embed_size],
+        item_embed = embedding_lookup(
+            indices=self.item_indices,
+            var_name="item_embeds_var",
+            var_shape=(self.n_items + 1, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        user_embed = tf.nn.embedding_lookup(user_features, self.user_indices)
-        item_embed = tf.nn.embedding_lookup(item_features, self.item_indices)
-
-        # unknown items are padded to 0-vector
-        zero_padding_op = tf.scatter_update(
-            item_features, self.n_items, tf.zeros([self.embed_size], dtype=tf.float32)
+        pooled_embed = seq_embeds_pooling(
+            self.user_interacted_seq,
+            self.user_interacted_len,
+            self.n_items,
+            var_name="item_embeds_var",
+            var_shape=(self.n_items + 1, self.embed_size),
+            reuse_layer=True,
+            scope_name="embedding",
         )
-        with tf.control_dependencies([zero_padding_op]):
-            # B * seq * K
-            multi_item_embed = tf.nn.embedding_lookup(
-                item_features, self.user_interacted_seq
-            )
-        pooled_embed = tf.div_no_nan(
-            tf.reduce_sum(multi_item_embed, axis=1),
-            tf.expand_dims(tf.sqrt(self.user_interacted_len), axis=1),
-        )
-        self.concat_embed.extend([user_embed, item_embed, pooled_embed])
+        self.concat_embed = [user_embed, item_embed, pooled_embed]
 
         if self.sparse:
             self._build_sparse()
@@ -229,30 +229,15 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         self.sparse_indices = tf.placeholder(
             tf.int32, shape=[None, self.sparse_field_size]
         )
-        sparse_features = tf.get_variable(
-            name="sparse_features",
-            shape=[self.sparse_feature_size, self.embed_size],
+        sparse_embed = compute_sparse_feats(
+            self.data_info,
+            self.multi_sparse_combiner,
+            self.sparse_indices,
+            var_name="sparse_embeds_var",
+            var_shape=(self.sparse_feature_size, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
-        )
-
-        if self.data_info.multi_sparse_combine_info and self.multi_sparse_combiner in (
-            "sum",
-            "mean",
-            "sqrtn",
-        ):
-            sparse_embed = multi_sparse_combine_embedding(
-                self.data_info,
-                sparse_features,
-                self.sparse_indices,
-                self.multi_sparse_combiner,
-                self.embed_size,
-            )
-        else:
-            sparse_embed = tf.nn.embedding_lookup(sparse_features, self.sparse_indices)
-
-        sparse_embed = tf.reshape(
-            sparse_embed, [-1, self.true_sparse_field_size * self.embed_size]
+            flatten=True,
         )
         self.concat_embed.append(sparse_embed)
 
@@ -260,24 +245,12 @@ class YouTubeRanking(TfBase, metaclass=ModelMeta):
         self.dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size]
         )
-        dense_values_reshape = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1]
-        )
-        batch_size = tf.shape(self.dense_values)[0]
-
-        dense_features = tf.get_variable(
-            name="dense_features",
-            shape=[self.dense_field_size, self.embed_size],
+        dense_embed = compute_dense_feats(
+            self.dense_values,
+            var_name="dense_embeds_var",
+            var_shape=(self.dense_field_size, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
-        )
-
-        dense_embed = tf.tile(dense_features, [batch_size, 1])
-        dense_embed = tf.reshape(
-            dense_embed, [-1, self.dense_field_size, self.embed_size]
-        )
-        dense_embed = tf.multiply(dense_embed, dense_values_reshape)
-        dense_embed = tf.reshape(
-            dense_embed, [-1, self.dense_field_size * self.embed_size]
+            flatten=True,
         )
         self.concat_embed.append(dense_embed)

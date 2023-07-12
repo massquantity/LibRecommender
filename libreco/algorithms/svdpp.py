@@ -2,6 +2,7 @@
 import numpy as np
 
 from ..bases import EmbedBase
+from ..layers import embedding_lookup, sparse_embeds_pooling
 from ..tfops import rebuild_tf_model, reg_config, sess_config, tf
 
 
@@ -59,8 +60,8 @@ class SVDpp(EmbedBase):
     <https://dl.acm.org/citation.cfm?id=1401944>`_.
     """
 
-    user_variables = ["bu_var", "pu_var", "yj_var"]
-    item_variables = ["bi_var", "qi_var"]
+    user_variables = ("embedding/bu_var", "embedding/pu_var", "embedding/yj_var")
+    item_variables = ("embedding/bi_var", "embedding/qi_var")
 
     def __init__(
         self,
@@ -104,54 +105,33 @@ class SVDpp(EmbedBase):
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
 
-        self.bu_var = tf.get_variable(
-            name="bu_var",
-            shape=[self.n_users],
+        bias_user = embedding_lookup(
+            indices=self.user_indices,
+            var_name="bu_var",
+            var_shape=[self.n_users],
             initializer=tf.zeros_initializer(),
             regularizer=self.reg,
         )
-        self.bi_var = tf.get_variable(
-            name="bi_var",
-            shape=[self.n_items],
+        bias_item = embedding_lookup(
+            indices=self.item_indices,
+            var_name="bi_var",
+            var_shape=[self.n_items],
             initializer=tf.zeros_initializer(),
             regularizer=self.reg,
         )
-        self.pu_var = tf.get_variable(
-            name="pu_var",
-            shape=[self.n_users, self.embed_size],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-        self.qi_var = tf.get_variable(
-            name="qi_var",
-            shape=[self.n_items, self.embed_size],
+
+        self.all_user_embeds = self._compute_user_embeddings()
+        embed_user = embedding_lookup(self.user_indices, embed_var=self.all_user_embeds)
+        embed_item = embedding_lookup(
+            indices=self.item_indices,
+            var_name="qi_var",
+            var_shape=(self.n_items, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
-        yj_var = tf.get_variable(
-            name="yj_var",
-            shape=[self.n_items, self.embed_size],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-        uj = tf.nn.safe_embedding_lookup_sparse(
-            yj_var,
-            self.sparse_interaction,
-            sparse_weights=None,
-            combiner="sqrtn",
-            default_id=None,
-        )  # unknown user will return 0-vector
-        self.puj_var = self.pu_var + uj
-
-        bias_user = tf.nn.embedding_lookup(self.bu_var, self.user_indices)
-        bias_item = tf.nn.embedding_lookup(self.bi_var, self.item_indices)
-        embed_user = tf.nn.embedding_lookup(self.puj_var, self.user_indices)
-        embed_item = tf.nn.embedding_lookup(self.qi_var, self.item_indices)
         self.output = (
-            bias_user
-            + bias_item
-            + tf.reduce_sum(tf.multiply(embed_user, embed_item), axis=1)
+            bias_user + bias_item + tf.einsum("ij,ij->i", embed_user, embed_item)
         )
 
     def fit(
@@ -182,9 +162,12 @@ class SVDpp(EmbedBase):
         )
 
     def set_embeddings(self):
-        bu, bi, puj, qi = self.sess.run(
-            [self.bu_var, self.bi_var, self.puj_var, self.qi_var]
-        )
+        with tf.variable_scope("embedding", reuse=True):
+            bu = self.sess.run(tf.get_variable("bu_var"))
+            bi = self.sess.run(tf.get_variable("bi_var"))
+            qi = self.sess.run(tf.get_variable("qi_var"))
+
+        puj = self.sess.run(self.all_user_embeds)
         user_bias = np.ones([len(puj), 2], dtype=puj.dtype)
         user_bias[:, 0] = bu
         item_bias = np.ones([len(qi), 2], dtype=qi.dtype)
@@ -209,6 +192,26 @@ class SVDpp(EmbedBase):
             indices=indices, values=values, dense_shape=(self.n_users, self.n_items)
         )
         return sparse_interaction
+
+    def _compute_user_embeddings(self):
+        with tf.variable_scope("embedding", reuse=None):
+            pu_var = tf.get_variable(
+                name="pu_var",
+                shape=(self.n_users, self.embed_size),
+                initializer=tf.glorot_uniform_initializer(),
+                regularizer=self.reg,
+            )
+
+        uj = sparse_embeds_pooling(
+            self.sparse_interaction,
+            var_name="yj_var",
+            var_shape=(self.n_items, self.embed_size),
+            initializer=tf.glorot_uniform_initializer(),
+            regularizer=self.reg,
+            reuse_layer=False,
+            scope_name="embedding",
+        )
+        return pu_var + uj
 
     def rebuild_model(self, path, model_name, full_assign=False):
         self.sparse_interaction = self._set_sparse_interaction()

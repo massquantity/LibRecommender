@@ -1,8 +1,14 @@
 """Implementation of AutoInt."""
 from ..bases import ModelMeta, TfBase
 from ..feature.multi_sparse import true_sparse_field_size
-from ..layers import tf_dense
-from ..tfops import dropout_config, multi_sparse_combine_embedding, reg_config, tf
+from ..layers import embedding_lookup, tf_dense
+from ..tfops import (
+    compute_dense_feats,
+    compute_sparse_feats,
+    dropout_config,
+    reg_config,
+    tf,
+)
 from ..utils.validate import (
     check_dense_values,
     check_multi_sparse,
@@ -14,7 +20,7 @@ from ..utils.validate import (
 
 
 class AutoInt(TfBase, metaclass=ModelMeta):
-    """AutoInt algorithm.
+    """*AutoInt* algorithm.
 
     Parameters
     ----------
@@ -79,10 +85,10 @@ class AutoInt(TfBase, metaclass=ModelMeta):
     <https://arxiv.org/pdf/1810.11921.pdf>`_.
     """
 
-    user_variables = ["user_feat"]
-    item_variables = ["item_feat"]
-    sparse_variables = ["sparse_feat"]
-    dense_variables = ["dense_feat"]
+    user_variables = ("embedding/user_embeds_var",)
+    item_variables = ("embedding/item_embeds_var",)
+    sparse_variables = ("embedding/sparse_embeds_var",)
+    dense_variables = ("embedding/dense_embeds_var",)
 
     def __init__(
         self,
@@ -166,105 +172,79 @@ class AutoInt(TfBase, metaclass=ModelMeta):
     def _build_user_item(self):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
-
-        user_feat = tf.get_variable(
-            name="user_feat",
-            shape=[self.n_users + 1, self.embed_size],
+        user_embeds = embedding_lookup(
+            indices=self.user_indices,
+            var_name="user_embeds_var",
+            var_shape=(self.n_users + 1, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        item_feat = tf.get_variable(
-            name="item_feat",
-            shape=[self.n_items + 1, self.embed_size],
+        item_embeds = embedding_lookup(
+            indices=self.item_indices,
+            var_name="item_embeds_var",
+            var_shape=(self.n_items + 1, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-
-        user_embed = tf.expand_dims(
-            tf.nn.embedding_lookup(user_feat, self.user_indices), axis=1
+        self.concat_embed.extend(
+            [user_embeds[:, tf.newaxis, :], item_embeds[:, tf.newaxis, :]]
         )
-        item_embed = tf.expand_dims(
-            tf.nn.embedding_lookup(item_feat, self.item_indices), axis=1
-        )
-        self.concat_embed.extend([user_embed, item_embed])
 
     def _build_sparse(self):
         self.sparse_indices = tf.placeholder(
             tf.int32, shape=[None, self.sparse_field_size]
         )
-
-        sparse_feat = tf.get_variable(
-            name="sparse_feat",
-            shape=[self.sparse_feature_size, self.embed_size],
+        sparse_embed = compute_sparse_feats(
+            self.data_info,
+            self.multi_sparse_combiner,
+            self.sparse_indices,
+            var_name="sparse_embeds_var",
+            var_shape=(self.sparse_feature_size, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
+            flatten=False,
         )
-
-        if self.data_info.multi_sparse_combine_info and self.multi_sparse_combiner in (
-            "sum",
-            "mean",
-            "sqrtn",
-        ):
-            sparse_embed = multi_sparse_combine_embedding(
-                self.data_info,
-                sparse_feat,
-                self.sparse_indices,
-                self.multi_sparse_combiner,
-                self.embed_size,
-            )
-        else:
-            sparse_embed = tf.nn.embedding_lookup(sparse_feat, self.sparse_indices)
-
         self.concat_embed.append(sparse_embed)
 
     def _build_dense(self):
         self.dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size]
         )
-        dense_values_reshape = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1]
-        )
-
-        dense_feat = tf.get_variable(
-            name="dense_feat",
-            shape=[self.dense_field_size, self.embed_size],
+        dense_embed = compute_dense_feats(
+            self.dense_values,
+            var_name="dense_embeds_var",
+            var_shape=(self.dense_field_size, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
+            flatten=False,
         )
-
-        batch_size = tf.shape(self.dense_values)[0]
-        # 1 * F_dense * K
-        dense_embed = tf.expand_dims(dense_feat, axis=0)
-        # B * F_dense * K
-        dense_embed = tf.tile(dense_embed, [batch_size, 1, 1])
-        dense_embed = tf.multiply(dense_embed, dense_values_reshape)
         self.concat_embed.append(dense_embed)
 
     # inputs: B * F * Ki, new_embed_size: K, num_heads: H
     def multi_head_attention(self, inputs, new_embed_size):
-        multi_embed_size = self.num_heads * new_embed_size
+        mh_emb_size = self.num_heads * new_embed_size
         # B * F * (K*H)
         queries = tf_dense(
-            units=multi_embed_size,
+            units=mh_emb_size,
             activation=None,
             kernel_initializer=tf.glorot_uniform_initializer(),
             use_bias=False,
         )(inputs)
         keys = tf_dense(
-            units=multi_embed_size,
+            units=mh_emb_size,
             activation=None,
             kernel_initializer=tf.glorot_uniform_initializer(),
             use_bias=False,
         )(inputs)
         values = tf_dense(
-            units=multi_embed_size,
+            units=mh_emb_size,
             activation=None,
             kernel_initializer=tf.glorot_uniform_initializer(),
             use_bias=False,
         )(inputs)
         if self.use_residual:
             residual = tf_dense(
-                units=multi_embed_size,
+                units=mh_emb_size,
                 activation=None,
                 kernel_initializer=tf.glorot_uniform_initializer(),
                 use_bias=False,

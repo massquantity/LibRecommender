@@ -25,7 +25,8 @@ def dense_nn(
     if np.isscalar(hidden_units):
         hidden_units = [hidden_units]
 
-    with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
+    reuse = tf.AUTO_REUSE if reuse_layer else None
+    with tf.variable_scope(name, reuse=reuse):
         if use_bn:
             net = tf.layers.batch_normalization(net, training=is_training)
         for i, units in enumerate(hidden_units, start=1):

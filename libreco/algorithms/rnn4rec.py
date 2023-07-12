@@ -1,7 +1,7 @@
 """Implementation of RNN4Rec model."""
 from ..bases import DynEmbedBase, ModelMeta
 from ..embedding import normalize_embeds
-from ..layers import tf_dense, tf_rnn
+from ..layers import embedding_lookup, tf_dense, tf_rnn
 from ..tfops import dropout_config, reg_config, tf
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
@@ -83,7 +83,11 @@ class RNN4Rec(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     <https://arxiv.org/pdf/1511.06939.pdf>`_.
     """
 
-    item_variables = ["item_embeds", "item_biases", "input_embeds"]
+    item_variables = (
+        "embedding/item_embeds_var",
+        "embedding/item_bias_var",
+        "embedding/seq_embeds_var",
+    )
 
     def __init__(
         self,
@@ -194,35 +198,32 @@ class RNN4Rec(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         count_params()
 
     def _build_variables(self):
-        # weight and bias parameters for last fc_layer
-        self.item_biases = tf.get_variable(
-            name="item_biases",
-            shape=[self.n_items],
-            initializer=tf.zeros_initializer(),
-            regularizer=self.reg,
-        )
-        self.item_embeds = tf.get_variable(
-            name="item_embeds",
-            shape=[self.n_items, self.embed_size],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-
-        # input_embed for rnn_layer, include padding value
-        self.input_embeds = tf.get_variable(
-            name="input_embeds",
-            shape=[self.n_items + 1, self.hidden_units[0]],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
+        with tf.variable_scope("embedding"):
+            # weight and bias parameters for last fc_layer
+            self.item_embeds = tf.get_variable(
+                name="item_embeds_var",
+                shape=[self.n_items, self.embed_size],
+                initializer=tf.glorot_uniform_initializer(),
+                regularizer=self.reg,
+            )
+            self.item_biases = tf.get_variable(
+                name="item_bias_var",
+                shape=[self.n_items],
+                initializer=tf.zeros_initializer(),
+                regularizer=self.reg,
+            )
 
     def _build_user_embeddings(self):
         self.user_interacted_seq = tf.placeholder(
             tf.int32, shape=[None, self.max_seq_len]
         )
         self.user_interacted_len = tf.placeholder(tf.int64, shape=[None])
-        seq_item_embed = tf.nn.embedding_lookup(
-            self.input_embeds, self.user_interacted_seq
+        seq_item_embed = embedding_lookup(
+            indices=self.user_interacted_seq,
+            var_name="seq_embeds_var",
+            var_shape=(self.n_items + 1, self.hidden_units[0]),
+            initializer=tf.glorot_uniform_initializer(),
+            regularizer=self.reg,
         )
         rnn_output = tf_rnn(
             inputs=seq_item_embed,

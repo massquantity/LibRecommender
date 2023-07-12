@@ -1,8 +1,14 @@
 """Implementation of Wide & Deep."""
 from ..bases import ModelMeta, TfBase
 from ..feature.multi_sparse import true_sparse_field_size
-from ..layers import dense_nn, tf_dense
-from ..tfops import dropout_config, multi_sparse_combine_embedding, reg_config, tf
+from ..layers import dense_nn, embedding_lookup, tf_dense
+from ..tfops import (
+    compute_dense_feats,
+    compute_sparse_feats,
+    dropout_config,
+    reg_config,
+    tf,
+)
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
 from ..utils.validate import (
@@ -89,10 +95,10 @@ class WideDeep(TfBase, metaclass=ModelMeta):
 
     """
 
-    user_variables = ["wide_user_feat", "deep_user_feat"]
-    item_variables = ["wide_item_feat", "deep_item_feat"]
-    sparse_variables = ["wide_sparse_feat", "deep_sparse_feat"]
-    dense_variables = ["wide_dense_feat", "deep_dense_feat"]
+    user_variables = ("embedding/user_wide_var", "embedding/user_deep_var")
+    item_variables = ("embedding/item_wide_var", "embedding/item_deep_var")
+    sparse_variables = ("embedding/sparse_wide_var", "embedding/sparse_deep_var")
+    dense_variables = ("embedding/dense_wide_var", "embedding/dense_deep_var")
 
     def __init__(
         self,
@@ -180,86 +186,60 @@ class WideDeep(TfBase, metaclass=ModelMeta):
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
 
-        wide_user_feat = tf.get_variable(
-            name="wide_user_feat",
-            shape=[self.n_users + 1, 1],
+        wide_user_embed = embedding_lookup(
+            indices=self.user_indices,
+            var_name="user_wide_var",
+            var_shape=(self.n_users + 1, 1),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        wide_item_feat = tf.get_variable(
-            name="wide_item_feat",
-            shape=[self.n_items + 1, 1],
+        wide_item_embed = embedding_lookup(
+            indices=self.item_indices,
+            var_name="item_wide_var",
+            var_shape=(self.n_items + 1, 1),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        deep_user_feat = tf.get_variable(
-            name="deep_user_feat",
-            shape=[self.n_users + 1, self.embed_size],
+        deep_user_embed = embedding_lookup(
+            indices=self.user_indices,
+            var_name="user_deep_var",
+            var_shape=(self.n_users + 1, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        deep_item_feat = tf.get_variable(
-            name="deep_item_feat",
-            shape=[self.n_items + 1, self.embed_size],
+        deep_item_embed = embedding_lookup(
+            indices=self.item_indices,
+            var_name="item_deep_var",
+            var_shape=(self.n_items + 1, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
 
-        wide_user_embed = tf.nn.embedding_lookup(wide_user_feat, self.user_indices)
-        wide_item_embed = tf.nn.embedding_lookup(wide_item_feat, self.item_indices)
         self.wide_embed.extend([wide_user_embed, wide_item_embed])
-
-        deep_user_embed = tf.nn.embedding_lookup(deep_user_feat, self.user_indices)
-        deep_item_embed = tf.nn.embedding_lookup(deep_item_feat, self.item_indices)
         self.deep_embed.extend([deep_user_embed, deep_item_embed])
 
     def _build_sparse(self):
         self.sparse_indices = tf.placeholder(
             tf.int32, shape=[None, self.sparse_field_size]
         )
-
-        wide_sparse_feat = tf.get_variable(
-            name="wide_sparse_feat",
-            shape=[self.sparse_feature_size],
+        wide_sparse_embed = compute_sparse_feats(
+            self.data_info,
+            self.multi_sparse_combiner,
+            self.sparse_indices,
+            var_name="sparse_wide_var",
+            var_shape=[self.sparse_feature_size],
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        deep_sparse_feat = tf.get_variable(
-            name="deep_sparse_feat",
-            shape=[self.sparse_feature_size, self.embed_size],
+        deep_sparse_embed = compute_sparse_feats(
+            self.data_info,
+            self.multi_sparse_combiner,
+            self.sparse_indices,
+            var_name="sparse_deep_var",
+            var_shape=(self.sparse_feature_size, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
-        )
-
-        if self.data_info.multi_sparse_combine_info and self.multi_sparse_combiner in (
-            "sum",
-            "mean",
-            "sqrtn",
-        ):
-            wide_sparse_embed = multi_sparse_combine_embedding(
-                self.data_info,
-                wide_sparse_feat,
-                self.sparse_indices,
-                self.multi_sparse_combiner,
-                embed_size=1,
-            )
-            deep_sparse_embed = multi_sparse_combine_embedding(
-                self.data_info,
-                deep_sparse_feat,
-                self.sparse_indices,
-                self.multi_sparse_combiner,
-                self.embed_size,
-            )
-        else:
-            wide_sparse_embed = tf.nn.embedding_lookup(
-                wide_sparse_feat, self.sparse_indices
-            )
-            deep_sparse_embed = tf.nn.embedding_lookup(
-                deep_sparse_feat, self.sparse_indices
-            )
-
-        deep_sparse_embed = tf.reshape(
-            deep_sparse_embed, [-1, self.true_sparse_field_size * self.embed_size]
+            flatten=True,
         )
         self.wide_embed.append(wide_sparse_embed)
         self.deep_embed.append(deep_sparse_embed)
@@ -268,33 +248,20 @@ class WideDeep(TfBase, metaclass=ModelMeta):
         self.dense_values = tf.placeholder(
             tf.float32, shape=[None, self.dense_field_size]
         )
-        dense_values_reshape = tf.reshape(
-            self.dense_values, [-1, self.dense_field_size, 1]
-        )
-        batch_size = tf.shape(self.dense_values)[0]
-
-        wide_dense_feat = tf.get_variable(
-            name="wide_dense_feat",
-            shape=[self.dense_field_size],
+        wide_dense_embed = compute_dense_feats(
+            self.dense_values,
+            var_name="dense_wide_var",
+            var_shape=[self.dense_field_size],
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
         )
-        deep_dense_feat = tf.get_variable(
-            name="deep_dense_feat",
-            shape=[self.dense_field_size, self.embed_size],
+        deep_dense_embed = compute_dense_feats(
+            self.dense_values,
+            var_name="dense_deep_var",
+            var_shape=(self.dense_field_size, self.embed_size),
             initializer=tf.glorot_uniform_initializer(),
             regularizer=self.reg,
-        )
-
-        wide_dense_embed = tf.tile(wide_dense_feat, [batch_size])
-        wide_dense_embed = tf.reshape(wide_dense_embed, [-1, self.dense_field_size])
-        wide_dense_embed = tf.multiply(wide_dense_embed, self.dense_values)
-
-        deep_dense_embed = tf.expand_dims(deep_dense_feat, axis=0)
-        deep_dense_embed = tf.tile(deep_dense_embed, [batch_size, 1, 1])
-        deep_dense_embed = tf.multiply(deep_dense_embed, dense_values_reshape)
-        deep_dense_embed = tf.reshape(
-            deep_dense_embed, [-1, self.dense_field_size * self.embed_size]
+            flatten=True,
         )
         self.wide_embed.append(wide_dense_embed)
         self.deep_embed.append(deep_dense_embed)

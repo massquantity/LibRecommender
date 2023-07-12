@@ -1,7 +1,7 @@
 """Implementation of Caser."""
 from ..bases import DynEmbedBase, ModelMeta
 from ..embedding import normalize_embeds
-from ..layers import conv_nn, max_pool, tf_dense
+from ..layers import conv_nn, embedding_lookup, max_pool, tf_dense
 from ..tfops import dropout_config, reg_config, tf
 from ..utils.misc import count_params
 
@@ -75,8 +75,12 @@ class Caser(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
     <https://arxiv.org/pdf/1809.07426.pdf>`_.
     """
 
-    user_variables = ["user_feat"]
-    item_variables = ["item_embeds", "item_biases", "input_embeds"]
+    user_variables = ("embedding/user_embeds_var",)
+    item_variables = (
+        "embedding/item_embeds_var",
+        "embedding/item_bias_var",
+        "embedding/seq_embeds_var",
+    )
 
     def __init__(
         self,
@@ -157,52 +161,39 @@ class Caser(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.is_training = tf.placeholder_with_default(False, shape=[])
 
     def _build_variables(self):
-        self.user_feat = tf.get_variable(
-            name="user_feat",
-            shape=[self.n_users + 1, self.embed_size],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-
-        # weight and bias parameters for last fc_layer
-        self.item_biases = tf.get_variable(
-            name="item_biases",
-            shape=[self.n_items],
-            initializer=tf.zeros_initializer(),
-        )
-        self.item_embeds = tf.get_variable(
-            name="item_embeds",
-            shape=[self.n_items, self.embed_size * 2],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-
-        # input_embed for cnn_layer, include padding value
-        self.input_embeds = tf.get_variable(
-            name="input_embeds",
-            shape=[self.n_items + 1, self.embed_size],
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
+        with tf.variable_scope("embedding"):
+            # weight and bias parameters for last fc_layer
+            self.item_embeds = tf.get_variable(
+                name="item_embeds_var",
+                shape=(self.n_items, self.embed_size * 2),
+                initializer=tf.glorot_uniform_initializer(),
+                regularizer=self.reg,
+            )
+            self.item_biases = tf.get_variable(
+                name="item_bias_var",
+                shape=[self.n_items],
+                initializer=tf.zeros_initializer(),
+            )
 
     def _build_user_embeddings(self):
-        user_repr = tf.nn.embedding_lookup(self.user_feat, self.user_indices)
+        user_repr = embedding_lookup(
+            indices=self.user_indices,
+            var_name="user_embeds_var",
+            var_shape=(self.n_users + 1, self.embed_size),
+            initializer=tf.glorot_uniform_initializer(),
+            regularizer=self.reg,
+        )
         # B * seq * K
-        seq_item_embed = tf.nn.embedding_lookup(
-            self.input_embeds, self.user_interacted_seq
+        seq_item_embed = embedding_lookup(
+            indices=self.user_interacted_seq,
+            var_name="seq_embeds_var",
+            var_shape=(self.n_items + 1, self.embed_size),
+            initializer=tf.glorot_uniform_initializer(),
+            regularizer=self.reg,
         )
 
         convs_out = []
         for i in range(1, self.max_seq_len + 1):
-            # h_conv = tf.layers.conv1d(
-            #    inputs=seq_item_embed,
-            #    filters=self.nh_filters,
-            #    kernel_size=i,
-            #    strides=1,
-            #    padding="valid",
-            #    activation=tf.nn.relu
-            # )
-
             h_conv = conv_nn(
                 filters=self.nh_filters,
                 kernel_size=i,
