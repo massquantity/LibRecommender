@@ -4,7 +4,7 @@ import numpy as np
 from ..bases import ModelMeta, TfBase
 from ..batch.sequence import get_recent_seqs
 from ..feature.multi_sparse import true_sparse_field_size
-from ..layers import dense_nn, embedding_lookup, tf_dense
+from ..layers import dense_nn, din_attention, embedding_lookup, tf_attention, tf_dense
 from ..tfops import (
     compute_dense_feats,
     compute_sparse_feats,
@@ -343,53 +343,9 @@ class DIN(TfBase, metaclass=ModelMeta):
         # B * seq * K
         seq_total_embed = tf.concat(self.seq_embed, axis=2)
 
-        attention_layer = self._attention_unit(
-            item_total_embed, seq_total_embed, self.user_interacted_len
-        )
-        self.concat_embed.append(tf.keras.layers.Flatten()(attention_layer))
-
-    def _attention_unit(self, queries, keys, keys_len):
+        seq_mask = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
         if self.use_tf_attention:
-            query_masks = tf.cast(
-                tf.ones_like(tf.reshape(self.user_interacted_len, [-1, 1])),
-                dtype=tf.bool,
-            )
-            key_masks = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
-            queries = tf.expand_dims(queries, axis=1)
-            attention = tf.keras.layers.Attention(use_scale=False)
-            pooled_outputs = attention(
-                inputs=[queries, keys], mask=[query_masks, key_masks]
-            )
-            return pooled_outputs
+            attention_layer = tf_attention(item_total_embed, seq_total_embed, seq_mask)
         else:
-            # queries: B * K, keys: B * seq * K
-            queries = tf.expand_dims(queries, axis=1)
-            # B * seq * K
-            queries = tf.tile(queries, [1, self.max_seq_len, 1])
-            queries_keys_cross = tf.concat(
-                [queries, keys, queries - keys, queries * keys], axis=2
-            )
-            mlp_layer = dense_nn(
-                queries_keys_cross,
-                (16,),
-                use_bn=False,
-                activation=tf.nn.sigmoid,
-                name="attention",
-            )
-            # B * seq * 1
-            mlp_layer = tf_dense(units=1, activation=None)(mlp_layer)
-            # attention_weights = tf.transpose(mlp_layer, [0, 2, 1])
-            attention_weights = tf.keras.layers.Flatten()(mlp_layer)
-
-            key_masks = tf.sequence_mask(keys_len, self.max_seq_len)
-            paddings = tf.ones_like(attention_weights) * (-(2**32) + 1)
-            attention_scores = tf.where(key_masks, attention_weights, paddings)
-            attention_scores = tf.div_no_nan(
-                attention_scores,
-                tf.sqrt(tf.cast(keys.get_shape().as_list()[-1], tf.float32)),
-            )
-            # B * 1 * seq
-            attention_scores = tf.expand_dims(tf.nn.softmax(attention_scores), 1)
-            # B * 1 * K
-            pooled_outputs = attention_scores @ keys
-            return pooled_outputs
+            attention_layer = din_attention(item_total_embed, seq_total_embed, seq_mask)
+        self.concat_embed.append(attention_layer)

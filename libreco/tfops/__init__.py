@@ -1,4 +1,10 @@
-from .configs import dropout_config, lr_decay_config, reg_config, sess_config
+from .configs import (
+    attention_config,
+    dropout_config,
+    lr_decay_config,
+    reg_config,
+    sess_config,
+)
 from .features import (
     compute_dense_feats,
     compute_sparse_feats,
@@ -12,6 +18,7 @@ from .variables import get_variable_from_graph, modify_variable_names, var_list_
 from .version import TF_VERSION, get_tf_version, tf
 
 __all__ = [
+    "attention_config",
     "compute_dense_feats",
     "compute_sparse_feats",
     "dropout_config",
