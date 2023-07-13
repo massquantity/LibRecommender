@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
@@ -7,6 +9,7 @@ from libreco.layers import (
     dense_nn,
     layer_normalization,
     max_pool,
+    multi_head_attention,
     shared_dense,
     tf_dense,
     tf_rnn,
@@ -138,6 +141,24 @@ def test_layer_norm():
         sess.run(tf.global_variables_initializer())
         labels = np.array([-1, 1] * 5, dtype=np.float32).reshape(5, 2)
         assert_array_equal(sess.run(outputs), labels)
+
+
+@pytest.mark.skipif(
+    sys.version_info[:2] < (3, 7),
+    reason="Tensorflow doesn't have `MultiHeadAttention` layer before py3.7",
+)
+def test_multi_head_attention():
+    with tf.Session() as sess:
+        queries = tf.ones([2, 3, 4], dtype=tf.float32)
+        keys = tf.reshape(tf.range(30, dtype=tf.float32), (2, 5, 3))
+        output1 = multi_head_attention(
+            queries, keys, num_heads=4, head_dim=4, version="2.11"
+        )
+        output2 = multi_head_attention(
+            queries, keys, num_heads=4, head_dim=4, version="1.15"
+        )
+        sess.run(tf.global_variables_initializer())
+        assert sess.run(output1).shape == sess.run(output2).shape == (2, 3, 4)
 
 
 def test_config():

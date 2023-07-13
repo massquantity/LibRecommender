@@ -1,4 +1,4 @@
-from ..tfops import tf
+from ..tfops import get_tf_version, tf
 
 
 def tf_attention(queries, keys, key_masks):
@@ -63,7 +63,7 @@ def din_attention(queries, keys, key_masks):
     return tf.squeeze(outputs, axis=1)
 
 
-def multi_head_attention(queries, keys, num_heads, head_dim, use_residual):
+def multi_head_attention(queries, keys, num_heads, head_dim, version=None):
     """Multi-Head Attention proposed in `Attention Is All You Need` paper.
 
     Parameters
@@ -76,8 +76,8 @@ def multi_head_attention(queries, keys, num_heads, head_dim, use_residual):
         Number of attention heads.
     head_dim : int
         Dimension of each attention head.
-    use_residual : bool
-        Whether to use residual layer.
+    version : str
+        Specified tf version, mainly used for testing.
 
     Returns
     -------
@@ -85,12 +85,13 @@ def multi_head_attention(queries, keys, num_heads, head_dim, use_residual):
     """
     from ..layers import tf_dense
 
-    inputs = queries
-    # if len(inputs.get_shape().as_list()) == 2:
-    # if tf.__version__ >= "2.12":
-    # import tf MultiHeadAttention
-    output_dim = inputs.shape[-1]
+    # if len(queries.get_shape().as_list()) == 2:
+    tf_version = get_tf_version(version)
+    if tf_version >= "2.10.0":
+        att_layer = tf.keras.layers.MultiHeadAttention(num_heads, head_dim)
+        return att_layer(queries, keys)
 
+    output_dim = queries.shape[-1]
     mh_emb_size = num_heads * head_dim
     queries = tf_dense(mh_emb_size)(queries)
     keys = tf_dense(mh_emb_size)(keys)
@@ -108,6 +109,4 @@ def multi_head_attention(queries, keys, num_heads, head_dim, use_residual):
     # 1 * B * F * (K*H)
     outputs = tf.concat(tf.split(outputs, num_heads, axis=0), axis=-1)
     outputs = tf_dense(units=output_dim)(tf.squeeze(outputs, axis=0))
-    if use_residual:
-        outputs = tf.add(inputs, outputs)
     return outputs
