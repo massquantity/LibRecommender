@@ -164,9 +164,10 @@ class AutoInt(TfBase, metaclass=ModelMeta):
         att_block = tf.concat(self.concat_embed, axis=1)
         for head_dim in self.att_head_dims:
             # self-attention
-            att_block = multi_head_attention(
-                att_block, att_block, self.num_heads, head_dim, self.use_residual
+            mha_output = multi_head_attention(
+                att_block, att_block, self.num_heads, head_dim
             )
+            att_block = att_block + mha_output if self.use_residual else mha_output
 
         attention_layer = tf.keras.layers.Flatten()(att_block)
         self.output = tf.squeeze(tf_dense(units=1)(attention_layer), axis=-1)
