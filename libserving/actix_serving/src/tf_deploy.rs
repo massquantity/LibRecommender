@@ -5,7 +5,7 @@ use deadpool_redis::{redis::AsyncCommands, Pool};
 use serde_json::json;
 use tokio::sync::Semaphore;
 
-use crate::common::{Param, Prediction, Recommendation};
+use crate::common::{Payload, Prediction, Recommendation};
 use crate::errors::{ServingError, ServingResult};
 use crate::features::{build_cross_features, Features};
 use crate::redis_ops::{check_exists, get_multi_str, get_str, get_vec};
@@ -44,11 +44,11 @@ pub fn init_tf_state() -> TfAppState {
 
 #[post("/tf/recommend")]
 pub async fn tf_serving(
-    param: web::Json<Param>,
+    param: web::Json<Payload>,
     state: web::Data<TfAppState>,
     redis_pool: web::Data<Pool>,
 ) -> ServingResult<impl Responder> {
-    let Param { user, n_rec } = param.0;
+    let Payload { user, n_rec } = param.0;
     let mut conn = redis_pool.get().await?;
     log::info!("recommend {n_rec} items for user {user}");
 
@@ -150,7 +150,7 @@ mod tests {
         )
         .await;
 
-        let payload_1_rec = Param {
+        let payload_1_rec = Payload {
             user: String::from("10"),
             n_rec: 1,
         };
@@ -163,7 +163,7 @@ mod tests {
         let body: Recommendation = test::try_read_body_json(resp).await?;
         assert_eq!(body.rec_list.len(), 1);
 
-        let payload_10_rec = Param {
+        let payload_10_rec = Payload {
             user: String::from("10"),
             n_rec: 10,
         };

@@ -2,16 +2,16 @@ use actix_web::{post, web, Responder};
 use deadpool_redis::{Connection, Pool};
 use fnv::{FnvHashMap, FnvHashSet};
 
-use crate::common::{Param, Recommendation};
+use crate::common::{Payload, Recommendation};
 use crate::errors::{ServingError, ServingResult};
 use crate::redis_ops::{check_exists, get_multi_str, get_str, get_vec};
 
 #[post("/knn/recommend")]
 pub async fn knn_serving(
-    param: web::Json<Param>,
+    param: web::Json<Payload>,
     redis_pool: web::Data<Pool>,
 ) -> ServingResult<impl Responder> {
-    let Param { user, n_rec } = param.0;
+    let Payload { user, n_rec } = param.0;
     let mut conn = redis_pool.get().await?;
     log::info!("recommend {n_rec} items for user {user}");
 

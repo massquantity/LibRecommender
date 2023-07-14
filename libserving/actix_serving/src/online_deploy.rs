@@ -4,7 +4,7 @@ use actix_web::{post, web, Responder};
 use deadpool_redis::{redis::AsyncCommands, Pool};
 use serde_json::json;
 
-use crate::common::{RankedItems, RealtimeParam, Recommendation};
+use crate::common::{RankedItems, RealtimePayload, Recommendation};
 use crate::constants::{SEPARATE_FEAT_MODELS, SEQ_EMBED_MODELS, SPARSE_SEQ_MODELS};
 use crate::errors::ServingResult;
 use crate::features::{
@@ -16,11 +16,11 @@ use crate::tf_deploy::TfAppState;
 
 #[post("/online/recommend")]
 pub async fn online_serving(
-    param: web::Json<RealtimeParam>,
+    param: web::Json<RealtimePayload>,
     state: web::Data<TfAppState>,
     redis_pool: web::Data<Pool>,
 ) -> ServingResult<impl Responder> {
-    let RealtimeParam {
+    let RealtimePayload {
         user,
         n_rec,
         user_feats,
@@ -133,8 +133,92 @@ fn convert_items(ranked_items: &[u32], n_rec: usize, user_consumed: &[u32]) -> V
         .collect::<Vec<_>>()
 }
 
-// todo
-// #[cfg(test)]
-// mod tests {
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
 
-// }
+    use actix_web::http::{header::ContentType, StatusCode};
+    use actix_web::{dev::Service, middleware::Logger, test, App};
+    use pretty_assertions::assert_eq;
+    use serde_json::Value;
+
+    use crate::redis_ops::create_redis_pool;
+    use crate::tf_deploy::init_tf_state;
+
+    #[actix_web::test]
+    async fn test_online_serving() -> Result<(), Box<dyn std::error::Error>> {
+        std::env::set_var("RUST_LOG", "debug");
+        env_logger::init();
+        let logger = Logger::default();
+        let redis_pool = create_redis_pool(String::from("localhost"))?;
+        let tf_state = init_tf_state();
+        let app = test::init_service(
+            App::new()
+                .wrap(logger)
+                .app_data(web::Data::new(redis_pool))
+                .app_data(web::Data::new(tf_state))
+                .service(online_serving),
+        )
+        .await;
+
+        let user_feats = HashMap::from([
+            (String::from("sex"), Value::from("female")),
+            (String::from("age"), Value::from(12)),
+        ]);
+        let seq = vec![Value::from(1), Value::from("232")];
+
+        let payload_1_rec = RealtimePayload {
+            user: String::from("10"),
+            n_rec: 1,
+            user_feats: Some(user_feats),
+            seq: Some(seq),
+        };
+        let req = test::TestRequest::post()
+            .uri("/online/recommend")
+            .set_json(payload_1_rec)
+            .to_request();
+        let resp = test::try_call_service(&app, req).await?;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body: Recommendation = test::try_read_body_json(resp).await?;
+        assert_eq!(body.rec_list.len(), 1);
+
+        let payload_10_rec = RealtimePayload {
+            user: String::from("10"),
+            n_rec: 10,
+            user_feats: None,
+            seq: None,
+        };
+        let req = test::TestRequest::post()
+            .uri("/online/recommend")
+            .set_json(payload_10_rec)
+            .to_request();
+        let resp = test::try_call_service(&app, req).await?;
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body: Recommendation = test::try_read_body_json(resp).await?;
+        assert_eq!(body.rec_list.len(), 10);
+        Ok(())
+    }
+
+    #[actix_web::test]
+    async fn test_invalid_request() {
+        let redis_pool = create_redis_pool(String::from("localhost")).unwrap();
+        let tf_state = init_tf_state();
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(redis_pool))
+                .app_data(web::Data::new(tf_state))
+                .service(online_serving),
+        )
+        .await;
+
+        let payload = r#"{"user":10,"n_rec":1}"#.as_bytes(); // user not String
+        let req = test::TestRequest::post()
+            .uri("/online/recommend")
+            .insert_header(ContentType::json())
+            .set_payload(payload)
+            .to_request();
+        let resp = app.call(req).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+    }
+}

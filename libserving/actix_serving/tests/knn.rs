@@ -1,4 +1,4 @@
-use actix_serving::common::{Param, Recommendation};
+use actix_serving::common::{Payload, Recommendation};
 use pretty_assertions::assert_eq;
 
 mod common;
@@ -8,7 +8,7 @@ use common::{start_server, stop_server, InvalidParam};
 #[test]
 fn test_main_knn_serving() {
     start_server("knn");
-    let req = Param {
+    let req = Payload {
         user: String::from("10"),
         n_rec: 3,
     };
@@ -39,7 +39,7 @@ fn test_bad_request() {
 #[test]
 fn test_not_found() {
     start_server("knn");
-    let req = Param {
+    let req = Payload {
         user: String::from("10"),
         n_rec: 3,
     };
