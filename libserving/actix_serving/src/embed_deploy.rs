@@ -7,7 +7,7 @@ use deadpool_redis::Pool;
 use faiss::index::{IndexImpl, SearchResult};
 use faiss::{read_index, Index};
 
-use crate::common::{Param, Recommendation};
+use crate::common::{Payload, Recommendation};
 use crate::errors::{ServingError, ServingResult};
 use crate::faiss::find_index_path;
 use crate::redis_ops::{check_exists, get_multi_str, get_str, get_vec};
@@ -35,11 +35,11 @@ pub fn init_emb_state() -> EmbedAppState {
 
 #[post("/embed/recommend")]
 pub async fn embed_serving(
-    param: web::Json<Param>,
+    param: web::Json<Payload>,
     state: web::Data<EmbedAppState>,
     redis_pool: web::Data<Pool>,
 ) -> ServingResult<impl Responder> {
-    let Param { user, n_rec } = param.0;
+    let Payload { user, n_rec } = param.0;
     let mut conn = redis_pool.get().await?;
     log::info!("recommend {n_rec} items for user {user}");
 
@@ -52,7 +52,8 @@ pub async fn embed_serving(
     // let item_ids = rec_on_sim_embeds(&user_embed, n_rec, &consumed, state).await?;
     let item_ids = tokio::task::spawn_blocking(move || {
         rec_on_sim_embeds(&user_embed, n_rec, &consumed, state)
-    }).await??;
+    })
+    .await??;
     let recs = get_multi_str(&mut conn, "id2item", &item_ids).await?;
     Ok(web::Json(Recommendation { rec_list: recs }))
 }

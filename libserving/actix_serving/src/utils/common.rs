@@ -6,13 +6,13 @@ use serde_json::Value;
 use crate::errors::ServingError;
 
 #[derive(Serialize, Deserialize)]
-pub struct Param {
+pub struct Payload {
     pub user: String,
     pub n_rec: usize,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct RealtimeParam {
+pub struct RealtimePayload {
     pub user: String,
     pub n_rec: usize,
     pub user_feats: Option<HashMap<String, Value>>,
