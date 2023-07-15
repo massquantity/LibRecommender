@@ -4,6 +4,7 @@ from .dense import dense_nn, shared_dense, tf_dense
 from .embedding import embedding_lookup, seq_embeds_pooling, sparse_embeds_pooling
 from .normalization import layer_normalization, normalize_embeds
 from .recurrent import tf_rnn
+from .transformer import transformer_decoder_layer, transformer_encoder_layer
 
 __all__ = [
     "conv_nn",
@@ -20,4 +21,6 @@ __all__ = [
     "tf_attention",
     "tf_dense",
     "tf_rnn",
+    "transformer_decoder_layer",
+    "transformer_encoder_layer",
 ]

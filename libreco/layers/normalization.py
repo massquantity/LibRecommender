@@ -8,12 +8,8 @@ def layer_normalization(inputs, reuse_layer=False, scope_name="layer_norm"):
     reuse = tf.AUTO_REUSE if reuse_layer else None
     with tf.variable_scope(scope_name, reuse=reuse):
         dim = inputs.get_shape().as_list()[-1]
-        scale = tf.get_variable(
-            "layer_norm_scale", shape=[dim], initializer=tf.ones_initializer()
-        )
-        bias = tf.get_variable(
-            "layer_norm_bias", shape=[dim], initializer=tf.zeros_initializer()
-        )
+        scale = tf.get_variable("scale", shape=[dim], initializer=tf.ones_initializer())
+        bias = tf.get_variable("bias", shape=[dim], initializer=tf.zeros_initializer())
         mean = tf.reduce_mean(inputs, axis=-1, keepdims=True)
         variance = tf.reduce_mean(
             tf.squared_difference(inputs, mean), axis=-1, keepdims=True

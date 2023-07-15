@@ -13,7 +13,10 @@ from libreco.layers import (
     shared_dense,
     tf_dense,
     tf_rnn,
+    transformer_decoder_layer,
+    transformer_encoder_layer,
 )
+from libreco.layers.transformer import positional_encoding
 from libreco.tfops import dropout_config, reg_config, tf
 
 
@@ -151,14 +154,65 @@ def test_multi_head_attention():
     with tf.Session() as sess:
         queries = tf.ones([2, 3, 4], dtype=tf.float32)
         keys = tf.reshape(tf.range(30, dtype=tf.float32), (2, 5, 3))
+        rng = np.random.default_rng()
+        mask = tf.constant(rng.integers(0, 2, (2, 4, 3, 5), dtype=np.bool_))
         output1 = multi_head_attention(
-            queries, keys, num_heads=4, head_dim=4, version="2.11"
+            queries, keys, num_heads=4, head_dim=4, attention_mask=mask, version="2.11"
         )
         output2 = multi_head_attention(
-            queries, keys, num_heads=4, head_dim=4, version="1.15"
+            queries, keys, num_heads=4, head_dim=4, attention_mask=mask, version="1.15"
         )
         sess.run(tf.global_variables_initializer())
         assert sess.run(output1).shape == sess.run(output2).shape == (2, 3, 4)
+
+
+def test_positional_encoding():
+    tf.reset_default_graph()
+    with tf.Session() as sess:
+        pe = positional_encoding(3, 3)
+        sess.run(tf.global_variables_initializer())
+        assert sess.run(pe).shape == (3, 3)
+
+    tf.reset_default_graph()
+    with tf.Session() as sess:
+        pe2 = positional_encoding(10, 10)
+        sess.run(tf.global_variables_initializer())
+        assert sess.run(pe2).shape == (10, 10)
+
+
+def test_transformer_encoder():
+    tf.reset_default_graph()
+    with tf.Session() as sess:
+        batch_size = 2
+        max_seq_len = 3
+        embed_size = 4
+        num_heads = 2
+        head_dim = 2
+        seqs = tf.random.normal((batch_size, max_seq_len, embed_size))
+        seq_lens = tf.constant([1, 2])
+        output = transformer_encoder_layer(
+            seqs, seq_lens, max_seq_len, num_heads, head_dim, embed_size
+        )
+        sess.run(tf.global_variables_initializer())
+        assert sess.run(output).shape == (batch_size, max_seq_len, embed_size)
+
+
+def test_transformer_decoder():
+    tf.reset_default_graph()
+    with tf.Session() as sess:
+        batch_size = 2
+        max_seq_len = 3
+        embed_size = 4
+        num_heads = 2
+        head_dim = 2
+        seqs = tf.random.normal((batch_size, max_seq_len, embed_size))
+        seq_lens = tf.constant([3, 1])
+        encoder_output = tf.random.normal((batch_size, max_seq_len, embed_size))
+        output = transformer_decoder_layer(
+            encoder_output, seqs, seq_lens, max_seq_len, num_heads, head_dim, embed_size
+        )
+        sess.run(tf.global_variables_initializer())
+        assert sess.run(output).shape == (batch_size, max_seq_len, embed_size)
 
 
 def test_config():
