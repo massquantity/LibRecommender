@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package recommend;
+
+service Recommend {
+  rpc GetRecommendation(RecRequest) returns (RecResponse);
+}
+
+message RecRequest {
+  string user = 1;
+  int32 n_rec = 2;
+  map<string, Feature> user_feats = 3;
+  repeated int32 seq = 4;
+}
+
+message RecResponse {
+  repeated string items = 1;
+}
+
+message Feature {
+  oneof value {
+    string string_val = 1;
+    int32 int_val = 2;
+    float float_val = 3;
+  }
+}
