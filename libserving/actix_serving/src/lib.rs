@@ -1,6 +1,8 @@
 pub mod embed_deploy;
 pub mod knn_deploy;
 pub mod online_deploy;
+#[allow(clippy::too_many_arguments)]
+pub mod online_deploy_grpc;
 pub mod tf_deploy;
 pub mod utils;
 
