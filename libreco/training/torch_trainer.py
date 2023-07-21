@@ -93,7 +93,7 @@ class TorchTrainer(BaseTrainer):
         )
         n_batches = math.ceil(len(train_data) / self.batch_size)
         for epoch in range(1, self.n_epochs + 1):
-            if self.lr_decay:
+            if self.lr_decay and verbose > 0:
                 print(
                     f"With lr_decay, epoch {epoch} learning rate: "
                     f"{self.optimizer.param_groups[0]['lr']}"

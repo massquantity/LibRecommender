@@ -60,7 +60,7 @@ class TensorFlowTrainer(BaseTrainer):
             self.model, train_data, neg_sampling, self.batch_size, shuffle, num_workers
         )
         for epoch in range(1, self.n_epochs + 1):
-            if self.lr_decay:
+            if self.lr_decay and verbose > 0:
                 print(
                     f"With lr_decay, epoch {epoch} learning rate: "
                     f"{self.sess.run(self.lr)}"
