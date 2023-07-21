@@ -1,5 +1,6 @@
 import numpy as np
 
+from .activation import gelu
 from .attention import compute_causal_mask, compute_seq_mask, multi_head_attention
 from .dense import tf_dense
 from .normalization import layer_normalization
@@ -143,7 +144,7 @@ def positional_encoding(seq_len, d_model, trainable=False, scope_name="transform
         return pe_var
 
 
-def ffn(inputs, embed_size, scope_name="transformer"):
+def ffn(inputs, embed_size):
     """Feed forward network.
 
     Parameters
@@ -152,13 +153,11 @@ def ffn(inputs, embed_size, scope_name="transformer"):
         Shape: (batch_size, seq_len, embed_size)
     embed_size : int
         Output model size.
-    scope_name : str
 
     Returns
     -------
     Output shape: (batch_size, seq_len, embed_size)
     """
-    with tf.variable_scope(scope_name):
-        outputs = tf_dense(embed_size * 4, activation=tf.nn.relu, name="ffn_1")(inputs)
-        outputs = tf_dense(embed_size, name="ffn_2")(outputs)
-        return outputs
+    outputs = tf_dense(embed_size * 4, activation=gelu, name="ffn_1")(inputs)
+    outputs = tf_dense(embed_size, name="ffn_2")(outputs)
+    return outputs
