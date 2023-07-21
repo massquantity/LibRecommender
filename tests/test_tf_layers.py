@@ -2,7 +2,7 @@ import sys
 
 import numpy as np
 import pytest
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_allclose, assert_array_equal
 
 from libreco.layers import (
     conv_nn,
@@ -16,6 +16,7 @@ from libreco.layers import (
     transformer_decoder_layer,
     transformer_encoder_layer,
 )
+from libreco.layers.activation import gelu, swish
 from libreco.layers.transformer import positional_encoding
 from libreco.tfops import dropout_config, reg_config, tf
 
@@ -213,6 +214,24 @@ def test_transformer_decoder():
         )
         sess.run(tf.global_variables_initializer())
         assert sess.run(output).shape == (batch_size, max_seq_len, embed_size)
+
+
+def test_gelu():
+    with tf.Session() as sess:
+        inputs = tf.constant([-3.0, -1.0, 0.0, 1.0, 3.0], dtype=tf.float32)
+        output = gelu(inputs)
+        assert_allclose(
+            sess.run(output), [-0.00404951, -0.15865529, 0.0, 0.8413447, 2.9959507]
+        )
+
+
+def test_swish():
+    with tf.Session() as sess:
+        inputs = tf.constant([-3.0, -1.0, 0.0, 1.0, 3.0], dtype=tf.float32)
+        output = swish(inputs)
+        assert_allclose(
+            sess.run(output), [-0.142278, -0.268941, 0.0, 0.731059, 2.857722], rtol=1e-4
+        )
 
 
 def test_config():
