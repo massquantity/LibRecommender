@@ -30,28 +30,28 @@ def test_online_serving(online_model, close_server):
         json={"user": 1, "n_rec": 1},
         timeout=1,
     )
-    assert len(list(response.json().values())[0]) == 1
+    assert len(next(iter(response.json().values()))) == 1
 
     response = requests.post(
         "http://localhost:8000/online/recommend",
         json={"user": "uuu", "n_rec": 3},
         timeout=1,
     )
-    assert len(list(response.json().values())[0]) == 3
+    assert len(next(iter(response.json().values()))) == 3
 
     response = requests.post(
         "http://localhost:8000/online/recommend",
         json={"user": 2, "n_rec": 3, "user_feats": {"sex": "male"}},
         timeout=1,
     )
-    assert len(list(response.json().values())[0]) == 3
+    assert len(next(iter(response.json().values()))) == 3
 
     response = requests.post(
         "http://localhost:8000/online/recommend",
         json={"user": 2, "n_rec": 3, "seq": [1, 2, 3, 10, 11, 11, 22, 1, 0, -1, 12, 1]},
         timeout=1,
     )
-    assert len(list(response.json().values())[0]) == 3
+    assert len(next(iter(response.json().values()))) == 3
 
     response = requests.post(
         "http://localhost:8000/online/recommend",
@@ -64,7 +64,7 @@ def test_online_serving(online_model, close_server):
         timeout=1,
     )
     # noinspection PyUnresolvedReferences
-    assert len(list(response.json().values())[0]) == online_model.n_items
+    assert len(next(iter(response.json().values()))) == online_model.n_items
 
     response = requests.post(
         "http://localhost:8000/online/recommend",
