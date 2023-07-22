@@ -52,7 +52,7 @@ impl Recommend for RecommendService {
             log::info!("\nuser features: {:#?}", user_feats);
         }
         if !seq.is_empty() {
-            log::info!("\nsequence2: {:?}", seq);
+            log::info!("\nsequence: {:?}", seq);
         }
 
         let mut conn = self
@@ -95,9 +95,7 @@ impl Recommend for RecommendService {
         };
 
         let user_id = user_id.parse::<i32>().unwrap();
-        let n_rec = n_rec as usize;
-        let candidate_num = std::cmp::min(n_rec + user_consumed.len(), n_items) as i32;
-
+        let candidate_num = std::cmp::min(n_rec as usize + user_consumed.len(), n_items) as i32;
         let features = if SEQ_EMBED_MODELS.contains(&model_name) {
             self.build_seq_embed_features(
                 model_name,
@@ -154,7 +152,7 @@ impl Recommend for RecommendService {
     }
 }
 
-fn convert_items(ranked_items: &[i32], n_rec: usize, user_consumed: &[i32]) -> Vec<usize> {
+fn convert_items(ranked_items: &[i32], n_rec: i32, user_consumed: &[i32]) -> Vec<usize> {
     let user_consumed_set: HashSet<&i32> = HashSet::from_iter(user_consumed);
     ranked_items
         .iter()
@@ -165,7 +163,7 @@ fn convert_items(ranked_items: &[i32], n_rec: usize, user_consumed: &[i32]) -> V
                 None
             }
         })
-        .take(n_rec)
+        .take(n_rec as usize)
         .collect::<Vec<_>>()
 }
 
@@ -226,7 +224,7 @@ impl RecommendService {
         );
         features.insert(
             String::from("user_interacted_len"),
-            make_float_tensor_proto(&seq_lens, &[1]),
+            make_int64_tensor_proto(&seq_lens, &[1]),
         );
         features.insert(
             String::from("k"),
@@ -270,11 +268,11 @@ impl RecommendService {
             get_sparse_seq(user_consumed, n_items, conn, &user_seq).await;
         features.insert(
             String::from("item_interaction_indices"),
-            make_int_tensor_proto(&seq_sparse_indices, &[seq_sparse_values.len() as i64, 2]),
+            make_int64_tensor_proto(&seq_sparse_indices, &[seq_sparse_values.len() as i64, 2]),
         );
         features.insert(
             String::from("item_interaction_values"),
-            make_int_tensor_proto(&seq_sparse_values, &[seq_sparse_values.len() as i64]),
+            make_int64_tensor_proto(&seq_sparse_values, &[seq_sparse_values.len() as i64]),
         );
         features.insert(
             String::from("modified_batch_size"),
@@ -409,7 +407,8 @@ impl RecommendService {
 
         if CROSS_SEQ_MODELS.contains(&model_name) {
             let (seqs, seq_lens) =
-                get_seq(model_name, user_consumed, n_items, conn, &user_seq).await;
+                get_seq::<f64>(model_name, user_consumed, n_items, conn, &user_seq).await;
+            let seq_lens: Vec<f32> = seq_lens.into_iter().map(|i| i as f32).collect();
             features.insert(
                 String::from("user_interacted_seq"),
                 make_int_tensor_proto(&seqs, &[num, (seqs.len() as i64) / num]),
@@ -659,7 +658,7 @@ async fn get_sparse_seq(
     n_items: i32,
     conn: &mut RedisConnection,
     user_seq: &[i32],
-) -> (Vec<i32>, Vec<i32>) {
+) -> (Vec<i64>, Vec<i64>) {
     let max_seq_len: usize = conn.get("max_seq_len").await.unwrap();
     let mut seq_ids = Vec::new();
     for i in user_seq {
@@ -683,11 +682,11 @@ async fn get_sparse_seq(
         let indices = vec![vec![0, 0]; seq_len]
             .into_iter()
             .flatten()
-            .collect::<Vec<i32>>();
+            .collect::<Vec<i64>>();
         let src_start = original_seq.len() - seq_len;
         let values = original_seq[src_start..]
             .iter()
-            .map(|&i| if i < n_items { i } else { -1 })
+            .map(|&i| if i < n_items { i as i64 } else { -1 })
             .collect();
         (indices, values)
     };
@@ -695,13 +694,13 @@ async fn get_sparse_seq(
     (sparse_indices, sparse_values)
 }
 
-async fn get_seq(
+async fn get_seq<T: Clone + From<i32>>(
     model_name: &str,
     user_consumed: &[i32],
     n_items: i32,
     conn: &mut RedisConnection,
     user_seq: &[i32],
-) -> (Vec<i32>, Vec<f32>) {
+) -> (Vec<i32>, Vec<T>) {
     let repeat_num = if CROSS_FEAT_MODELS.contains(&model_name) {
         n_items
     } else {
@@ -742,8 +741,8 @@ async fn get_seq(
             .flatten()
             .collect::<Vec<i32>>()
     };
-
-    (res_seq, vec![res_seq_len as f32; repeat_num as usize])
+    let res_seq_len = vec![T::from(res_seq_len as i32); repeat_num as usize];
+    (res_seq, res_seq_len)
 }
 
 fn make_tensor_shape(shape: &[i64]) -> Option<TensorShapeProto> {
@@ -773,6 +772,16 @@ fn make_int_tensor_proto(value: &[i32], shape: &[i64]) -> TensorProto {
         dtype: DataType::DtInt32 as i32,
         tensor_shape,
         int_val: value.to_vec(),
+        ..Default::default()
+    }
+}
+
+fn make_int64_tensor_proto(value: &[i64], shape: &[i64]) -> TensorProto {
+    let tensor_shape = make_tensor_shape(shape);
+    TensorProto {
+        dtype: DataType::DtInt64 as i32,
+        tensor_shape,
+        int64_val: value.to_vec(),
         ..Default::default()
     }
 }

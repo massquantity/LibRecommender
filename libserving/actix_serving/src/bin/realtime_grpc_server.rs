@@ -4,7 +4,7 @@ use actix_serving::online_deploy_grpc::recommend_proto::recommend_server::Recomm
 use actix_serving::online_deploy_grpc::RecommendService;
 use actix_serving::redis_ops;
 
-#[tokio::main]
+#[tokio::main(worker_threads = 4)]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::env::set_var("RUST_LOG", "info");
     env_logger::init();

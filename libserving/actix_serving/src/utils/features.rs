@@ -25,7 +25,7 @@ pub(crate) enum Features {
     EmbedSeq {
         user_indices: Option<Vec<u32>>,
         #[serde(rename(serialize = "user_interacted_seq"))]
-        seqs: Vec<Vec<u32>>,
+        seqs: Vec<Vec<u32>>, // shape: (1, seq_len)
         #[serde(rename(serialize = "user_interacted_len"))]
         seq_lens: Vec<u32>,
         #[serde(rename(serialize = "k"))]
@@ -34,9 +34,9 @@ pub(crate) enum Features {
 
     SparseSeq {
         user_indices: Vec<u32>,
-        user_sparse_indices: Option<Vec<Vec<u32>>>,
+        user_sparse_indices: Option<Vec<Vec<u32>>>, // shape: (1, feat_len)
         user_dense_values: Option<Vec<Vec<f32>>>,
-        item_interaction_indices: Vec<Vec<i64>>,
+        item_interaction_indices: Vec<Vec<i64>>, // shape: (seq_len, 2)
         item_interaction_values: Vec<i64>,
         #[serde(rename(serialize = "modified_batch_size"))]
         batch_size: u32,
@@ -47,9 +47,9 @@ pub(crate) enum Features {
     Separate {
         user_indices: Vec<u32>,
         item_indices: Vec<u32>,
-        user_sparse_indices: Option<Vec<Vec<u32>>>,
+        user_sparse_indices: Option<Vec<Vec<u32>>>, // shape: (1, feat_len)
         user_dense_values: Option<Vec<Vec<f32>>>,
-        item_sparse_indices: Option<Vec<Vec<u32>>>,
+        item_sparse_indices: Option<Vec<Vec<u32>>>, // shape: (n_items, feat_len)
         item_dense_values: Option<Vec<Vec<f32>>>,
         #[serde(rename(serialize = "k"))]
         cand_num: Option<u32>,
@@ -58,10 +58,10 @@ pub(crate) enum Features {
     Cross {
         user_indices: Vec<u32>,
         item_indices: Vec<u32>,
-        sparse_indices: Option<Vec<Vec<u32>>>,
+        sparse_indices: Option<Vec<Vec<u32>>>, // shape: (n_items, feat_len)
         dense_values: Option<Vec<Vec<f32>>>,
         #[serde(rename(serialize = "user_interacted_seq"))]
-        seqs: Option<Vec<Vec<u32>>>,
+        seqs: Option<Vec<Vec<u32>>>, // shape: (n_items, seq_len)
         #[serde(rename(serialize = "user_interacted_len"))]
         seq_lens: Option<Vec<u32>>,
         #[serde(rename(serialize = "k"))]
