@@ -6,7 +6,7 @@ import numpy as np
 
 from .consumed import interaction_consumed, update_consumed
 from .data_info import DataInfo, store_old_info
-from .transformed import TransformedSet
+from .transformed import TransformedEvalSet, TransformedSet
 from ..feature.column_mapping import col_name2index
 from ..feature.multi_sparse import (
     get_multi_sparse_info,
@@ -115,7 +115,7 @@ class _Dataset(object):
 
         Returns
         -------
-        :class:`~libreco.data.TransformedSet`
+        :class:`~libreco.data.TransformedEvalSet`
             Transformed Data object used for evaluating.
         """
         return cls._transform_test_factory(eval_data, shuffle, seed)
@@ -139,7 +139,7 @@ class _Dataset(object):
 
         Returns
         -------
-        :class:`~libreco.data.TransformedSet`
+        :class:`~libreco.data.TransformedEvalSet`
             Transformed Data object used for testing.
         """
         return cls._transform_test_factory(test_data, shuffle, seed)
@@ -163,7 +163,7 @@ class _Dataset(object):
 
         Returns
         -------
-        :class:`~libreco.data.TransformedSet`
+        :class:`~libreco.data.TransformedEvalSet`
             Transformed Data object used for testing.
         """
         return cls._transform_test_factory(eval_data, shuffle, seed, data_info)
@@ -187,7 +187,7 @@ class _Dataset(object):
 
         Returns
         -------
-        :class:`~libreco.data.TransformedSet`
+        :class:`~libreco.data.TransformedEvalSet`
             Transformed Data object used for testing.
         """
         return cls._transform_test_factory(test_data, shuffle, seed, data_info)
@@ -722,16 +722,14 @@ def _build_transformed_set(
         # in case test_data has no label column, create dummy labels for consistency
         labels = np.zeros(len(data), dtype=np.float32)
 
-    transformed_data = TransformedSet(
-        user_indices, item_indices, labels, train=is_train
-    )
     if has_feats:
         return user_indices, item_indices, labels
 
     if is_train:
+        transformed_data = TransformedSet(user_indices, item_indices, labels)
         return transformed_data, user_indices, item_indices
     else:
-        return transformed_data
+        return TransformedEvalSet(user_indices, item_indices, labels)
 
 
 def _build_transformed_set_feat(
@@ -745,15 +743,15 @@ def _build_transformed_set_feat(
     user_indices, item_indices, labels = _build_transformed_set(
         data, user_unique_vals, item_unique_vals, is_train, is_ordered, has_feats=True
     )
+    if not is_train:
+        return TransformedEvalSet(user_indices, item_indices, labels)
 
     sparse_indices, dense_values, sparse_cols, multi_sparse_cols = _build_features(
         data, is_train, is_ordered, data_info
     )
     transformed_data = TransformedSet(
-        user_indices, item_indices, labels, sparse_indices, dense_values, train=is_train
+        user_indices, item_indices, labels, sparse_indices, dense_values
     )
-    if not is_train:
-        return transformed_data
 
     pure_data = transformed_data, user_indices, item_indices
     if not data_info:

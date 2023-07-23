@@ -29,7 +29,7 @@ from .metrics import (
     rmse,
     roc_gauc_score,
 )
-from ..data import TransformedSet
+from ..data import TransformedEvalSet
 
 
 def _check_metrics(task, metrics, k):
@@ -75,7 +75,7 @@ def evaluate(
     ----------
     model : Base
         Model for evaluation.
-    data : :class:`pandas.DataFrame` or :class:`~libreco.data.TransformedSet`
+    data : :class:`pandas.DataFrame` or :class:`~libreco.data.TransformedEvalSet`
         Data to evaluate.
     neg_sampling : bool
         Whether to perform negative sampling for evaluating data.
@@ -100,8 +100,8 @@ def evaluate(
     --------
     >>> eval_result = evaluate(model, data, neg_sampling=True, metrics=["roc_auc", "precision", "recall"])
     """
-    if not isinstance(data, (pd.DataFrame, TransformedSet)):
-        raise ValueError("`data` must be `pandas.DataFrame` or `TransformedSet`")
+    if not isinstance(data, (pd.DataFrame, TransformedEvalSet)):
+        raise ValueError("`data` must be `pandas.DataFrame` or `TransformedEvalSet`")
     data = build_eval_transformed_data(model, data, neg_sampling, seed)
     if not metrics:
         metrics = ["loss"]
@@ -158,7 +158,7 @@ def evaluate(
 def print_metrics(
     model,
     neg_sampling,
-    train_data=None,
+    # train_data=None,
     eval_data=None,
     metrics=None,
     eval_batch_size=8192,
@@ -176,9 +176,9 @@ def print_metrics(
         sample_user_num=sample_user_num,
         seed=seed,
     )
-    if train_data:
-        train_metrics = metrics_fn(data=train_data, metrics=[loss_name])
-        print(f"\t train {loss_name}: {train_metrics[loss_name]:.4f}")
+    # if train_data:
+    #    train_metrics = metrics_fn(data=train_data, metrics=[loss_name])
+    #    print(f"\t train {loss_name}: {train_metrics[loss_name]:.4f}")
     if eval_data:
         eval_metrics = metrics_fn(data=eval_data, metrics=metrics)
         for m, val in eval_metrics.items():

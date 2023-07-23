@@ -8,7 +8,7 @@ from .split import (
     split_by_ratio,
     split_by_ratio_chrono,
 )
-from .transformed import TransformedSet
+from .transformed import TransformedEvalSet, TransformedSet
 
 __all__ = [
     "DatasetPure",
@@ -23,4 +23,5 @@ __all__ = [
     "split_by_ratio_chrono",
     "random_split",
     "TransformedSet",
+    "TransformedEvalSet",
 ]
