@@ -28,8 +28,8 @@ def test_tf_serving(tf_model, close_server):
     response = requests.post(
         "http://localhost:8000/tf/recommend", json={"user": 1, "n_rec": 1}, timeout=1
     )
-    assert len(list(response.json().values())[0]) == 1
+    assert len(next(iter(response.json().values()))) == 1
     response = requests.post(
         "http://localhost:8000/tf/recommend", json={"user": 33, "n_rec": 3}, timeout=1
     )
-    assert len(list(response.json().values())[0]) == 3
+    assert len(next(iter(response.json().values()))) == 3
