@@ -26,8 +26,6 @@ class TransformedSet:
         All sparse rows in data, represented in inner id.
     dense_values : numpy.ndarray or None, default: None
         All dense rows in data.
-    train : bool, default: True
-        Whether it is train data.
 
     See Also
     --------
@@ -42,75 +40,15 @@ class TransformedSet:
         labels=None,
         sparse_indices=None,
         dense_values=None,
-        train=True,
     ):
         self._user_indices = user_indices
         self._item_indices = item_indices
         self._labels = labels
         self._sparse_indices = sparse_indices
         self._dense_values = dense_values
-        self.has_sampled = False
-        if train:
-            self._sparse_interaction = csr_matrix(
-                (labels, (user_indices, item_indices)), dtype=np.float32
-            )
-        if not train:
-            self.user_consumed, _ = interaction_consumed(user_indices, item_indices)
-
-        self.user_indices_orig = None
-        self.item_indices_orig = None
-        self.labels_orig = None
-        self.sparse_indices_orig = None
-        self.dense_values_orig = None
-
-    def build_negative_samples(
-        self, data_info, num_neg=1, item_gen_mode="random", seed=42
-    ):
-        """Perform negative sampling on all the data contained.
-
-        .. deprecated:: 1.1.0
-           Use ``neg_sampling`` parameter instead of explicitly calling this method
-           for negative sampling. See :ref:`Negative Sampling`.
-
-        Parameters
-        ----------
-        data_info : DataInfo
-            Object contains data information.
-        num_neg : int, default: 1
-            Number of negative samples for each positive sample.
-        item_gen_mode : str, default: 'random'
-            Sampling strategy, currently only 'random' is supported.
-        seed : int, default: 42
-            Random seed.
-        """
-        warnings.warn(
-            "`build_negative_samples` is deprecated, and it will be removed in the future. "
-            "Use `neg_sampling` parameter instead",
-            DeprecationWarning,
-            stacklevel=2,
+        self._sparse_interaction = csr_matrix(
+            (labels, (user_indices, item_indices)), dtype=np.float32
         )
-        self.has_sampled = True
-        self.user_indices_orig = self._user_indices
-        self.item_indices_orig = self._item_indices
-        self.labels_orig = self._labels
-        self.sparse_indices_orig = self._sparse_indices
-        self.dense_values_orig = self._dense_values
-        self._sampling_impl(data_info, num_neg, item_gen_mode, seed)
-
-    def _sampling_impl(self, data_info, num_neg=1, item_gen_mode="random", seed=42):
-        sparse_part = False if self.sparse_indices is None else True
-        dense_part = False if self.dense_values is None else True
-        neg = NegativeSampling(
-            self, data_info, num_neg, sparse=sparse_part, dense=dense_part
-        )
-
-        (
-            self._user_indices,
-            self._item_indices,
-            self._labels,
-            self._sparse_indices,
-            self._dense_values,
-        ) = neg.generate_all(seed=seed, item_gen_mode=item_gen_mode)
 
     def __len__(self):
         return len(self.labels)
