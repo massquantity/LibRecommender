@@ -4,12 +4,14 @@ from io import StringIO
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.testing import assert_array_equal
 from scipy.sparse import csr_matrix
 
 from libreco.data import (
     DataInfo,
     DatasetFeat,
     DatasetPure,
+    TransformedEvalSet,
     TransformedSet,
     process_data,
 )
@@ -142,6 +144,8 @@ def test_data_info(feat_train_data):
     data_info2 = DataInfo.load(os.path.curdir, "test")
     os.remove(os.path.join(os.path.curdir, "test_data_info.npz"))
     os.remove(os.path.join(os.path.curdir, "test_data_info_name_mapping.json"))
+    os.remove(os.path.join(os.path.curdir, "test_user_consumed.pkl"))
+    os.remove(os.path.join(os.path.curdir, "test_item_consumed.pkl"))
     assert data_info2.data_size == 10
     assert data_info.col_name_mapping == data_info2.col_name_mapping
 
@@ -168,3 +172,19 @@ def test_processing(feat_train_data):
             normalizer=normalizer,
             transformer=("log", "sqrt", "square"),
         )
+
+
+def test_transformed_evalset():
+    user_indices = [1, 2, 3, 4, 5]
+    item_indices = [2, 3, 1, 6, 8]
+    labels = [1, 1, 1, 1, 1]
+    data1 = TransformedEvalSet(user_indices, item_indices, labels)
+    data1.build_negatives(100, num_neg=3, seed=2222)
+
+    data2 = TransformedEvalSet(user_indices, item_indices, labels)
+    data2.build_negatives(100, num_neg=3, seed=2222)
+    assert_array_equal(data1.item_indices, data2.item_indices)
+
+    data3 = TransformedEvalSet(user_indices, item_indices, labels)
+    data3.build_negatives(100, num_neg=3, seed=1111)
+    assert np.any(data1.item_indices != data3.item_indices)

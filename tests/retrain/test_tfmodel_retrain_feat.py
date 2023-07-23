@@ -141,7 +141,7 @@ def test_tfmodel_retrain_feat():
     ptest_preds(new_model, "ranking", second_half_data, with_feats=False)
     ptest_recommends(new_model, new_data_info, second_half_data, with_feats=False)
 
-    with pytest.raises(ValueError, match="`data` must be `pandas.DataFrame` or `TransformedSet`"):  # fmt: skip
+    with pytest.raises(ValueError, match="`data` must be `pandas.DataFrame` or `TransformedEvalSet`"):  # fmt: skip
         _ = evaluate(new_model, eval_data_orig["user"], neg_sampling=True)
 
     new_eval_result = evaluate(
