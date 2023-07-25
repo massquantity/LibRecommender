@@ -7,7 +7,8 @@ from ..batch.sequence import get_recent_seqs
 from ..layers import normalize_embeds
 from ..recommendation import check_dynamic_rec_feats, rank_recommendations
 from ..recommendation.preprocess import process_embed_feat, process_embed_seq
-from ..tfops import get_feed_dict, get_variable_from_graph, sess_config, tf
+from ..tfops import get_variable_from_graph, sess_config, tf
+from ..tfops.features import get_feed_dict
 from ..utils.constants import SequenceModels
 from ..utils.save_load import load_tf_variables
 from ..utils.validate import check_seq_mode

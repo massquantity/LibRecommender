@@ -1,4 +1,6 @@
+from .variables import get_variable_from_graph
 from .version import tf
+from ..layers import embedding_lookup, layer_normalization
 
 
 def compute_sparse_feats(
@@ -144,6 +146,92 @@ def compute_dense_feats(
     if flatten:
         dense_embeds = tf.keras.layers.Flatten()(dense_embeds)
     return dense_embeds
+
+
+def combine_seq_features(data_info, feat_agg_mode):
+    """Aggregate all item features together for sequence attention.
+
+    This operation assumes all variables have been initialized before.
+
+    Parameters
+    ----------
+    data_info : `DataInfo` object.
+    feat_agg_mode : str
+        "concat" or "elementwise"
+    Returns
+    -------
+    Shape: V * K, where V is the total item num.
+    """
+    item_embeds = embedding_lookup(
+        indices=tf.range(data_info.n_items + 1, dtype=tf.int32),
+        var_name="item_embeds_var",
+        reuse_layer=True,
+    )
+    if data_info.item_sparse_unique is not None:
+        # contains unique sparse field indices for each item
+        item_sparse_fields = tf.convert_to_tensor(
+            data_info.item_sparse_unique, dtype=tf.int32
+        )
+        # V * F_sparse * K
+        sparse_embeds = embedding_lookup(
+            indices=item_sparse_fields,
+            var_name="sparse_embeds_var",
+            reuse_layer=True,
+        )
+    else:
+        sparse_embeds = None
+
+    if data_info.item_dense_unique is not None:
+        # V * F_dense, contains unique dense values for each item
+        item_dense_values = tf.convert_to_tensor(
+            data_info.item_dense_unique, dtype=tf.float32
+        )
+        dense_embeds_var = get_variable_from_graph("dense_embeds_var", "embedding")
+        # F_dense * K
+        item_dense_embeds = tf.gather(dense_embeds_var, data_info.item_dense_col.index)
+        # V * F_dense * K
+        dense_embeds = tf.multiply(
+            item_dense_values[:, :, tf.newaxis], item_dense_embeds[tf.newaxis, :, :]
+        )
+    else:
+        dense_embeds = None
+
+    if feat_agg_mode == "concat":
+        return _concat_features(item_embeds, sparse_embeds, dense_embeds)
+    else:
+        return _elementwise_features(item_embeds, sparse_embeds, dense_embeds)
+
+
+def _concat_features(item_embeds, sparse_embeds, dense_embeds):
+    if sparse_embeds is not None:
+        sparse_embeds = tf.keras.layers.Flatten()(sparse_embeds)
+    if dense_embeds is not None:
+        dense_embeds = tf.keras.layers.Flatten()(dense_embeds)
+
+    if sparse_embeds is not None and dense_embeds is not None:
+        return tf.concat([item_embeds, sparse_embeds, item_embeds], axis=1)
+    elif sparse_embeds is not None:
+        return tf.concat([item_embeds, sparse_embeds], axis=1)
+    elif dense_embeds is not None:
+        return tf.concat([item_embeds, dense_embeds], axis=1)
+    else:
+        return item_embeds
+
+
+def _elementwise_features(item_embeds, sparse_embeds, dense_embeds):
+    if sparse_embeds is not None:
+        sparse_embeds = tf.reduce_sum(layer_normalization(sparse_embeds), axis=1)
+    if dense_embeds is not None:
+        dense_embeds = tf.reduce_sum(layer_normalization(dense_embeds), axis=1)
+
+    if sparse_embeds is not None and dense_embeds is not None:
+        return item_embeds * (sparse_embeds + dense_embeds + 1.0)
+    elif sparse_embeds is not None:
+        return item_embeds * (sparse_embeds + 1.0)
+    elif dense_embeds is not None:
+        return item_embeds * (dense_embeds + 1.0)
+    else:
+        return item_embeds
 
 
 def get_feed_dict(

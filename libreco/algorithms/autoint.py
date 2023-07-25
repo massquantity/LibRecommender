@@ -2,14 +2,8 @@
 from ..bases import ModelMeta, TfBase
 from ..feature.multi_sparse import true_sparse_field_size
 from ..layers import embedding_lookup, multi_head_attention, tf_dense
-from ..tfops import (
-    attention_config,
-    compute_dense_feats,
-    compute_sparse_feats,
-    dropout_config,
-    reg_config,
-    tf,
-)
+from ..tfops import attention_config, dropout_config, reg_config, tf
+from ..tfops.features import compute_dense_feats, compute_sparse_feats
 from ..utils.validate import (
     check_dense_values,
     check_multi_sparse,

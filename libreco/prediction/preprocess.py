@@ -109,6 +109,7 @@ def _set_dense_values(dense_values, col_mapping, feat_dict):
 def get_cached_seqs(model, user_id, repeat):
     if not SequenceModels.contains(model.model_name):
         return None, None
+    # user_id is 2d
     seqs = model.recent_seqs[user_id]
     seq_len = model.recent_seq_lens[user_id]
     if repeat:
