@@ -6,13 +6,11 @@ from ..feature.multi_sparse import true_sparse_field_size
 from ..layers import dense_nn, normalize_embeds, sparse_embeds_pooling
 from ..recommendation import check_dynamic_rec_feats
 from ..recommendation.preprocess import process_embed_feat, process_sparse_embed_seq
-from ..tfops import (
+from ..tfops import dropout_config, reg_config, tf
+from ..tfops.features import (
     compute_dense_feats,
     compute_sparse_feats,
-    dropout_config,
     get_sparse_feed_dict,
-    reg_config,
-    tf,
 )
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params

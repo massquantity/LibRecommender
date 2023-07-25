@@ -1,7 +1,7 @@
 import numpy as np
 
 from ..prediction.preprocess import get_cached_seqs, set_temp_feats
-from ..tfops import get_feed_dict
+from ..tfops.features import get_feed_dict
 
 
 def process_sparse_embed_seq(model, user_id, seq, inner_id):

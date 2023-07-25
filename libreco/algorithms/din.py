@@ -3,15 +3,12 @@ import numpy as np
 
 from ..bases import ModelMeta, TfBase
 from ..batch.sequence import get_recent_seqs
-from ..feature.multi_sparse import true_sparse_field_size
 from ..layers import dense_nn, din_attention, embedding_lookup, tf_attention, tf_dense
-from ..tfops import (
+from ..tfops import dropout_config, reg_config, tf
+from ..tfops.features import (
+    combine_seq_features,
     compute_dense_feats,
     compute_sparse_feats,
-    dropout_config,
-    get_variable_from_graph,
-    reg_config,
-    tf,
 )
 from ..torchops import hidden_units_config
 from ..utils.misc import count_params
@@ -165,34 +162,56 @@ class DIN(TfBase, metaclass=ModelMeta):
             self.multi_sparse_combiner = check_multi_sparse(
                 data_info, multi_sparse_combiner
             )
-            self.true_sparse_field_size = true_sparse_field_size(
-                data_info, self.sparse_field_size, self.multi_sparse_combiner
-            )
         if self.dense:
             self.dense_field_size = dense_field_size(data_info)
-        self.item_sparse = True if data_info.item_sparse_unique is not None else False
-        self.item_dense = True if data_info.item_dense_unique is not None else False
-        if self.item_sparse:
-            # item sparse col indices in all sparse cols
-            self.item_sparse_col_indices = data_info.item_sparse_col.index
-        if self.item_dense:
-            # item dense col indices in all dense cols
-            self.item_dense_col_indices = data_info.item_dense_col.index
 
     def build_model(self):
         tf.set_random_seed(self.seed)
-        self.concat_embed, self.item_embed, self.seq_embed = [], [], []
         self._build_placeholders()
-        self._build_user_item()
-        if self.sparse:
-            self._build_sparse()
-        if self.dense:
-            self._build_dense()
-        self._build_seq_attention()
+        user_embed = embedding_lookup(
+            indices=self.user_indices,
+            var_name="user_embeds_var",
+            var_shape=(self.n_users + 1, self.embed_size),
+            initializer=tf.glorot_uniform_initializer(),
+            regularizer=self.reg,
+        )
+        item_embed = embedding_lookup(
+            indices=self.item_indices,
+            var_name="item_embeds_var",
+            var_shape=(self.n_items + 1, self.embed_size),
+            initializer=tf.glorot_uniform_initializer(),
+            regularizer=self.reg,
+        )
+        concat_embeds = [user_embed, item_embed]
 
-        concat_embed = tf.concat(self.concat_embed, axis=1)
+        if self.sparse:
+            sparse_embed = compute_sparse_feats(
+                self.data_info,
+                self.multi_sparse_combiner,
+                self.sparse_indices,
+                var_name="sparse_embeds_var",
+                var_shape=(self.sparse_feature_size, self.embed_size),
+                initializer=tf.glorot_uniform_initializer(),
+                regularizer=self.reg,
+                flatten=True,
+            )
+            concat_embeds.append(sparse_embed)
+        if self.dense:
+            dense_embed = compute_dense_feats(
+                self.dense_values,
+                var_name="dense_embeds_var",
+                var_shape=(self.dense_field_size, self.embed_size),
+                initializer=tf.glorot_uniform_initializer(),
+                regularizer=self.reg,
+                flatten=True,
+            )
+            concat_embeds.append(dense_embed)
+
+        item_seq_feats = combine_seq_features(self.data_info, feat_agg_mode="concat")
+        attention_embeds = self._build_seq_attention(item_seq_feats)
+        dense_inputs = tf.concat([*concat_embeds, attention_embeds], axis=1)
         mlp_layer = dense_nn(
-            concat_embed,
+            dense_inputs,
             self.hidden_units,
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
@@ -222,130 +241,13 @@ class DIN(TfBase, metaclass=ModelMeta):
                 tf.float32, shape=[None, self.dense_field_size]
             )
 
-    def _build_user_item(self):
-        user_embed = embedding_lookup(
-            indices=self.user_indices,
-            var_name="user_embeds_var",
-            var_shape=(self.n_users + 1, self.embed_size),
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-        item_embed = embedding_lookup(
-            indices=self.item_indices,
-            var_name="item_embeds_var",
-            var_shape=(self.n_items + 1, self.embed_size),
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-        )
-        self.concat_embed.extend([user_embed, item_embed])
-        self.item_embed.append(item_embed)
-
-    def _build_sparse(self):
-        sparse_embed = compute_sparse_feats(
-            self.data_info,
-            self.multi_sparse_combiner,
-            self.sparse_indices,
-            var_name="sparse_embeds_var",
-            var_shape=(self.sparse_feature_size, self.embed_size),
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-            flatten=True,
-        )
-        self.concat_embed.append(sparse_embed)
-
-        if self.item_sparse:
-            all_sparse_embed = embedding_lookup(
-                self.sparse_indices, var_name="sparse_embeds_var", reuse_layer=True
-            )
-            item_sparse_embed = tf.keras.layers.Flatten()(
-                tf.gather(all_sparse_embed, self.item_sparse_col_indices, axis=1)
-            )
-            self.item_embed.append(item_sparse_embed)
-
-    def _build_dense(self):
-        dense_embed = compute_dense_feats(
-            self.dense_values,
-            var_name="dense_embeds_var",
-            var_shape=(self.dense_field_size, self.embed_size),
-            initializer=tf.glorot_uniform_initializer(),
-            regularizer=self.reg,
-            flatten=False,
-        )
-        self.concat_embed.append(tf.keras.layers.Flatten()(dense_embed))
-
-        if self.item_dense:
-            item_dense_embed = tf.keras.layers.Flatten()(
-                tf.gather(dense_embed, self.item_dense_col_indices, axis=1)
-            )
-            self.item_embed.append(item_dense_embed)
-
-    def _build_seq_attention(self):
-        # B * seq * K
-        seq_item_embed = embedding_lookup(
-            indices=self.user_interacted_seq,
-            var_name="item_embeds_var",  # variable must exist since previous initialized in `build_item`
-            reuse_layer=True,
-        )
-        self.seq_embed.append(seq_item_embed)
-
-        if self.item_sparse:
-            # contains unique sparse field indices for each item
-            item_sparse_fields = tf.convert_to_tensor(
-                self.data_info.item_sparse_unique, dtype=tf.int64
-            )
-            item_sparse_fields_num = tf.shape(item_sparse_fields)[1]
-
-            # B * seq * F_sparse
-            seq_sparse_fields = tf.gather(item_sparse_fields, self.user_interacted_seq)
-            # B * seq * F_sparse * K
-            seq_sparse_embed = embedding_lookup(
-                indices=seq_sparse_fields,
-                var_name="sparse_embeds_var",  # variable must exist since previous initialized in `build_sparse`
-                reuse_layer=True,
-            )
-            # B * seq * FK
-            seq_sparse_embed = tf.reshape(
-                seq_sparse_embed,
-                [-1, self.max_seq_len, item_sparse_fields_num * self.embed_size],
-            )
-            self.seq_embed.append(seq_sparse_embed)
-
-        if self.item_dense:
-            # contains unique dense values for each item
-            item_dense_values = tf.convert_to_tensor(
-                self.data_info.item_dense_unique, dtype=tf.float32
-            )
-            item_dense_fields_num = tf.shape(item_dense_values)[1]
-            # B * seq * F_dense
-            seq_dense_values = tf.gather(item_dense_values, self.user_interacted_seq)
-            # B * seq * F_dense * 1
-            seq_dense_values = tf.expand_dims(seq_dense_values, axis=-1)
-
-            batch_size = tf.shape(seq_dense_values)[0]
-            dense_embeds_var = get_variable_from_graph("dense_embeds_var", "embedding")
-            # 1 * 1 * F_dense * K
-            dense_embed = tf.reshape(
-                tf.gather(dense_embeds_var, self.item_dense_col_indices),
-                [1, 1, item_dense_fields_num, self.embed_size],
-            )
-            # B * seq * F_dense * K
-            # Since dense_embeddings are same for all items, we can simply repeat it (batch * seq) times
-            seq_dense_embed = tf.tile(dense_embed, [batch_size, self.max_seq_len, 1, 1])
-            # B * seq * FK
-            seq_dense_embed = tf.reshape(
-                seq_dense_embed * seq_dense_values,
-                [-1, self.max_seq_len, item_dense_fields_num * self.embed_size],
-            )
-            self.seq_embed.append(seq_dense_embed)
-
+    def _build_seq_attention(self, item_seq_feats):
         # B * K
-        item_total_embed = tf.concat(self.item_embed, axis=1)
+        item_embeds = tf.nn.embedding_lookup(item_seq_feats, self.item_indices)
         # B * seq * K
-        seq_total_embed = tf.concat(self.seq_embed, axis=2)
-
+        seq_embeds = tf.nn.embedding_lookup(item_seq_feats, self.user_interacted_seq)
         seq_mask = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
         if self.use_tf_attention:
-            attention_layer = tf_attention(item_total_embed, seq_total_embed, seq_mask)
+            return tf_attention(item_embeds, seq_embeds, seq_mask)
         else:
-            attention_layer = din_attention(item_total_embed, seq_total_embed, seq_mask)
-        self.concat_embed.append(attention_layer)
+            return din_attention(item_embeds, seq_embeds, seq_mask)

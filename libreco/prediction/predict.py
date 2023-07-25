@@ -10,7 +10,7 @@ from .preprocess import (
     get_original_feats,
     set_temp_feats,
 )
-from ..tfops import get_feed_dict
+from ..tfops.features import get_feed_dict
 from ..utils.validate import check_unknown
 
 
