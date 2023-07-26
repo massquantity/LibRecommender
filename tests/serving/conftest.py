@@ -1,12 +1,14 @@
 import subprocess
-import time
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 import redis
+import requests
 import tensorflow as tf
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 from libreco.algorithms import (
     ALS,
@@ -35,14 +37,26 @@ def redis_client():
 
 
 @pytest.fixture
+def session():
+    Retry.DEFAULT_BACKOFF_MAX = 0.8
+    retries = Retry(total=50, backoff_factor=0.08)
+    s = requests.Session()
+    s.mount("http://", HTTPAdapter(max_retries=retries))
+    s.mount("https://", HTTPAdapter(max_retries=retries))
+    yield s
+    s.close()
+
+
+@pytest.fixture
 def close_server():
     yield
-    subprocess.run(["pkill", "sanic"], check=False)
+    # subprocess.run("kill $(lsof -t -i:8000 -sTCP:LISTEN)", shell=True, check=True)
+    subprocess.run(["pkill", "sanic"], check=True)
     subprocess.run("kill $(lsof -t -i:8501 -sTCP:LISTEN)", shell=True, check=False)
     r = redis.Redis()
     r.flushdb()
     r.close()
-    time.sleep(1)
+    # time.sleep(1)
 
 
 @pytest.fixture

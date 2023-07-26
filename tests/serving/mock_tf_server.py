@@ -19,4 +19,6 @@ async def tf_serving(request: Request, model_name: str) -> HTTPResponse:
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8501, debug=False, access_log=False)
+    app.run(
+        host="0.0.0.0", port=8501, debug=False, access_log=False, single_process=True
+    )

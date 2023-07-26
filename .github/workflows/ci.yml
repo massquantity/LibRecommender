@@ -50,19 +50,19 @@ jobs:
         uses: shogo82148/actions-setup-redis@v1
         with:
           redis-version: '7.x'
-        if: matrix.python-version != '3.6'
+        if: matrix.python-version == '3.8' || matrix.python-version == '3.11'
 
       - name: Test Redis
         run: redis-cli ping
-        if: matrix.python-version != '3.6'
+        if: matrix.python-version == '3.8' || matrix.python-version == '3.11'
 
-      - name: Test for python3.6
+      - name: Test without serving
         run: |
-          python -m pip install pytest coverage
-          coverage run -m pytest tests/ --ignore="tests/serving"
-        if: matrix.python-version == '3.6'
+          python -m pip install pytest
+          python -m pytest tests/ --ignore="tests/serving"
+        if: matrix.python-version != '3.8' && matrix.python-version != '3.11'
 
-      - name: Test with pytest and coverage
+      - name: Test full
         run: |
           python -m pip install -r requirements-serving.txt
           bash tests/serving/setup_coverage.sh
@@ -70,7 +70,7 @@ jobs:
           coverage run -m pytest tests/
           coverage combine && coverage report
           coverage xml
-        if: matrix.python-version != '3.6'
+        if: matrix.python-version == '3.8' || matrix.python-version == '3.11'
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
@@ -80,7 +80,7 @@ jobs:
           name: python${{ matrix.python-version }}-test
           fail_ci_if_error: false
           verbose: true
-        if: matrix.python-version == '3.7' || matrix.python-version == '3.8' || matrix.python-version == '3.9'
+        if: matrix.python-version == '3.8'
 
       - name: Upload coverage to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1
