@@ -134,7 +134,7 @@ class SageBase(EmbedBase):
             blocks, start_nodes, sparse_indices, dense_values = astuple(item_data)
             return self.torch_model(blocks, start_nodes, sparse_indices, dense_values)
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def set_embeddings(self):
         assert isinstance(self.neighbor_walker, NeighborWalker)
         self.torch_model.eval()
@@ -154,7 +154,7 @@ class SageBase(EmbedBase):
             self.item_embeds_np = np.concatenate(item_embed, axis=0)
         self.user_embeds_np = self._compute_user_embeddings()
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def _compute_user_embeddings(self):
         self.torch_model.eval()
         user_embed = []

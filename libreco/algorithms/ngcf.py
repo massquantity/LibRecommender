@@ -134,7 +134,7 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
         if self.loss_type not in ("cross_entropy", "focal", "bpr", "max_margin"):
             raise ValueError(f"unsupported `loss_type` for NGCF: {self.loss_type}")
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def set_embeddings(self):
         self.torch_model.eval()
         embeddings = self.torch_model.embedding_propagation(use_dropout=False)
