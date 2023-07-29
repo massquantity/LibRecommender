@@ -2,6 +2,7 @@
 from .torch_modules import PinSageModel
 from ..bases import ModelMeta, SageBase
 from ..graph import NeighborWalker
+from ..torchops import set_torch_seed
 
 
 class PinSage(SageBase, metaclass=ModelMeta, backend="torch"):
@@ -175,6 +176,7 @@ class PinSage(SageBase, metaclass=ModelMeta, backend="torch"):
         self.termination_prob = termination_prob
 
     def build_model(self):
+        set_torch_seed(self.seed)
         self.neighbor_walker = NeighborWalker(self, self.data_info)
         self.torch_model = PinSageModel(
             self.paradigm,

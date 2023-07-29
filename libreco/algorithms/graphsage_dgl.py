@@ -9,6 +9,7 @@ from ..graph import (
     build_u2i_hetero_graph,
     check_dgl,
 )
+from ..torchops import set_torch_seed
 
 
 @check_dgl
@@ -194,6 +195,7 @@ class GraphSageDGL(SageBase, metaclass=ModelMeta, backend="torch"):
             )
 
     def build_model(self):
+        set_torch_seed(self.seed)
         self._dgl.seed(self.seed)
         self.homo_g = build_i2i_homo_graph(
             self.n_items, self.user_consumed, self.data_info.item_consumed

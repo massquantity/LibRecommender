@@ -43,7 +43,8 @@ class BatchData(torch.utils.data.Dataset):
         return math.ceil(length / self.factor) if self.factor is not None else length
 
 
-def get_batch_loader(model, data, neg_sampling, batch_size, shuffle, num_workers=0):
+def get_batch_loader(model, data, neg_sampling, batch_size, shuffle, num_workers, seed):
+    torch.manual_seed(seed)
     use_features = True if FeatModels.contains(model.model_name) else False
     factor = (
         model.num_walks * model.sample_walk_len

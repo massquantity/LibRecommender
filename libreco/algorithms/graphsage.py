@@ -2,6 +2,7 @@
 from .torch_modules import GraphSageModel
 from ..bases import ModelMeta, SageBase
 from ..graph import NeighborWalker
+from ..torchops import set_torch_seed
 
 
 class GraphSage(SageBase, metaclass=ModelMeta, backend="torch"):
@@ -167,6 +168,7 @@ class GraphSage(SageBase, metaclass=ModelMeta, backend="torch"):
         self.all_args = locals()
 
     def build_model(self):
+        set_torch_seed(self.seed)
         self.neighbor_walker = NeighborWalker(self, self.data_info)
         self.torch_model = GraphSageModel(
             self.paradigm,

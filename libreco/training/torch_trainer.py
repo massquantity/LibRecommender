@@ -89,7 +89,13 @@ class TorchTrainer(BaseTrainer):
     ):
         self._check_params()
         data_loader = get_batch_loader(
-            self.model, train_data, neg_sampling, self.batch_size, shuffle, num_workers
+            self.model,
+            train_data,
+            neg_sampling,
+            self.batch_size,
+            shuffle,
+            num_workers,
+            self.model.seed,
         )
         n_batches = math.ceil(len(train_data) / self.batch_size)
         for epoch in range(1, self.n_epochs + 1):
