@@ -34,7 +34,7 @@ def transformer_encoder_layer(
     Output shape: (batch_size, seq_len, embed_size)
     """
     with tf.variable_scope("transformer_encoder"):
-        att_mask = compute_seq_mask(max_seq_len, seq_lens, max_seq_len, num_heads)
+        att_mask = compute_seq_mask(seq_lens, max_seq_len, num_heads)
 
         pe = positional_encoding(max_seq_len, embed_size)[tf.newaxis, :, :]
         # scale the inputs before adding pe
@@ -82,8 +82,8 @@ def transformer_decoder_layer(
     Output shape: (batch_size, seq_len, embed_size)
     """
     with tf.variable_scope("transformer_decoder"):
-        seq_mask = compute_seq_mask(max_seq_len, seq_lens, max_seq_len, num_heads)
-        causal_mask = compute_causal_mask(tf.shape(seqs)[0], num_heads, max_seq_len)
+        seq_mask = compute_seq_mask(seq_lens, max_seq_len, num_heads)
+        causal_mask = compute_causal_mask(tf.shape(seqs)[0], max_seq_len, num_heads)
         att_mask = seq_mask & causal_mask
 
         pe = positional_encoding(max_seq_len, embed_size)[tf.newaxis, :, :]
@@ -144,20 +144,20 @@ def positional_encoding(seq_len, d_model, trainable=False, scope_name="transform
         return pe_var
 
 
-def ffn(inputs, embed_size):
+def ffn(inputs, output_dim):
     """Feed forward network.
 
     Parameters
     ----------
     inputs : tf.Tensor
         Shape: (batch_size, seq_len, embed_size)
-    embed_size : int
+    output_dim : int
         Output model size.
 
     Returns
     -------
     Output shape: (batch_size, seq_len, embed_size)
     """
-    outputs = tf_dense(embed_size * 4, activation=gelu, name="ffn_1")(inputs)
-    outputs = tf_dense(embed_size, name="ffn_2")(outputs)
+    outputs = tf_dense(output_dim * 4, activation=gelu, use_bias=False)(inputs)
+    outputs = tf_dense(output_dim, use_bias=False)(outputs)
     return outputs
