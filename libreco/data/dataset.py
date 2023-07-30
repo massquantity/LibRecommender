@@ -253,6 +253,7 @@ class DatasetPure(_Dataset):
             item_consumed=item_consumed,
             user_unique_vals=cls.user_unique_vals,
             item_unique_vals=cls.item_unique_vals,
+            seed=seed,
         )
         cls.train_called = True
         return train_transformed, data_info
@@ -319,6 +320,7 @@ class DatasetPure(_Dataset):
             item_consumed=item_consumed,
             user_unique_vals=cls.user_unique_vals,
             item_unique_vals=cls.item_unique_vals,
+            seed=seed,
         )
         new_data_info.old_info = store_old_info(data_info)
         cls.train_called = True
@@ -537,6 +539,7 @@ class DatasetFeat(_Dataset):
             sparse_oov,
             cls.multi_sparse_unique_vals,
             multi_sparse_info,
+            seed,
         )
         cls.train_called = True
         return train_transformed, data_info
@@ -667,6 +670,7 @@ class DatasetFeat(_Dataset):
             sparse_oov,
             cls.multi_sparse_unique_vals,
             multi_sparse_info,
+            seed,
         )
         new_data_info.old_info = store_old_info(data_info)
         cls.train_called = True

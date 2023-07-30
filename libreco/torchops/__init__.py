@@ -1,4 +1,4 @@
-from .configs import device_config, hidden_units_config
+from .configs import device_config, hidden_units_config, set_torch_seed
 from .loss import (
     binary_cross_entropy_loss,
     bpr_loss,
@@ -21,4 +21,5 @@ __all__ = [
     "pairwise_bce_loss",
     "pairwise_focal_loss",
     "rebuild_torch_model",
+    "set_torch_seed",
 ]

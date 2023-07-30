@@ -112,6 +112,7 @@ class NCF(TfBase, metaclass=ModelMeta):
         self.seed = seed
 
     def build_model(self):
+        tf.set_random_seed(self.seed)
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices = tf.placeholder(tf.int32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])

@@ -125,10 +125,9 @@ class TransformedEvalSet:
         """
         set_random_seed(seed)
         self.has_sampled = True
-        self.user_indices_orig = self.user_indices
         # use original users and items to sample
         items_neg = self._sample_neg_items(
-            self.user_indices, self.item_indices, n_items, num_neg, seed
+            self.user_indices, self.item_indices, n_items, num_neg
         )
         self.user_indices = np.repeat(self.user_indices, num_neg + 1)
         self.item_indices = np.repeat(self.item_indices, num_neg + 1)
@@ -139,10 +138,10 @@ class TransformedEvalSet:
         for i in range(num_neg):
             self.item_indices[(i + 1) :: (num_neg + 1)] = items_neg[i::num_neg]
 
-    def _sample_neg_items(self, users, items, n_items, num_neg, seed):
+    def _sample_neg_items(self, users, items, n_items, num_neg):
         user_consumed_set = {u: set(uis) for u, uis in self.user_consumed.items()}
         return negatives_from_unconsumed(
-            user_consumed_set, users, items, n_items, num_neg, seed
+            user_consumed_set, users, items, n_items, num_neg
         )
 
     def __len__(self):

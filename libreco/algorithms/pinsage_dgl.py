@@ -4,6 +4,7 @@ import importlib
 from .torch_modules import PinSageDGLModel
 from ..bases import ModelMeta, SageBase
 from ..graph import NeighborWalkerDGL, build_u2i_hetero_graph, check_dgl
+from ..torchops import set_torch_seed
 
 
 @check_dgl
@@ -188,6 +189,7 @@ class PinSageDGL(SageBase, metaclass=ModelMeta, backend="torch"):
         self.termination_prob = termination_prob
 
     def build_model(self):
+        set_torch_seed(self.seed)
         self._dgl.seed(self.seed)
         self.hetero_g = build_u2i_hetero_graph(
             self.n_users, self.n_items, self.user_consumed

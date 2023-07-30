@@ -3,7 +3,7 @@ import torch
 
 from .torch_modules import LightGCNModel
 from ..bases import EmbedBase, ModelMeta
-from ..torchops import device_config
+from ..torchops import device_config, set_torch_seed
 
 
 class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
@@ -114,6 +114,7 @@ class LightGCN(EmbedBase, metaclass=ModelMeta, backend="torch"):
         self._check_params()
 
     def build_model(self):
+        set_torch_seed(self.seed)
         self.torch_model = LightGCNModel(
             self.n_users,
             self.n_items,

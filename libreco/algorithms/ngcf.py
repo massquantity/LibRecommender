@@ -3,7 +3,7 @@ import torch
 
 from .torch_modules import NGCFModel
 from ..bases import EmbedBase, ModelMeta
-from ..torchops import device_config, hidden_units_config
+from ..torchops import device_config, hidden_units_config, set_torch_seed
 
 
 class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
@@ -117,6 +117,7 @@ class NGCF(EmbedBase, metaclass=ModelMeta, backend="torch"):
         self._check_params()
 
     def build_model(self):
+        set_torch_seed(self.seed)
         self.torch_model = NGCFModel(
             self.n_users,
             self.n_items,

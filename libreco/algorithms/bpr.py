@@ -159,6 +159,7 @@ class BPR(EmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.item_embeds_np[:, self.embed_size] = 0.0
 
     def _build_model_tf(self):
+        tf.set_random_seed(self.seed)
         self.user_indices = tf.placeholder(tf.int32, shape=[None])
         self.item_indices_pos = tf.placeholder(tf.int32, shape=[None])
         self.item_indices_neg = tf.placeholder(tf.int32, shape=[None])

@@ -20,3 +20,13 @@ def hidden_units_config(hidden_units):
         if not isinstance(i, int):
             raise ValueError(f"`hidden_units` contains not int value: {hidden_units}")
     return list(hidden_units)
+
+
+def set_torch_seed(seed):
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        # torch.backends.cudnn.deterministic = True
+        # torch.backends.cudnn.benchmark = False
+        # torch.use_deterministic_algorithms(True)

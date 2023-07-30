@@ -87,6 +87,8 @@ class DataInfo:
         All multi-sparse features' unique values.
     multi_sparse_combine_info : MultiSparseInfo or None, default: None
         Multi-sparse field information.
+    seed: int, default: 42
+        Random seed.
 
     Attributes
     ----------
@@ -119,6 +121,7 @@ class DataInfo:
         sparse_oov=None,
         multi_sparse_unique_vals=None,
         multi_sparse_combine_info=None,
+        seed=42,
     ):
         self.col_name_mapping = col_name_mapping
         self.interaction_data = interaction_data
@@ -140,7 +143,7 @@ class DataInfo:
         )
         # Numpy doc states that it is recommended to use new random API
         # https://numpy.org/doc/stable/reference/random/index.html
-        self.np_rng = np.random.default_rng()
+        self.np_rng = np.random.default_rng(seed)
         self._n_users = None
         self._n_items = None
         self._user2id = None
@@ -519,8 +522,8 @@ class DataInfo:
                 hparams[arg] = pd.DataFrame(
                     info[arg], columns=["user", "item", "label"]
                 )
-            elif arg == "multi_sparse_combine_info":
-                # numpy can save MultiSparseInfo in 0-d array.
+            elif arg in ("multi_sparse_combine_info", "seed"):
+                # numpy can save MultiSparseInfo and seed in 0-d array.
                 hparams[arg] = info[arg].item()
             elif arg.startswith("unique_"):
                 if "sparse_unique_vals" not in hparams:
