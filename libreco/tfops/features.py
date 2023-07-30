@@ -220,9 +220,11 @@ def _concat_features(item_embeds, sparse_embeds, dense_embeds):
 
 def _elementwise_features(item_embeds, sparse_embeds, dense_embeds):
     if sparse_embeds is not None:
-        sparse_embeds = tf.reduce_sum(layer_normalization(sparse_embeds), axis=1)
+        with tf.variable_scope("elementwise_sparse_feats"):
+            sparse_embeds = tf.reduce_sum(layer_normalization(sparse_embeds), axis=1)
     if dense_embeds is not None:
-        dense_embeds = tf.reduce_sum(layer_normalization(dense_embeds), axis=1)
+        with tf.variable_scope("elementwise_dense_feats"):
+            dense_embeds = tf.reduce_sum(layer_normalization(dense_embeds), axis=1)
 
     if sparse_embeds is not None and dense_embeds is not None:
         return item_embeds * (sparse_embeds + dense_embeds + 1.0)

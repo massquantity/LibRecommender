@@ -158,10 +158,10 @@ def test_multi_head_attention():
         rng = np.random.default_rng()
         mask = tf.constant(rng.integers(0, 2, (2, 4, 3, 5), dtype=np.bool_))
         output1 = multi_head_attention(
-            queries, keys, num_heads=4, head_dim=4, attention_mask=mask, version="2.11"
+            queries, keys, num_heads=4, head_dim=4, mask=mask, version="2.11"
         )
         output2 = multi_head_attention(
-            queries, keys, num_heads=4, head_dim=4, attention_mask=mask, version="1.15"
+            queries, keys, num_heads=4, head_dim=4, mask=mask, version="1.15"
         )
         sess.run(tf.global_variables_initializer())
         assert sess.run(output1).shape == sess.run(output2).shape == (2, 3, 4)
