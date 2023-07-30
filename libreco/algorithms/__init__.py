@@ -18,6 +18,7 @@ from .pinsage_dgl import PinSageDGL
 from .rnn4rec import RNN4Rec
 from .svd import SVD
 from .svdpp import SVDpp
+from .transformer import Transformer
 from .two_tower import TwoTower
 from .user_cf import UserCF
 from .wave_net import WaveNet
@@ -52,4 +53,5 @@ __all__ = [
     "GraphSage",
     "GraphSageDGL",
     "TwoTower",
+    "Transformer",
 ]

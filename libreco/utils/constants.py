@@ -21,6 +21,7 @@ class FeatModels(StrEnum):
     PINSAGE = "PinSage"
     PINSAGEDGL = "PinSageDGL"
     TWOTOWER = "TwoTower"
+    TRANSFORMER = "Transformer"
 
 
 @unique
@@ -31,6 +32,7 @@ class SequenceModels(StrEnum):
     RNN4REC = "RNN4Rec"
     CASER = "Caser"
     WAVENET = "WaveNet"
+    TRANSFORMER = "Transformer"
 
 
 @unique
@@ -50,6 +52,7 @@ class TfTrainModels(StrEnum):
     CASER = "Caser"
     WAVENET = "WaveNet"
     TWOTOWER = "TwoTower"
+    TRANSFORMER = "Transformer"
 
 
 @unique
