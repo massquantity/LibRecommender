@@ -10,7 +10,6 @@ from .dense import dense_nn, shared_dense, tf_dense
 from .embedding import embedding_lookup, seq_embeds_pooling, sparse_embeds_pooling
 from .normalization import layer_normalization, normalize_embeds
 from .recurrent import tf_rnn
-from .transformer import ffn, transformer_decoder_layer, transformer_encoder_layer
 
 __all__ = [
     "compute_causal_mask",
@@ -19,7 +18,6 @@ __all__ = [
     "dense_nn",
     "din_attention",
     "embedding_lookup",
-    "ffn",
     "layer_normalization",
     "max_pool",
     "multi_head_attention",
@@ -30,6 +28,4 @@ __all__ = [
     "tf_attention",
     "tf_dense",
     "tf_rnn",
-    "transformer_decoder_layer",
-    "transformer_encoder_layer",
 ]

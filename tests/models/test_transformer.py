@@ -23,8 +23,8 @@ from tests.utils_save_load import save_load_model
     [
         (False, None, True, 1, 1, False, "concat"),
         (True, 0.001, False, 2, 2, True, "elementwise"),
-        (True, None, False, 3, 1, False, "concat"),
-        (True, None, False, 3, 1, False, "whatever"),
+        (True, None, False, 11, 1, False, "concat"),
+        (True, None, False, 1, 1, False, "whatever"),
     ],
 )
 def test_transformer(
@@ -49,7 +49,7 @@ def test_transformer(
     elif feat_agg_mode == "whatever":
         with pytest.raises(ValueError):
             _ = Transformer(task, data_info, loss_type, feat_agg_mode=feat_agg_mode)
-    elif num_heads == 3:
+    elif num_heads == 11:
         with pytest.raises(AssertionError):
             Transformer(task, data_info, loss_type, num_heads=num_heads).fit(
                 train_data, neg_sampling

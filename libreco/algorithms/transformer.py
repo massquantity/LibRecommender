@@ -8,12 +8,13 @@ from ..layers import (
     compute_seq_mask,
     dense_nn,
     embedding_lookup,
-    ffn,
     layer_normalization,
     multi_head_attention,
     tf_attention,
     tf_dense,
 )
+from ..layers.activation import swish
+from ..layers.transformer import ffn, positional_encoding
 from ..tfops import dropout_config, reg_config, tf
 from ..tfops.features import (
     combine_seq_features,
@@ -62,6 +63,7 @@ class Transformer(TfBase, metaclass=ModelMeta):
         random_num=None,
         num_heads=1,
         num_tfm_layers=1,
+        positional_embedding="trainable",
         use_causal_mask=False,
         feat_agg_mode="concat",
         multi_sparse_combiner="sqrtn",
@@ -87,6 +89,7 @@ class Transformer(TfBase, metaclass=ModelMeta):
         self.hidden_units = hidden_units_config(hidden_units)
         self.num_heads = num_heads
         self.num_tfm_layers = num_tfm_layers
+        self.positional_embedding = positional_embedding
         self.use_causal_mask = use_causal_mask
         self.feat_agg_mode = feat_agg_mode
         self.seq_mode, self.max_seq_len = check_seq_mode(recent_num, random_num)
@@ -158,12 +161,13 @@ class Transformer(TfBase, metaclass=ModelMeta):
             )
             concat_embeds.append(dense_embed)
 
-        item_seq_feats = combine_seq_features(self.data_info, self.feat_agg_mode)
-        seq_embeds = self._build_seq_repr(item_seq_feats)
+        self.seq_feats = combine_seq_features(self.data_info, self.feat_agg_mode)
+        seq_embeds = self._build_seq_repr()
         dense_inputs = tf.concat([*concat_embeds, seq_embeds], axis=1)
         mlp_layer = dense_nn(
             dense_inputs,
             self.hidden_units,
+            activation=swish,
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
             is_training=self.is_training,
@@ -192,23 +196,30 @@ class Transformer(TfBase, metaclass=ModelMeta):
                 tf.float32, shape=[None, self.dense_field_size]
             )
 
-    def _build_seq_repr(self, item_seq_feats):
+    def _build_seq_repr(self):
         # B * K
-        item_embeds = tf.nn.embedding_lookup(item_seq_feats, self.item_indices)
+        item_embeds = tf.nn.embedding_lookup(self.seq_feats, self.item_indices)
         # B * seq * K
-        seq_embeds = tf.nn.embedding_lookup(item_seq_feats, self.user_interacted_seq)
+        seq_embeds = tf.nn.embedding_lookup(self.seq_feats, self.user_interacted_seq)
 
-        tfm_mask = self._transformer_mask(tf.shape(seq_embeds)[0])
-        output_dim = item_embeds.get_shape().as_list()[-1]
+        # item feature dim + position dim
+        output_dim = item_embeds.get_shape().as_list()[-1] + self.embed_size
         assert output_dim % self.num_heads == 0, (
             f"`item_dim`({output_dim}) should be divisible by `num_heads`({self.num_heads})"
         )  # fmt: skip
+
+        batch_size = tf.shape(seq_embeds)[0]
+        pos_embeds = self._positional_embedding(batch_size, self.embed_size)
+        seq_embeds = tf.concat([seq_embeds, pos_embeds], axis=2)
+        tfm_mask = self._transformer_mask(batch_size)
         head_dim = output_dim // self.num_heads
         for i in range(self.num_tfm_layers):
             seq_embeds = self._transformer_layer(
                 seq_embeds, i, head_dim, tfm_mask, output_dim
             )
 
+        item_pos_padding = tf.ones(shape=(tf.shape(item_embeds)[0], self.embed_size))
+        item_embeds = tf.concat([item_embeds, item_pos_padding], axis=1)
         att_mask = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
         return tf_attention(item_embeds, seq_embeds, att_mask)
 
@@ -227,7 +238,21 @@ class Transformer(TfBase, metaclass=ModelMeta):
             self.user_interacted_len, self.max_seq_len, self.num_heads
         )
         if self.use_causal_mask:
-            tfm_mask = tfm_mask & compute_causal_mask(
+            causal_mask = compute_causal_mask(
                 batch_size, self.max_seq_len, self.num_heads
             )
+            tfm_mask = tf.logical_and(tfm_mask, causal_mask)
         return tfm_mask
+
+    def _positional_embedding(self, batch_size, dim):
+        if self.positional_embedding in ("sinusoidal", "sin", "sinusoid"):
+            pos_embeds = positional_encoding(self.max_seq_len, dim, trainable=False)
+        else:
+            with tf.variable_scope("transformer", reuse=tf.AUTO_REUSE):
+                pos_embeds = tf.get_variable(
+                    "positional_encoding",
+                    shape=(self.max_seq_len, dim),
+                    initializer=tf.glorot_uniform_initializer(),
+                    trainable=True,
+                )
+        return tf.tile(pos_embeds[tf.newaxis, :, :], (batch_size, 1, 1))
