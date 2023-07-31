@@ -164,6 +164,7 @@ class Transformer(TfBase, metaclass=ModelMeta):
         mlp_layer = dense_nn(
             dense_inputs,
             self.hidden_units,
+            activation=swish,
             use_bn=self.use_bn,
             dropout_rate=self.dropout_rate,
             is_training=self.is_training,
