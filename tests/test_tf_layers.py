@@ -13,11 +13,13 @@ from libreco.layers import (
     shared_dense,
     tf_dense,
     tf_rnn,
+)
+from libreco.layers.activation import gelu, swish
+from libreco.layers.transformer import (
+    positional_encoding,
     transformer_decoder_layer,
     transformer_encoder_layer,
 )
-from libreco.layers.activation import gelu, swish
-from libreco.layers.transformer import positional_encoding
 from libreco.tfops import dropout_config, reg_config, tf
 
 
