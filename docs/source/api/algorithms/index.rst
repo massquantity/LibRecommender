@@ -31,3 +31,4 @@ Algorithms
    pinsage
    pinsage_dgl
    two_tower
+   transformer
