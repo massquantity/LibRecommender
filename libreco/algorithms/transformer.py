@@ -116,6 +116,9 @@ class Transformer(TfBase, metaclass=ModelMeta):
 
     [2] *Gabriel de Souza Pereira et al.* `Transformers4Rec: Bridging the Gap between NLP and Sequential / Session-Based Recommendation
     <https://dl.acm.org/doi/10.1145/3460231.3474255>`_.
+
+    [3] *Biao Zhang & Rico Sennrich.* `Root Mean Square Layer Normalization
+    <https://arxiv.org/pdf/1910.07467.pdf>`_.
     """
 
     user_variables = ("embedding/user_embeds_var",)
