@@ -10,6 +10,7 @@ from libreco.layers import (
     layer_normalization,
     max_pool,
     multi_head_attention,
+    rms_norm,
     shared_dense,
     tf_dense,
     tf_rnn,
@@ -147,6 +148,15 @@ def test_layer_norm():
         sess.run(tf.global_variables_initializer())
         labels = np.array([-1, 1] * 5, dtype=np.float32).reshape(5, 2)
         assert_array_equal(sess.run(outputs), labels)
+
+
+def test_rms_norm():
+    with tf.Session() as sess:
+        inputs = np.arange(10).reshape(5, 2) * 10
+        outputs = rms_norm(tf.constant(inputs, dtype=tf.float32))
+        sess.run(tf.global_variables_initializer())
+        labels = inputs / np.sqrt(np.mean(np.square(inputs), axis=-1, keepdims=True))
+        assert_allclose(sess.run(outputs), labels, rtol=1e-4)
 
 
 @pytest.mark.skipif(

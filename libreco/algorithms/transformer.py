@@ -8,8 +8,8 @@ from ..layers import (
     compute_seq_mask,
     dense_nn,
     embedding_lookup,
-    layer_normalization,
     multi_head_attention,
+    rms_norm,
     tf_attention,
     tf_dense,
 )
@@ -294,25 +294,29 @@ class Transformer(TfBase, metaclass=ModelMeta):
         seq_embeds = tf.concat([seq_embeds, pos_embeds], axis=2)
         tfm_mask = self._transformer_mask(batch_size)
         head_dim = output_dim // self.num_heads
-        for i in range(self.num_tfm_layers):
+        for layer in range(self.num_tfm_layers):
             seq_embeds = self._transformer_layer(
-                seq_embeds, i, head_dim, tfm_mask, output_dim
+                seq_embeds, layer, head_dim, tfm_mask, output_dim
             )
+        seq_embeds = rms_norm(seq_embeds, scope_name="rms_norm_last")
 
-        item_pos_padding = tf.ones(shape=(tf.shape(item_embeds)[0], self.embed_size))
+        item_embeds = rms_norm(item_embeds, scope_name="rms_norm_item")
+        item_pos_padding = tf.ones(shape=(batch_size, self.embed_size))
         item_embeds = tf.concat([item_embeds, item_pos_padding], axis=1)
         att_mask = tf.sequence_mask(self.user_interacted_len, self.max_seq_len)
         return tf_attention(item_embeds, seq_embeds, att_mask)
 
-    def _transformer_layer(self, x, i, head_dim, mask, output_dim):
-        with tf.variable_scope(f"transformer_layer{i+1}"):
-            att_outputs = multi_head_attention(
-                x, x, self.num_heads, head_dim, mask, output_dim
+    def _transformer_layer(self, inputs, layer, head_dim, mask, output_dim):
+        with tf.variable_scope(f"transformer_layer{layer+1}"):
+            x = rms_norm(inputs, scope_name="rms_norm_att")
+            att_out = (
+                multi_head_attention(x, x, self.num_heads, head_dim, mask, output_dim)
+                + inputs
             )
-            x = layer_normalization(x + att_outputs, scope_name="ln_att")
 
-            ffn_outputs = ffn(x, output_dim)
-            return layer_normalization(x + ffn_outputs, scope_name="ln_ffn")
+            x = rms_norm(att_out, scope_name="rms_norm_ffn")
+            ffn_out = ffn(x, output_dim)
+            return att_out + ffn_out
 
     def _transformer_mask(self, batch_size):
         tfm_mask = compute_seq_mask(
