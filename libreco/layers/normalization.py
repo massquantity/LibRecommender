@@ -18,6 +18,17 @@ def layer_normalization(inputs, reuse_layer=False, scope_name="layer_norm"):
         return outputs * scale + bias
 
 
+def rms_norm(inputs, reuse_layer=False, scope_name="rms_norm"):
+    """Root mean square layer normalization."""
+    reuse = tf.AUTO_REUSE if reuse_layer else None
+    with tf.variable_scope(scope_name, reuse=reuse):
+        dim = inputs.get_shape().as_list()[-1]
+        scale = tf.get_variable("scale", shape=[dim], initializer=tf.ones_initializer())
+        mean_square = tf.reduce_mean(tf.square(inputs), axis=-1, keepdims=True)
+        outputs = inputs * tf.rsqrt(mean_square + 1e-8)
+        return outputs * scale
+
+
 def normalize_embeds(*embeds, backend):
     normed_embeds = []
     for e in embeds:
