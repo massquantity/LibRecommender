@@ -51,7 +51,7 @@ def _check_metrics(task, metrics, k):
 
 def sample_users(data, seed, num):
     np_rng = np.random.default_rng(seed)
-    unique_users = list(data.user_consumed)
+    unique_users = list(data.positive_consumed)
     if isinstance(num, numbers.Integral) and 0 < num < len(unique_users):
         users = np_rng.choice(unique_users, num, replace=False).tolist()
     else:
@@ -133,7 +133,7 @@ def evaluate(
         if LISTWISE_METRICS.intersection(metrics):
             users = sample_users(data, seed, sample_user_num)
             num_batch_users = max(1, math.floor(eval_batch_size / model.n_items))
-            y_trues = data.user_consumed
+            y_trues = data.positive_consumed
             y_recos = compute_recommends(model, users, k, num_batch_users)
             for m in metrics:
                 if m not in LISTWISE_METRICS:
