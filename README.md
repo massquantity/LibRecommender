@@ -204,7 +204,11 @@ If you are using Python 3.6, you also need to install [dataclasses](https://gith
 
 LibRecommender has been tested under TensorFlow 1.15, 2.6, 2.10 and 2.12. If you encounter any problem during running, feel free to open an issue.
 
-**Known issue**: Sometimes one may encounter errors like `ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject`. In this case try upgrading numpy, and version 1.22.0 or higher is probably a safe option.
+**Known issue**:
++ Sometimes one may encounter errors like `ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject`. In this case try upgrading numpy, and version 1.22.0 or higher is probably a safe option.
++ When saving a TensorFlow model for serving, you might encounter the error message: `Fatal Python error: Segmentation fault (core dumped)`.
+  This issue is most likely related to the `protobuf` library, so you should follow the official recommended [version](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/tools/pip_package/setup.py#L98) 
+  based on your local tensorflow version. In general, it's advisable to use protobuf < 4.24.0.
 
 The table below shows some compatible version combinations: 
 
