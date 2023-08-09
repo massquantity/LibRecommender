@@ -188,3 +188,19 @@ def test_transformed_evalset():
     data3 = TransformedEvalSet(user_indices, item_indices, labels)
     data3.build_negatives(100, num_neg=3, seed=1111)
     assert np.any(data1.item_indices != data3.item_indices)
+
+    user_indices = [1, 2, 1, 4, 1]
+    item_indices = [2, 3, 1, 6, 8]
+    labels = [1, 1, 0, 0, 1]
+    data4 = TransformedEvalSet(user_indices, item_indices, labels)
+    assert np.sort(data4.positive_consumed[1]).tolist() == [2, 8]
+    assert data4.positive_consumed[2] == [3]
+    assert 4 not in data4.positive_consumed
+
+    user_indices = [1, 2, 1, 4, 1]
+    item_indices = [2, 3, 1, 6, 8]
+    labels = [0, 0, 0, 0, 0]
+    data5 = TransformedEvalSet(user_indices, item_indices, labels)
+    assert np.sort(data5.positive_consumed[1]).tolist() == [1, 2, 8]
+    assert data5.positive_consumed[2] == [3]
+    assert data5.positive_consumed[4] == [6]
