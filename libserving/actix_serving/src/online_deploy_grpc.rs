@@ -213,22 +213,22 @@ impl RecommendService {
         if USER_ID_EMBED_MODELS.contains(&model_name) {
             features.insert(
                 String::from("user_indices"),
-                make_int_tensor_proto(&[user_id], &[1]),
+                make_int_bytes_tensor_proto(&[user_id], &[1]),
             );
         }
 
         let (seqs, seq_lens) = get_seq(model_name, user_consumed, n_items, conn, &user_seq).await;
         features.insert(
             String::from("user_interacted_seq"),
-            make_int_tensor_proto(&seqs, &[1, seqs.len() as i64]),
+            make_int_bytes_tensor_proto(&seqs, &[1, seqs.len() as i64]),
         );
         features.insert(
             String::from("user_interacted_len"),
-            make_int64_tensor_proto(&seq_lens, &[1]),
+            make_int_bytes_tensor_proto::<i64>(&seq_lens, &[1]),
         );
         features.insert(
             String::from("k"),
-            make_int_tensor_proto(&[candidate_num], &[]),
+            make_int_bytes_tensor_proto(&[candidate_num], &[]),
         );
         features
     }
@@ -251,7 +251,7 @@ impl RecommendService {
             let shape = [1, user_sparse_indices.len() as i64];
             features.insert(
                 String::from("user_sparse_indices"),
-                make_int_tensor_proto(&user_sparse_indices, &shape),
+                make_int_bytes_tensor_proto(&user_sparse_indices, &shape),
             );
         }
         if conn.exists("user_dense_values").await.unwrap() {
@@ -268,19 +268,19 @@ impl RecommendService {
             get_sparse_seq(user_consumed, n_items, conn, &user_seq).await;
         features.insert(
             String::from("item_interaction_indices"),
-            make_int64_tensor_proto(&seq_sparse_indices, &[seq_sparse_values.len() as i64, 2]),
+            make_int_bytes_tensor_proto(&seq_sparse_indices, &[seq_sparse_values.len() as i64, 2]),
         );
         features.insert(
             String::from("item_interaction_values"),
-            make_int64_tensor_proto(&seq_sparse_values, &[seq_sparse_values.len() as i64]),
+            make_int_bytes_tensor_proto(&seq_sparse_values, &[seq_sparse_values.len() as i64]),
         );
         features.insert(
             String::from("modified_batch_size"),
-            make_int_tensor_proto(&[1], &[]),
+            make_int_bytes_tensor_proto(&[1], &[]),
         );
         features.insert(
             String::from("k"),
-            make_int_tensor_proto(&[candidate_num], &[]),
+            make_int_bytes_tensor_proto(&[candidate_num], &[]),
         );
         features
     }
@@ -297,12 +297,12 @@ impl RecommendService {
         let mut features = HashMap::new();
         features.insert(
             String::from("user_indices"),
-            make_int_tensor_proto(&[user_id], &[1]),
+            make_int_bytes_tensor_proto(&[user_id], &[1]),
         );
         let item_indices = (0..n_items).collect::<Vec<i32>>();
         features.insert(
             String::from("item_indices"),
-            make_int_tensor_proto(&item_indices, &[num]),
+            make_int_bytes_tensor_proto(&item_indices, &[num]),
         );
 
         let (user_sparse_feats, user_dense_feats) = split_user_feats(user_feats, conn).await;
@@ -312,7 +312,7 @@ impl RecommendService {
             let shape = [1, user_sparse_indices.len() as i64];
             features.insert(
                 String::from("user_sparse_indices"),
-                make_int_tensor_proto(&user_sparse_indices, &shape),
+                make_int_bytes_tensor_proto(&user_sparse_indices, &shape),
             );
         }
         if conn.exists("user_dense_values").await.unwrap() {
@@ -327,11 +327,11 @@ impl RecommendService {
 
         if conn.exists("item_sparse_values").await.unwrap() {
             // flattened to 1d array
-            let item_sparse_indices = get_item_feats("item_sparse_values", num, conn).await;
+            let item_sparse_indices = get_item_feats::<i32>("item_sparse_values", num, conn).await;
             let shape = [num, (item_sparse_indices.len() as i64) / num];
             features.insert(
                 String::from("item_sparse_indices"),
-                make_int_tensor_proto(&item_sparse_indices, &shape),
+                make_int_bytes_tensor_proto(&item_sparse_indices, &shape),
             );
         }
         if conn.exists("item_dense_values").await.unwrap() {
@@ -344,7 +344,7 @@ impl RecommendService {
         }
         features.insert(
             String::from("k"),
-            make_int_tensor_proto(&[candidate_num], &[]),
+            make_int_bytes_tensor_proto(&[candidate_num], &[]),
         );
         features
     }
@@ -364,12 +364,12 @@ impl RecommendService {
         let mut features = HashMap::new();
         features.insert(
             String::from("user_indices"),
-            make_int_tensor_proto(&vec![user_id; n_items as usize], &[num]),
+            make_int_bytes_tensor_proto(&vec![user_id; n_items as usize], &[num]),
         );
         let item_indices = (0..n_items).collect::<Vec<i32>>();
         features.insert(
             String::from("item_indices"),
-            make_int_tensor_proto(&item_indices, &[num]),
+            make_int_bytes_tensor_proto(&item_indices, &[num]),
         );
 
         let (user_sparse_feats, user_dense_feats) = split_user_feats(user_feats, conn).await;
@@ -386,7 +386,7 @@ impl RecommendService {
             let shape = [num, (sparse_indices.len() as i64) / num];
             features.insert(
                 String::from("sparse_indices"),
-                make_int_tensor_proto(&sparse_indices, &shape),
+                make_int_bytes_tensor_proto(&sparse_indices, &shape),
             );
         }
         let dense_values = combine_features::<f32>(
@@ -411,7 +411,7 @@ impl RecommendService {
             let seq_lens: Vec<f32> = seq_lens.into_iter().map(|i| i as f32).collect();
             features.insert(
                 String::from("user_interacted_seq"),
-                make_int_tensor_proto(&seqs, &[num, (seqs.len() as i64) / num]),
+                make_int_bytes_tensor_proto(&seqs, &[num, (seqs.len() as i64) / num]),
             );
             features.insert(
                 String::from("user_interacted_len"),
@@ -421,7 +421,7 @@ impl RecommendService {
 
         features.insert(
             String::from("k"),
-            make_int_tensor_proto(&[candidate_num], &[]),
+            make_int_bytes_tensor_proto(&[candidate_num], &[]),
         );
 
         // for (f, v) in &features {
@@ -766,23 +766,49 @@ fn make_tensor_shape(shape: &[i64]) -> Option<TensorShapeProto> {
     }
 }
 
-fn make_int_tensor_proto(value: &[i32], shape: &[i64]) -> TensorProto {
+// fn make_int_tensor_proto(value: &[i32], shape: &[i64]) -> TensorProto {
+//    let tensor_shape = make_tensor_shape(shape);
+//    TensorProto {
+//        dtype: DataType::DtInt32 as i32,
+//        tensor_shape,
+//        int_val: value.to_vec(),
+//        ..Default::default()
+//    }
+// }
+
+// fn make_int64_tensor_proto(value: &[i64], shape: &[i64]) -> TensorProto {
+//    let tensor_shape = make_tensor_shape(shape);
+//    TensorProto {
+//        dtype: DataType::DtInt64 as i32,
+//        tensor_shape,
+//        int64_val: value.to_vec(),
+//        ..Default::default()
+//    }
+// }
+
+fn make_int_bytes_tensor_proto<T: Copy>(value: &[T], shape: &[i64]) -> TensorProto {
     let tensor_shape = make_tensor_shape(shape);
+    let type_size = std::mem::size_of::<T>();
+    let dtype = match type_size {
+        8 => DataType::DtInt64 as i32,
+        _ => DataType::DtInt32 as i32,
+    };
     TensorProto {
-        dtype: DataType::DtInt32 as i32,
+        dtype,
         tensor_shape,
-        int_val: value.to_vec(),
+        tensor_content: get_bytes(value, type_size),
         ..Default::default()
     }
 }
 
-fn make_int64_tensor_proto(value: &[i64], shape: &[i64]) -> TensorProto {
-    let tensor_shape = make_tensor_shape(shape);
-    TensorProto {
-        dtype: DataType::DtInt64 as i32,
-        tensor_shape,
-        int64_val: value.to_vec(),
-        ..Default::default()
+fn get_bytes<T: Copy>(value: &[T], type_size: usize) -> Vec<u8> {
+    let mut value = value.to_vec();
+    let length = value.len() * type_size;
+    let capacity = value.capacity() * type_size;
+    let ptr = value.as_mut_ptr() as *mut u8;
+    unsafe {
+        std::mem::forget(value);
+        Vec::from_raw_parts(ptr, length, capacity)
     }
 }
 
@@ -791,7 +817,12 @@ fn make_float_tensor_proto(value: &[f32], shape: &[i64]) -> TensorProto {
     TensorProto {
         dtype: DataType::DtFloat as i32,
         tensor_shape,
-        float_val: value.to_vec(),
+        // float_val: value.to_vec(),
+        // assume little-endian
+        tensor_content: value
+            .iter()
+            .flat_map(|&i| i.to_le_bytes())
+            .collect::<Vec<u8>>(),
         ..Default::default()
     }
 }
