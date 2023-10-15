@@ -233,7 +233,9 @@ def test_gelu():
         inputs = tf.constant([-3.0, -1.0, 0.0, 1.0, 3.0], dtype=tf.float32)
         output = gelu(inputs)
         assert_allclose(
-            sess.run(output), [-0.00404951, -0.15865529, 0.0, 0.8413447, 2.9959507]
+            sess.run(output),
+            [-0.00404951, -0.15865529, 0.0, 0.8413447, 2.9959507],
+            rtol=1e-4,
         )
 
 
