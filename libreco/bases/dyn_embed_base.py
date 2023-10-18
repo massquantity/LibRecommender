@@ -52,7 +52,6 @@ class DynEmbedBase(EmbedBase):
                 self.user_consumed,
                 self.n_items,
                 self.max_seq_len,
-                dtype=np.int64,
             )
 
     def build_model(self):
