@@ -43,7 +43,7 @@ jobs:
 
       - name: Lint with ruff
         run: |
-          ruff check --format=github libreco/ libserving/ tests/ examples/
+          ruff check libreco/ libserving/ tests/ examples/
         if: matrix.python-version != '3.6'
 
       - name: Test
