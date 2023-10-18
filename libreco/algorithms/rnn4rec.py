@@ -216,7 +216,7 @@ class RNN4Rec(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.user_interacted_seq = tf.placeholder(
             tf.int32, shape=[None, self.max_seq_len]
         )
-        self.user_interacted_len = tf.placeholder(tf.int64, shape=[None])
+        self.user_interacted_len = tf.placeholder(tf.int32, shape=[None])
         seq_item_embed = embedding_lookup(
             indices=self.user_interacted_seq,
             var_name="seq_embeds_var",

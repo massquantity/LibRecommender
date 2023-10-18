@@ -81,5 +81,5 @@ def seq_embeds_pooling(
 
         return tf.div_no_nan(
             tf.reduce_sum(multi_item_embed, axis=1),
-            tf.expand_dims(tf.sqrt(seq_lens), axis=1),
+            tf.expand_dims(tf.sqrt(tf.cast(seq_lens, tf.float32)), axis=1),
         )
