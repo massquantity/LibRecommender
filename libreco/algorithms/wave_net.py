@@ -159,7 +159,7 @@ class WaveNet(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         self.user_interacted_seq = tf.placeholder(
             tf.int32, shape=[None, self.max_seq_len]
         )
-        self.user_interacted_len = tf.placeholder(tf.int64, shape=[None])
+        self.user_interacted_len = tf.placeholder(tf.int32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
 

@@ -1,6 +1,4 @@
 """Implementation of Transformer."""
-import numpy as np
-
 from ..bases import ModelMeta, TfBase
 from ..batch.sequence import get_recent_seqs
 from ..layers import (
@@ -182,7 +180,6 @@ class Transformer(TfBase, metaclass=ModelMeta):
             self.user_consumed,
             self.n_items,
             self.max_seq_len,
-            dtype=np.float32,
         )
         self.seed = seed
         self.sparse = check_sparse_indices(data_info)
@@ -267,7 +264,7 @@ class Transformer(TfBase, metaclass=ModelMeta):
         self.user_interacted_seq = tf.placeholder(
             tf.int32, shape=[None, self.max_seq_len]
         )
-        self.user_interacted_len = tf.placeholder(tf.float32, shape=[None])
+        self.user_interacted_len = tf.placeholder(tf.int32, shape=[None])
         self.labels = tf.placeholder(tf.float32, shape=[None])
         self.is_training = tf.placeholder_with_default(False, shape=[])
 
