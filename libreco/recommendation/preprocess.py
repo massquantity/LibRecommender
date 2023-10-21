@@ -1,7 +1,7 @@
 import numpy as np
 
-from ..prediction.preprocess import get_cached_seqs, set_temp_feats
-from ..tfops.features import get_feed_dict
+from ..prediction.preprocess import get_cached_dual_seq, get_cached_seqs, set_temp_feats
+from ..tfops.features import get_dual_seq_feed_dict, get_feed_dict
 
 
 def process_sparse_embed_seq(model, user_id, seq, inner_id):
@@ -39,11 +39,41 @@ def build_rec_seq(seq, model, inner_id, repeat=False):
     seq, seq_len = _extract_seq(seq, model, inner_id)
     recent_seq = np.full((1, model.max_seq_len), model.n_items, dtype=np.int32)
     recent_seq[0, :seq_len] = seq[-seq_len:]
-    seq_len = np.array([seq_len], dtype=np.float32)
+    seq_len = np.array([seq_len], dtype=np.int32)
     if repeat:
         recent_seq = np.repeat(recent_seq, model.n_items, axis=0)
         seq_len = np.repeat(seq_len, model.n_items)
     return recent_seq, seq_len
+
+
+def build_dual_seq(seq, model, inner_id, repeat=False):
+    assert isinstance(seq, (list, np.ndarray)), "`seq` must be list or numpy.ndarray."
+    if not inner_id:
+        seq = [model.data_info.item2id.get(i, model.n_items) for i in seq]
+
+    total_max_len = model.long_max_len + model.short_max_len
+    long_seq = np.full((1, model.long_max_len), model.n_items, dtype=np.int32)
+    if len(seq) >= total_max_len:
+        long_len = model.long_max_len
+        start_index = len(seq) - total_max_len
+        long_seq[0] = seq[start_index : start_index + long_len]
+    elif len(seq) > model.short_max_len:
+        long_len = len(seq) - model.short_max_len
+        long_seq[0, :long_len] = seq[:long_len]
+    else:
+        long_len = 1
+    long_len = np.array([long_len], dtype=np.int32)
+
+    short_seq = np.full((1, model.short_max_len), model.n_items, dtype=np.int32)
+    short_len = min(model.short_max_len, len(seq))
+    short_seq[0, :short_len] = seq[-short_len:]
+    short_len = np.array([short_len], dtype=np.int32)
+    if repeat:
+        long_seq = np.repeat(long_seq, model.n_items, axis=0)
+        long_len = np.repeat(long_len, model.n_items)
+        short_seq = np.repeat(short_seq, model.n_items, axis=0)
+        short_len = np.repeat(short_len, model.n_items)
+    return long_seq, long_len, short_seq, short_len
 
 
 def build_sparse_seq(seq, model, inner_id):
@@ -102,22 +132,44 @@ def process_tf_feat(model, user_ids, user_feats, seq, inner_id):
         sparse_indices, dense_values = set_temp_feats(
             model.data_info, sparse_indices, dense_values, user_feats
         )
-    if seq is not None and len(seq) > 0:
-        seqs, seq_len = build_rec_seq(seq, model, inner_id, repeat=True)
-    else:
-        # tf cached seqs include oov
-        seqs, seq_len = get_cached_seqs(model, user_ids, repeat=True)
 
-    return get_feed_dict(
-        model=model,
-        user_indices=user_indices,
-        item_indices=item_indices,
-        sparse_indices=sparse_indices,
-        dense_values=dense_values,
-        user_interacted_seq=seqs,
-        user_interacted_len=seq_len,
-        is_training=False,
-    )
+    if model.model_name == "SIM":
+        if seq is not None and len(seq) > 0:
+            long_seq, long_len, short_seq, short_len = build_dual_seq(
+                seq, model, inner_id, repeat=True
+            )
+        else:
+            long_seq, long_len, short_seq, short_len = get_cached_dual_seq(
+                model, user_ids, repeat=True
+            )
+        return get_dual_seq_feed_dict(
+            model,
+            user_indices,
+            item_indices,
+            sparse_indices,
+            dense_values,
+            long_seq,
+            long_len,
+            short_seq,
+            short_len,
+            is_training=False,
+        )
+    else:
+        if seq is not None and len(seq) > 0:
+            seqs, seq_len = build_rec_seq(seq, model, inner_id, repeat=True)
+        else:
+            # tf cached seqs include oov
+            seqs, seq_len = get_cached_seqs(model, user_ids, repeat=True)
+        return get_feed_dict(
+            model=model,
+            user_indices=user_indices,
+            item_indices=item_indices,
+            sparse_indices=sparse_indices,
+            dense_values=dense_values,
+            user_interacted_seq=seqs,
+            user_interacted_len=seq_len,
+            is_training=False,
+        )
 
 
 def _get_original_feats(data_info, user, n_items, sparse, dense):

@@ -22,6 +22,7 @@ class FeatModels(StrEnum):
     PINSAGEDGL = "PinSageDGL"
     TWOTOWER = "TwoTower"
     TRANSFORMER = "Transformer"
+    SIM = "SIM"
 
 
 @unique
@@ -33,6 +34,7 @@ class SequenceModels(StrEnum):
     CASER = "Caser"
     WAVENET = "WaveNet"
     TRANSFORMER = "Transformer"
+    SIM = "SIM"
 
 
 @unique
@@ -53,6 +55,7 @@ class TfTrainModels(StrEnum):
     WAVENET = "WaveNet"
     TWOTOWER = "TwoTower"
     TRANSFORMER = "Transformer"
+    SIM = "SIM"
 
 
 @unique

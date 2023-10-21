@@ -89,7 +89,10 @@ def recommend_tf_feat(
     inner_id=False,
 ):
     feed_dict = process_tf_feat(model, user_ids, user_feats, seq, inner_id)
-    preds = model.sess.run(model.output, feed_dict)
+    if model.model_name == "SIM":
+        preds = model.sess.run(model.inference_output, feed_dict)
+    else:
+        preds = model.sess.run(model.output, feed_dict)
     return rank_recommendations(
         model.task,
         user_ids,

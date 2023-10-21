@@ -16,6 +16,7 @@ from .ngcf import NGCF
 from .pinsage import PinSage
 from .pinsage_dgl import PinSageDGL
 from .rnn4rec import RNN4Rec
+from .sim import SIM
 from .svd import SVD
 from .svdpp import SVDpp
 from .transformer import Transformer
@@ -54,4 +55,5 @@ __all__ = [
     "GraphSageDGL",
     "TwoTower",
     "Transformer",
+    "SIM",
 ]
