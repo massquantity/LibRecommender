@@ -118,6 +118,19 @@ def get_cached_seqs(model, user_id, repeat):
     return seqs, seq_len
 
 
+def get_cached_dual_seq(model, user_id, repeat):
+    long_seqs = model.cached_long_seqs[user_id]
+    long_lens = model.cached_long_lens[user_id]
+    short_seqs = model.cached_short_seqs[user_id]
+    short_lens = model.cached_short_lens[user_id]
+    if repeat:
+        long_seqs = np.repeat(long_seqs, model.n_items, axis=0)
+        long_lens = np.repeat(long_lens, model.n_items)
+        short_seqs = np.repeat(short_seqs, model.n_items, axis=0)
+        short_lens = np.repeat(short_lens, model.n_items)
+    return long_seqs, long_lens, short_seqs, short_lens
+
+
 def features_from_batch(data_info, sparse, dense, data):
     sparse_indices, dense_values = None, None
     if sparse:
