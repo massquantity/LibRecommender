@@ -59,6 +59,14 @@ class SeqFeats:
 
 
 @dataclass
+class DualSeqFeats:
+    long_seq: Iterable[Iterable[int]]
+    long_len: Iterable[int]
+    short_seq: Iterable[Iterable[int]]
+    short_len: Iterable[int]
+
+
+@dataclass
 class SparseSeqFeats:
     interacted_indices: Iterable[Iterable[int]]
     interacted_values: Iterable[int]
@@ -120,6 +128,11 @@ class PointwiseSepFeatBatch(PointwiseBatch):
                 self.sparse_indices.to_torch_tensor()
             if self.dense_values is not None:
                 self.dense_values.to_torch_tensor()
+
+
+@dataclass
+class PointwiseDualSeqBatch(PointwiseBatch):  # used in SIM
+    seqs: Optional[DualSeqFeats]
 
 
 @dataclass

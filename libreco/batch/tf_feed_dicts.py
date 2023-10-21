@@ -1,6 +1,7 @@
 from .batch_unit import (
     PairwiseBatch,
     PointwiseBatch,
+    PointwiseDualSeqBatch,
     PointwiseSepFeatBatch,
     SparseBatch,
 )
@@ -11,6 +12,8 @@ from ..utils.constants import SequenceModels
 def get_tf_feeds(model, data, is_training):
     if isinstance(data, SparseBatch):
         return _sparse_feed_dict(model, data, is_training)
+    elif isinstance(data, PointwiseDualSeqBatch):
+        return _dual_seq_feed_dict(model, data, is_training)
     elif isinstance(data, PointwiseSepFeatBatch):
         return _separate_feed_dict(model, data, is_training)
     elif isinstance(data, PairwiseBatch):
@@ -128,4 +131,22 @@ def _separate_feed_dict(model, data: PointwiseSepFeatBatch, is_training):
     if hasattr(model, "ssl_pattern") and model.ssl_pattern is not None:
         ssl_feats = get_ssl_features(model, len(data.items))
         feed_dict.update(ssl_feats)
+    return feed_dict
+
+
+def _dual_seq_feed_dict(model, data: PointwiseDualSeqBatch, is_training):
+    feed_dict = {
+        model.user_indices: data.users,
+        model.item_indices: data.items,
+        model.labels: data.labels,
+        model.is_training: is_training,
+        model.long_seqs: data.seqs.long_seq,
+        model.long_seq_lens: data.seqs.long_len,
+        model.short_seqs: data.seqs.short_seq,
+        model.short_seq_lens: data.seqs.short_len,
+    }
+    if hasattr(model, "sparse") and model.sparse:
+        feed_dict.update({model.sparse_indices: data.sparse_indices})
+    if hasattr(model, "dense") and model.dense:
+        feed_dict.update({model.dense_values: data.dense_values})
     return feed_dict
