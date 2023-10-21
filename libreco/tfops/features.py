@@ -302,3 +302,31 @@ def get_sparse_feed_dict(
     if hasattr(model, "user_dense_values") and user_dense_values is not None:
         feed_dict.update({model.user_dense_values: user_dense_values})
     return feed_dict
+
+
+def get_dual_seq_feed_dict(
+    model,
+    user_indices,
+    item_indices,
+    sparse_indices,
+    dense_values,
+    long_seqs,
+    long_seq_lens,
+    short_seqs,
+    short_seq_lens,
+    is_training,
+):
+    feed_dict = {
+        model.user_indices: user_indices,
+        model.item_indices: item_indices,
+        model.long_seqs: long_seqs,
+        model.long_seq_lens: long_seq_lens,
+        model.short_seqs: short_seqs,
+        model.short_seq_lens: short_seq_lens,
+        model.is_training: is_training,
+    }
+    if hasattr(model, "sparse_indices") and sparse_indices is not None:
+        feed_dict.update({model.sparse_indices: sparse_indices})
+    if hasattr(model, "dense_values") and dense_values is not None:
+        feed_dict.update({model.dense_values: dense_values})
+    return feed_dict

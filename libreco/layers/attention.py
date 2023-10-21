@@ -2,7 +2,7 @@ from .dense import dense_nn, tf_dense
 from ..tfops import get_tf_version, tf
 
 
-def tf_attention(queries, keys, key_masks):
+def tf_attention(queries, keys, key_masks=None):
     """Dot-product attention from tensorflow.
 
     Parameters

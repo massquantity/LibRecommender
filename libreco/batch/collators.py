@@ -4,9 +4,11 @@ import numpy as np
 import torch
 
 from .batch_unit import (
+    DualSeqFeats,
     PairFeats,
     PairwiseBatch,
     PointwiseBatch,
+    PointwiseDualSeqBatch,
     PointwiseSepFeatBatch,
     SeqFeats,
     SparseBatch,
@@ -14,7 +16,7 @@ from .batch_unit import (
     TripleFeats,
 )
 from .enums import FeatType
-from .sequence import get_interacted_seq, get_sparse_interacted
+from .sequence import get_dual_seqs, get_interacted_seqs, get_sparse_interacted
 from ..graph import build_subgraphs, pairs_from_dgl_graph
 from ..sampling import (
     neg_probs_from_frequency,
@@ -48,8 +50,11 @@ class BaseCollator:
         self.item_sparse_unique = data_info.item_sparse_unique
         self.item_dense_unique = data_info.item_dense_unique
         self.has_seq = True if SequenceModels.contains(model.model_name) else False
-        self.seq_mode = model.seq_mode if self.has_seq else None
-        self.max_seq_len = model.max_seq_len if self.has_seq else None
+        self.seq_mode = model.seq_mode if hasattr(model, "seq_mode") else None
+        self.max_seq_len = model.max_seq_len if hasattr(model, "max_seq_len") else None
+        self.dual_seq = True if model.model_name == "SIM" else False
+        self.long_max_len = model.long_max_len if self.dual_seq else None
+        self.short_max_len = model.short_max_len if self.dual_seq else None
         self.separate_features = separate_features
         self.backend = backend
         self.seed = model.seed
@@ -62,7 +67,12 @@ class BaseCollator:
         sparse_batch = self.get_features(batch, FeatType.SPARSE)
         dense_batch = self.get_features(batch, FeatType.DENSE)
         seq_batch = self.get_seqs(batch["user"], batch["item"])
-        batch_cls = PointwiseSepFeatBatch if self.separate_features else PointwiseBatch
+        if self.dual_seq:
+            batch_cls = PointwiseDualSeqBatch
+        elif self.separate_features:
+            batch_cls = PointwiseSepFeatBatch
+        else:
+            batch_cls = PointwiseBatch
         batch_data = batch_cls(
             users=batch["user"],
             items=batch["item"],
@@ -101,17 +111,29 @@ class BaseCollator:
             return
         self._set_random_seeds()
         self._set_user_consumed()
-        batch_interacted, interacted_len = get_interacted_seq(
-            user_indices,
-            item_indices,
-            self.user_consumed,
-            self.n_items,
-            self.seq_mode,
-            self.max_seq_len,
-            self.user_consumed_set,
-            self.np_rng,
-        )
-        return SeqFeats(batch_interacted, interacted_len)
+        if self.dual_seq:
+            long_seqs, long_lens, short_seqs, short_lens = get_dual_seqs(
+                user_indices,
+                item_indices,
+                self.user_consumed,
+                self.n_items,
+                self.long_max_len,
+                self.short_max_len,
+                self.user_consumed_set,
+            )
+            return DualSeqFeats(long_seqs, long_lens, short_seqs, short_lens)
+        else:
+            seqs, seq_lens = get_interacted_seqs(
+                user_indices,
+                item_indices,
+                self.user_consumed,
+                self.n_items,
+                self.seq_mode,
+                self.max_seq_len,
+                self.user_consumed_set,
+                self.np_rng,
+            )
+            return SeqFeats(seqs, seq_lens)
 
     def sample_neg_items(self, batch, sampler, num_neg):
         if sampler == "unconsumed":
@@ -212,7 +234,12 @@ class PointwiseCollator(BaseCollator):
         sparse_batch = self.get_pointwise_feats(batch, FeatType.SPARSE, item_batch)
         dense_batch = self.get_pointwise_feats(batch, FeatType.DENSE, item_batch)
         seq_batch = self.get_seqs(user_batch, item_batch)
-        batch_cls = PointwiseSepFeatBatch if self.separate_features else PointwiseBatch
+        if self.dual_seq:
+            batch_cls = PointwiseDualSeqBatch
+        elif self.separate_features:
+            batch_cls = PointwiseSepFeatBatch
+        else:
+            batch_cls = PointwiseBatch
         batch_data = batch_cls(
             users=user_batch,
             items=item_batch,
