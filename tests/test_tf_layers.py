@@ -168,7 +168,7 @@ def test_multi_head_attention():
         queries = tf.ones([2, 3, 4], dtype=tf.float32)
         keys = tf.reshape(tf.range(30, dtype=tf.float32), (2, 5, 3))
         rng = np.random.default_rng()
-        mask = tf.constant(rng.integers(0, 2, (2, 4, 3, 5), dtype=np.bool_))
+        mask = tf.constant(rng.integers(0, 2, (2, 3, 5), dtype=np.bool_))
         output1 = multi_head_attention(
             queries, keys, num_heads=4, head_dim=4, mask=mask, version="2.11"
         )

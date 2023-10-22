@@ -34,7 +34,7 @@ def transformer_encoder_layer(
     Output shape: (batch_size, seq_len, embed_size)
     """
     with tf.variable_scope("transformer_encoder"):
-        att_mask = compute_seq_mask(seq_lens, max_seq_len, num_heads)
+        att_mask = compute_seq_mask(seq_lens, max_seq_len)
 
         pe = positional_encoding(max_seq_len, embed_size)[tf.newaxis, :, :]
         # scale the inputs before adding pe
@@ -82,8 +82,8 @@ def transformer_decoder_layer(
     Output shape: (batch_size, seq_len, embed_size)
     """
     with tf.variable_scope("transformer_decoder"):
-        seq_mask = compute_seq_mask(seq_lens, max_seq_len, num_heads)
-        causal_mask = compute_causal_mask(tf.shape(seqs)[0], max_seq_len, num_heads)
+        seq_mask = compute_seq_mask(seq_lens, max_seq_len)
+        causal_mask = compute_causal_mask(tf.shape(seqs)[0], max_seq_len)
         att_mask = seq_mask & causal_mask
 
         pe = positional_encoding(max_seq_len, embed_size)[tf.newaxis, :, :]

@@ -319,13 +319,9 @@ class Transformer(TfBase, metaclass=ModelMeta):
             return att_out + ffn_out
 
     def _transformer_mask(self, batch_size):
-        tfm_mask = compute_seq_mask(
-            self.user_interacted_len, self.max_seq_len, self.num_heads
-        )
+        tfm_mask = compute_seq_mask(self.user_interacted_len, self.max_seq_len)
         if self.use_causal_mask:
-            causal_mask = compute_causal_mask(
-                batch_size, self.max_seq_len, self.num_heads
-            )
+            causal_mask = compute_causal_mask(batch_size, self.max_seq_len)
             tfm_mask = tf.logical_and(tfm_mask, causal_mask)
         return tfm_mask
 
