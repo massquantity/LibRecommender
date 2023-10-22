@@ -80,7 +80,7 @@ def multi_head_attention(
     head_dim : int
         Dimension of each attention head.
     mask : tf.Tensor
-        Shape: (batch_size, num_heads, seq_q_len, seq_k_len), boolean mask to prevent attention to certain positions.
+        Shape: (batch_size, seq_q_len, seq_k_len), boolean mask to prevent attention to certain positions.
     output_dim : int
         Output dimension.
     version : str
@@ -113,6 +113,7 @@ def multi_head_attention(
     att_weights *= tf.math.rsqrt(tf.cast(head_dim, tf.float32))
     if mask is not None:
         paddings = -1e9 * tf.ones_like(att_weights)
+        mask = tf.tile(tf.expand_dims(mask, axis=1), (1, num_heads, 1, 1))
         att_weights = tf.where(mask, att_weights, paddings)
 
     att_scores = tf.nn.softmax(att_weights)
@@ -144,7 +145,7 @@ def _get_shape(x):
     return x_shape
 
 
-def compute_seq_mask(key_lens, max_key_len, num_heads, query_len=None):
+def compute_seq_mask(key_lens, max_key_len, query_len=None):
     """Compute sequence masks for multi-head attention.
 
     In self-attention, query_len == max_key_len
@@ -154,23 +155,20 @@ def compute_seq_mask(key_lens, max_key_len, num_heads, query_len=None):
     key_lens : tf.Tensor
         Shape: (batch_size,)
     max_key_len : int
-    num_heads : int
     query_len : int, optional
 
     Returns
     -------
-    Output shape: (batch_size, num_heads, query_len, max_key_len)
+    Output shape: (batch_size, query_len, max_key_len)
     """
     if query_len is None:
         query_len = max_key_len
-    # B * 1 * 1 * Tk
-    seq_mask = tf.sequence_mask(key_lens, max_key_len)[:, tf.newaxis, tf.newaxis, :]
-    # should repeat within batch to get (batch_size * num_heads)
-    # seq_mask = tf.repeat(seq_mask, num_heads, axis=0)
-    return tf.tile(seq_mask, (1, num_heads, query_len, 1))
+    # B * 1 * Tk
+    seq_mask = tf.sequence_mask(key_lens, max_key_len)[:, tf.newaxis, :]
+    return tf.tile(seq_mask, (1, query_len, 1))
 
 
-def compute_causal_mask(batch_size, seq_len, num_heads):
+def compute_causal_mask(batch_size, seq_len):
     """Compute causal mask used in transformer decoder.
 
     Causal mask will only attend items before current item.
@@ -179,12 +177,11 @@ def compute_causal_mask(batch_size, seq_len, num_heads):
     ----------
     batch_size : int
     seq_len : int
-    num_heads : int
 
     Returns
     -------
-    Output shape: (batch_size, num_heads, seq_len, seq_len)
+    Output shape: (batch_size, seq_len, seq_len)
     """
     inputs = tf.ones((seq_len, seq_len), dtype=tf.bool)
-    causal_mask = tf.linalg.band_part(inputs, -1, 0)[tf.newaxis, tf.newaxis, :, :]
-    return tf.tile(causal_mask, (batch_size, num_heads, 1, 1))
+    causal_mask = tf.linalg.band_part(inputs, -1, 0)[tf.newaxis, :, :]
+    return tf.tile(causal_mask, (batch_size, 1, 1))
