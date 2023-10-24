@@ -1,7 +1,13 @@
 """Implementation of SIM."""
 from ..bases import ModelMeta, TfBase
 from ..batch.sequence import get_recent_dual_seqs
-from ..layers import dense_nn, embedding_lookup, tf_attention, tf_dense
+from ..layers import (
+    dense_nn,
+    embedding_lookup,
+    multi_head_attention,
+    tf_attention,
+    tf_dense,
+)
 from ..tfops import dropout_config, reg_config, tf
 from ..tfops.features import (
     combine_seq_features,
@@ -21,7 +27,12 @@ from ..utils.validate import (
 
 
 class SIM(TfBase, metaclass=ModelMeta):
-    """*Search-based Interest Model* algorithm."""
+    """*Search-based Interest Model* algorithm.
+
+    .. NOTE::
+        This algorithm only implements soft-search in GSU as outlined in the original paper,
+        since not all datasets include the category feature required for hard-search.
+    """
 
     user_variables = ("embedding/user_embeds_var",)
     item_variables = ("embedding/item_embeds_var",)
@@ -50,6 +61,7 @@ class SIM(TfBase, metaclass=ModelMeta):
         search_topk=10,
         long_max_len=100,
         short_max_len=10,
+        num_heads=2,
         multi_sparse_combiner="sqrtn",
         seed=42,
         lower_upper_bound=None,
@@ -76,6 +88,7 @@ class SIM(TfBase, metaclass=ModelMeta):
         self.search_topk = search_topk
         self.long_max_len = long_max_len
         self.short_max_len = short_max_len
+        self.num_heads = num_heads
         (
             self.cached_long_seqs,
             self.cached_long_lens,
@@ -113,8 +126,9 @@ class SIM(TfBase, metaclass=ModelMeta):
         tf.set_random_seed(self.seed)
         self._build_placeholders()
         other_feats = self._build_features()
-        # todo: add linear weights to reduce dimension
-        self.seq_feats = combine_seq_features(self.data_info, feat_agg_mode="concat")
+        self.seq_feats = tf_dense(self.embed_size, use_bias=False)(
+            combine_seq_features(self.data_info, feat_agg_mode="concat")
+        )
         # B * K
         self.target_embeds = tf.nn.embedding_lookup(self.seq_feats, self.item_indices)
         # B * seq * K
@@ -166,7 +180,6 @@ class SIM(TfBase, metaclass=ModelMeta):
 
     def _build_second_stage(self, other_feats):
         top_k_seq_embeds, top_k_masks = self._gsu_module()
-        # todo: multi-head attention
         long_seq_out = self._esu_module(top_k_seq_embeds, top_k_masks)
         short_seq_out = self._din_module()
         inputs = tf.concat([long_seq_out, short_seq_out, other_feats], axis=1)
@@ -205,7 +218,17 @@ class SIM(TfBase, metaclass=ModelMeta):
         return top_k_seq_embeds, top_k_masks
 
     def _esu_module(self, top_k_seq_embeds, top_k_masks):
-        return tf_attention(self.target_embeds, top_k_seq_embeds, top_k_masks)
+        target_embeds = tf.expand_dims(self.target_embeds, axis=1)
+        mask = tf.expand_dims(top_k_masks, axis=1)
+        output_dim = target_embeds.get_shape().as_list()[-1]
+        assert output_dim % self.num_heads == 0, (
+            f"`item_dim`({output_dim}) should be divisible by `num_heads`({self.num_heads})"
+        )  # fmt: skip
+        head_dim = output_dim // self.num_heads
+        attention_out = multi_head_attention(
+            target_embeds, top_k_seq_embeds, self.num_heads, head_dim, mask, output_dim
+        )
+        return tf.squeeze(attention_out, axis=1)
 
     def _din_module(self):
         short_seq_embeds = tf.nn.embedding_lookup(self.seq_feats, self.short_seqs)
