@@ -32,6 +32,74 @@ class SIM(TfBase, metaclass=ModelMeta):
     .. NOTE::
         This algorithm only implements soft-search in GSU as outlined in the original paper,
         since not all datasets include the category feature required for hard-search.
+
+    Parameters
+    ----------
+    task : {'rating', 'ranking'}
+        Recommendation task. See :ref:`Task`.
+    data_info : :class:`~libreco.data.DataInfo` object
+        Object that contains useful information for training and inference.
+    loss_type : {'cross_entropy', 'focal'}, default: 'cross_entropy'
+        Loss for model training.
+    embed_size: int, default: 16
+        Vector size of embeddings.
+    n_epochs: int, default: 10
+        Number of epochs for training.
+    lr : float, default 0.001
+        Learning rate for training.
+    lr_decay : bool, default: False
+        Whether to use learning rate decay.
+    epsilon : float, default: 1e-5
+        A small constant added to the denominator to improve numerical stability in
+        Adam optimizer.
+        According to the `official comment <https://github.com/tensorflow/tensorflow/blob/v1.15.0/tensorflow/python/training/adam.py#L64>`_,
+        default value of `1e-8` for `epsilon` is generally not good, so here we choose `1e-5`.
+        Users can try tuning this hyperparameter if the training is unstable.
+    reg : float or None, default: None
+        Regularization parameter, must be non-negative or None.
+    batch_size : int, default: 256
+        Batch size for training.
+    sampler : {'random', 'unconsumed', 'popular'}, default: 'random'
+        Negative sampling strategy.
+
+        - ``'random'`` means random sampling.
+        - ``'unconsumed'`` samples items that the target user did not consume before.
+        - ``'popular'`` has a higher probability to sample popular items as negative samples.
+
+    num_neg : int, default: 1
+        Number of negative samples for each positive sample, only used in `ranking` task.
+    use_bn : bool, default: True
+        Whether to use batch normalization.
+    dropout_rate : float or None, default: None
+        Probability of an element to be zeroed. If it is None, dropout is not used.
+    hidden_units : int, list of int or tuple of (int,), default: (200, 80)
+        Number of layers and corresponding layer size in MLP.
+    alpha : float, default: 1.0
+        GSU loss weight.
+    beta : float, default: 1.0
+        ESU loss weight.
+    search_topk : int, default: 10
+        Number of behavior embeddings to search in the GSU soft-search.
+    long_max_len : int, default: 100
+        Max length of long behavior sequences.
+    short_max_len : int, default: 10
+        Max length of short behavior sequences.
+    num_heads : int, default: 2
+        Number of heads in multi-head attention.
+    multi_sparse_combiner : {'normal', 'mean', 'sum', 'sqrtn'}, default: 'sqrtn'
+        Options for combining `multi_sparse` features.
+    seed : int, default: 42
+        Random seed.
+    lower_upper_bound : tuple or None, default: None
+        Lower and upper score bound for `rating` task.
+    tf_sess_config : dict or None, default: None
+        Optional TensorFlow session config, see `ConfigProto options
+        <https://github.com/tensorflow/tensorflow/blob/v2.10.0/tensorflow/core/protobuf/config.proto#L431>`_.
+
+    References
+    ----------
+    *Pi Qi et al.* `Search-based User Interest Modeling with Lifelong Sequential Behavior Data for Click-Through Rate Prediction
+    <https://arxiv.org/pdf/2006.05639.pdf>`_.
     """
 
     user_variables = ("embedding/user_embeds_var",)
