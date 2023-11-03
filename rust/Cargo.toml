@@ -1,0 +1,19 @@
+[package]
+name = "recfarm"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "recfarm"
+crate-type = ["cdylib"]
+
+[dependencies]
+fxhash = "0.2.1"
+pyo3 = "0.20.0"
+rand = { version = "0.8", features = ["default", "alloc"] }
+
+[profile.release]
+strip = true
+opt-level = 3
+lto = true
