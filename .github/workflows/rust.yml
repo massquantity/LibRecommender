@@ -77,7 +77,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           command: sdist
-          args: --out dist
+          args: --out dist --manifest-path rust/Cargo.toml
       - name: Upload sdist
         uses: actions/upload-artifact@v3
         with:
