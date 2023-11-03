@@ -1,0 +1,9 @@
+array_width = 50
+chain_width = 50
+edition = "2021"
+group_imports = "StdExternalCrate"
+imports_granularity = "Module"
+max_width = 100
+reorder_imports = true
+reorder_modules = true
+use_field_init_shorthand = true
