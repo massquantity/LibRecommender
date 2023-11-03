@@ -1,5 +1,4 @@
 use std::collections::{BinaryHeap, HashSet};
-use std::time::Instant;
 
 use fxhash::FxHashMap;
 use pyo3::prelude::*;
@@ -17,8 +16,7 @@ pub struct UserCF {
     n_items: usize,
     min_common: usize,
     sum_squares: Vec<f32>,
-    prods: FxHashMap<(i32, i32), f32>,
-    counts: FxHashMap<(i32, i32), usize>,
+    cum_values: FxHashMap<i32, (i32, i32, f32, usize)>,
     sim_mapping: FxHashMap<i32, (Vec<i32>, Vec<f32>)>,
 }
 
@@ -40,33 +38,39 @@ impl UserCF {
             n_items,
             min_common,
             sum_squares,
-            prods: FxHashMap::default(),
-            counts: FxHashMap::default(),
+            cum_values: FxHashMap::default(),
             sim_mapping: FxHashMap::default(),
         }
     }
 
     /// invert index: sparse (indices, indptr, data) of `item` interaction
-    fn compute_similarities(&mut self, indices: Vec<i32>, indptr: Vec<usize>, data: Vec<f32>) {
+    fn compute_similarities(
+        &mut self,
+        indices: Vec<i32>,
+        indptr: Vec<usize>,
+        data: Vec<f32>,
+    ) -> PyResult<()> {
         let cosine_sims = invert_cosine(
             &indices,
             &indptr,
             &data,
             &self.sum_squares,
-            &mut self.prods,
-            &mut self.counts,
+            &mut self.cum_values,
+            self.n_users,
             self.n_items,
             self.min_common,
-        );
-        sort_by_sims(cosine_sims, &mut self.sim_mapping)
+        )?;
+        sort_by_sims(self.n_users, cosine_sims, &mut self.sim_mapping)?;
+        Ok(())
     }
 
     fn num_sim_elements(&self) -> PyResult<usize> {
-        Ok(self
+        let n_elements = self
             .sim_mapping
             .iter()
             .map(|(_, i)| i.0.len())
-            .sum())
+            .sum();
+        Ok(n_elements)
     }
 
     /// sparse (indices, indptr, data) of `item` interaction
