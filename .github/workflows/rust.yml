@@ -18,7 +18,8 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: x86_64
-          args: --release --out dist --manifest-path rust/Cargo.toml --interpreter 3.7 3.8 3.9 3.10 3.11 3.12
+          working-directory: ./rust
+          args: --release --out dist --interpreter 3.7 3.8 3.9 3.10 3.11 3.12
           sccache: 'true'
           manylinux: auto
           rust-toolchain: stable
@@ -26,7 +27,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: wheels
-          path: dist
+          path: ./rust/dist
 
   windows:
     runs-on: windows-latest
