@@ -5,7 +5,7 @@ use pyo3::prelude::*;
 use pyo3::types::*;
 use rand::seq::SliceRandom;
 
-use crate::similarities::{invert_cosine, sort_by_sims, LabelSim};
+use crate::similarities::{invert_cosine, sort_by_sims, SimOrd};
 
 // todo: user_consumed, sparse struct, PyUserCF
 #[pyclass]
@@ -95,7 +95,7 @@ impl UserCF {
             if let Some((sim_users, sim_values)) = self.sim_mapping.get(u) {
                 let i_start = indptr[*i];
                 let i_end = indptr[*i + 1];
-                let mut max_heap: BinaryHeap<LabelSim> = BinaryHeap::new();
+                let mut max_heap: BinaryHeap<SimOrd> = BinaryHeap::new();
                 // todo: sim_users[..self.k_sim]
                 for (&su, &sv) in sim_users.iter().zip(sim_values.iter()) {
                     for (&iu, &iv) in indices[i_start..i_end]
@@ -103,7 +103,7 @@ impl UserCF {
                         .zip(data[i_start..i_end].iter())
                     {
                         if su == iu {
-                            max_heap.push(LabelSim(sv, iv))
+                            max_heap.push(SimOrd(sv, iv))
                         }
                     }
                 }
@@ -115,7 +115,7 @@ impl UserCF {
                 let mut k_neighbor_sims = Vec::new();
                 let mut k_neighbor_labels = Vec::new();
                 for _ in 0..self.k_sim {
-                    if let Some(LabelSim(sim, label)) = max_heap.pop() {
+                    if let Some(SimOrd(sim, label)) = max_heap.pop() {
                         k_neighbor_sims.push(sim);
                         k_neighbor_labels.push(label);
                     } else {
