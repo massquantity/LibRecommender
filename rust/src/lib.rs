@@ -3,6 +3,7 @@
 use pyo3::prelude::*;
 
 mod similarities;
+mod sparse;
 mod user_cf;
 
 /// RecFarm module
