@@ -107,7 +107,7 @@ pub(crate) fn sort_by_sims(
     Ok(())
 }
 
-/// 0: sim, 1: label
+/// 0: similarity, 1: label
 #[derive(Debug)]
 pub(crate) struct SimOrd(pub f32, pub f32);
 
