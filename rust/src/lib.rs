@@ -9,6 +9,6 @@ mod user_cf;
 /// RecFarm module
 #[pymodule]
 fn recfarm(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<user_cf::UserCF>()?;
+    m.add_class::<user_cf::PyUserCF>()?;
     Ok(())
 }

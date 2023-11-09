@@ -9,9 +9,8 @@ use rand::seq::SliceRandom;
 use crate::similarities::{invert_cosine, sort_by_sims, SimOrd};
 use crate::sparse::SparseMatrix;
 
-// todo: PyUserCF
-#[pyclass]
-pub struct UserCF {
+#[pyclass(module = "recfarm", name = "UserCF")]
+pub struct PyUserCF {
     task: String,
     k_sim: usize,
     n_users: usize,
@@ -27,7 +26,7 @@ pub struct UserCF {
 }
 
 #[pymethods]
-impl UserCF {
+impl PyUserCF {
     #[new]
     fn new(
         task: &str,
@@ -56,7 +55,7 @@ impl UserCF {
             data: item_sparse_data.extract::<Vec<f32>>()?,
         };
         let user_consumed = user_consumed.extract::<FxHashMap<i32, Vec<i32>>>()?;
-        Ok(UserCF {
+        Ok(Self {
             task: task.to_string(),
             k_sim,
             n_users,
