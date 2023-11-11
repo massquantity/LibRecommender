@@ -32,3 +32,4 @@ Algorithms
    pinsage_dgl
    two_tower
    transformer
+   sim
