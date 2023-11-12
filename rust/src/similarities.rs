@@ -4,19 +4,30 @@ use std::time::Instant;
 use fxhash::FxHashMap;
 use pyo3::PyResult;
 
+use crate::sparse::CsrMatrix;
+
 const MAX_BLOCK_SIZE: i64 = 200_000_000;
+
+pub(crate) fn compute_sum_squares(interactions: &CsrMatrix, num: usize) -> Vec<f32> {
+    let mut sum_squares = vec![0.0; num];
+    for (i, ss) in sum_squares.iter_mut().enumerate() {
+        if let Some(row) = interactions.get_row(i) {
+            *ss = row.map(|(_, &d)| d * d).sum()
+        }
+    }
+    sum_squares
+}
 
 /// Divide `n_x` into several blocks to avoid huge memory consumption.
 pub(crate) fn invert_cosine(
-    indices: &[i32],
-    indptr: &[usize],
-    data: &[f32],
+    interactions: &CsrMatrix,
     sum_squares: &[f32],
     cum_values: &mut FxHashMap<i32, (i32, i32, f32, usize)>,
     n_x: usize,
     n_y: usize,
     min_common: usize,
 ) -> PyResult<Vec<(i32, i32, f32)>> {
+    let (indices, indptr, data) = interactions.values();
     let start = Instant::now();
     let mut cosine_sims: Vec<(i32, i32, f32)> = Vec::new();
     let step = (MAX_BLOCK_SIZE as f64 / n_x as f64).ceil() as usize;
@@ -37,13 +48,6 @@ pub(crate) fn invert_cosine(
                         let value = data[i] * data[j];
                         prods[index] += value;
                         counts[index] += 1;
-                        // cum_values
-                        //    .entry(key)
-                        //    .and_modify(|(.., v, c)| {
-                        //        *v += value;
-                        //        *c += 1;
-                        //    })
-                        //    .or_insert((x1, x2, value, 1));
                     }
                 }
             }
@@ -55,38 +59,42 @@ pub(crate) fn invert_cosine(
                 let prod = prods[index];
                 let sq1 = sum_squares[x1];
                 let sq2 = sum_squares[x2];
-                let cosine = if prod == 0.0 || sq1 == 0.0 || sq2 == 0.0 {
-                    0.0
-                } else {
-                    let norm = sq1.sqrt() * sq2.sqrt();
-                    prod / norm
-                };
                 let key = i32::try_from(x1 * n_x + x2)?;
                 let x1 = i32::try_from(x1)?;
                 let x2 = i32::try_from(x2)?;
                 let count = counts[index];
                 if count >= min_common {
+                    let cosine = if prod == 0.0 || sq1 == 0.0 || sq2 == 0.0 {
+                        0.0
+                    } else {
+                        let norm = sq1.sqrt() * sq2.sqrt();
+                        prod / norm
+                    };
                     cosine_sims.push((x1, x2, cosine));
                 }
                 if count > 0 {
-                    cum_values.insert(key, (x1, x2, cosine, count));
+                    cum_values.insert(key, (x1, x2, prod, count));
                 }
             }
         }
     }
     let duration = start.elapsed();
-    println!("cosine sim: {} elapsed: {:.4?}", cosine_sims.len(), duration);
+    println!(
+        "cosine sim: {} elapsed: {:.4?}",
+        cosine_sims.len(),
+        duration
+    );
     Ok(cosine_sims)
 }
 
 pub(crate) fn sort_by_sims(
     n_x: usize,
-    cosine_sims: Vec<(i32, i32, f32)>,
+    cosine_sims: &[(i32, i32, f32)],
     sim_mapping: &mut FxHashMap<i32, (Vec<i32>, Vec<f32>)>,
 ) -> PyResult<()> {
     let start = Instant::now();
     let mut agg_sims: Vec<Vec<(i32, f32)>> = vec![Vec::new(); n_x];
-    for (x1, x2, sim) in cosine_sims {
+    for &(x1, x2, sim) in cosine_sims {
         agg_sims[usize::try_from(x1)?].push((x2, sim));
         agg_sims[usize::try_from(x2)?].push((x1, sim));
     }
@@ -103,7 +111,7 @@ pub(crate) fn sort_by_sims(
         sim_mapping.insert(i32::try_from(i)?, (neighbors, sims));
     }
     let duration = start.elapsed();
-    println!("sort elapsed: {:.4?}", duration);
+    println!("sort elapsed: {duration:.4?}");
     Ok(())
 }
 
