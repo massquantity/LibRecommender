@@ -2,6 +2,7 @@
 
 use pyo3::prelude::*;
 
+mod incremental;
 mod similarities;
 mod sparse;
 mod user_cf;
