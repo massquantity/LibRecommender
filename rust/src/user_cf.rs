@@ -132,9 +132,10 @@ impl PyUserCF {
             }
             if let Some((sim_users, sim_values)) = self.sim_mapping.get(&u) {
                 let mut max_heap: BinaryHeap<SimOrd> = BinaryHeap::new();
-                let mut u_sims: Vec<(&i32, &f32)> = sim_users[..self.k_sim]
+                let sim_num = std::cmp::min(self.k_sim, sim_users.len());
+                let mut u_sims: Vec<(&i32, &f32)> = sim_users[..sim_num]
                     .iter()
-                    .zip(sim_values[..self.k_sim].iter())
+                    .zip(sim_values[..sim_num].iter())
                     .collect();
                 u_sims.sort_unstable_by_key(|(u, _)| *u);
 
@@ -212,9 +213,10 @@ impl PyUserCF {
                     HashSet::new()
                 };
                 let mut item_sim_scores: FxHashMap<i32, (f32, f32)> = FxHashMap::default();
-                for (&v, &u_v_sim) in sim_users[..self.k_sim]
+                let sim_num = std::cmp::min(self.k_sim, sim_users.len());
+                for (&v, &u_v_sim) in sim_users[..sim_num]
                     .iter()
-                    .zip(sim_values[..self.k_sim].iter())
+                    .zip(sim_values[..sim_num].iter())
                 {
                     let v = usize::try_from(v)?;
                     if let Some(row) = self.user_interactions.get_row(v) {
@@ -228,7 +230,7 @@ impl PyUserCF {
                                     *sim += u_v_sim;
                                     *score += u_v_sim * v_i_score;
                                 })
-                                .or_insert((u_v_sim, v_i_score));
+                                .or_insert((u_v_sim, u_v_sim * v_i_score));
                         }
                     }
                 }
