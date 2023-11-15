@@ -19,7 +19,7 @@ pub fn save_model<T: Serialize>(
         .write(true)
         .create(true)
         .open(model_path.as_path())?;
-    let mut encoder = GzEncoder::new(file, Compression::default());
+    let mut encoder = GzEncoder::new(file, Compression::new(1));
     let model_bytes: Vec<u8> = bincode::serialize(model).unwrap();
     encoder.write_all(&model_bytes)?;
     encoder.finish()?;
