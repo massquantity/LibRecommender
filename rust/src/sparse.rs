@@ -3,6 +3,7 @@ use std::hash::Hash;
 use fxhash::FxHashMap;
 use pyo3::types::PyList;
 use pyo3::PyResult;
+use serde::{Deserialize, Serialize};
 
 pub(crate) fn construct_csr_matrix(
     sparse_indices: &PyList,
@@ -19,6 +20,7 @@ pub(crate) fn construct_csr_matrix(
 
 /// Analogy of `scipy.sparse.csr_matrix`
 /// https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
+#[derive(Serialize, Deserialize)]
 pub struct CsrMatrix<T = i32, U = f32> {
     pub indices: Vec<T>,
     pub indptr: Vec<usize>,

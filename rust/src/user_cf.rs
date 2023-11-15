@@ -5,12 +5,15 @@ use fxhash::FxHashMap;
 use pyo3::prelude::*;
 use pyo3::types::*;
 use rand::seq::SliceRandom;
+use serde::{Deserialize, Serialize};
 
 use crate::incremental::{update_by_sims, update_cosine, update_sum_squares};
+use crate::serialization::{load_model, save_model};
 use crate::similarities::{compute_sum_squares, invert_cosine, sort_by_sims, SimOrd};
 use crate::sparse::{construct_csr_matrix, CsrMatrix};
 
 #[pyclass(module = "recfarm", name = "UserCF")]
+#[derive(Serialize, Deserialize)]
 pub struct PyUserCF {
     task: String,
     k_sim: usize,
@@ -28,6 +31,22 @@ pub struct PyUserCF {
 
 #[pymethods]
 impl PyUserCF {
+    #[setter]
+    fn set_n_users(&mut self, n_users: usize) {
+        self.n_users = n_users;
+    }
+
+    #[setter]
+    fn set_n_items(&mut self, n_items: usize) {
+        self.n_items = n_items;
+    }
+
+    #[setter]
+    fn set_user_consumed(&mut self, user_consumed: &PyDict) -> PyResult<()> {
+        self.user_consumed = user_consumed.extract::<FxHashMap<i32, Vec<i32>>>()?;
+        Ok(())
+    }
+
     #[new]
     fn new(
         task: &str,
@@ -78,37 +97,6 @@ impl PyUserCF {
         )?;
         sort_by_sims(self.n_users, &cosine_sims, &mut self.sim_mapping)?;
         Ok(())
-    }
-
-    /// update on new sparse interactions
-    fn update_similarities(
-        &mut self,
-        user_sparse_indices: &PyList,
-        user_sparse_indptr: &PyList,
-        user_sparse_data: &PyList,
-        item_sparse_indices: &PyList,
-        item_sparse_indptr: &PyList,
-        item_sparse_data: &PyList,
-    ) -> PyResult<()> {
-        let new_user_interactions =
-            construct_csr_matrix(user_sparse_indices, user_sparse_indptr, user_sparse_data)?;
-        let new_item_interactions =
-            construct_csr_matrix(item_sparse_indices, item_sparse_indptr, item_sparse_data)?;
-        update_sum_squares(&mut self.sum_squares, &new_user_interactions, self.n_users);
-        let cosine_sims = update_cosine(
-            &new_item_interactions,
-            &self.sum_squares,
-            &mut self.cum_values,
-            self.n_users,
-            self.min_common,
-        )?;
-        update_by_sims(self.n_users, &cosine_sims, &mut self.sim_mapping)?;
-        Ok(())
-    }
-
-    fn update_parameters(&mut self, n_users: usize, n_items: usize) {
-        self.n_users = n_users;
-        self.n_items = n_items;
     }
 
     fn num_sim_elements(&self) -> PyResult<usize> {
@@ -274,10 +262,9 @@ impl PyUserCF {
         Ok((recs, no_rec_indices))
     }
 
-    fn merge_interactions(
+    /// update on new sparse interactions
+    fn update_similarities(
         &mut self,
-        n_users: usize,
-        n_items: usize,
         user_sparse_indices: &PyList,
         user_sparse_indptr: &PyList,
         user_sparse_data: &PyList,
@@ -289,18 +276,43 @@ impl PyUserCF {
             construct_csr_matrix(user_sparse_indices, user_sparse_indptr, user_sparse_data)?;
         let new_item_interactions =
             construct_csr_matrix(item_sparse_indices, item_sparse_indptr, item_sparse_data)?;
+        update_sum_squares(&mut self.sum_squares, &new_user_interactions, self.n_users);
+        let cosine_sims = update_cosine(
+            &new_item_interactions,
+            &self.sum_squares,
+            &mut self.cum_values,
+            self.n_users,
+            self.min_common,
+        )?;
+        update_by_sims(self.n_users, &cosine_sims, &mut self.sim_mapping)?;
+
+        // merge interactions for inference on new users/items
         self.user_interactions = CsrMatrix::add(
             &self.user_interactions,
             &new_user_interactions,
-            Some(n_users),
+            Some(self.n_users),
         );
         self.item_interactions = CsrMatrix::add(
             &self.item_interactions,
             &new_item_interactions,
-            Some(n_items),
+            Some(self.n_items),
         );
         Ok(())
     }
+}
+
+#[pyfunction]
+#[pyo3(name = "save_user_cf")]
+pub fn save(model: &PyUserCF, path: &str, model_name: &str) -> PyResult<()> {
+    save_model(model, path, model_name, "UserCF")?;
+    Ok(())
+}
+
+#[pyfunction]
+#[pyo3(name = "load_user_cf")]
+pub fn load(path: &str, model_name: &str) -> PyResult<PyUserCF> {
+    let model = load_model(path, model_name, "UserCF")?;
+    Ok(model)
 }
 
 #[cfg(test)]
@@ -374,12 +386,9 @@ mod tests {
 
     #[test]
     fn test_user_cf_incremental_training() -> Result<(), Box<dyn std::error::Error>> {
-        let new_n_users = 6;
-        let new_n_items = 5;
         let get_nbs = |model: &PyUserCF, u: i32| model.sim_mapping.get(&u).cloned().unwrap().0;
         pyo3::prepare_freethreaded_python();
         let mut user_cf = get_user_cf()?;
-        user_cf.update_parameters(new_n_users, new_n_items);
         Python::with_gil(|py| -> PyResult<()> {
             // user_interactions:
             // [
@@ -388,7 +397,7 @@ mod tests {
             //     [5, 0, 0, 0, 0],
             //     [0, 0, 0, 0, 0],
             //     [0, 0, 0, 0, 0],
-            //     [2, 2, 1, 2, 0]
+            //     [2, 2, 1, 2, 0],
             // ]
             let user_sparse_indices = PyList::new(py, vec![0, 0, 0, 1, 2, 3]);
             let user_sparse_indptr = PyList::new(py, vec![0, 0, 1, 2, 2, 2, 6]);
@@ -406,16 +415,9 @@ mod tests {
             ]
             .into_py_dict(py);
 
-            user_cf.merge_interactions(
-                new_n_users,
-                new_n_items,
-                user_sparse_indices,
-                user_sparse_indptr,
-                user_sparse_data,
-                item_sparse_indices,
-                item_sparse_indptr,
-                item_sparse_data,
-            )?;
+            user_cf.n_users = 6;
+            user_cf.n_items = 5;
+            user_cf.user_consumed = _user_consumed.extract::<FxHashMap<i32, Vec<i32>>>()?;
             user_cf.update_similarities(
                 user_sparse_indices,
                 user_sparse_indptr,
@@ -424,6 +426,8 @@ mod tests {
                 item_sparse_indptr,
                 item_sparse_data,
             )?;
+            let rec_result = user_cf.recommend(py, PyList::new(py, vec![5, 1]), 10, true, false)?;
+            assert_eq!(rec_result.0.len(), 2);
             Ok(())
         })?;
         assert_eq!(get_nbs(&user_cf, 0), vec![1, 3, 2, 4]);
@@ -447,16 +451,7 @@ mod tests {
             let item_sparse_indices = PyList::new(py, vec![3, 0, 3, 0, 3]);
             let item_sparse_indptr = PyList::new(py, vec![0, 0, 1, 1, 3, 5]);
             let item_sparse_data = PyList::new(py, vec![1.0, 3.0, 4.0, 2.0, 3.0]);
-            user_cf.merge_interactions(
-                new_n_users,
-                new_n_items,
-                user_sparse_indices,
-                user_sparse_indptr,
-                user_sparse_data,
-                item_sparse_indices,
-                item_sparse_indptr,
-                item_sparse_data,
-            )?;
+
             user_cf.update_similarities(
                 user_sparse_indices,
                 user_sparse_indptr,
@@ -473,6 +468,28 @@ mod tests {
         assert_eq!(get_nbs(&user_cf, 3), vec![0, 1, 2, 4]);
         assert_eq!(get_nbs(&user_cf, 4), vec![2, 3, 0, 1]);
         assert_eq!(get_nbs(&user_cf, 5), vec![2, 1]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_save_model() -> Result<(), Box<dyn std::error::Error>> {
+        pyo3::prepare_freethreaded_python();
+        let model = get_user_cf()?;
+        let cur_dir = std::env::current_dir()?
+            .to_string_lossy()
+            .to_string();
+        let model_name = "user_cf_model";
+        save(&model, &cur_dir, model_name)?;
+
+        let new_model: PyUserCF = load(&cur_dir, model_name)?;
+        Python::with_gil(|py| -> PyResult<()> {
+            let users = PyList::new(py, vec![5, 1]);
+            let rec_result = new_model.recommend(py, users, 10, true, false)?;
+            assert_eq!(rec_result.0.len(), 2);
+            Ok(())
+        })?;
+
+        std::fs::remove_file(std::env::current_dir()?.join(format!("{model_name}.gz")))?;
         Ok(())
     }
 }
