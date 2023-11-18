@@ -390,7 +390,7 @@ mod tests {
         pyo3::prepare_freethreaded_python();
         let mut user_cf = get_user_cf()?;
         Python::with_gil(|py| -> PyResult<()> {
-            // user_interactions:
+            // larger user_interactions:
             // [
             //     [0, 0, 0, 0, 0],
             //     [3, 0, 0, 0, 0],
@@ -438,7 +438,7 @@ mod tests {
         assert_eq!(get_nbs(&user_cf, 5), vec![2, 1]);
 
         Python::with_gil(|py| -> PyResult<()> {
-            // user_interactions:
+            // smaller user_interactions:
             // [
             //     [0, 0, 0, 3, 2],
             //     [0, 0, 0, 0, 0],

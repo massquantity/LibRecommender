@@ -4,6 +4,7 @@ use std::path::Path;
 
 use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 use pyo3::PyResult;
+use pyo3::exceptions::PyIOError;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -20,7 +21,10 @@ pub fn save_model<T: Serialize>(
         .create(true)
         .open(model_path.as_path())?;
     let mut encoder = GzEncoder::new(file, Compression::new(1));
-    let model_bytes: Vec<u8> = bincode::serialize(model).unwrap();
+    let model_bytes: Vec<u8> = match bincode::serialize(model) {
+        Ok(bytes) => bytes,
+        Err(e) => return Err(PyIOError::new_err(e.to_string()))
+    };
     encoder.write_all(&model_bytes)?;
     encoder.finish()?;
     println!(
@@ -41,7 +45,10 @@ pub fn load_model<T: DeserializeOwned>(
     let mut decoder = GzDecoder::new(file);
     let mut model_bytes: Vec<u8> = Vec::new();
     decoder.read_to_end(&mut model_bytes)?;
-    let model: T = bincode::deserialize(&model_bytes).unwrap();
+    let model: T = match bincode::deserialize(&model_bytes) {
+        Ok(m) => m,
+        Err(e) => return Err(PyIOError::new_err(e.to_string()))
+    };
     println!(
         "Load `{class_name}` model from `{}`",
         model_path.canonicalize()?.display()
