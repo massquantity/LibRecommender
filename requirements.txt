@@ -10,3 +10,4 @@ tqdm
 nmslib ; python_version < "3.11"
 dgl != 1.1.1 -f https://data.dgl.ai/wheels/repo.html
 dataclasses ; python_version == "3.6"
+recfarm ; python_version >= "3.7"
