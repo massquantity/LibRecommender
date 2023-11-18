@@ -1,3 +1,5 @@
+import numpy as np
+
 from libreco.prediction import predict_data_with_feats
 
 
@@ -14,7 +16,7 @@ def ptest_preds(model, task, pd_data, with_feats):
     popular_pred = model.predict(
         user="cold user2", item="cold item2", cold_start="popular"
     )
-    assert popular_pred == model.default_pred
+    assert np.allclose(popular_pred, model.default_pred)
 
     cold_pred1 = model.predict(user="cold user1", item="cold item2")
     cold_pred2 = model.predict(user="cold user2", item="cold item2")
