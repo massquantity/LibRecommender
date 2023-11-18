@@ -9,7 +9,7 @@ def construct_rec(data_info, user_ids, computed_recs, inner_id):
     result_recs = dict()
     for i, u in enumerate(user_ids):
         if inner_id:
-            result_recs[u] = computed_recs[i]
+            result_recs[u] = np.array(computed_recs[i])
         else:
             u = data_info.id2user[u]
             result_recs[u] = np.array(

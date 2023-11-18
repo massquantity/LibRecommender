@@ -22,6 +22,7 @@ from .svdpp import SVDpp
 from .transformer import Transformer
 from .two_tower import TwoTower
 from .user_cf import UserCF
+from .user_cf_rs import RsUserCF
 from .wave_net import WaveNet
 from .wide_deep import WideDeep
 from .youtube_ranking import YouTubeRanking
@@ -29,6 +30,7 @@ from .youtube_retrieval import YouTubeRetrieval
 
 __all__ = [
     "UserCF",
+    "RsUserCF",
     "ItemCF",
     "SVD",
     "SVDpp",
