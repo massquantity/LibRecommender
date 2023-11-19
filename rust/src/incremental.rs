@@ -5,7 +5,11 @@ use pyo3::PyResult;
 
 use crate::sparse::CsrMatrix;
 
-pub(crate) fn update_sum_squares(sum_squares: &mut Vec<f32>, interactions: &CsrMatrix, num: usize) {
+pub(crate) fn update_sum_squares(
+    sum_squares: &mut Vec<f32>,
+    interactions: &CsrMatrix<i32, f32>,
+    num: usize,
+) {
     if num > sum_squares.len() {
         sum_squares.resize(num, 0.0);
     }
@@ -17,7 +21,7 @@ pub(crate) fn update_sum_squares(sum_squares: &mut Vec<f32>, interactions: &CsrM
 }
 
 pub(crate) fn update_cosine(
-    interactions: &CsrMatrix,
+    interactions: &CsrMatrix<i32, f32>,
     sum_squares: &[f32],
     cum_values: &mut FxHashMap<i32, (i32, i32, f32, usize)>,
     n_x: usize,
