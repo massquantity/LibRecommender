@@ -8,7 +8,7 @@ use crate::sparse::CsrMatrix;
 
 const MAX_BLOCK_SIZE: i64 = 200_000_000;
 
-pub(crate) fn compute_sum_squares(interactions: &CsrMatrix, num: usize) -> Vec<f32> {
+pub(crate) fn compute_sum_squares(interactions: &CsrMatrix<i32, f32>, num: usize) -> Vec<f32> {
     let mut sum_squares = vec![0.0; num];
     for (i, ss) in sum_squares.iter_mut().enumerate() {
         if let Some(row) = interactions.get_row(i) {
@@ -20,7 +20,7 @@ pub(crate) fn compute_sum_squares(interactions: &CsrMatrix, num: usize) -> Vec<f
 
 /// Divide `n_x` into several blocks to avoid huge memory consumption.
 pub(crate) fn invert_cosine(
-    interactions: &CsrMatrix,
+    interactions: &CsrMatrix<i32, f32>,
     sum_squares: &[f32],
     cum_values: &mut FxHashMap<i32, (i32, i32, f32, usize)>,
     n_x: usize,

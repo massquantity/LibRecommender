@@ -1,29 +1,18 @@
 use std::hash::Hash;
 
 use fxhash::FxHashMap;
-use pyo3::types::PyList;
-use pyo3::PyResult;
+use pyo3::prelude::FromPyObject;
 use serde::{Deserialize, Serialize};
-
-pub(crate) fn construct_csr_matrix(
-    sparse_indices: &PyList,
-    sparse_indptr: &PyList,
-    sparse_data: &PyList,
-) -> PyResult<CsrMatrix> {
-    let matrix = CsrMatrix {
-        indices: sparse_indices.extract::<Vec<i32>>()?,
-        indptr: sparse_indptr.extract::<Vec<usize>>()?,
-        data: sparse_data.extract::<Vec<f32>>()?,
-    };
-    Ok(matrix)
-}
 
 /// Analogy of `scipy.sparse.csr_matrix`
 /// https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html
-#[derive(Serialize, Deserialize)]
-pub struct CsrMatrix<T = i32, U = f32> {
+#[derive(FromPyObject, Serialize, Deserialize)]
+pub struct CsrMatrix<T, U> {
+    #[pyo3(attribute("sparse_indices"))]
     pub indices: Vec<T>,
+    #[pyo3(attribute("sparse_indptr"))]
     pub indptr: Vec<usize>,
+    #[pyo3(attribute("sparse_data"))]
     pub data: Vec<U>,
 }
 

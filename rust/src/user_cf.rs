@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::incremental::{update_by_sims, update_cosine, update_sum_squares};
 use crate::serialization::{load_model, save_model};
 use crate::similarities::{compute_sum_squares, invert_cosine, sort_by_sims, SimOrd};
-use crate::sparse::{construct_csr_matrix, CsrMatrix};
+use crate::sparse::CsrMatrix;
 
 #[pyclass(module = "recfarm", name = "UserCF")]
 #[derive(Serialize, Deserialize)]
@@ -23,8 +23,8 @@ pub struct PyUserCF {
     sum_squares: Vec<f32>,
     cum_values: FxHashMap<i32, (i32, i32, f32, usize)>,
     sim_mapping: FxHashMap<i32, (Vec<i32>, Vec<f32>)>,
-    user_interactions: CsrMatrix,
-    item_interactions: CsrMatrix,
+    user_interactions: CsrMatrix<i32, f32>,
+    item_interactions: CsrMatrix<i32, f32>,
     user_consumed: FxHashMap<i32, Vec<i32>>,
     default_pred: f32,
 }
@@ -54,20 +54,14 @@ impl PyUserCF {
         n_users: usize,
         n_items: usize,
         min_common: usize,
-        user_sparse_indices: &PyList,
-        user_sparse_indptr: &PyList,
-        user_sparse_data: &PyList,
-        item_sparse_indices: &PyList,
-        item_sparse_indptr: &PyList,
-        item_sparse_data: &PyList,
+        user_interactions: &PyAny,
+        item_interactions: &PyAny,
         user_consumed: &PyDict,
         default_pred: f32,
     ) -> PyResult<Self> {
-        let user_interactions =
-            construct_csr_matrix(user_sparse_indices, user_sparse_indptr, user_sparse_data)?;
-        let item_interactions =
-            construct_csr_matrix(item_sparse_indices, item_sparse_indptr, item_sparse_data)?;
-        let user_consumed = user_consumed.extract::<FxHashMap<i32, Vec<i32>>>()?;
+        let user_interactions: CsrMatrix<i32, f32> = user_interactions.extract()?;
+        let item_interactions: CsrMatrix<i32, f32> = item_interactions.extract()?;
+        let user_consumed: FxHashMap<i32, Vec<i32>> = user_consumed.extract()?;
         Ok(Self {
             task: task.to_string(),
             k_sim,
@@ -111,8 +105,8 @@ impl PyUserCF {
     /// sparse matrix of `item` interaction
     fn predict(&self, users: &PyList, items: &PyList) -> PyResult<Vec<f32>> {
         let mut preds = Vec::new();
-        let users = users.extract::<Vec<i32>>()?;
-        let items = items.extract::<Vec<usize>>()?;
+        let users: Vec<i32> = users.extract()?;
+        let items: Vec<usize> = items.extract()?;
         for (&u, &i) in users.iter().zip(items.iter()) {
             if usize::try_from(u)? == self.n_users || i == self.n_items {
                 preds.push(self.default_pred);
@@ -193,7 +187,7 @@ impl PyUserCF {
         let mut recs = Vec::new();
         let mut no_rec_indices = Vec::new();
         for (k, u) in users.iter().enumerate() {
-            let u = u.extract::<i32>()?;
+            let u: i32 = u.extract()?;
             if let Some((sim_users, sim_values)) = self.sim_mapping.get(&u) {
                 let consumed: HashSet<&i32> = if let Some(consumed) = self.user_consumed.get(&u) {
                     HashSet::from_iter(consumed)
@@ -265,17 +259,11 @@ impl PyUserCF {
     /// update on new sparse interactions
     fn update_similarities(
         &mut self,
-        user_sparse_indices: &PyList,
-        user_sparse_indptr: &PyList,
-        user_sparse_data: &PyList,
-        item_sparse_indices: &PyList,
-        item_sparse_indptr: &PyList,
-        item_sparse_data: &PyList,
+        user_interactions: &PyAny,
+        item_interactions: &PyAny,
     ) -> PyResult<()> {
-        let new_user_interactions =
-            construct_csr_matrix(user_sparse_indices, user_sparse_indptr, user_sparse_data)?;
-        let new_item_interactions =
-            construct_csr_matrix(item_sparse_indices, item_sparse_indptr, item_sparse_data)?;
+        let new_user_interactions: CsrMatrix<i32, f32> = user_interactions.extract()?;
+        let new_item_interactions: CsrMatrix<i32, f32> = item_interactions.extract()?;
         update_sum_squares(&mut self.sum_squares, &new_user_interactions, self.n_users);
         let cosine_sims = update_cosine(
             &new_item_interactions,
@@ -319,6 +307,16 @@ pub fn load(path: &str, model_name: &str) -> PyResult<PyUserCF> {
 mod tests {
     use super::*;
 
+    #[pyclass]
+    struct PySparseMatrix {
+        #[pyo3(get)]
+        sparse_indices: Vec<i32>,
+        #[pyo3(get)]
+        sparse_indptr: Vec<usize>,
+        #[pyo3(get)]
+        sparse_data: Vec<f32>,
+    }
+
     fn get_user_cf() -> Result<PyUserCF, Box<dyn std::error::Error>> {
         let task = "ranking";
         let k_sim = 10;
@@ -335,12 +333,24 @@ mod tests {
             //     [2, 1, 1, 0],
             //     [0, 1, 2, 0],
             // ]
-            let user_sparse_indices = PyList::new(py, vec![0, 1, 0, 1, 1, 2, 0, 1, 2, 1, 2]);
-            let user_sparse_indptr = PyList::new(py, vec![0, 2, 4, 6, 9, 11]);
-            let user_sparse_data = PyList::new(py, vec![1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 2]);
-            let item_sparse_indices = PyList::new(py, vec![0, 1, 3, 0, 1, 2, 3, 4, 2, 3, 4]);
-            let item_sparse_indptr = PyList::new(py, vec![0, 3, 8, 11, 11]);
-            let item_sparse_data = PyList::new(py, vec![1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2]);
+            let user_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![0, 1, 0, 1, 1, 2, 0, 1, 2, 1, 2],
+                    sparse_indptr: vec![0, 2, 4, 6, 9, 11],
+                    sparse_data: vec![1., 1., 2., 1., 1., 1., 2., 1., 1., 1., 2.],
+                },
+            )?;
+            let item_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![0, 1, 3, 0, 1, 2, 3, 4, 2, 3, 4],
+                    sparse_indptr: vec![0, 3, 8, 11, 11],
+                    sparse_data: vec![1., 2., 2., 1., 1., 1., 1., 1., 1., 1., 2.],
+                },
+            )?;
+            let user_interactions: &PyAny = user_sparse_matrix.as_ref(py);
+            let item_interactions: &PyAny = item_sparse_matrix.as_ref(py);
             let user_consumed = [
                 (0, vec![0, 1]),
                 (1, vec![0, 1]),
@@ -356,12 +366,8 @@ mod tests {
                 n_users,
                 n_items,
                 min_common,
-                user_sparse_indices,
-                user_sparse_indptr,
-                user_sparse_data,
-                item_sparse_indices,
-                item_sparse_indptr,
-                item_sparse_data,
+                user_interactions,
+                item_interactions,
                 user_consumed,
                 default_pred,
             )?;
@@ -399,12 +405,24 @@ mod tests {
             //     [0, 0, 0, 0, 0],
             //     [2, 2, 1, 2, 0],
             // ]
-            let user_sparse_indices = PyList::new(py, vec![0, 0, 0, 1, 2, 3]);
-            let user_sparse_indptr = PyList::new(py, vec![0, 0, 1, 2, 2, 2, 6]);
-            let user_sparse_data = PyList::new(py, vec![3.0, 5.0, 2.0, 2.0, 1.0, 2.0]);
-            let item_sparse_indices = PyList::new(py, vec![1, 2, 5, 5, 5, 5]);
-            let item_sparse_indptr = PyList::new(py, vec![0, 3, 4, 5, 6, 6]);
-            let item_sparse_data = PyList::new(py, vec![3.0, 5.0, 2.0, 2.0, 1.0, 2.0]);
+            let user_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![0, 0, 0, 1, 2, 3],
+                    sparse_indptr: vec![0, 0, 1, 2, 2, 2, 6],
+                    sparse_data: vec![3.0, 5.0, 2.0, 2.0, 1.0, 2.0],
+                },
+            )?;
+            let item_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![1, 2, 5, 5, 5, 5],
+                    sparse_indptr: vec![0, 3, 4, 5, 6, 6],
+                    sparse_data: vec![3.0, 5.0, 2.0, 2.0, 1.0, 2.0],
+                },
+            )?;
+            let user_interactions: &PyAny = user_sparse_matrix.as_ref(py);
+            let item_interactions: &PyAny = item_sparse_matrix.as_ref(py);
             let _user_consumed = [
                 (0, vec![0, 1]),
                 (1, vec![0, 1]),
@@ -418,14 +436,7 @@ mod tests {
             user_cf.n_users = 6;
             user_cf.n_items = 5;
             user_cf.user_consumed = _user_consumed.extract::<FxHashMap<i32, Vec<i32>>>()?;
-            user_cf.update_similarities(
-                user_sparse_indices,
-                user_sparse_indptr,
-                user_sparse_data,
-                item_sparse_indices,
-                item_sparse_indptr,
-                item_sparse_data,
-            )?;
+            user_cf.update_similarities(user_interactions, item_interactions)?;
             let rec_result = user_cf.recommend(py, PyList::new(py, vec![5, 1]), 10, true, false)?;
             assert_eq!(rec_result.0.len(), 2);
             Ok(())
@@ -445,21 +456,25 @@ mod tests {
             //     [0, 0, 0, 0, 0],
             //     [0, 1, 0, 4, 3],
             // ]
-            let user_sparse_indices = PyList::new(py, vec![3, 4, 1, 3, 4]);
-            let user_sparse_indptr = PyList::new(py, vec![0, 2, 2, 2, 5]);
-            let user_sparse_data = PyList::new(py, vec![3.0, 2.0, 1.0, 4.0, 3.0]);
-            let item_sparse_indices = PyList::new(py, vec![3, 0, 3, 0, 3]);
-            let item_sparse_indptr = PyList::new(py, vec![0, 0, 1, 1, 3, 5]);
-            let item_sparse_data = PyList::new(py, vec![1.0, 3.0, 4.0, 2.0, 3.0]);
-
-            user_cf.update_similarities(
-                user_sparse_indices,
-                user_sparse_indptr,
-                user_sparse_data,
-                item_sparse_indices,
-                item_sparse_indptr,
-                item_sparse_data,
+            let user_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![3, 4, 1, 3, 4],
+                    sparse_indptr: vec![0, 2, 2, 2, 5],
+                    sparse_data: vec![3.0, 2.0, 1.0, 4.0, 3.0],
+                },
             )?;
+            let item_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![3, 0, 3, 0, 3],
+                    sparse_indptr: vec![0, 0, 1, 1, 3, 5],
+                    sparse_data: vec![1.0, 3.0, 4.0, 2.0, 3.0],
+                },
+            )?;
+            let user_interactions: &PyAny = user_sparse_matrix.as_ref(py);
+            let item_interactions: &PyAny = item_sparse_matrix.as_ref(py);
+            user_cf.update_similarities(user_interactions, item_interactions)?;
             Ok(())
         })?;
         assert_eq!(get_nbs(&user_cf, 0), vec![3, 1, 2, 4]);
