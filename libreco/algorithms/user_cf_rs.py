@@ -7,6 +7,7 @@ from ..prediction.preprocess import convert_id
 from ..recommendation import construct_rec, popular_recommendations
 from ..utils.misc import time_block
 from ..utils.save_load import load_params, save_params
+from ..utils.sparse import build_sparse
 from ..utils.validate import check_fitting, check_unknown, check_unknown_user
 
 
@@ -46,24 +47,14 @@ class RsUserCF(Base):
     ):
         import recfarm
 
-        def extract_sparse(sparse_matrix):
-            return (
-                sparse_matrix.indices.tolist(),
-                sparse_matrix.indptr.tolist(),
-                sparse_matrix.data.tolist(),
-            )
-
         check_fitting(self, train_data, eval_data, neg_sampling, k)
         self.show_start_time()
-        user_interactions = train_data.sparse_interaction
-        item_interactions = user_interactions.T.tocsr()
+        user_interacts = build_sparse(train_data.sparse_interaction)
+        item_interacts = build_sparse(train_data.sparse_interaction, transpose=True)
         if self.incremental:
             assert isinstance(self.user_cf_rs, recfarm.UserCF)
             with time_block("update similarity", verbose=1):
-                self.user_cf_rs.update_similarities(
-                    *extract_sparse(user_interactions),
-                    *extract_sparse(item_interactions),
-                )
+                self.user_cf_rs.update_similarities(user_interacts, item_interacts)
         else:
             self.user_cf_rs = recfarm.UserCF(
                 self.task,
@@ -71,8 +62,8 @@ class RsUserCF(Base):
                 self.n_users,
                 self.n_items,
                 self.min_common,
-                *extract_sparse(user_interactions),
-                *extract_sparse(item_interactions),
+                user_interacts,
+                item_interacts,
                 self.user_consumed,
                 self.default_pred,
             )
