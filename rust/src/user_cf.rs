@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::incremental::{update_by_sims, update_cosine, update_sum_squares};
 use crate::serialization::{load_model, save_model};
 use crate::similarities::{compute_sum_squares, invert_cosine, sort_by_sims, SimOrd};
-use crate::sparse::CsrMatrix;
+use crate::sparse::{get_row, CsrMatrix};
 
 #[pyclass(module = "recfarm", name = "UserCF")]
 #[derive(Serialize, Deserialize)]
@@ -121,18 +121,18 @@ impl PyUserCF {
                     .collect();
                 u_sims.sort_unstable_by_key(|(u, _)| *u);
 
-                if let Some(u_labels) = self.item_interactions.get_row(i) {
-                    let u_labels: Vec<(&i32, &f32)> = u_labels.collect();
+                if let Some(u_labels) = get_row(&self.item_interactions, i) {
+                    let u_labels: Vec<(i32, f32)> = u_labels.collect();
                     let mut i = 0;
                     let mut j = 0;
                     while i < u_sims.len() && j < u_labels.len() {
                         let u1 = u_sims[i].0;
                         let u2 = u_labels[j].0;
-                        match u1.cmp(u2) {
+                        match u1.cmp(&u2) {
                             Ordering::Less => i += 1,
                             Ordering::Greater => j += 1,
                             Ordering::Equal => {
-                                max_heap.push(SimOrd(*u_sims[i].1, *u_labels[j].1));
+                                max_heap.push(SimOrd(*u_sims[i].1, u_labels[j].1));
                                 i += 1;
                                 j += 1;
                             }
@@ -201,8 +201,8 @@ impl PyUserCF {
                     .zip(sim_values[..sim_num].iter())
                 {
                     let v = usize::try_from(v)?;
-                    if let Some(row) = self.user_interactions.get_row(v) {
-                        for (&i, &v_i_score) in row {
+                    if let Some(row) = get_row(&self.user_interactions, v) {
+                        for (i, v_i_score) in row {
                             if filter_consumed && !consumed.is_empty() && consumed.contains(&i) {
                                 continue;
                             }

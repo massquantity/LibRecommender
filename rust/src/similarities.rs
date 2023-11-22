@@ -4,18 +4,17 @@ use std::time::Instant;
 use fxhash::FxHashMap;
 use pyo3::PyResult;
 
-use crate::sparse::CsrMatrix;
+use crate::sparse::{get_row, CsrMatrix};
 
 const MAX_BLOCK_SIZE: i64 = 200_000_000;
 
 pub(crate) fn compute_sum_squares(interactions: &CsrMatrix<i32, f32>, num: usize) -> Vec<f32> {
-    let mut sum_squares = vec![0.0; num];
-    for (i, ss) in sum_squares.iter_mut().enumerate() {
-        if let Some(row) = interactions.get_row(i) {
-            *ss = row.map(|(_, &d)| d * d).sum()
-        }
-    }
-    sum_squares
+    (0..num)
+        .map(|i| match get_row(interactions, i) {
+            Some(row) => row.fold(0.0, |ss, (_, d)| ss + d * d),
+            None => 0.0,
+        })
+        .collect()
 }
 
 /// Divide `n_x` into several blocks to avoid huge memory consumption.

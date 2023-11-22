@@ -3,7 +3,7 @@ use std::time::Instant;
 use fxhash::FxHashMap;
 use pyo3::PyResult;
 
-use crate::sparse::CsrMatrix;
+use crate::sparse::{get_row, CsrMatrix};
 
 pub(crate) fn update_sum_squares(
     sum_squares: &mut Vec<f32>,
@@ -14,8 +14,8 @@ pub(crate) fn update_sum_squares(
         sum_squares.resize(num, 0.0);
     }
     for (i, ss) in sum_squares.iter_mut().enumerate() {
-        if let Some(row) = interactions.get_row(i) {
-            *ss += row.map(|(_, &d)| d * d).sum::<f32>()
+        if let Some(row) = get_row(interactions, i) {
+            *ss += row.map(|(_, d)| d * d).sum::<f32>()
         }
     }
 }
