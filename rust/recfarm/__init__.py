@@ -1,4 +1,10 @@
 from recfarm import recfarm
-from recfarm.recfarm import UserCF, save_user_cf, load_user_cf, __version__
+from recfarm.recfarm import (
+    UserCF,
+    __version__,
+    build_consumed_unique,
+    load_user_cf,
+    save_user_cf,
+)
 
 __all__ = ["recfarm", "UserCF"]
