@@ -4,6 +4,7 @@ use fxhash::FxHashMap;
 use pyo3::PyResult;
 
 use crate::sparse::{get_row, CsrMatrix};
+use crate::user_cf::CumValues;
 
 pub(crate) fn update_sum_squares(
     sum_squares: &mut Vec<f32>,
@@ -77,7 +78,7 @@ fn accumulate_cosine(
     prods: &[f32],
     counts: &[usize],
     sum_squares: &[f32],
-    cum_values: &mut FxHashMap<i32, (i32, i32, f32, usize)>,
+    cum_values: &mut FxHashMap<i32, CumValues>,
     min_common: usize,
 ) -> PyResult<Vec<(i32, i32, f32)>> {
     let mut cosines = Vec::new();

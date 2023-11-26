@@ -9,8 +9,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::incremental::{update_by_sims, update_cosine, update_sum_squares};
 use crate::serialization::{load_model, save_model};
-use crate::similarities::{compute_sum_squares, invert_cosine, sort_by_sims, SimOrd};
+use crate::similarities::{
+    compute_sum_squares, forward_cosine, invert_cosine, sort_by_sims, SimOrd,
+};
 use crate::sparse::{get_row, CsrMatrix};
+
+/// (x1, x2, prod, count)
+pub type CumValues = (i32, i32, f32, usize);
 
 #[pyclass(module = "recfarm", name = "UserCF")]
 #[derive(Serialize, Deserialize)]
@@ -21,7 +26,7 @@ pub struct PyUserCF {
     n_items: usize,
     min_common: usize,
     sum_squares: Vec<f32>,
-    cum_values: FxHashMap<i32, (i32, i32, f32, usize)>,
+    cum_values: FxHashMap<i32, CumValues>,
     sim_mapping: FxHashMap<i32, (Vec<i32>, Vec<f32>)>,
     user_interactions: CsrMatrix<i32, f32>,
     item_interactions: CsrMatrix<i32, f32>,
@@ -78,17 +83,30 @@ impl PyUserCF {
         })
     }
 
+    /// forward index: sparse matrix of `user` interaction
     /// invert index: sparse matrix of `item` interaction
-    fn compute_similarities(&mut self /* *args, **kwargs */) -> PyResult<()> {
+    fn compute_similarities(&mut self, invert: bool, num_threads: usize) -> PyResult<()> {
         self.sum_squares = compute_sum_squares(&self.user_interactions, self.n_users);
-        let cosine_sims = invert_cosine(
-            &self.item_interactions,
-            &self.sum_squares,
-            &mut self.cum_values,
-            self.n_users,
-            self.n_items,
-            self.min_common,
-        )?;
+        let cosine_sims = if invert {
+            invert_cosine(
+                &self.item_interactions,
+                &self.sum_squares,
+                &mut self.cum_values,
+                self.n_users,
+                self.n_items,
+                self.min_common,
+            )?
+        } else {
+            std::env::set_var("RAYON_NUM_THREADS", format!("{num_threads}"));
+            // rayon::ThreadPoolBuilder::new().num_threads(num_threads).build_global().unwrap();
+            forward_cosine(
+                &self.user_interactions,
+                &self.sum_squares,
+                &mut self.cum_values,
+                self.n_users,
+                self.min_common,
+            )?
+        };
         sort_by_sims(self.n_users, &cosine_sims, &mut self.sim_mapping)?;
         Ok(())
     }
@@ -371,7 +389,7 @@ mod tests {
                 user_consumed,
                 default_pred,
             )?;
-            user_cf.compute_similarities()?;
+            user_cf.compute_similarities(true, 1)?;
             Ok(user_cf)
         })?;
         Ok(user_cf)
