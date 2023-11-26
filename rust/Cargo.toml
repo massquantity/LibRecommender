@@ -14,6 +14,7 @@ flate2 = "1.0"
 fxhash = "0.2.1"
 pyo3 = "0.20.0"
 rand = { version = "0.8", features = ["default", "alloc"] }
+rayon = "1.8"
 serde = { version = "1.0", features = ["derive"] }
 
 [profile.release]
