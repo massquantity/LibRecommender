@@ -68,7 +68,9 @@ class RsUserCF(Base):
                 self.default_pred,
             )
             with time_block("similarity computation", verbose=1):
-                self.user_cf_rs.compute_similarities()
+                self.user_cf_rs.compute_similarities(
+                    self.mode == "invert", self.num_threads
+                )
 
         num = self.user_cf_rs.num_sim_elements()
         density_ratio = 100 * num / (self.n_users * self.n_users)

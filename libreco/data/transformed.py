@@ -3,6 +3,7 @@ from collections import defaultdict
 from random import seed as set_random_seed
 
 import numpy as np
+import pandas as pd
 from scipy.sparse import csr_matrix
 
 from ..sampling import negatives_from_unconsumed
@@ -46,9 +47,17 @@ class TransformedSet:
         self._labels = labels
         self._sparse_indices = sparse_indices
         self._dense_values = dense_values
-        self._sparse_interaction = csr_matrix(
-            (labels, (user_indices, item_indices)), dtype=np.float32
+        self._sparse_interaction = self.construct_sparse()
+
+    def construct_sparse(self):
+        interaction = pd.DataFrame(
+            {"user": self.user_indices, "item": self.item_indices, "label": self.labels}
         )
+        interaction = interaction.drop_duplicates(subset=["user", "item"], keep="last")
+        user_indices = interaction["user"].to_numpy()
+        item_indices = interaction["item"].to_numpy()
+        labels = interaction["label"].to_numpy()
+        return csr_matrix((labels, (user_indices, item_indices)), dtype=np.float32)
 
     def __len__(self):
         return len(self.labels)
