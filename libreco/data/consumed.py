@@ -2,23 +2,33 @@ import sys
 from collections import OrderedDict, defaultdict
 
 import numpy as np
-import pandas as pd
 
 
 def interaction_consumed(user_indices, item_indices):
+    """The underlying rust function will remove consecutive repeated elements."""
+    if isinstance(user_indices, np.ndarray):
+        user_indices = user_indices.tolist()
+    if isinstance(item_indices, np.ndarray):
+        item_indices = item_indices.tolist()
+
+    try:
+        from recfarm import build_consumed_unique
+
+        return build_consumed_unique(user_indices, item_indices)
+    except ModuleNotFoundError:  # pragma: no cover
+        return _interaction_consumed(user_indices, item_indices)
+
+
+def _interaction_consumed(user_indices, item_indices):  # pragma: no cover
     user_consumed = defaultdict(list)
     item_consumed = defaultdict(list)
     for u, i in zip(user_indices, item_indices):
-        if isinstance(u, np.integer):
-            u = u.item()
-        if isinstance(i, np.integer):
-            i = i.item()
         user_consumed[u].append(i)
         item_consumed[i].append(u)
     return _remove_duplicates(user_consumed, item_consumed)
 
 
-def _remove_duplicates(user_consumed, item_consumed):
+def _remove_duplicates(user_consumed, item_consumed):  # pragma: no cover
     # keys will preserve order in dict since Python3.7
     if sys.version_info[:2] >= (3, 7):
         dict_func = dict.fromkeys
@@ -47,8 +57,7 @@ def _merge_dedup(new_consumed, num, old_consumed):
     for i in range(num):
         assert i in new_consumed or i in old_consumed
         if i in new_consumed and i in old_consumed:
-            consumed = old_consumed[i] + new_consumed[i]
-            result[i] = _remove_first_duplicates(consumed)
+            result[i] = old_consumed[i] + new_consumed[i]
         else:
             result[i] = new_consumed[i] if i in new_consumed else old_consumed[i]
     return result
@@ -59,5 +68,5 @@ def _fill_empty(consumed, num, old_consumed):
     return {i: consumed[i] if i in consumed else old_consumed[i] for i in range(num)}
 
 
-def _remove_first_duplicates(consumed):
-    return pd.Series(consumed).drop_duplicates(keep="last").tolist()
+# def _remove_first_duplicates(consumed):
+#    return pd.Series(consumed).drop_duplicates(keep="last").tolist()
