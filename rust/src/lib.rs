@@ -3,6 +3,7 @@
 use pyo3::prelude::*;
 
 mod incremental;
+mod item_cf;
 mod serialization;
 mod similarities;
 mod sparse;

@@ -2,6 +2,9 @@ use fxhash::FxHashMap;
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyDict, PyList};
 
+/// (x1, x2, prod, count)
+pub(crate) type CumValues = (i32, i32, f32, usize);
+
 #[pyfunction]
 #[pyo3(name = "build_consumed_unique")]
 pub fn build_consumed(
