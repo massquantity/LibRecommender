@@ -4,7 +4,7 @@ use fxhash::FxHashMap;
 use pyo3::PyResult;
 
 use crate::sparse::{get_row, CsrMatrix};
-use crate::user_cf::CumValues;
+use crate::utils::CumValues;
 
 pub(crate) fn update_sum_squares(
     sum_squares: &mut Vec<f32>,

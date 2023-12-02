@@ -6,7 +6,7 @@ use pyo3::PyResult;
 use rayon::prelude::*;
 
 use crate::sparse::{get_row, CsrMatrix};
-use crate::user_cf::CumValues;
+use crate::utils::CumValues;
 
 const MAX_BLOCK_SIZE: i64 = 200_000_000;
 

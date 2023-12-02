@@ -13,9 +13,7 @@ use crate::similarities::{
     compute_sum_squares, forward_cosine, invert_cosine, sort_by_sims, SimOrd,
 };
 use crate::sparse::{get_row, CsrMatrix};
-
-/// (x1, x2, prod, count)
-pub type CumValues = (i32, i32, f32, usize);
+use crate::utils::CumValues;
 
 #[pyclass(module = "recfarm", name = "UserCF")]
 #[derive(Serialize, Deserialize)]
