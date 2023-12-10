@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 
+from .consumed import interaction_consumed
 from ..sampling import negatives_from_unconsumed
 
 
@@ -114,22 +115,22 @@ class TransformedEvalSet:
     """
 
     def __init__(self, user_indices, item_indices, labels):
-        self.user_indices = user_indices
-        self.item_indices = item_indices
-        self.labels = labels
+        self.user_indices = np.asarray(user_indices)
+        self.item_indices = np.asarray(item_indices)
+        self.labels = np.asarray(labels)
         self.has_sampled = False
         self.positive_consumed = self._get_positive_consumed()
 
+    # noinspection PyUnresolvedReferences
     def _get_positive_consumed(self):
         # data without label column has dummy labels 0
         label_all_positive = np.all(np.asarray(self.labels) == 0)
+        user_indices = self.user_indices.tolist()
+        item_indices = self.item_indices.tolist()
+        labels = self.labels.tolist()
         user_consumed = defaultdict(list)
-        for u, i, lb in zip(self.user_indices, self.item_indices, self.labels):
+        for u, i, lb in zip(user_indices, item_indices, labels):
             if label_all_positive or lb != 0:
-                if isinstance(u, np.integer):
-                    u = u.item()
-                if isinstance(i, np.integer):
-                    i = i.item()
                 user_consumed[u].append(i)
         return {u: np.unique(items).tolist() for u, items in user_consumed.items()}
 
@@ -161,7 +162,8 @@ class TransformedEvalSet:
             self.item_indices[(i + 1) :: (num_neg + 1)] = items_neg[i::num_neg]
 
     def _sample_neg_items(self, users, items, n_items, num_neg):
-        user_consumed_set = {u: set(uis) for u, uis in self.positive_consumed.items()}
+        user_consumed, _ = interaction_consumed(self.user_indices, self.item_indices)
+        user_consumed_set = {u: set(uis) for u, uis in user_consumed.items()}
         return negatives_from_unconsumed(
             user_consumed_set, users, items, n_items, num_neg
         )
