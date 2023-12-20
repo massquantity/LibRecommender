@@ -395,7 +395,7 @@ mod tests {
 
     #[test]
     fn test_user_cf_training() -> Result<(), Box<dyn std::error::Error>> {
-        let get_nbs = |model: &PyUserCF, u: i32| model.sim_mapping.get(&u).cloned().unwrap().0;
+        let get_nbs = |model: &PyUserCF, u: i32| model.sim_mapping[&u].0.to_owned();
         pyo3::prepare_freethreaded_python();
         let user_cf = get_user_cf()?;
         assert_eq!(get_nbs(&user_cf, 0), vec![1, 3, 2, 4]);
@@ -408,7 +408,7 @@ mod tests {
 
     #[test]
     fn test_user_cf_incremental_training() -> Result<(), Box<dyn std::error::Error>> {
-        let get_nbs = |model: &PyUserCF, u: i32| model.sim_mapping.get(&u).cloned().unwrap().0;
+        let get_nbs = |model: &PyUserCF, u: i32| model.sim_mapping[&u].0.to_owned();
         pyo3::prepare_freethreaded_python();
         let mut user_cf = get_user_cf()?;
         Python::with_gil(|py| -> PyResult<()> {
