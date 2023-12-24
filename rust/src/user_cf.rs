@@ -1,17 +1,12 @@
-use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashSet};
-
-use fxhash::FxHashMap;
+use fxhash::{FxHashMap, FxHashSet};
 use pyo3::prelude::*;
 use pyo3::types::*;
 use serde::{Deserialize, Serialize};
 
 use crate::incremental::{update_by_sims, update_cosine, update_sum_squares};
-use crate::inference::{compute_pred, compute_rec_items};
+use crate::inference::{compute_pred, get_intersect_neighbors, get_rec_items};
 use crate::serialization::{load_model, save_model};
-use crate::similarities::{
-    compute_sum_squares, forward_cosine, invert_cosine, sort_by_sims, SimOrd,
-};
+use crate::similarities::{compute_sum_squares, forward_cosine, invert_cosine, sort_by_sims};
 use crate::sparse::{get_row, CsrMatrix};
 use crate::utils::CumValues;
 
@@ -128,57 +123,30 @@ impl PyUserCF {
                 preds.push(self.default_pred);
                 continue;
             }
-            if let Some((sim_users, sim_values)) = self.sim_mapping.get(&u) {
-                let mut max_heap: BinaryHeap<SimOrd> = BinaryHeap::new();
-                let sim_num = std::cmp::min(self.k_sim, sim_users.len());
-                let mut u_sims: Vec<(&i32, &f32)> = sim_users[..sim_num]
-                    .iter()
-                    .zip(sim_values[..sim_num].iter())
-                    .collect();
-                u_sims.sort_unstable_by_key(|(&u, _)| u);
-
-                if let Some(u_labels) = get_row(&self.item_interactions, i) {
-                    let u_labels: Vec<(i32, f32)> = u_labels.collect();
-                    let mut i = 0;
-                    let mut j = 0;
-                    while i < u_sims.len() && j < u_labels.len() {
-                        let u1 = u_sims[i].0;
-                        let u2 = u_labels[j].0;
-                        match u1.cmp(&u2) {
-                            Ordering::Less => i += 1,
-                            Ordering::Greater => j += 1,
-                            Ordering::Equal => {
-                                max_heap.push(SimOrd(*u_sims[i].1, u_labels[j].1));
-                                i += 1;
-                                j += 1;
-                            }
-                        }
-                    }
-                }
-                if max_heap.is_empty() {
-                    preds.push(self.default_pred);
-                    continue;
-                }
-
-                let mut k_neighbor_sims = Vec::new();
-                let mut k_neighbor_labels = Vec::new();
-                for _ in 0..self.k_sim {
-                    if let Some(SimOrd(sim, label)) = max_heap.pop() {
-                        k_neighbor_sims.push(sim);
-                        k_neighbor_labels.push(label);
+            let pred = match (
+                self.sim_mapping.get(&u),
+                get_row(&self.item_interactions, i),
+            ) {
+                (Some((sim_users, sim_values)), Some(user_labels)) => {
+                    let sim_num = std::cmp::min(self.k_sim, sim_users.len());
+                    let mut user_sims: Vec<(i32, f32)> = sim_users[..sim_num]
+                        .iter()
+                        .zip(sim_values[..sim_num].iter())
+                        .map(|(u, s)| (*u, *s))
+                        .collect();
+                    user_sims.sort_unstable_by_key(|&(u, _)| u);
+                    let user_labels: Vec<(i32, f32)> = user_labels.collect();
+                    let (k_nb_sims, k_nb_labels) =
+                        get_intersect_neighbors(&user_sims, &user_labels, self.k_sim);
+                    if k_nb_sims.is_empty() {
+                        self.default_pred
                     } else {
-                        break;
+                        compute_pred(&self.task, &k_nb_sims, &k_nb_labels)?
                     }
                 }
-
-                preds.push(compute_pred(
-                    &self.task,
-                    &k_neighbor_sims,
-                    &k_neighbor_labels,
-                )?);
-            } else {
-                preds.push(self.default_pred)
-            }
+                _ => self.default_pred,
+            };
+            preds.push(pred);
         }
         Ok(preds)
     }
@@ -196,42 +164,36 @@ impl PyUserCF {
         let mut no_rec_indices = Vec::new();
         for (k, u) in users.iter().enumerate() {
             let u: i32 = u.extract()?;
+            let consumed = self
+                .user_consumed
+                .get(&u)
+                .map_or(FxHashSet::default(), FxHashSet::from_iter);
             if let Some((sim_users, sim_values)) = self.sim_mapping.get(&u) {
-                let consumed: HashSet<&i32> = if let Some(consumed) = self.user_consumed.get(&u) {
-                    HashSet::from_iter(consumed)
-                } else {
-                    HashSet::new()
-                };
-                let mut item_sim_scores: FxHashMap<i32, (f32, f32)> = FxHashMap::default();
+                let mut item_scores: FxHashMap<i32, f32> = FxHashMap::default();
                 let sim_num = std::cmp::min(self.k_sim, sim_users.len());
                 for (&v, &u_v_sim) in sim_users[..sim_num]
                     .iter()
                     .zip(sim_values[..sim_num].iter())
                 {
-                    let v = usize::try_from(v)?;
-                    if let Some(row) = get_row(&self.user_interactions, v) {
+                    if let Some(row) = get_row(&self.user_interactions, usize::try_from(v)?) {
                         for (i, v_i_score) in row {
-                            if filter_consumed && !consumed.is_empty() && consumed.contains(&i) {
+                            if filter_consumed && consumed.contains(&i) {
                                 continue;
                             }
-                            item_sim_scores
+                            item_scores
                                 .entry(i)
-                                .and_modify(|(sim, score)| {
-                                    *sim += u_v_sim;
-                                    *score += u_v_sim * v_i_score;
-                                })
-                                .or_insert((u_v_sim, u_v_sim * v_i_score));
+                                .and_modify(|score| *score += u_v_sim * v_i_score)
+                                .or_insert(u_v_sim * v_i_score);
                         }
                     }
                 }
 
-                if item_sim_scores.is_empty() {
+                if item_scores.is_empty() {
                     recs.push(PyList::empty(py).into());
                     no_rec_indices.push(k);
                     continue;
                 }
-
-                let items = compute_rec_items(&item_sim_scores, n_rec, random_rec);
+                let items = get_rec_items(item_scores, n_rec, random_rec);
                 recs.push(PyList::new(py, items).into());
             } else {
                 recs.push(PyList::empty(py).into());
