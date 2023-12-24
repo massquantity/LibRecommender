@@ -3,6 +3,7 @@
 use pyo3::prelude::*;
 
 mod incremental;
+mod inference;
 mod item_cf;
 mod serialization;
 mod similarities;
