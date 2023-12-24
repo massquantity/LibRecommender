@@ -4,10 +4,10 @@ use std::collections::{BinaryHeap, HashSet};
 use fxhash::FxHashMap;
 use pyo3::prelude::*;
 use pyo3::types::*;
-use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 
 use crate::incremental::{update_by_sims, update_cosine, update_sum_squares};
+use crate::inference::{compute_pred, compute_rec_items};
 use crate::serialization::{load_model, save_model};
 use crate::similarities::{
     compute_sum_squares, forward_cosine, invert_cosine, sort_by_sims, SimOrd,
@@ -135,7 +135,7 @@ impl PyUserCF {
                     .iter()
                     .zip(sim_values[..sim_num].iter())
                     .collect();
-                u_sims.sort_unstable_by_key(|(u, _)| *u);
+                u_sims.sort_unstable_by_key(|(&u, _)| u);
 
                 if let Some(u_labels) = get_row(&self.item_interactions, i) {
                     let u_labels: Vec<(i32, f32)> = u_labels.collect();
@@ -171,19 +171,11 @@ impl PyUserCF {
                     }
                 }
 
-                if self.task == "rating" {
-                    let sum_sims: f32 = k_neighbor_sims.iter().sum();
-                    let pred: f32 = k_neighbor_sims
-                        .iter()
-                        .zip(k_neighbor_labels.iter())
-                        .map(|(&sim, &label)| label * sim / sum_sims)
-                        .sum();
-                    preds.push(pred);
-                } else {
-                    let sum_sims: f32 = k_neighbor_sims.iter().sum();
-                    let pred = sum_sims / k_neighbor_sims.len() as f32;
-                    preds.push(pred);
-                }
+                preds.push(compute_pred(
+                    &self.task,
+                    &k_neighbor_sims,
+                    &k_neighbor_labels,
+                )?);
             } else {
                 preds.push(self.default_pred)
             }
@@ -239,28 +231,7 @@ impl PyUserCF {
                     continue;
                 }
 
-                let items = if random_rec && item_sim_scores.len() > n_rec {
-                    let mut rng = &mut rand::thread_rng();
-                    item_sim_scores
-                        .keys()
-                        .copied()
-                        .collect::<Vec<i32>>()
-                        .choose_multiple(&mut rng, n_rec)
-                        .cloned()
-                        .collect::<Vec<_>>()
-                } else {
-                    let mut item_preds: Vec<(i32, f32)> = item_sim_scores
-                        .into_iter()
-                        .map(|(i, (sim, score))| (i, score / sim))
-                        .collect();
-                    item_preds
-                        .sort_unstable_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap().reverse());
-                    item_preds
-                        .into_iter()
-                        .take(n_rec)
-                        .map(|(i, _)| i)
-                        .collect::<Vec<_>>()
-                };
+                let items = compute_rec_items(&item_sim_scores, n_rec, random_rec);
                 recs.push(PyList::new(py, items).into());
             } else {
                 recs.push(PyList::empty(py).into());
