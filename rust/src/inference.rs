@@ -1,7 +1,48 @@
+use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+
 use fxhash::FxHashMap;
 use pyo3::exceptions::PyValueError;
 use pyo3::PyResult;
 use rand::prelude::SliceRandom;
+
+use crate::similarities::SimOrd;
+
+pub(crate) fn get_intersect_neighbors(
+    elem_sims: &[(i32, f32)],
+    elem_labels: &[(i32, f32)],
+    k_sim: usize,
+) -> (Vec<f32>, Vec<f32>) {
+    let mut i = 0;
+    let mut j = 0;
+    let mut max_heap: BinaryHeap<SimOrd> = BinaryHeap::new();
+    while i < elem_sims.len() && j < elem_labels.len() {
+        let elem1 = elem_sims[i].0;
+        let elem2 = elem_labels[j].0;
+        match elem1.cmp(&elem2) {
+            Ordering::Less => i += 1,
+            Ordering::Greater => j += 1,
+            Ordering::Equal => {
+                max_heap.push(SimOrd(elem_sims[i].1, elem_labels[j].1));
+                i += 1;
+                j += 1;
+            }
+        }
+    }
+
+    let mut k_neighbor_sims = Vec::new();
+    let mut k_neighbor_labels = Vec::new();
+    for _ in 0..k_sim {
+        match max_heap.pop() {
+            Some(SimOrd(sim, label)) => {
+                k_neighbor_sims.push(sim);
+                k_neighbor_labels.push(label);
+            }
+            None => break,
+        }
+    }
+    (k_neighbor_sims, k_neighbor_labels)
+}
 
 pub(crate) fn compute_pred(
     task: &str,
@@ -29,8 +70,8 @@ pub(crate) fn compute_pred(
     Ok(pred)
 }
 
-pub(crate) fn compute_rec_items(
-    item_sim_scores: &FxHashMap<i32, (f32, f32)>,
+pub(crate) fn get_rec_items(
+    item_sim_scores: FxHashMap<i32, f32>,
     n_rec: usize,
     random_rec: bool,
 ) -> Vec<i32> {
@@ -44,10 +85,7 @@ pub(crate) fn compute_rec_items(
             .cloned()
             .collect::<Vec<_>>()
     } else {
-        let mut item_preds: Vec<(i32, f32)> = item_sim_scores
-            .iter()
-            .map(|(&i, &(sim, score))| (i, score / sim))
-            .collect();
+        let mut item_preds: Vec<(i32, f32)> = item_sim_scores.into_iter().collect();
         item_preds.sort_unstable_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap().reverse());
         item_preds
             .into_iter()
@@ -60,6 +98,16 @@ pub(crate) fn compute_rec_items(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_get_intersect_neighbors() {
+        let elem_sims = vec![(1, 0.1), (2, 0.6), (3, 0.3), (4, 0.8), (5, 0.5)];
+        let elem_labels = vec![(1, 2.0), (2, 4.0), (3, 1.0), (4, 3.0), (5, 5.0)];
+        let (k_neighbor_sims, k_neighbor_labels) =
+            get_intersect_neighbors(&elem_sims, &elem_labels, 2);
+        assert_eq!(k_neighbor_sims, vec![0.8, 0.6]);
+        assert_eq!(k_neighbor_labels, vec![3.0, 4.0]);
+    }
 
     #[test]
     fn test_compute_pred() -> PyResult<()> {
@@ -86,21 +134,22 @@ mod tests {
     #[test]
     fn test_compute_rec_items() -> PyResult<()> {
         let mut item_sim_scores = FxHashMap::default();
-        item_sim_scores.insert(1, (1.0, 1.0));
-        item_sim_scores.insert(2, (2.0, 4.0));
-        item_sim_scores.insert(3, (3.0, 9.0));
-        item_sim_scores.insert(4, (4.0, 16.0));
-        item_sim_scores.insert(5, (5.0, 25.0));
+        item_sim_scores.insert(1, 1.0);
+        item_sim_scores.insert(2, 2.0);
+        item_sim_scores.insert(3, 3.0);
+        item_sim_scores.insert(4, 4.0);
+        item_sim_scores.insert(5, 5.0);
 
         (0..10).for_each({
             |_| {
-                let rec_items = compute_rec_items(&item_sim_scores, 3, true);
+                let scores = item_sim_scores.clone();
+                let rec_items = get_rec_items(scores, 3, true);
                 rec_items
                     .iter()
                     .all(|i| item_sim_scores.contains_key(i));
             }
         });
-        let rec_items = compute_rec_items(&item_sim_scores, 3, false);
+        let rec_items = get_rec_items(item_sim_scores, 3, false);
         assert_eq!(rec_items, vec![5, 4, 3]);
         Ok(())
     }
