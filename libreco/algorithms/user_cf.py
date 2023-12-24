@@ -100,8 +100,8 @@ class UserCF(CfBase):
                 preds.append(self.default_pred)
                 continue
             user_slice = slice(sim_matrix.indptr[u], sim_matrix.indptr[u + 1])
-            sim_users = sim_matrix.indices[user_slice]
-            sim_values = sim_matrix.data[user_slice]
+            sim_users = sim_matrix.indices[user_slice][: self.k_sim]
+            sim_values = sim_matrix.data[user_slice][: self.k_sim]
 
             item_slice = slice(interaction.indptr[i], interaction.indptr[i + 1])
             item_interacted_u = interaction.indices[item_slice]
@@ -144,18 +144,18 @@ class UserCF(CfBase):
                 sorted(zip(sim_users, sim_values), key=itemgetter(1), reverse=True),
                 self.k_sim,
             )
-        item_sims = defaultdict(lambda: 0.0)
+
         item_scores = defaultdict(lambda: 0.0)
         for v, u_v_sim in k_nbs_and_sims:
             item_slices = slice(all_item_indptr[v], all_item_indptr[v + 1])
             v_interacted_items = all_item_indices[item_slices]
             v_interacted_values = all_item_values[item_slices]
             for i, v_i_score in zip(v_interacted_items, v_interacted_values):
-                item_sims[i] += u_v_sim
                 item_scores[i] += u_v_sim * v_i_score
 
-        ids = np.array(list(item_sims))
-        preds = np.array([item_scores[i] / item_sims[i] for i in ids])
+        item_scores = list(zip(*item_scores.items()))
+        ids = np.array(item_scores[0])
+        preds = np.array(item_scores[1])
         return self.rank_recommendations(
             user_id,
             ids,

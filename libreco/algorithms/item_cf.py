@@ -97,8 +97,8 @@ class ItemCF(CfBase):
                 preds.append(self.default_pred)
                 continue
             item_slice = slice(sim_matrix.indptr[i], sim_matrix.indptr[i + 1])
-            sim_items = sim_matrix.indices[item_slice]
-            sim_values = sim_matrix.data[item_slice]
+            sim_items = sim_matrix.indices[item_slice][: self.k_sim]
+            sim_values = sim_matrix.data[item_slice][: self.k_sim]
 
             user_slice = slice(interaction.indptr[u], interaction.indptr[u + 1])
             user_interacted_i = interaction.indices[user_slice]
@@ -123,7 +123,7 @@ class ItemCF(CfBase):
         user_interacted_i = self.user_interaction.indices[user_slice]
         user_interacted_labels = self.user_interaction.data[user_slice]
 
-        result = defaultdict(lambda: 0.0)
+        item_scores = defaultdict(lambda: 0.0)
         for i, i_label in zip(user_interacted_i, user_interacted_labels):
             if self.topk_sim is not None:
                 item_sim_topk = self.topk_sim[i]
@@ -138,11 +138,11 @@ class ItemCF(CfBase):
                 )[: self.k_sim]
 
             for j, sim in item_sim_topk:
-                result[j] += sim * i_label
+                item_scores[j] += sim * i_label
 
-        result = list(zip(*result.items()))
-        ids = np.array(result[0])
-        preds = np.array(result[1])
+        item_scores = list(zip(*item_scores.items()))
+        ids = np.array(item_scores[0])
+        preds = np.array(item_scores[1])
         return self.rank_recommendations(
             user_id,
             ids,
