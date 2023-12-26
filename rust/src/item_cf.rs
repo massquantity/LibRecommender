@@ -211,3 +211,91 @@ impl PyItemCF {
         Ok((recs, no_rec_indices))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[pyclass]
+    struct PySparseMatrix {
+        #[pyo3(get)]
+        sparse_indices: Vec<i32>,
+        #[pyo3(get)]
+        sparse_indptr: Vec<usize>,
+        #[pyo3(get)]
+        sparse_data: Vec<f32>,
+    }
+
+    fn get_item_cf() -> Result<PyItemCF, Box<dyn std::error::Error>> {
+        let task = "ranking";
+        let k_sim = 10;
+        let n_users = 4;
+        let n_items = 5;
+        let min_common = 1;
+        let default_pred = 0.0;
+        let item_cf = Python::with_gil(|py| -> PyResult<PyItemCF> {
+            // item_interactions:
+            // [
+            //     [1, 1, 0, 0],
+            //     [2, 1, 0, 0],
+            //     [0, 1, 1, 0],
+            //     [2, 1, 1, 0],
+            //     [0, 1, 2, 0],
+            // ]
+            let item_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![0, 1, 0, 1, 1, 2, 0, 1, 2, 1, 2],
+                    sparse_indptr: vec![0, 2, 4, 6, 9, 11],
+                    sparse_data: vec![1., 1., 2., 1., 1., 1., 2., 1., 1., 1., 2.],
+                },
+            )?;
+            let user_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![0, 1, 3, 0, 1, 2, 3, 4, 2, 3, 4],
+                    sparse_indptr: vec![0, 3, 8, 11, 11],
+                    sparse_data: vec![1., 2., 2., 1., 1., 1., 1., 1., 1., 1., 2.],
+                },
+            )?;
+            let item_interactions: &PyAny = item_sparse_matrix.as_ref(py);
+            let user_interactions: &PyAny = user_sparse_matrix.as_ref(py);
+            let user_consumed = [
+                (0, vec![0, 1]),
+                (1, vec![0, 1]),
+                (2, vec![1, 2]),
+                (3, vec![0, 1, 2]),
+                (4, vec![1, 2]),
+            ]
+            .into_py_dict(py);
+
+            let mut item_cf = PyItemCF::new(
+                task,
+                k_sim,
+                n_users,
+                n_items,
+                min_common,
+                user_interactions,
+                item_interactions,
+                user_consumed,
+                default_pred,
+            )?;
+            item_cf.compute_similarities(true, 1)?;
+            Ok(item_cf)
+        })?;
+        Ok(item_cf)
+    }
+
+    #[test]
+    fn test_item_cf_training() -> Result<(), Box<dyn std::error::Error>> {
+        let get_nbs = |model: &PyItemCF, i: i32| model.sim_mapping[&i].0.to_owned();
+        pyo3::prepare_freethreaded_python();
+        let item_cf = get_item_cf()?;
+        assert_eq!(get_nbs(&item_cf, 0), vec![1, 3, 2, 4]);
+        assert_eq!(get_nbs(&item_cf, 1), vec![0, 3, 2, 4]);
+        assert_eq!(get_nbs(&item_cf, 2), vec![4, 3, 0, 1]);
+        assert_eq!(get_nbs(&item_cf, 3), vec![1, 0, 2, 4]);
+        assert_eq!(get_nbs(&item_cf, 4), vec![2, 3, 0, 1]);
+        Ok(())
+    }
+}
