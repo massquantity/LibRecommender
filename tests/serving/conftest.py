@@ -128,14 +128,14 @@ def online_model(make_synthetic_data, request):
     pd_data = make_synthetic_data
     if request.param == "pure":
         features = dict()
-        model = RNN4Rec
+        model_cls = RNN4Rec
     elif request.param == "user_feat":
         features = {
             "sparse_col": ["sex", "occupation"],
             "dense_col": ["age"],
             "user_col": ["sex", "occupation", "age"],
         }
-        model = YouTubeRetrieval
+        model_cls = YouTubeRetrieval
     elif request.param == "separate":
         features = {
             "sparse_col": ["genre3", "genre2", "occupation", "genre1", "sex"],
@@ -143,7 +143,7 @@ def online_model(make_synthetic_data, request):
             "user_col": ["age", "sex", "occupation"],
             "item_col": ["genre1", "genre3", "genre2", "profit"],
         }
-        model = TwoTower
+        model_cls = TwoTower
     elif request.param == "multi_sparse":
         features = {
             "sparse_col": ["sex", "occupation"],
@@ -152,7 +152,7 @@ def online_model(make_synthetic_data, request):
             "user_col": ["genre1", "genre2", "genre3", "sex"],
             "item_col": ["age", "occupation", "profit"],
         }
-        model = WideDeep
+        model_cls = WideDeep
     elif request.param == "item_feat":
         features = {
             "sparse_col": ["genre3", "genre2", "sex", "genre1"],
@@ -160,7 +160,7 @@ def online_model(make_synthetic_data, request):
             "user_col": ["age"],
             "item_col": ["genre1", "genre3", "genre2", "sex", "profit"],
         }
-        model = FM
+        model_cls = FM
     elif request.param == "all":
         features = {
             "sparse_col": ["genre3", "genre2", "sex", "occupation", "genre1"],
@@ -168,7 +168,7 @@ def online_model(make_synthetic_data, request):
             "user_col": ["sex", "age", "occupation"],
             "item_col": ["genre1", "genre3", "genre2", "profit"],
         }
-        model = DIN
+        model_cls = DIN
     else:
         raise ValueError(f"Unknown type `{request.param}`")
 
@@ -177,7 +177,7 @@ def online_model(make_synthetic_data, request):
         pad_val=["missing"],
         **features,
     )
-    model = model("ranking", data_info, embed_size=4, n_epochs=1, batch_size=50)
+    model = model_cls("ranking", data_info, embed_size=4, n_epochs=1, batch_size=50)
     model.fit(train_data, neg_sampling=True, verbose=2)
     yield model
     remove_path(SAVE_PATH)
