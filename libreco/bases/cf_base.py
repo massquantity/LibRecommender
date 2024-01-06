@@ -249,8 +249,8 @@ class CfBase(Base):
             )
 
             if self.task == "rating":
-                sims_distribution = k_neighbor_sims / np.sum(k_neighbor_sims)
-                weighted_pred = np.average(k_neighbor_labels, weights=sims_distribution)
+                sim_weights = k_neighbor_sims / np.sum(k_neighbor_sims)
+                weighted_pred = np.average(k_neighbor_labels, weights=sim_weights)
                 return np.clip(weighted_pred, self.lower_bound, self.upper_bound)
             elif self.task == "ranking":
                 return np.mean(k_neighbor_sims)
@@ -320,7 +320,8 @@ class CfBase(Base):
     ):
         if filter_consumed:
             ids, preds = filter_items(ids, preds, consumed)
-        if len(ids) == 0:  # pragma: no cover
+        # all filtered out by consumed
+        if len(ids) == 0:
             self.print_count += 1
             no_str = (
                 f"no suitable recommendation for user {user}, "
