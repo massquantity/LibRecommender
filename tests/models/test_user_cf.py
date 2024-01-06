@@ -73,6 +73,7 @@ def test_all_consumed_recommend(pure_data_small, monkeypatch):
     model.save("not_existed_path", "user_cf2")
     remove_path("not_existed_path")
     with monkeypatch.context() as m:
-        m.setitem(model.user_consumed, 0, list(range(model.n_items)))
-        recos = model.recommend_user(user=1, n_rec=7)
-        assert np.all(np.isin(recos[1], data_info.popular_items))
+        user = 1
+        m.setitem(model.user_consumed, user, list(range(model.n_items)))
+        recos = model.recommend_user(user, n_rec=7)
+        assert np.all(np.isin(recos[user], data_info.popular_items))
