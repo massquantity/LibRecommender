@@ -1,7 +1,9 @@
 import numpy as np
+import pandas as pd
 import pytest
 
 from libreco.algorithms import UserCF
+from libreco.data import DatasetPure
 from tests.utils_data import remove_path, set_ranking_labels
 from tests.utils_metrics import get_metrics
 from tests.utils_pred import ptest_preds
@@ -77,3 +79,27 @@ def test_all_consumed_recommend(pure_data_small, monkeypatch):
         m.setitem(model.user_consumed, user, list(range(model.n_items)))
         recos = model.recommend_user(user, n_rec=7)
         assert np.all(np.isin(recos[user], data_info.popular_items))
+
+
+def test_no_sim_recommend(pure_data_small):
+    size, unique_num = 50000, 1000
+    out_id = 1001
+    out_inner_id = out_id - 1
+    np_rng = np.random.default_rng(999)
+    train_data = pd.DataFrame(
+        {
+            "user": np_rng.integers(1, unique_num, size, endpoint=True),
+            "item": np_rng.integers(1, unique_num, size, endpoint=True),
+            "label": np_rng.integers(0, 1, size, endpoint=True),
+        }
+    )
+    train_data.loc[size] = [out_id, out_id, 1]
+    train_data, data_info = DatasetPure.build_trainset(train_data)
+    model = UserCF(task="ranking", data_info=data_info)
+    model.fit(train_data, neg_sampling=False, verbose=0)
+    recos = model.recommend_user(out_id, n_rec=7, filter_consumed=True)
+    assert len(data_info.popular_items) == 100
+    assert np.all(np.isin(recos[out_id], data_info.popular_items))
+    # no sim users
+    indptr = model.sim_matrix.indptr
+    assert indptr[out_inner_id] == indptr[out_inner_id + 1]
