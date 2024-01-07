@@ -10,6 +10,7 @@ import numpy as np
 from scipy.sparse import issparse
 from scipy.sparse import load_npz as load_sparse
 from scipy.sparse import save_npz as save_sparse
+from tqdm import tqdm
 
 from .base import Base
 from ..evaluation import print_metrics
@@ -206,15 +207,6 @@ class CfBase(Base):
             )
             print("=" * 30)
 
-    @abc.abstractmethod
-    def compute_top_k(self):
-        ...
-
-    # all the items returned by this function will be inner_ids
-    @abc.abstractmethod
-    def recommend_one(self, user_id, n_rec, filter_consumed, random_rec):
-        ...
-
     def pre_predict_check(self, user, item, inner_id, cold_start):
         user_arr, item_arr = convert_id(self, user, item, inner_id)
         unknown_num, _, user_arr, item_arr = check_unknown(self, user_arr, item_arr)
@@ -308,6 +300,11 @@ class CfBase(Base):
             result_recs.update(user_recs)
         return result_recs
 
+    # all the items returned by this function will be inner_ids
+    @abc.abstractmethod
+    def recommend_one(self, user_id, n_rec, filter_consumed, random_rec):
+        ...
+
     def rank_recommendations(
         self,
         user,
@@ -337,6 +334,23 @@ class CfBase(Base):
             indices = np.argsort(preds)[::-1]
             ids = ids[indices][:n_rec]
         return np.asarray(ids)
+
+    def get_top_k_sims(self, ui_id):
+        sim_mat = self.sim_matrix
+        if sim_mat.indptr[ui_id] == sim_mat.indptr[ui_id + 1]:
+            return
+        idx_slice = slice(sim_mat.indptr[ui_id], sim_mat.indptr[ui_id + 1])
+        sim_ids = sim_mat.indices[idx_slice].tolist()
+        sim_values = sim_mat.data[idx_slice].tolist()
+        sorted_sims = sorted(zip(sim_ids, sim_values), key=itemgetter(1), reverse=True)
+        return sorted_sims[: self.k_sim]
+
+    def compute_top_k(self):
+        num = self.n_users if self.cf_type == "user_cf" else self.n_items
+        top_k = dict()
+        for i in tqdm(range(num), desc="top_k"):
+            top_k[i] = self.get_top_k_sims(i)
+        self.topk_sim = top_k
 
     def save(self, path, model_name, **kwargs):
         if not os.path.isdir(path):

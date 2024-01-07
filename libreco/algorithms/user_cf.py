@@ -1,14 +1,10 @@
 """Implementation of UserCF."""
 from collections import defaultdict
-from itertools import islice
-from operator import itemgetter
 
 import numpy as np
-from tqdm import tqdm
 
 from ..bases import CfBase
 from ..recommendation import popular_recommendations
-from ..utils.misc import colorize
 
 
 class UserCF(CfBase):
@@ -119,34 +115,18 @@ class UserCF(CfBase):
         return preds[0] if len(user_arr) == 1 else preds
 
     def recommend_one(self, user_id, n_rec, filter_consumed, random_rec):
-        user_slice = slice(
-            self.sim_matrix.indptr[user_id], self.sim_matrix.indptr[user_id + 1]
-        )
-        sim_users = self.sim_matrix.indices[user_slice]
-        sim_values = self.sim_matrix.data[user_slice]
-        if sim_users.size == 0 or np.all(sim_values <= 0):  # pragma: no cover
-            self.print_count += 1
-            no_str = (
-                f"no similar neighbor for user {user_id}, "
-                f"return default recommendation"
-            )
-            if self.print_count < 7:
-                print(f"{colorize(no_str, 'red')}")
+        if self.topk_sim is not None:
+            user_sim_topk = self.topk_sim[user_id]
+        else:
+            user_sim_topk = self.get_top_k_sims(user_id)
+        if not user_sim_topk:
             return popular_recommendations(self.data_info, inner_id=True, n_rec=n_rec)
 
         all_item_indices = self.user_interaction.indices
         all_item_indptr = self.user_interaction.indptr
         all_item_values = self.user_interaction.data
-        if self.topk_sim is not None:
-            k_nbs_and_sims = self.topk_sim[user_id]
-        else:
-            k_nbs_and_sims = islice(
-                sorted(zip(sim_users, sim_values), key=itemgetter(1), reverse=True),
-                self.k_sim,
-            )
-
         item_scores = defaultdict(lambda: 0.0)
-        for v, u_v_sim in k_nbs_and_sims:
+        for v, u_v_sim in user_sim_topk:
             item_slices = slice(all_item_indptr[v], all_item_indptr[v + 1])
             v_interacted_items = all_item_indices[item_slices]
             v_interacted_values = all_item_values[item_slices]
@@ -165,18 +145,6 @@ class UserCF(CfBase):
             filter_consumed,
             random_rec,
         )
-
-    def compute_top_k(self):
-        top_k = dict()
-        for u in tqdm(range(self.n_users), desc="top_k"):
-            user_slice = slice(self.sim_matrix.indptr[u], self.sim_matrix.indptr[u + 1])
-            sim_users = self.sim_matrix.indices[user_slice].tolist()
-            sim_values = self.sim_matrix.data[user_slice].tolist()
-
-            top_k[u] = sorted(
-                zip(sim_users, sim_values), key=itemgetter(1), reverse=True
-            )[: self.k_sim]
-        self.topk_sim = top_k
 
     def rebuild_model(self, path, model_name, **kwargs):
         raise NotImplementedError("`UserCF` doesn't support model retraining")
