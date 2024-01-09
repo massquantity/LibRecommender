@@ -1,11 +1,10 @@
 """Implementation of ItemCF."""
 from collections import defaultdict
-from operator import itemgetter
 
 import numpy as np
-from tqdm import tqdm
 
 from ..bases import CfBase
+from ..recommendation import popular_recommendations
 
 
 class ItemCF(CfBase):
@@ -120,25 +119,21 @@ class ItemCF(CfBase):
             self.user_interaction.indptr[user_id],
             self.user_interaction.indptr[user_id + 1],
         )
-        user_interacted_i = self.user_interaction.indices[user_slice]
+        user_interacted_items = self.user_interaction.indices[user_slice]
         user_interacted_labels = self.user_interaction.data[user_slice]
-
         item_scores = defaultdict(lambda: 0.0)
-        for i, i_label in zip(user_interacted_i, user_interacted_labels):
+        for i, i_label in zip(user_interacted_items, user_interacted_labels):
             if self.topk_sim is not None:
                 item_sim_topk = self.topk_sim[i]
             else:
-                item_slice = slice(
-                    self.sim_matrix.indptr[i], self.sim_matrix.indptr[i + 1]
-                )
-                sim_items = self.sim_matrix.indices[item_slice]
-                sim_values = self.sim_matrix.data[item_slice]
-                item_sim_topk = sorted(
-                    zip(sim_items, sim_values), key=itemgetter(1), reverse=True
-                )[: self.k_sim]
-
+                item_sim_topk = self.get_top_k_sims(i)
+            if not item_sim_topk:
+                continue
             for j, sim in item_sim_topk:
                 item_scores[j] += sim * i_label
+
+        if not item_scores:
+            return popular_recommendations(self.data_info, inner_id=True, n_rec=n_rec)
 
         item_scores = list(zip(*item_scores.items()))
         ids = np.array(item_scores[0])
@@ -152,17 +147,6 @@ class ItemCF(CfBase):
             filter_consumed,
             random_rec,
         )
-
-    def compute_top_k(self):
-        top_k = dict()
-        for i in tqdm(range(self.n_items), desc="top_k"):
-            item_slice = slice(self.sim_matrix.indptr[i], self.sim_matrix.indptr[i + 1])
-            sim_items = self.sim_matrix.indices[item_slice].tolist()
-            sim_values = self.sim_matrix.data[item_slice].tolist()
-            top_k[i] = sorted(
-                zip(sim_items, sim_values), key=itemgetter(1), reverse=True
-            )[: self.k_sim]
-        self.topk_sim = top_k
 
     def rebuild_model(self, path, model_name, **kwargs):
         raise NotImplementedError("`ItemCF` doesn't support model retraining")
