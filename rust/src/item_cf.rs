@@ -3,6 +3,7 @@ use pyo3::prelude::*;
 use pyo3::types::*;
 use serde::{Deserialize, Serialize};
 
+use crate::incremental::{update_by_sims, update_cosine, update_sum_squares};
 use crate::inference::{compute_pred, get_intersect_neighbors, get_rec_items};
 use crate::similarities::{compute_sum_squares, forward_cosine, invert_cosine, sort_by_sims};
 use crate::sparse::{get_row, CsrMatrix};
@@ -210,6 +211,38 @@ impl PyItemCF {
         let no_rec_indices = PyList::new(py, no_rec_indices).into_py(py);
         Ok((recs, no_rec_indices))
     }
+
+    /// update on new sparse interactions
+    fn update_similarities(
+        &mut self,
+        user_interactions: &PyAny,
+        item_interactions: &PyAny,
+    ) -> PyResult<()> {
+        let new_user_interactions: CsrMatrix<i32, f32> = user_interactions.extract()?;
+        let new_item_interactions: CsrMatrix<i32, f32> = item_interactions.extract()?;
+        update_sum_squares(&mut self.sum_squares, &new_item_interactions, self.n_items);
+        let cosine_sims = update_cosine(
+            &new_user_interactions,
+            &self.sum_squares,
+            &mut self.cum_values,
+            self.n_items,
+            self.min_common,
+        )?;
+        update_by_sims(self.n_items, &cosine_sims, &mut self.sim_mapping)?;
+
+        // merge interactions for inference on new users/items
+        self.user_interactions = CsrMatrix::add(
+            &self.user_interactions,
+            &new_user_interactions,
+            Some(self.n_users),
+        );
+        self.item_interactions = CsrMatrix::add(
+            &self.item_interactions,
+            &new_item_interactions,
+            Some(self.n_items),
+        );
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -229,8 +262,8 @@ mod tests {
     fn get_item_cf() -> Result<PyItemCF, Box<dyn std::error::Error>> {
         let task = "ranking";
         let k_sim = 10;
-        let n_users = 4;
         let n_items = 5;
+        let n_users = 4;
         let min_common = 1;
         let default_pred = 0.0;
         let item_cf = Python::with_gil(|py| -> PyResult<PyItemCF> {
@@ -296,6 +329,102 @@ mod tests {
         assert_eq!(get_nbs(&item_cf, 2), vec![4, 3, 0, 1]);
         assert_eq!(get_nbs(&item_cf, 3), vec![1, 0, 2, 4]);
         assert_eq!(get_nbs(&item_cf, 4), vec![2, 3, 0, 1]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_item_cf_incremental_training() -> Result<(), Box<dyn std::error::Error>> {
+        let get_nbs = |model: &PyItemCF, u: i32| model.sim_mapping[&u].0.to_owned();
+        pyo3::prepare_freethreaded_python();
+        let mut item_cf = get_item_cf()?;
+        Python::with_gil(|py| -> PyResult<()> {
+            // larger item_interactions:
+            // [
+            //     [0, 0, 0, 0, 0],
+            //     [3, 0, 0, 0, 0],
+            //     [5, 0, 0, 0, 0],
+            //     [0, 0, 0, 0, 0],
+            //     [0, 0, 0, 0, 0],
+            //     [2, 2, 1, 2, 0],
+            // ]
+            let item_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![0, 0, 0, 1, 2, 3],
+                    sparse_indptr: vec![0, 0, 1, 2, 2, 2, 6],
+                    sparse_data: vec![3.0, 5.0, 2.0, 2.0, 1.0, 2.0],
+                },
+            )?;
+            let user_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![1, 2, 5, 5, 5, 5],
+                    sparse_indptr: vec![0, 3, 4, 5, 6, 6],
+                    sparse_data: vec![3.0, 5.0, 2.0, 2.0, 1.0, 2.0],
+                },
+            )?;
+            let item_interactions: &PyAny = item_sparse_matrix.as_ref(py);
+            let user_interactions: &PyAny = user_sparse_matrix.as_ref(py);
+            let _user_consumed = [
+                (0, vec![0, 1]),
+                (1, vec![0, 1]),
+                (2, vec![1, 2]),
+                (3, vec![0, 1, 2]),
+                (4, vec![1, 2]),
+                (5, vec![0, 1, 2, 3]),
+            ]
+            .into_py_dict(py);
+
+            item_cf.n_items = 6;
+            item_cf.n_users = 5;
+            item_cf.user_consumed = _user_consumed.extract::<FxHashMap<i32, Vec<i32>>>()?;
+            item_cf.update_similarities(user_interactions, item_interactions)?;
+            let rec_result = item_cf.recommend(py, PyList::new(py, vec![5, 1]), 10, true, false)?;
+            assert_eq!(rec_result.0.len(), 2);
+            Ok(())
+        })?;
+        assert_eq!(get_nbs(&item_cf, 0), vec![1, 3, 2, 4]);
+        assert_eq!(get_nbs(&item_cf, 1), vec![2, 0, 3, 5, 4]);
+        assert_eq!(get_nbs(&item_cf, 2), vec![1, 4, 3, 5, 0]);
+        assert_eq!(get_nbs(&item_cf, 3), vec![1, 0, 2, 4]);
+        assert_eq!(get_nbs(&item_cf, 4), vec![2, 3, 0, 1]);
+        assert_eq!(get_nbs(&item_cf, 5), vec![2, 1]);
+
+        Python::with_gil(|py| -> PyResult<()> {
+            // smaller item_interactions:
+            // [
+            //     [0, 0, 0, 3, 2],
+            //     [0, 0, 0, 0, 0],
+            //     [0, 0, 0, 0, 0],
+            //     [0, 1, 0, 4, 3],
+            // ]
+            let item_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![3, 4, 1, 3, 4],
+                    sparse_indptr: vec![0, 2, 2, 2, 5],
+                    sparse_data: vec![3.0, 2.0, 1.0, 4.0, 3.0],
+                },
+            )?;
+            let user_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![3, 0, 3, 0, 3],
+                    sparse_indptr: vec![0, 0, 1, 1, 3, 5],
+                    sparse_data: vec![1.0, 3.0, 4.0, 2.0, 3.0],
+                },
+            )?;
+            let item_interactions: &PyAny = item_sparse_matrix.as_ref(py);
+            let user_interactions: &PyAny = user_sparse_matrix.as_ref(py);
+            item_cf.update_similarities(user_interactions, item_interactions)?;
+            Ok(())
+        })?;
+        assert_eq!(get_nbs(&item_cf, 0), vec![3, 1, 2, 4]);
+        assert_eq!(get_nbs(&item_cf, 1), vec![2, 0, 3, 5, 4]);
+        assert_eq!(get_nbs(&item_cf, 2), vec![1, 4, 3, 5, 0]);
+        assert_eq!(get_nbs(&item_cf, 3), vec![0, 1, 2, 4]);
+        assert_eq!(get_nbs(&item_cf, 4), vec![2, 3, 0, 1]);
+        assert_eq!(get_nbs(&item_cf, 5), vec![2, 1]);
         Ok(())
     }
 }
