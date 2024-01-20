@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::incremental::{update_by_sims, update_cosine, update_sum_squares};
 use crate::inference::{compute_pred, get_intersect_neighbors, get_rec_items};
+use crate::serialization::{load_model, save_model};
 use crate::similarities::{compute_sum_squares, forward_cosine, invert_cosine, sort_by_sims};
 use crate::sparse::{get_row, CsrMatrix};
 use crate::utils::CumValues;
@@ -245,6 +246,20 @@ impl PyItemCF {
     }
 }
 
+#[pyfunction]
+#[pyo3(name = "save_item_cf")]
+pub fn save(model: &PyItemCF, path: &str, model_name: &str) -> PyResult<()> {
+    save_model(model, path, model_name, "ItemCF")?;
+    Ok(())
+}
+
+#[pyfunction]
+#[pyo3(name = "load_item_cf")]
+pub fn load(path: &str, model_name: &str) -> PyResult<PyItemCF> {
+    let model = load_model(path, model_name, "ItemCF")?;
+    Ok(model)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -425,6 +440,28 @@ mod tests {
         assert_eq!(get_nbs(&item_cf, 3), vec![0, 1, 2, 4]);
         assert_eq!(get_nbs(&item_cf, 4), vec![2, 3, 0, 1]);
         assert_eq!(get_nbs(&item_cf, 5), vec![2, 1]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_save_model() -> Result<(), Box<dyn std::error::Error>> {
+        pyo3::prepare_freethreaded_python();
+        let model = get_item_cf()?;
+        let cur_dir = std::env::current_dir()?
+            .to_string_lossy()
+            .to_string();
+        let model_name = "item_cf_model";
+        save(&model, &cur_dir, model_name)?;
+
+        let new_model: PyItemCF = load(&cur_dir, model_name)?;
+        Python::with_gil(|py| -> PyResult<()> {
+            let users = PyList::new(py, vec![5, 1]);
+            let rec_result = new_model.recommend(py, users, 10, true, false)?;
+            assert_eq!(rec_result.0.len(), 2);
+            Ok(())
+        })?;
+
+        std::fs::remove_file(std::env::current_dir()?.join(format!("{model_name}.gz")))?;
         Ok(())
     }
 }
