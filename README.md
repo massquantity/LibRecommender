@@ -199,6 +199,7 @@ $ pip install .
 - tqdm
 - [nmslib](https://github.com/nmslib/nmslib) (optional, used in approximate similarity searching. See [Embedding](https://librecommender.readthedocs.io/en/latest/user_guide/embedding.html))
 - [DGL](https://github.com/dmlc/dgl) (optional, used in GraphSage and PinSage. See [Implementation Details](https://librecommender.readthedocs.io/en/latest/internal/implementation_details.html#pinsage))
+- Cython >= 0.29.0, < 3 (optional, for building from source)
 
 If you are using Python 3.6, you also need to install [dataclasses](https://github.com/ericvsmith/dataclasses), which was first introduced in Python 3.7.
 
