@@ -65,7 +65,7 @@ Dependencies for libreco:
 + tqdm
 + `nmslib <https://github.com/nmslib/nmslib>`_ (optional, see :doc:`user_guide/embedding`)
 + `DGL <https://github.com/dmlc/dgl>`_ (optional, see :ref:`Implementation Details <pinsage>`)
-+ Cython >= 0.29.0 (optional, for building source)
++ Cython >= 0.29.0, < 3 (optional, for building from source)
 
 .. NOTE::
 
