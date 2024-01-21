@@ -32,7 +32,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install -U pip wheel setuptools
+          python -m pip install -U pip
           python -m pip install numpy>=1.19.5
           python -m pip install scipy>=1.2.1
           python -m pip install pandas>=1.0.0

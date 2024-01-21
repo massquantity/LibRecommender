@@ -4,3 +4,4 @@ flake8
 ruff ; python_version > "3.6"
 pytest
 coverage
+cython >= 0.29.0,<3
