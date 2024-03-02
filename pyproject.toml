@@ -89,9 +89,11 @@ filterwarnings = [
 [tool.ruff]
 line-length = 88
 target-version = "py38"
-show-source = true
-ignore = ["E501"]
-select = [
+output-format  = "full"
+lint.ignore = ["E501"]
+lint.select = [
+    # flake8-async
+    "ASYNC",
     # pyflakes
     "F",
     # pycodestyle(Error, Warning)

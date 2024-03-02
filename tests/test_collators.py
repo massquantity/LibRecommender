@@ -49,7 +49,7 @@ user,item,label,time,sex,age,occupation,genre1,genre2,genre3
 @pytest.fixture
 def config_feat_data(request):
     pd_data = pd.read_csv(StringIO(raw_data), sep=",", header=0)
-    pd_data["item_dense_col"] = np.random.random(len(pd_data))
+    pd_data["item_dense_col"] = np.random.default_rng(42).random(len(pd_data))
     train_data, data_info = DatasetFeat.build_trainset(
         train_data=pd_data, **request.param
     )
