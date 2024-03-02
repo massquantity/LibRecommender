@@ -114,7 +114,7 @@ def tf_model(prepare_pure_data, request):
             Path(__file__).parents[1] / "sample_data" / "sample_movielens_merged.csv"
         )
         pd_data = pd.read_csv(data_path, sep=",", header=0)
-        pd_data["item_dense_feat"] = np.random.random(len(pd_data))
+        pd_data["item_dense_feat"] = np.random.default_rng(42).random(len(pd_data))
         train_data, data_info = DatasetFeat.build_trainset(pd_data, **features)
         model = DIN("ranking", data_info, n_epochs=1, batch_size=2048)
         model.fit(train_data, neg_sampling=True, verbose=2)
