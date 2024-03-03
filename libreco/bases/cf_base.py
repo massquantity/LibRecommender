@@ -78,7 +78,6 @@ class CfBase(Base):
         super().__init__(task, data_info, lower_upper_bound)
 
         assert cf_type in ("user_cf", "item_cf")
-        self.all_args = locals()
         self.cf_type = cf_type
         self.k_sim = k_sim
         self.sim_type = sim_type
@@ -185,7 +184,10 @@ class CfBase(Base):
         assert self.sim_matrix.has_sorted_indices
         if issparse(self.sim_matrix):
             n_elements = self.sim_matrix.getnnz()
-            density_ratio = 100 * n_elements / (self.n_users * self.n_users)
+            if self.cf_type == "user_cf":
+                density_ratio = 100 * n_elements / (self.n_users * self.n_users)
+            else:
+                density_ratio = 100 * n_elements / (self.n_items * self.n_items)
             print(
                 f"sim_matrix, shape: {self.sim_matrix.shape}, "
                 f"num_elements: {n_elements}, "

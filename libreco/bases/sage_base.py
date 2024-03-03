@@ -57,7 +57,6 @@ class SageBase(EmbedBase):
     ):
         super().__init__(task, data_info, embed_size, lower_upper_bound)
 
-        self.all_args = locals()
         self.loss_type = loss_type
         self.paradigm = paradigm
         self.n_epochs = n_epochs
