@@ -62,7 +62,7 @@ jobs:
         if: matrix.python-version == '3.8'
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
           flags: CI
