@@ -17,9 +17,9 @@ jobs:
         python-version: [3.6, 3.8, '3.10']
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -46,7 +46,8 @@ jobs:
         if: matrix.os == 'windows-latest'
 
       - name: Install DGL on macOS
-        run: python -m pip install dgl -f https://data.dgl.ai/wheels/repo.html
+        run: |
+          python -m pip install 'dgl<2.0.0' -f https://data.dgl.ai/wheels/repo.html
         if: matrix.os == 'macos-latest'
 
       - name: Install dataclasses
