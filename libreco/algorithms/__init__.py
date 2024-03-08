@@ -10,6 +10,7 @@ from .graphsage import GraphSage
 from .graphsage_dgl import GraphSageDGL
 from .item2vec import Item2Vec
 from .item_cf import ItemCF
+from .item_cf_rs import RsItemCF
 from .lightgcn import LightGCN
 from .ncf import NCF
 from .ngcf import NGCF
@@ -32,6 +33,7 @@ __all__ = [
     "UserCF",
     "RsUserCF",
     "ItemCF",
+    "RsItemCF",
     "SVD",
     "SVDpp",
     "ALS",
