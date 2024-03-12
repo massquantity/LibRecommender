@@ -34,7 +34,7 @@ jobs:
           python -m pip install scipy>=1.2.1
           python -m pip install pandas>=1.0.0
           python -m pip install scikit-learn>=0.20.0
-          python -m pip install tensorflow>=1.15.0
+          python -m pip install "tensorflow>=1.15.0,<2.16.0"
           python -m pip install torch>=1.10.0
           python -m pip install "smart_open<7.0.0"
           python -m pip install gensim>=4.0.0
