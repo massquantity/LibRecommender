@@ -1,5 +1,5 @@
 """Rust CF model base class."""
-import os.path
+import pathlib
 
 from .base import Base
 from ..evaluation import print_metrics
@@ -139,9 +139,10 @@ class RsCfBase(Base):
     def save(self, path, model_name, **kwargs):
         import recfarm
 
-        if not os.path.isdir(path):
+        path_obj = pathlib.Path(path)
+        if not path_obj.is_dir():
             print(f"file folder {path} doesn't exists, creating a new one...")
-            os.makedirs(path)
+            path_obj.mkdir(parents=True, exist_ok=False)
         save_params(self, path, model_name)
         if "user" in self.model_name.lower():
             recfarm.save_user_cf(self.rs_model, path, model_name)
