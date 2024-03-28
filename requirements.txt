@@ -7,6 +7,6 @@ torch >= 1.10.0
 gensim >= 4.0.0
 tqdm
 nmslib ; python_version < "3.11"
-dgl -f https://data.dgl.ai/wheels/repo.html
+dgl < 2.0.0 -f https://data.dgl.ai/wheels/repo.html
 dataclasses ; python_version == "3.6"
 recfarm ; python_version >= "3.7"
