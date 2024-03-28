@@ -75,6 +75,7 @@ jobs:
           file: ./coverage.xml
           flags: CI
           name: python${{ matrix.python-version }}-serving
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
           verbose: true
         if: matrix.python-version == '3.8'
