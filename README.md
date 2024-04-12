@@ -189,11 +189,11 @@ $ pip install .
 #### Basic Dependencies for [`libreco`](https://github.com/massquantity/LibRecommender/tree/master/libreco):
 
 - Python >= 3.6
-- TensorFlow >= 1.15
+- TensorFlow >= 1.15, < 2.16
 - PyTorch >= 1.10
 - Numpy >= 1.19.5
 - Pandas >= 1.0.0
-- Scipy >= 1.2.1
+- Scipy >= 1.2.1, < 1.13.0
 - scikit-learn >= 0.20.0
 - gensim >= 4.0.0
 - tqdm
@@ -204,6 +204,8 @@ $ pip install .
 If you are using Python 3.6, you also need to install [dataclasses](https://github.com/ericvsmith/dataclasses), which was first introduced in Python 3.7.
 
 LibRecommender has been tested under TensorFlow 1.15, 2.6, 2.10 and 2.12. If you encounter any problem during running, feel free to open an issue.
+
+Tensorflow [2.16](https://github.com/tensorflow/tensorflow/releases/tag/v2.16.1) starts using Keras 3.0, so tf1 syntax is no longer supported.
 
 **Known issue**:
 + Sometimes one may encounter errors like `ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject`. In this case try upgrading numpy, and version 1.22.0 or higher is probably a safe option.
