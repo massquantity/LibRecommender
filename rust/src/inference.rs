@@ -6,7 +6,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::PyResult;
 use rand::prelude::SliceRandom;
 
-use crate::similarities::SimOrd;
+use crate::ordering::SimOrd;
 
 pub(crate) fn get_intersect_neighbors(
     elem_sims: &[(i32, f32)],
