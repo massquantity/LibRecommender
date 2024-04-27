@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 use pyo3::types::*;
 use serde::{Deserialize, Serialize};
 
-use crate::graph::{compute_n_items_by_user, compute_swing_score};
+use crate::graph::compute_swing_scores;
 use crate::inference::{compute_pred, get_intersect_neighbors, get_rec_items};
 use crate::sparse::{get_row, CsrMatrix};
 
@@ -13,6 +13,7 @@ pub struct PySwing {
     task: String,
     top_k: usize,
     alpha: f32,
+    pre_compute_ratio: f32,
     n_users: usize,
     n_items: usize,
     cum_swings: FxHashMap<i32, f32>,
@@ -46,6 +47,7 @@ impl PySwing {
         task: &str,
         top_k: usize,
         alpha: f32,
+        pre_compute_ratio: f32,
         n_users: usize,
         n_items: usize,
         user_interactions: &PyAny,
@@ -60,6 +62,7 @@ impl PySwing {
             task: task.to_owned(),
             top_k,
             alpha,
+            pre_compute_ratio,
             n_users,
             n_items,
             cum_swings: FxHashMap::default(),
@@ -71,15 +74,15 @@ impl PySwing {
         })
     }
 
-    fn compute_swing(&mut self) -> PyResult<()> {
-        let n_items_by_user = compute_n_items_by_user(&self.user_interactions, self.n_users);
-        compute_swing_score(
+    fn compute_swing(&mut self, num_threads: usize) -> PyResult<()> {
+        std::env::set_var("RAYON_NUM_THREADS", format!("{num_threads}"));
+        self.swing_score_mapping = compute_swing_scores(
             &self.user_interactions,
             &self.item_interactions,
-            &n_items_by_user,
-            self.alpha,
+            self.n_users,
             self.n_items,
-            &mut self.swing_score_mapping,
+            self.alpha,
+            self.pre_compute_ratio,
         )?;
         Ok(())
     }
