@@ -121,7 +121,7 @@ def evaluate(
             y_prob, y_true = compute_probs(model, data, eval_batch_size)
             for m in metrics:
                 if m in ["log_loss", "loss"]:
-                    eval_result[m] = log_loss(y_true, y_prob, eps=1e-7)
+                    eval_result[m] = log_loss(y_true, y_prob)
                 elif m == "balanced_accuracy":
                     eval_result[m] = balanced_accuracy(y_true, y_prob)
                 elif m == "roc_auc":
