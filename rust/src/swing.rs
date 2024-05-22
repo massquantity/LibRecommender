@@ -90,13 +90,13 @@ impl PySwing {
     fn num_swing_elements(&self) -> PyResult<usize> {
         if self.swing_score_mapping.is_empty() {
             return Err(pyo3::exceptions::PyRuntimeError::new_err(
-                "call `compute_swing` method before calling `num_swing_elments`",
+                "call `compute_swing` method before calling `num_swing_elements`",
             ));
         }
         let n_elements = self
             .swing_score_mapping
-            .iter()
-            .map(|(_, i)| i.len())
+            .values()
+            .map(|i| i.len())
             .sum();
         Ok(n_elements)
     }

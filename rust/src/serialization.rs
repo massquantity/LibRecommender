@@ -2,9 +2,11 @@ use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::Path;
 
-use flate2::{read::GzDecoder, write::GzEncoder, Compression};
-use pyo3::PyResult;
+use flate2::read::GzDecoder;
+use flate2::write::GzEncoder;
+use flate2::Compression;
 use pyo3::exceptions::PyIOError;
+use pyo3::PyResult;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -23,7 +25,7 @@ pub fn save_model<T: Serialize>(
     let mut encoder = GzEncoder::new(file, Compression::new(1));
     let model_bytes: Vec<u8> = match bincode::serialize(model) {
         Ok(bytes) => bytes,
-        Err(e) => return Err(PyIOError::new_err(e.to_string()))
+        Err(e) => return Err(PyIOError::new_err(e.to_string())),
     };
     encoder.write_all(&model_bytes)?;
     encoder.finish()?;
@@ -47,7 +49,7 @@ pub fn load_model<T: DeserializeOwned>(
     decoder.read_to_end(&mut model_bytes)?;
     let model: T = match bincode::deserialize(&model_bytes) {
         Ok(m) => m,
-        Err(e) => return Err(PyIOError::new_err(e.to_string()))
+        Err(e) => return Err(PyIOError::new_err(e.to_string())),
     };
     println!(
         "Load `{class_name}` model from `{}`",
