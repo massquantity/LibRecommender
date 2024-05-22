@@ -105,11 +105,7 @@ impl PyUserCF {
     }
 
     fn num_sim_elements(&self) -> PyResult<usize> {
-        let n_elements = self
-            .sim_mapping
-            .iter()
-            .map(|(_, i)| i.0.len())
-            .sum();
+        let n_elements = self.sim_mapping.values().map(|i| i.0.len()).sum();
         Ok(n_elements)
     }
 

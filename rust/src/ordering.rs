@@ -28,8 +28,9 @@ impl Eq for SimOrd {}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::collections::BinaryHeap;
+
+    use super::*;
 
     #[test]
     fn test_sim_max_heap() {

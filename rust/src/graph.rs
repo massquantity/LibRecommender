@@ -154,8 +154,9 @@ fn compute_single_swing(
                     &get_row_vec(user_interactions, v),
                 ),
             };
-            let score =
-                user_weights[u] * user_weights[v] * (alpha + common_items.len() as f32).recip();
+            // exclude self item according to the paper
+            let k = (common_items.len() - 1) as f32;
+            let score = user_weights[u] * user_weights[v] * (alpha + k).recip();
             for j in common_items {
                 if i != j {
                     item_scores[j] += score;
