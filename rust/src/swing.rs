@@ -13,7 +13,7 @@ pub struct PySwing {
     task: String,
     top_k: usize,
     alpha: f32,
-    pre_compute_ratio: f32,
+    cache_common_num: usize,
     n_users: usize,
     n_items: usize,
     cum_swings: FxHashMap<i32, f32>,
@@ -47,7 +47,7 @@ impl PySwing {
         task: &str,
         top_k: usize,
         alpha: f32,
-        pre_compute_ratio: f32,
+        cache_common_num: usize,
         n_users: usize,
         n_items: usize,
         user_interactions: &PyAny,
@@ -62,7 +62,7 @@ impl PySwing {
             task: task.to_owned(),
             top_k,
             alpha,
-            pre_compute_ratio,
+            cache_common_num,
             n_users,
             n_items,
             cum_swings: FxHashMap::default(),
@@ -82,7 +82,7 @@ impl PySwing {
             self.n_users,
             self.n_items,
             self.alpha,
-            self.pre_compute_ratio,
+            self.cache_common_num,
         )?;
         Ok(())
     }
