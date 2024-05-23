@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
-use std::time::{Duration, Instant};
+use std::sync::Arc;
 
+use dashmap::DashMap;
 use fxhash::FxHashMap;
 use pyo3::PyResult;
 use rayon::prelude::*;
@@ -39,69 +40,69 @@ fn get_intersect_items(u_items: &[usize], v_items: &[usize]) -> Vec<usize> {
 }
 
 /// pre compute common items among active users.
-fn pre_compute_common_items(
-    user_interactions: &CsrMatrix<i32, f32>,
-    n_items_by_user: &[usize],
-    pre_compute_ratio: f32,
-) -> FxHashMap<usize, Vec<usize>> {
-    let start = Instant::now();
-    let cutoff = (pre_compute_ratio * n_items_by_user.len() as f32).ceil();
-    let mut sorted_users = n_items_by_user
-        .iter()
-        .enumerate()
-        .collect::<Vec<(usize, &usize)>>();
-    sorted_users.sort_unstable_by(|(_, &a), (_, &b)| a.partial_cmp(&b).unwrap().reverse());
-    let mut users: Vec<usize> = sorted_users
-        .iter()
-        .take(cutoff as usize)
-        .map(|&(u, _)| u)
-        .collect();
-    users.sort_unstable();
+// fn pre_compute_common_items(
+//    user_interactions: &CsrMatrix<i32, f32>,
+//    n_items_by_user: &[usize],
+//    pre_compute_ratio: f32,
+// ) -> FxHashMap<usize, Vec<usize>> {
+//    let start = Instant::now();
+//    let cutoff = (pre_compute_ratio * n_items_by_user.len() as f32).ceil();
+//    let mut sorted_users = n_items_by_user
+//        .iter()
+//        .enumerate()
+//        .collect::<Vec<(usize, &usize)>>();
+//    sorted_users.sort_unstable_by(|(_, &a), (_, &b)| a.partial_cmp(&b).unwrap().reverse());
+//    let mut users: Vec<usize> = sorted_users
+//        .iter()
+//        .take(cutoff as usize)
+//        .map(|&(u, _)| u)
+//        .collect();
+//    users.sort_unstable();
 
-    let n_users = n_items_by_user.len();
-    let pre_compute: Vec<(usize, Vec<usize>)> = (0..users.len())
-        .into_par_iter()
-        .flat_map(|i| {
-            let mut res = Vec::new();
-            let u = users[i];
-            for &v in &users[(i + 1)..users.len()] {
-                let common_items = get_intersect_items(
-                    &get_row_vec(user_interactions, u),
-                    &get_row_vec(user_interactions, v),
-                );
-                let key = u * n_users + v;
-                res.push((key, common_items));
-            }
-            res
-        })
-        .collect();
+//    let n_users = n_items_by_user.len();
+//    let pre_compute: Vec<(usize, Vec<usize>)> = (0..users.len())
+//        .into_par_iter()
+//        .flat_map(|i| {
+//            let mut res = Vec::new();
+//            let u = users[i];
+//            for &v in &users[(i + 1)..users.len()] {
+//                let common_items = get_intersect_items(
+//                    &get_row_vec(user_interactions, u),
+//                    &get_row_vec(user_interactions, v),
+//                );
+//                let key = u * n_users + v;
+//               res.push((key, common_items));
+//            }
+//            res
+//        })
+//        .collect();
 
-    let duration = start.elapsed();
-    pre_compute_statistics(duration, &pre_compute, user_interactions, n_users, cutoff);
-    FxHashMap::from_iter(pre_compute)
-}
+//    let duration = start.elapsed();
+//    pre_compute_statistics(duration, &pre_compute, user_interactions, n_users, cutoff);
+//    FxHashMap::from_iter(pre_compute)
+// }
 
-fn pre_compute_statistics(
-    duration: Duration,
-    pre_compute: &[(usize, Vec<usize>)],
-    user_interactions: &CsrMatrix<i32, f32>,
-    n_users: usize,
-    cutoff: f32,
-) {
-    let cache_item_num: usize = pre_compute.iter().map(|(_, v)| v.len()).sum();
-    let total_item_num: usize = (0..n_users)
-        .map(|u| get_row_vec(user_interactions, u).len())
-        .map(|u| u * u)
-        .sum();
+// fn pre_compute_statistics(
+//    duration: Duration,
+//    pre_compute: &[(usize, Vec<usize>)],
+//    user_interactions: &CsrMatrix<i32, f32>,
+//    n_users: usize,
+//    cutoff: f32,
+// ) {
+//    let cache_item_num: usize = pre_compute.iter().map(|(_, v)| v.len()).sum();
+//    let total_item_num: usize = (0..n_users)
+//        .map(|u| get_row_vec(user_interactions, u).len())
+//        .map(|u| u * u)
+//        .sum();
 
-    println!(
-        "swing pre compute cutoff n_users: {}, cache num: {}, cache ratio: {:.2}%, time: {:.4?}",
-        cutoff,
-        cache_item_num,
-        cache_item_num as f32 / total_item_num as f32 * 100.0,
-        duration,
-    );
-}
+//    println!(
+//        "swing pre compute cutoff n_users: {}, cache num: {}, cache ratio: {:.2}%, time: {:.4?}",
+//        cutoff,
+//        cache_item_num,
+//        cache_item_num as f32 / total_item_num as f32 * 100.0,
+//        duration,
+//    );
+// }
 
 fn get_row_vec(interactions: &CsrMatrix<i32, f32>, n: usize) -> Vec<usize> {
     if let Some(row) = get_row(interactions, n) {
@@ -137,22 +138,30 @@ fn compute_single_swing(
     alpha: f32,
     n_users: usize,
     n_items: usize,
-    pre_compute_mapping: &FxHashMap<usize, Vec<usize>>,
+    cache_common_items: Arc<DashMap<usize, Vec<usize>>>,
+    cache_common_num: usize,
 ) -> (i32, Vec<(i32, f32)>) {
-    let mut item_scores = vec![0.0; n_items];
     let users = get_row_vec(item_interactions, i);
     if users.is_empty() {
         return (i as i32, Vec::new());
     }
+
+    let mut item_scores = vec![0.0; n_items];
     for (j, &u) in users.iter().enumerate() {
         for &v in &users[(j + 1)..users.len()] {
             let key = u * n_users + v;
-            let common_items = match pre_compute_mapping.get(&key) {
+            let common_items = match cache_common_items.get(&key) {
                 Some(items) => items.to_owned(),
-                None => get_intersect_items(
-                    &get_row_vec(user_interactions, u),
-                    &get_row_vec(user_interactions, v),
-                ),
+                None => {
+                    let items = get_intersect_items(
+                        &get_row_vec(user_interactions, u),
+                        &get_row_vec(user_interactions, v),
+                    );
+                    if cache_common_items.len() < cache_common_num {
+                        cache_common_items.insert(key, items.clone());
+                    }
+                    items
+                }
             };
             // exclude self item according to the paper
             let k = (common_items.len() - 1) as f32;
@@ -174,15 +183,14 @@ pub(crate) fn compute_swing_scores(
     n_users: usize,
     n_items: usize,
     alpha: f32,
-    pre_compute_ratio: f32,
+    cache_common_num: usize,
 ) -> PyResult<FxHashMap<i32, Vec<(i32, f32)>>> {
     let n_items_by_user = compute_n_items_by_user(user_interactions, n_users);
     let user_weights: Vec<f32> = n_items_by_user
         .iter()
         .map(|&i| (i as f32).sqrt().recip())
         .collect();
-    let pre_compute_mapping =
-        pre_compute_common_items(user_interactions, &n_items_by_user, pre_compute_ratio);
+    let cache_common_items = Arc::new(DashMap::new());
     let swing_scores: Vec<(i32, Vec<(i32, f32)>)> = (0..n_items)
         .into_par_iter()
         .map(|i| {
@@ -194,7 +202,8 @@ pub(crate) fn compute_swing_scores(
                 alpha,
                 n_users,
                 n_items,
-                &pre_compute_mapping,
+                Arc::clone(&cache_common_items),
+                cache_common_num,
             )
         })
         .filter(|(_, s)| !s.is_empty())
