@@ -188,3 +188,105 @@ impl PySwing {
         Ok((recs, no_rec_indices))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[pyclass]
+    struct PySparseMatrix {
+        #[pyo3(get)]
+        sparse_indices: Vec<i32>,
+        #[pyo3(get)]
+        sparse_indptr: Vec<usize>,
+        #[pyo3(get)]
+        sparse_data: Vec<f32>,
+    }
+
+    fn get_swing_model() -> Result<PySwing, Box<dyn std::error::Error>> {
+        let task = "ranking";
+        let top_k = 10;
+        let alpha = 1.0;
+        let cache_common_num = 100;
+        let n_users = 3;
+        let n_items = 4;
+        let default_pred = 0.0;
+        let swing = Python::with_gil(|py| -> PyResult<PySwing> {
+            // item_interactions:
+            // [
+            //     [1, 1, 1],
+            //     [1, 1, 0],
+            //     [1, 0, 1],
+            //     [1, 1, 1],
+            //     [0, 0, 1],
+            // ]
+            let item_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![0, 1, 2, 0, 1, 0, 2, 0, 1, 2, 2],
+                    sparse_indptr: vec![0, 3, 5, 7, 10, 11],
+                    sparse_data: vec![1.0; 11],
+                },
+            )?;
+            let user_sparse_matrix = Py::new(
+                py,
+                PySparseMatrix {
+                    sparse_indices: vec![0, 1, 2, 3, 0, 1, 3, 0, 2, 3, 4],
+                    sparse_indptr: vec![0, 4, 7, 11],
+                    sparse_data: vec![1.0; 11],
+                },
+            )?;
+            let item_interactions: &PyAny = item_sparse_matrix.as_ref(py);
+            let user_interactions: &PyAny = user_sparse_matrix.as_ref(py);
+            let user_consumed = [
+                (0, vec![0, 1]),
+                (1, vec![0, 1]),
+                (2, vec![0, 1, 2]),
+            ]
+            .into_py_dict(py);
+
+            let mut swing = PySwing::new(
+                task,
+                top_k,
+                alpha,
+                cache_common_num,
+                n_users,
+                n_items,
+                user_interactions,
+                item_interactions,
+                user_consumed,
+                default_pred,
+            )?;
+            swing.compute_swing(2)?;
+            Ok(swing)
+        })?;
+        Ok(swing)
+    }
+
+    #[test]
+    fn test_swing_training() -> Result<(), Box<dyn std::error::Error>> {
+        pyo3::prepare_freethreaded_python();
+        let match_item_0 = |model: &PySwing, p: usize, i: i32, s: f32| {
+            let (item, score) = model.swing_score_mapping[&0][p];
+            item == i && (score - s).abs() < 1e-10
+        };
+        let user_weights = [
+            4_f32.sqrt().recip(),
+            3_f32.sqrt().recip(),
+            4_f32.sqrt().recip(),
+        ];
+        let common_nums = [2.0, 2.0, 1.0];  // user_0_1, user_0_2, user_1_2;
+        let swing_0_1 = user_weights[0] * user_weights[1] * (1_f32 + common_nums[0]).recip();
+        let swing_0_2 = user_weights[0] * user_weights[2] * (1_f32 + common_nums[1]).recip();
+        let swing_0_3 = user_weights[0] * user_weights[1] * (1_f32 + common_nums[0]).recip()
+            + user_weights[0] * user_weights[2] * (1_f32 + common_nums[1]).recip()
+            + user_weights[1] * user_weights[2] * (1_f32 + common_nums[2]).recip();
+        // let swing_0_4 = 0_f32;
+        let swing_model = get_swing_model()?;
+        assert_eq!(swing_model.swing_score_mapping[&0].len(), 3);
+        assert!(match_item_0(&swing_model, 0, 3, swing_0_3));
+        assert!(match_item_0(&swing_model, 1, 1, swing_0_1));
+        assert!(match_item_0(&swing_model, 2, 2, swing_0_2));
+        Ok(())
+    }
+}
