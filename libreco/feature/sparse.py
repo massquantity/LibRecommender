@@ -39,8 +39,12 @@ def column_sparse_indices(values, unique, is_train, is_ordered, multi_sparse=Fal
     oov_val = len(unique)
     if is_ordered:
         col_indices = np.searchsorted(unique, values)
+        # `multi_sparse` may contain missing value, which does not exist in unique
         if not is_train or multi_sparse:
-            not_in_mask = np.in1d(values, unique, invert=True)
+            unique_set = set(unique.tolist())
+            not_in_mask = [v not in unique_set for v in values]
+            # `np.in1d` is too slow
+            # not_in_mask = np.in1d(values, unique, invert=True)
             col_indices[not_in_mask] = oov_val
     else:
         idx_mapping = dict(zip(unique, range(len(unique))))
