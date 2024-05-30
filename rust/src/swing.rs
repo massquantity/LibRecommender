@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::graph::compute_swing_scores;
 use crate::inference::{compute_pred, get_intersect_neighbors, get_rec_items};
+use crate::serialization::{load_model, save_model};
 use crate::sparse::{get_row, CsrMatrix};
 
 #[pyclass(module = "recfarm", name = "Swing")]
@@ -189,6 +190,20 @@ impl PySwing {
     }
 }
 
+#[pyfunction]
+#[pyo3(name = "save_swing")]
+pub fn save(model: &PySwing, path: &str, model_name: &str) -> PyResult<()> {
+    save_model(model, path, model_name, "Swing")?;
+    Ok(())
+}
+
+#[pyfunction]
+#[pyo3(name = "load_swing")]
+pub fn load(path: &str, model_name: &str) -> PyResult<PySwing> {
+    let model = load_model(path, model_name, "Swing")?;
+    Ok(model)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -287,6 +302,26 @@ mod tests {
         assert!(match_item_0(&swing_model, 0, 3, swing_0_3));
         assert!(match_item_0(&swing_model, 1, 1, swing_0_1));
         assert!(match_item_0(&swing_model, 2, 2, swing_0_2));
+        Ok(())
+    }
+
+    #[test]
+    fn test_save_model() -> Result<(), Box<dyn std::error::Error>> {
+        pyo3::prepare_freethreaded_python();
+        let model = get_swing_model()?;
+        let cur_dir = std::env::current_dir()?.to_string_lossy().to_string();
+        let model_name = "swing_model";
+        save(&model, &cur_dir, model_name)?;
+
+        let new_model: PySwing = load(&cur_dir, model_name)?;
+        Python::with_gil(|py| -> PyResult<()> {
+            let users = PyList::new(py, vec![5, 1]);
+            let rec_result = new_model.recommend(py, users, 10, true, false)?;
+            assert_eq!(rec_result.0.len(), 2);
+            Ok(())
+        })?;
+
+        std::fs::remove_file(std::env::current_dir()?.join(format!("{model_name}.gz")))?;
         Ok(())
     }
 }
