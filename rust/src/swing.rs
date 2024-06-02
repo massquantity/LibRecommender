@@ -14,7 +14,7 @@ pub struct PySwing {
     task: String,
     top_k: usize,
     alpha: f32,
-    cache_common_num: usize,
+    max_cache_num: usize,
     n_users: usize,
     n_items: usize,
     cum_swings: FxHashMap<i32, f32>,
@@ -48,7 +48,7 @@ impl PySwing {
         task: &str,
         top_k: usize,
         alpha: f32,
-        cache_common_num: usize,
+        max_cache_num: usize,
         n_users: usize,
         n_items: usize,
         user_interactions: &PyAny,
@@ -63,7 +63,7 @@ impl PySwing {
             task: task.to_owned(),
             top_k,
             alpha,
-            cache_common_num,
+            max_cache_num,
             n_users,
             n_items,
             cum_swings: FxHashMap::default(),
@@ -75,15 +75,19 @@ impl PySwing {
         })
     }
 
-    fn compute_swing(&mut self, num_threads: usize) -> PyResult<()> {
+    fn compute_swing(&mut self, num_threads: usize, update_scores: bool) -> PyResult<()> {
         std::env::set_var("RAYON_NUM_THREADS", format!("{num_threads}"));
+        if !update_scores {
+            self.swing_score_mapping.clear();
+        }
         self.swing_score_mapping = compute_swing_scores(
             &self.user_interactions,
             &self.item_interactions,
+            &self.swing_score_mapping,
             self.n_users,
             self.n_items,
             self.alpha,
-            self.cache_common_num,
+            self.max_cache_num,
         )?;
         Ok(())
     }
@@ -272,7 +276,7 @@ mod tests {
                 user_consumed,
                 default_pred,
             )?;
-            swing.compute_swing(2)?;
+            swing.compute_swing(2, false)?;
             Ok(swing)
         })?;
         Ok(swing)
@@ -290,7 +294,7 @@ mod tests {
             3_f32.sqrt().recip(),
             4_f32.sqrt().recip(),
         ];
-        let common_nums = [2.0, 2.0, 1.0];  // user_0_1, user_0_2, user_1_2;
+        let common_nums = [2.0, 2.0, 1.0]; // user_0_1, user_0_2, user_1_2;
         let swing_0_1 = user_weights[0] * user_weights[1] * (1_f32 + common_nums[0]).recip();
         let swing_0_2 = user_weights[0] * user_weights[2] * (1_f32 + common_nums[1]).recip();
         let swing_0_3 = user_weights[0] * user_weights[1] * (1_f32 + common_nums[0]).recip()

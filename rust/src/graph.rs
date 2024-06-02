@@ -112,6 +112,20 @@ fn get_row_vec(interactions: &CsrMatrix<i32, f32>, n: usize) -> Vec<usize> {
     }
 }
 
+fn init_item_scores(
+    target_item: i32,
+    n_items: usize,
+    prev_scores: &FxHashMap<i32, Vec<(i32, f32)>>,
+) -> Vec<f32> {
+    let mut item_scores = vec![0.0; n_items];
+    if !prev_scores.is_empty() && prev_scores.contains_key(&target_item) {
+        for &(i, s) in &prev_scores[&target_item] {
+            item_scores[i as usize] = s;
+        }
+    }
+    item_scores
+}
+
 fn extract_valid_scores(scores: Vec<f32>) -> Vec<(i32, f32)> {
     let mut non_zero_scores: Vec<(i32, f32)> = scores
         .into_iter()
@@ -131,34 +145,36 @@ fn extract_valid_scores(scores: Vec<f32>) -> Vec<(i32, f32)> {
 }
 
 fn compute_single_swing(
-    i: usize,
+    target_item: usize,
     user_interactions: &CsrMatrix<i32, f32>,
     item_interactions: &CsrMatrix<i32, f32>,
+    prev_scores: &FxHashMap<i32, Vec<(i32, f32)>>,
     user_weights: &[f32],
     alpha: f32,
     n_users: usize,
     n_items: usize,
-    cache_common_items: Arc<DashMap<usize, Vec<usize>>>,
-    cache_common_num: usize,
+    cached_common_items: Arc<DashMap<usize, Vec<usize>>>,
+    max_cache_num: usize,
 ) -> (i32, Vec<(i32, f32)>) {
-    let users = get_row_vec(item_interactions, i);
+    let target_i32 = target_item as i32;
+    let users = get_row_vec(item_interactions, target_item);
     if users.is_empty() {
-        return (i as i32, Vec::new());
+        return (target_i32, Vec::new());
     }
 
-    let mut item_scores = vec![0.0; n_items];
+    let mut item_scores = init_item_scores(target_i32, n_items, prev_scores);
     for (j, &u) in users.iter().enumerate() {
         for &v in &users[(j + 1)..users.len()] {
             let key = u * n_users + v;
-            let common_items = match cache_common_items.get(&key) {
+            let common_items = match cached_common_items.get(&key) {
                 Some(items) => items.to_owned(),
                 None => {
                     let items = get_intersect_items(
                         &get_row_vec(user_interactions, u),
                         &get_row_vec(user_interactions, v),
                     );
-                    if cache_common_items.len() < cache_common_num {
-                        cache_common_items.insert(key, items.clone());
+                    if cached_common_items.len() < max_cache_num {
+                        cached_common_items.insert(key, items.clone());
                     }
                     items
                 }
@@ -166,31 +182,32 @@ fn compute_single_swing(
             // exclude self item according to the paper
             let k = (common_items.len() - 1) as f32;
             let score = user_weights[u] * user_weights[v] * (alpha + k).recip();
-            for j in common_items {
-                if i != j {
-                    item_scores[j] += score;
+            for ci in common_items {
+                if ci != target_item {
+                    item_scores[ci] += score;
                 }
             }
         }
     }
 
-    (i as i32, extract_valid_scores(item_scores))
+    (target_i32, extract_valid_scores(item_scores))
 }
 
 pub(crate) fn compute_swing_scores(
     user_interactions: &CsrMatrix<i32, f32>,
     item_interactions: &CsrMatrix<i32, f32>,
+    prev_mapping: &FxHashMap<i32, Vec<(i32, f32)>>,
     n_users: usize,
     n_items: usize,
     alpha: f32,
-    cache_common_num: usize,
+    max_cache_num: usize,
 ) -> PyResult<FxHashMap<i32, Vec<(i32, f32)>>> {
     let n_items_by_user = compute_n_items_by_user(user_interactions, n_users);
     let user_weights: Vec<f32> = n_items_by_user
         .iter()
         .map(|&i| (i as f32).sqrt().recip())
         .collect();
-    let cache_common_items = Arc::new(DashMap::new());
+    let cached_common_items = Arc::new(DashMap::new());
     let swing_scores: Vec<(i32, Vec<(i32, f32)>)> = (0..n_items)
         .into_par_iter()
         .map(|i| {
@@ -198,12 +215,13 @@ pub(crate) fn compute_swing_scores(
                 i,
                 user_interactions,
                 item_interactions,
+                prev_mapping,
                 &user_weights,
                 alpha,
                 n_users,
                 n_items,
-                Arc::clone(&cache_common_items),
-                cache_common_num,
+                Arc::clone(&cached_common_items),
+                max_cache_num,
             )
         })
         .filter(|(_, s)| !s.is_empty())
