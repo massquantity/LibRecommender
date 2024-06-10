@@ -20,6 +20,7 @@ from .rnn4rec import RNN4Rec
 from .sim import SIM
 from .svd import SVD
 from .svdpp import SVDpp
+from .swing import Swing
 from .transformer import Transformer
 from .two_tower import TwoTower
 from .user_cf import UserCF
@@ -60,4 +61,5 @@ __all__ = [
     "TwoTower",
     "Transformer",
     "SIM",
+    "Swing",
 ]
