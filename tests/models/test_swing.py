@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,6 +16,9 @@ from tests.utils_save_load import save_load_model
 @pytest.mark.parametrize("task", ["rating", "ranking"])
 @pytest.mark.parametrize("neg_sampling", [True, False, None])
 def test_swing(all_consumed_data, task, neg_sampling):
+    if sys.version_info[:2] < (3, 7):
+        pytest.skip("Rust implementation only supports Python >= 3.7.")
+
     pd_data, train_data, eval_data, data_info = all_consumed_data
     if neg_sampling is False:
         set_ranking_labels(train_data)
@@ -52,6 +57,10 @@ def test_swing(all_consumed_data, task, neg_sampling):
         remove_path(SAVE_PATH)
 
 
+@pytest.mark.skipif(
+    sys.version_info[:2] < (3, 7),
+    reason="Rust implementation only supports Python >= 3.7.",
+)
 def test_all_consumed_recommend(all_consumed_data, monkeypatch):
     _, train_data, eval_data, data_info = all_consumed_data
 
@@ -65,6 +74,10 @@ def test_all_consumed_recommend(all_consumed_data, monkeypatch):
     assert np.all(np.isin(recos[user], data_info.popular_items))
 
 
+@pytest.mark.skipif(
+    sys.version_info[:2] < (3, 7),
+    reason="Rust implementation only supports Python >= 3.7.",
+)
 def test_cold_start():
     size, unique_num = 50000, 1000
     out_id = 1001
