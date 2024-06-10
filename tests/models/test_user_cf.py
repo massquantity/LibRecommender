@@ -81,7 +81,7 @@ def test_all_consumed_recommend(pure_data_small, monkeypatch):
         assert np.all(np.isin(recos[user], data_info.popular_items))
 
 
-def test_no_sim_recommend(pure_data_small):
+def test_no_sim_recommend():
     size, unique_num = 50000, 1000
     out_id = 1001
     out_inner_id = out_id - 1

@@ -57,8 +57,8 @@ def test_item_cf_rs(pure_data_small, task, neg_sampling):
     sys.version_info[:2] < (3, 7),
     reason="Rust implementation only supports Python >= 3.7.",
 )
-def test_all_consumed_recommend(pure_data_small, monkeypatch):
-    _, train_data, eval_data, data_info = pure_data_small
+def test_all_consumed_recommend(all_consumed_data, monkeypatch):
+    _, train_data, eval_data, data_info = all_consumed_data
     set_ranking_labels(train_data)
     set_ranking_labels(eval_data)
 
@@ -66,7 +66,7 @@ def test_all_consumed_recommend(pure_data_small, monkeypatch):
     model.fit(train_data, neg_sampling=False, verbose=0)
     model.save("not_existed_path", "item_cf2")
     remove_path("not_existed_path")
-    with monkeypatch.context() as m:
-        m.setitem(model.user_consumed, 0, list(range(model.n_items)))
-        recos = model.recommend_user(user=1, n_rec=7)
-        assert np.all(np.isin(recos[1], data_info.popular_items))
+    for user in range(model.n_users):
+        model.rs_model.user_consumed = {user: list(range(model.n_items))}
+        recos = model.recommend_user(user=user, n_rec=7)
+        assert np.all(np.isin(recos[user], data_info.popular_items))

@@ -140,3 +140,21 @@ def config_feat_data_small(make_synthetic_data, request):
     eval_data = DatasetFeat.build_testset(eval_data)
     yield pd_data, train_data, eval_data, data_info
     remove_path(SAVE_PATH)
+
+
+@pytest.fixture
+def all_consumed_data():
+    size = 1000
+    np_rng = np.random.default_rng(42)
+    data = pd.DataFrame(
+        {
+            "user": np_rng.integers(0, 20, size),
+            "item": np_rng.integers(0, 200, size),
+            "label": np_rng.integers(0, 5, size) + 1,
+            "time": np_rng.integers(10000, 20000, size),
+        }
+    )
+    train_data, eval_data = split_by_ratio_chrono(data, test_size=0.2)
+    train_data, data_info = DatasetPure.build_trainset(train_data)
+    eval_data = DatasetPure.build_evalset(eval_data)
+    return data, train_data, eval_data, data_info
