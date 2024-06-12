@@ -39,6 +39,7 @@ class RsCfBase(Base):
     ~libreco.algorithms.RsUserCF
     ~libreco.algorithms.RsItemCF
     """
+
     def __init__(
         self,
         task,

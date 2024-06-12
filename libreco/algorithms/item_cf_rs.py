@@ -3,7 +3,7 @@ from ..bases import RsCfBase
 
 
 class RsItemCF(RsCfBase):
-    """Rust *Item Collaborative Filtering* algorithm.
+    """*Item Collaborative Filtering* algorithm implemented in Rust.
 
     Parameters
     ----------

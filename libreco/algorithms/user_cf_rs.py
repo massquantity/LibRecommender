@@ -3,7 +3,7 @@ from ..bases import RsCfBase
 
 
 class RsUserCF(RsCfBase):
-    """Rust *User Collaborative Filtering* algorithm.
+    """*User Collaborative Filtering* algorithm implemented in Rust.
 
     Parameters
     ----------
