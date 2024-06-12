@@ -6,7 +6,9 @@ Algorithms
 
    bases
    user_cf
+   user_cf_rs
    item_cf
+   item_cf_rs
    svd
    svdpp
    als
@@ -33,3 +35,4 @@ Algorithms
    two_tower
    transformer
    sim
+   swing
