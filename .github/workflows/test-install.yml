@@ -11,13 +11,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-latest, macos-latest]
+        os: [ubuntu-20.04, windows-latest, macos-12]
         python-version: [3.6, 3.7, 3.8, 3.9, '3.10', '3.11']
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -41,7 +41,7 @@ jobs:
 
       - name: Test install dgl
         run: |
-          python -m pip install dgl -f https://data.dgl.ai/wheels/repo.html
+          python -m pip install 'dgl<2.0.0' -f https://data.dgl.ai/wheels/repo.html
           python -c "import dgl; print('dgl --', dgl.__version__)"
 
       - name: Test running on Linux
