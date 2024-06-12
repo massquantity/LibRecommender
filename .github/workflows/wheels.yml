@@ -132,8 +132,9 @@ jobs:
         run: cibuildwheel --output-dir wheelhouse
 
       - name: Store artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
+          name: wheels
           path: wheelhouse/*.whl
 
   # Build the source distribution under Linux
