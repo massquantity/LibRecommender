@@ -21,6 +21,11 @@ Base Classes
    :inherited-members:
    :show-inheritance:
 
+.. autoclass:: libreco.bases.RsCfBase
+   :members:
+   :inherited-members:
+   :show-inheritance:
+
 .. autoclass:: libreco.bases.GensimBase
    :members:
    :inherited-members:

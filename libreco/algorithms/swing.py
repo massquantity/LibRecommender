@@ -173,6 +173,18 @@ class Swing(Base):
         return model
 
     def rebuild_model(self, path, model_name):
+        """Assign the saved model variables to the newly initialized model.
+
+        This method is used before retraining the new model, in order to avoid training
+        from scratch every time we get some new data.
+
+        Parameters
+        ----------
+        path : str
+            File folder path for the saved model variables.
+        model_name : str
+            Name of the saved model file.
+        """
         import recfarm
 
         self.rs_model = recfarm.load_swing(path, model_name)
