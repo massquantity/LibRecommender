@@ -169,12 +169,12 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         if self.task != "ranking":
             raise ValueError("`TwoTower` is only suitable for ranking")
         if self.loss_type not in ("cross_entropy", "max_margin", "softmax"):
-            raise ValueError(f"Unsupported `loss_type`: {self.loss_type}")
+            raise ValueError(f"Unsupported `loss_type`: `{self.loss_type}`")
         if self.ssl_pattern is not None:
             if self.ssl_pattern not in ("rfm", "rfm-complementary", "cfm"):
                 raise ValueError(
                     f"`ssl` pattern supports `rfm`, `rfm-complementary` and `cfm`, "
-                    f"got {self.ssl_pattern}."
+                    f"got `{self.ssl_pattern}`"
                 )
             if not self.item_sparse:
                 raise ValueError(
@@ -423,9 +423,17 @@ class TwoTower(DynEmbedBase, metaclass=ModelMeta, backend="tensorflow"):
         num_workers=0,
     ):
         if self.loss_type == "softmax" and self.use_correction:
-            _, item_counts = np.unique(train_data.item_indices, return_counts=True)
-            assert len(item_counts) == self.n_items
-            self.item_corrections = item_counts / len(train_data)
+            if not self.data_info.old_info:
+                _, item_counts = np.unique(train_data.item_indices, return_counts=True)
+                assert len(item_counts) == self.n_items
+                self.item_corrections = item_counts / len(train_data)
+            else:  # in retrain, `len(item_counts) != self.n_items`
+                self.item_corrections = np.ones(self.n_items, dtype=np.float32)
+                indices, item_counts = np.unique(
+                    train_data.item_indices, return_counts=True
+                )
+                self.item_corrections[indices] = item_counts / len(train_data)
+
         if self.ssl_pattern is not None and self.ssl_pattern == "cfm":
             self.sparse_feat_mutual_info = get_mutual_info(train_data, self.data_info)
 
