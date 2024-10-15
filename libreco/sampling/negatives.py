@@ -21,15 +21,13 @@ def negatives_from_random(
     items = np.repeat(items, num_neg) if num_neg > 1 and items is not None else items
     replace = False if len(items_pos) < n_items else True
     negatives = np_rng.choice(n_items, size=len(items_pos), replace=replace)
-    invalid_indices = _check_invalid_negatives(negatives, items_pos, items)
-    if invalid_indices:
-        for _ in range(tolerance):
-            negatives[invalid_indices] = np_rng.choice(
-                n_items, size=len(invalid_indices), replace=True
-            )
-            invalid_indices = _check_invalid_negatives(negatives, items_pos, items)
-            if not invalid_indices:
-                break
+    for _ in range(tolerance):
+        invalid_indices = _check_invalid_negatives(negatives, items_pos, items)
+        if not invalid_indices:
+            break
+        negatives[invalid_indices] = np_rng.choice(
+            n_items, size=len(invalid_indices), replace=True
+        )
     return negatives
 
 
@@ -68,21 +66,17 @@ def negatives_from_unconsumed(
         u_negs = []
         for _ in range(num_neg):
             success = False
+            n = sample_one()
             for _ in range(tolerance):
-                n = sample_one()
                 if n != i and n not in u_negs and n not in user_consumed_set[u]:
                     success = True
                     break
+                n = sample_one()
             if not success:
                 for _ in range(tolerance):
-                    n = sample_one()
                     if n != i and n not in u_negs:
-                        success = True
                         break
-            if not success:
-                n = sample_one()
-                print(f"possible not enough negatives for user {u} and item {i}.")
-            # noinspection PyUnboundLocalVariable
+                    n = sample_one()
             u_negs.append(n)
         negatives.extend(u_negs)
     return np.array(negatives)
