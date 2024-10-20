@@ -375,7 +375,7 @@ def test_pairwise_collator(config_feat_data):
     ],
     indirect=True,
 )
-def test_graph_collator(config_feat_data):
+def test_graph_dgl_collator(config_feat_data):
     train_data, data_info = config_feat_data
     original_data = BatchData(train_data, use_features=True)[[11, 7, 2]]
 
