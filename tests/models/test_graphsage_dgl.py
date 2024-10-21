@@ -105,7 +105,7 @@ from tests.utils_save_load import save_load_model
         ),
     ],
 )
-def test_pinsage(
+def test_graphsage_dgl(
     feat_data_small,
     task,
     paradigm,
