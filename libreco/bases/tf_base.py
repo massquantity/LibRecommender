@@ -161,7 +161,7 @@ class TfBase(Base):
             User id or batch of user ids.
         item : int or str or array_like
             Item id or batch of item ids.
-        feats : dict or pandas.Series or None, default: None
+        feats : dict or None, default: None
             Extra features used in prediction.
         cold_start : {'popular', 'average'}, default: 'average'
             Cold start strategy.

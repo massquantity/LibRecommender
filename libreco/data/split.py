@@ -80,29 +80,26 @@ def random_split(
 
 def _filter_unknown_user_item(data_list):
     train_data = data_list[0]
-    unique_values = dict(
-        user=set(train_data.user.tolist()), item=set(train_data.item.tolist())
-    )
+    unique_users = set(train_data["user"].tolist())
+    unique_items = set(train_data["item"].tolist())
 
     split_data_all = [train_data]
     for test_data in data_list[1:]:
-        # print(f"Non_train_data {i} size before filtering: {len(test_data)}")
-        out_of_bounds_row_indices = set()
-        for col in ["user", "item"]:
-            for j, val in enumerate(test_data[col]):
-                if val not in unique_values[col]:
-                    out_of_bounds_row_indices.add(j)
-
+        oov_user_indices = [
+            j for j, v in enumerate(test_data["user"]) if v not in unique_users
+        ]
+        oov_item_indices = [
+            j for j, v in enumerate(test_data["item"]) if v not in unique_items
+        ]
+        oov_indices = list(set(oov_user_indices + oov_item_indices))
         mask = np.arange(len(test_data))
-        test_data_clean = test_data[~np.isin(mask, list(out_of_bounds_row_indices))]
+        test_data_clean = test_data[~np.isin(mask, oov_indices)]
         split_data_all.append(test_data_clean)
-        # print(f"Non_train_data {i} size after filtering: "
-        #      f"{len(test_data_clean)}")
     return split_data_all
 
 
 def _pad_unknown_user_item(data_list, pad_val):
-    train_data, test_data = data_list
+    train_data = data_list[0]
     if isinstance(pad_val, (list, tuple)):
         user_pad_val, item_pad_val = pad_val
     else:

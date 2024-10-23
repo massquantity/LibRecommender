@@ -20,14 +20,18 @@ def check_unknown_user(data_info, user, inner_id=False):
     known_users_ids, unknown_users = [], []
     users = [user] if np.isscalar(user) else user
     for u in users:
-        user_id = data_info.user2id.get(u, -1) if not inner_id else u
-        if 0 <= user_id < data_info.n_users:
-            known_users_ids.append(user_id)
+        if inner_id:
+            if 0 <= u < data_info.n_users:
+                known_users_ids.append(u)
+            else:
+                unknown_users.append(u)
         else:
-            if not inner_id:
+            if u in data_info.user2id:
+                known_users_ids.append(data_info.user2id[u])
+            else:
                 unknown_str = f"Detect unknown user: {u}"
                 print(f"{colorize(unknown_str, 'red')}")
-            unknown_users.append(u)
+                unknown_users.append(u)
     return known_users_ids, unknown_users
 
 
