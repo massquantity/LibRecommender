@@ -209,7 +209,7 @@ def _concat_features(item_embeds, sparse_embeds, dense_embeds):
         dense_embeds = tf.keras.layers.Flatten()(dense_embeds)
 
     if sparse_embeds is not None and dense_embeds is not None:
-        return tf.concat([item_embeds, sparse_embeds, item_embeds], axis=1)
+        return tf.concat([item_embeds, sparse_embeds, dense_embeds], axis=1)
     elif sparse_embeds is not None:
         return tf.concat([item_embeds, sparse_embeds], axis=1)
     elif dense_embeds is not None:
