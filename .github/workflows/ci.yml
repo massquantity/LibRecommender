@@ -17,8 +17,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
-        python-version: [3.6, 3.7, 3.8, 3.9, '3.10', '3.11']
+        os: [ubuntu-22.04]
+        python-version: [3.7, 3.8, 3.9, '3.10', '3.11']
 
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +50,7 @@ jobs:
         run: |
           python -m pip install pytest
           python -m pytest tests/ --ignore="tests/serving"
-        if: matrix.python-version != '3.8'
+        if: matrix.python-version != '3.10'
 
       - name: Test with coverage
         run: |
@@ -59,7 +59,7 @@ jobs:
           coverage run -m pytest tests/ --ignore="tests/serving"
           coverage combine && coverage report
           coverage xml
-        if: matrix.python-version == '3.8'
+        if: matrix.python-version == '3.10'
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -70,11 +70,11 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
           verbose: true
-        if: matrix.python-version == '3.8'
+        if: matrix.python-version == '3.10'
 
       - name: Upload coverage to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           coverage-reports: ./coverage.xml
-        if: matrix.python-version == '3.8'
+        if: matrix.python-version == '3.10'
