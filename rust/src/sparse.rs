@@ -30,7 +30,7 @@ impl<T: Copy + Eq + Hash + Ord, U: Copy> CsrMatrix<T, U> {
         let mut data = Vec::new();
         let n_rows = n_rows.unwrap_or_else(|| self.n_rows());
         for i in 0..n_rows {
-            if let Some(row) = get_row(self, i) {
+            if let Some(row) = get_row(self, i, false) {
                 data.push(FxHashMap::from_iter(row))
             } else {
                 data.push(FxHashMap::default());
@@ -69,7 +69,7 @@ where
     type Item = Vec<(T, U)>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let sparse_row = get_row(self.matrix, self.row_idx);
+        let sparse_row = get_row(self.matrix, self.row_idx, true);
         self.row_idx += 1;
         sparse_row.map(|row| row.collect())
     }
@@ -78,7 +78,8 @@ where
 pub(crate) fn get_row<'a, T, U>(
     matrix: &'a CsrMatrix<T, U>,
     i: usize,
-) -> Option<impl Iterator<Item = (T, U)> + 'a>
+    in_iterator: bool,
+) -> Option<Box<dyn Iterator<Item = (T, U)> + 'a>>
 where
     T: Copy + Eq + Hash + Ord + 'a,
     U: Copy + 'a,
@@ -89,32 +90,24 @@ where
     let start = matrix.indptr[i];
     let end = matrix.indptr[i + 1];
     if start == end {
-        None
-    } else {
-        Some(index_iter(start, end, &matrix.indices, &matrix.data))
-    }
-}
-
-fn index_iter<'a, T, U>(
-    start: usize,
-    end: usize,
-    indices: &'a [T],
-    data: &'a [U],
-) -> impl Iterator<Item = (T, U)> + 'a
-where
-    T: Copy + Eq + Hash + Ord + 'a,
-    U: Copy + 'a,
-{
-    let mut i = start;
-    std::iter::from_fn(move || {
-        let item = if i < end {
-            Some((indices[i], data[i]))
+        return if in_iterator {
+            // avoid ending the iterator prematurely
+            Some(Box::new(std::iter::empty()))
         } else {
             None
         };
-        i += 1;
-        item
-    })
+    }
+    let mut index = start;
+    let index_iter = std::iter::from_fn(move || {
+        if index < end {
+            let item = (matrix.indices[index], matrix.data[index]);
+            index += 1;
+            Some(item)
+        } else {
+            None
+        }
+    });
+    Some(Box::new(index_iter))
 }
 
 /// Analogy of `scipy.sparse.dok_matrix`
@@ -130,6 +123,9 @@ where
 {
     fn add(&mut self, other: &CsrMatrix<T, U>) -> &Self {
         for (i, row) in other.iter().enumerate() {
+            if row.is_empty() {
+                continue;
+            }
             for (idx, dat) in row {
                 let mapping = &mut self.data[i];
                 mapping.insert(idx, dat);

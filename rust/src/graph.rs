@@ -105,7 +105,7 @@ fn get_intersect_items(u_items: &[usize], v_items: &[usize]) -> Vec<usize> {
 // }
 
 fn get_row_vec(interactions: &CsrMatrix<i32, f32>, n: usize) -> Vec<usize> {
-    if let Some(row) = get_row(interactions, n) {
+    if let Some(row) = get_row(interactions, n, false) {
         row.map(|(i, _)| i as usize).collect()
     } else {
         Vec::new()

@@ -38,7 +38,7 @@ impl PySwing {
     }
 
     #[setter]
-    fn set_user_consumed(&mut self, user_consumed: &PyDict) -> PyResult<()> {
+    fn set_user_consumed(&mut self, user_consumed: &Bound<'_, PyDict>) -> PyResult<()> {
         self.user_consumed = user_consumed.extract::<FxHashMap<i32, Vec<i32>>>()?;
         Ok(())
     }
@@ -51,9 +51,9 @@ impl PySwing {
         max_cache_num: usize,
         n_users: usize,
         n_items: usize,
-        user_interactions: &PyAny,
-        item_interactions: &PyAny,
-        user_consumed: &PyDict,
+        user_interactions: &Bound<'_, PyAny>,
+        item_interactions: &Bound<'_, PyAny>,
+        user_consumed: &Bound<'_, PyDict>,
         default_pred: f32,
     ) -> PyResult<Self> {
         let user_consumed: FxHashMap<i32, Vec<i32>> = user_consumed.extract()?;
@@ -106,7 +106,7 @@ impl PySwing {
         Ok(n_elements)
     }
 
-    fn predict(&self, users: &PyList, items: &PyList) -> PyResult<Vec<f32>> {
+    fn predict(&self, users: &Bound<'_, PyList>, items: &Bound<'_, PyList>) -> PyResult<Vec<f32>> {
         let mut preds = Vec::new();
         let users: Vec<usize> = users.extract()?;
         let items: Vec<i32> = items.extract()?;
@@ -117,7 +117,7 @@ impl PySwing {
             }
             let pred = match (
                 self.swing_score_mapping.get(&i),
-                get_row(&self.user_interactions, u),
+                get_row(&self.user_interactions, u, false),
             ) {
                 (Some(item_swings), Some(item_labels)) => {
                     let num = std::cmp::min(self.top_k, item_swings.len());
@@ -140,14 +140,14 @@ impl PySwing {
         Ok(preds)
     }
 
-    fn recommend(
+    fn recommend<'py>(
         &self,
-        py: Python<'_>,
-        users: &PyList,
+        py: Python<'py>,
+        users: &Bound<'py, PyList>,
         n_rec: usize,
         filter_consumed: bool,
         random_rec: bool,
-    ) -> PyResult<(Vec<Py<PyList>>, Py<PyList>)> {
+    ) -> PyResult<(Vec<Bound<'py, PyList>>, Bound<'py, PyList>)> {
         let mut recs = Vec::new();
         let mut no_rec_indices = Vec::new();
         for (k, u) in users.iter().enumerate() {
@@ -157,7 +157,7 @@ impl PySwing {
                 .get(&u)
                 .map_or(FxHashSet::default(), FxHashSet::from_iter);
 
-            match get_row(&self.user_interactions, usize::try_from(u)?) {
+            match get_row(&self.user_interactions, usize::try_from(u)?, false) {
                 Some(row) => {
                     let mut item_scores: FxHashMap<i32, f32> = FxHashMap::default();
                     for (i, i_label) in row {
@@ -175,21 +175,21 @@ impl PySwing {
                         }
                     }
                     if item_scores.is_empty() {
-                        recs.push(PyList::empty(py).into());
+                        recs.push(PyList::empty(py));
                         no_rec_indices.push(k);
                     } else {
                         let items = get_rec_items(item_scores, n_rec, random_rec);
-                        recs.push(PyList::new(py, items).into());
+                        recs.push(PyList::new(py, items)?);
                     }
                 }
                 None => {
-                    recs.push(PyList::empty(py).into());
+                    recs.push(PyList::empty(py));
                     no_rec_indices.push(k);
                 }
             }
         }
 
-        let no_rec_indices = PyList::new(py, no_rec_indices).into_py(py);
+        let no_rec_indices = PyList::new(py, no_rec_indices)?;
         Ok((recs, no_rec_indices))
     }
 }
@@ -239,7 +239,7 @@ mod tests {
             //     [1, 1, 1],
             //     [0, 0, 1],
             // ]
-            let item_sparse_matrix = Py::new(
+            let item_interactions = Bound::new(
                 py,
                 PySparseMatrix {
                     sparse_indices: vec![0, 1, 2, 0, 1, 0, 2, 0, 1, 2, 2],
@@ -247,7 +247,7 @@ mod tests {
                     sparse_data: vec![1.0; 11],
                 },
             )?;
-            let user_sparse_matrix = Py::new(
+            let user_interactions = Bound::new(
                 py,
                 PySparseMatrix {
                     sparse_indices: vec![0, 1, 2, 3, 0, 1, 3, 0, 2, 3, 4],
@@ -255,14 +255,12 @@ mod tests {
                     sparse_data: vec![1.0; 11],
                 },
             )?;
-            let item_interactions: &PyAny = item_sparse_matrix.as_ref(py);
-            let user_interactions: &PyAny = user_sparse_matrix.as_ref(py);
             let user_consumed = [
                 (0, vec![0, 1]),
                 (1, vec![0, 1]),
                 (2, vec![0, 1, 2]),
             ]
-            .into_py_dict(py);
+            .into_py_dict(py)?;
 
             let mut swing = PySwing::new(
                 task,
@@ -271,9 +269,9 @@ mod tests {
                 cache_common_num,
                 n_users,
                 n_items,
-                user_interactions,
-                item_interactions,
-                user_consumed,
+                &user_interactions,
+                &item_interactions,
+                &user_consumed,
                 default_pred,
             )?;
             swing.compute_swing(2, false)?;
@@ -319,8 +317,8 @@ mod tests {
 
         let new_model: PySwing = load(&cur_dir, model_name)?;
         Python::with_gil(|py| -> PyResult<()> {
-            let users = PyList::new(py, vec![5, 1]);
-            let rec_result = new_model.recommend(py, users, 10, true, false)?;
+            let users = PyList::new(py, vec![5, 1])?;
+            let rec_result = new_model.recommend(py, &users, 10, true, false)?;
             assert_eq!(rec_result.0.len(), 2);
             Ok(())
         })?;

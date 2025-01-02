@@ -18,7 +18,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// RecFarm module
 #[pymodule]
-fn recfarm(_py: Python, m: &PyModule) -> PyResult<()> {
+fn recfarm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<user_cf::PyUserCF>()?;
     m.add_class::<item_cf::PyItemCF>()?;
     m.add_class::<swing::PySwing>()?;

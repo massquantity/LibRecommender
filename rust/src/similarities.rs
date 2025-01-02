@@ -12,7 +12,10 @@ const MAX_BLOCK_SIZE: i64 = 200_000_000;
 
 pub(crate) fn compute_sum_squares(interactions: &CsrMatrix<i32, f32>, num: usize) -> Vec<f32> {
     (0..num)
-        .map(|i| get_row(interactions, i).map_or(0.0, |row| row.fold(0.0, |ss, (_, d)| ss + d * d)))
+        .map(|i| {
+            get_row(interactions, i, false)
+                .map_or(0.0, |row| row.fold(0.0, |ss, (_, d)| ss + d * d))
+        })
         .collect()
 }
 

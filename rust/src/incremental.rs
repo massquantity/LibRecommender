@@ -15,7 +15,7 @@ pub(crate) fn update_sum_squares(
         sum_squares.resize(num, 0.0);
     }
     for (i, ss) in sum_squares.iter_mut().enumerate() {
-        if let Some(row) = get_row(interactions, i) {
+        if let Some(row) = get_row(interactions, i, false) {
             *ss += row.map(|(_, d)| d * d).sum::<f32>()
         }
     }
