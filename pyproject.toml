@@ -90,7 +90,7 @@ filterwarnings = [
 line-length = 88
 target-version = "py38"
 output-format  = "full"
-lint.ignore = ["E501"]
+lint.ignore = ["E501", "RUF022", "RUF023"]
 lint.select = [
     # flake8-async
     "ASYNC",
