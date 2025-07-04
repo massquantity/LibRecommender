@@ -134,6 +134,11 @@ def test_graphsage_dgl(
         pytest.skip(
             "Windows and macOS use `spawn` in multiprocessing, which does not work well in pytest"
         )
+    if sys.platform == "darwin":
+        pytest.skip(
+            "DGL is incompatible with macOS, which uses torch.mps"
+        )
+
     tf.compat.v1.reset_default_graph()
     pd_data, train_data, eval_data, data_info = feat_data_small
     if task == "ranking" and neg_sampling is False and loss_type == "cross_entropy":
