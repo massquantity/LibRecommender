@@ -156,4 +156,4 @@ def remove_target_node(neighbors, node):
 
 def compute_offsets(neighbor_lens):
     cumsum = list(itertools.accumulate(neighbor_lens, operator.add))
-    return [0] + cumsum[:-1]
+    return [0, *cumsum[:-1]]
