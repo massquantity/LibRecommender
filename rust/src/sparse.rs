@@ -142,14 +142,14 @@ where
         let mut indptr: Vec<usize> = vec![0];
         let mut data: Vec<U> = Vec::new();
         for d in self.data.iter() {
-            if d.is_empty() {
-                continue;
+            if !d.is_empty() {
+                let mut mapping: Vec<(&T, &U)> = d.iter().collect();
+                mapping.sort_unstable_by_key(|(i, _)| *i);
+                let (idx, dat): (Vec<T>, Vec<U>) = mapping.into_iter().unzip();
+                indices.extend(idx);
+                data.extend(dat);
             }
-            let mut mapping: Vec<(&T, &U)> = d.iter().collect();
-            mapping.sort_unstable_by_key(|(i, _)| *i);
-            let (idx, dat): (Vec<T>, Vec<U>) = mapping.into_iter().unzip();
-            indices.extend(idx);
-            data.extend(dat);
+            // ensure keeping empty oov row
             indptr.push(indices.len());
         }
         CsrMatrix {
@@ -214,6 +214,28 @@ mod tests {
             indptr: vec![0, 0, 2, 4],
             data: vec![1, 2, 3, 3],
         };
-        CsrMatrix::add(&matrix, &matrix_large, Some(new_size));
+        CsrMatrix::merge(&matrix, &matrix_large, Some(new_size));
+    }
+
+    #[test]
+    fn test_add_with_empty_rows() {
+        // [[0, 0, 0], [0, 0, 1]]
+        let mut matrix = CsrMatrix {
+            indices: vec![2],
+            indptr: vec![0, 0, 1],
+            data: vec![1],
+        };
+        // [[0, 0, 0], [1, 0, 2], [3, 3, 0]]
+        let matrix_large = CsrMatrix {
+            indices: vec![0, 2, 0, 1],
+            indptr: vec![0, 0, 2, 4],
+            data: vec![1, 2, 3, 3],
+        };
+
+        // [[0, 0, 0], [1, 0, 2], [3, 3, 0]]
+        matrix = CsrMatrix::merge(&matrix, &matrix_large, Some(3));
+        assert_eq!(matrix.indices, vec![0, 2, 0, 1]);
+        assert_eq!(matrix.indptr, vec![0, 0, 2, 4]);
+        assert_eq!(matrix.data, vec![1, 2, 3, 3]);
     }
 }
