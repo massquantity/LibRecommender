@@ -221,12 +221,12 @@ impl PyUserCF {
         update_by_sims(self.n_users, &cosine_sims, &mut self.sim_mapping)?;
 
         // merge interactions for inference on new users/items
-        self.user_interactions = CsrMatrix::add(
+        self.user_interactions = CsrMatrix::merge(
             &self.user_interactions,
             &new_user_interactions,
             Some(self.n_users),
         );
-        self.item_interactions = CsrMatrix::add(
+        self.item_interactions = CsrMatrix::merge(
             &self.item_interactions,
             &new_item_interactions,
             Some(self.n_items),
