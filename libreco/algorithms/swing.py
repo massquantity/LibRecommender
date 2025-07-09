@@ -80,7 +80,6 @@ class Swing(Base):
         user_interacts = build_sparse(train_data.sparse_interaction)
         item_interacts = build_sparse(train_data.sparse_interaction, transpose=True)
         self.rs_model = recfarm.Swing(
-            self.task,
             self.top_k,
             self.alpha,
             self.max_cache_num,
