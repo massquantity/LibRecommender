@@ -70,11 +70,9 @@ impl PySwing {
         })
     }
 
-    fn compute_swing(&mut self, num_threads: usize, update_scores: bool) -> PyResult<()> {
+    fn compute_swing(&mut self, num_threads: usize) -> PyResult<()> {
         std::env::set_var("RAYON_NUM_THREADS", format!("{num_threads}"));
-        if !update_scores {
-            self.swing_score_mapping.clear();
-        }
+        self.swing_score_mapping.clear();
         self.swing_score_mapping = compute_swing_scores(
             &self.user_interactions,
             &self.item_interactions,
@@ -86,6 +84,57 @@ impl PySwing {
         )?;
         Ok(())
     }
+
+    /// update on new sparse interactions
+    fn update_swing(
+        &mut self,
+        num_threads: usize,
+        user_interactions: &Bound<'_, PyAny>,
+        item_interactions: &Bound<'_, PyAny>,
+    ) -> PyResult<()> {
+        std::env::set_var("RAYON_NUM_THREADS", format!("{num_threads}"));
+        let new_user_interactions: CsrMatrix<i32, f32> = user_interactions.extract()?;
+        let new_item_interactions: CsrMatrix<i32, f32> = item_interactions.extract()?;
+        self.swing_score_mapping = compute_swing_scores(
+            &new_user_interactions,
+            &new_item_interactions,
+            &self.swing_score_mapping,
+            self.n_users,
+            self.n_items,
+            self.alpha,
+            self.max_cache_num,
+        )?;
+
+        // merge interactions for inference on new users/items
+        self.user_interactions = CsrMatrix::merge(
+            &self.user_interactions,
+            &new_user_interactions,
+            Some(self.n_users),
+        );
+        self.item_interactions = CsrMatrix::merge(
+            &self.item_interactions,
+            &new_item_interactions,
+            Some(self.n_items),
+        );
+        Ok(())
+    }
+
+    // fn get_item_interactions(&self, user: usize) -> PyResult<Vec<i32>> {
+    //     let start = self.user_interactions.indptr[user];
+    //     let end = self.user_interactions.indptr[user + 1];
+    //     let item_interactions = (start..end)
+    //         .map(|i| self.user_interactions.indices[i])
+    //         .collect();
+    //     Ok(item_interactions)
+    // }
+    //
+    // fn get_swing_scores(&self, item: i32) -> PyResult<Vec<(i32, f32)>> {
+    //     let scores = match self.swing_score_mapping.get(&item).cloned() {
+    //         Some(ss) => ss,
+    //         None => Vec::new(),
+    //     };
+    //     Ok(scores)
+    // }
 
     fn num_swing_elements(&self) -> PyResult<usize> {
         if self.swing_score_mapping.is_empty() {
@@ -144,8 +193,8 @@ impl PySwing {
         random_rec: bool,
     ) -> PyResult<(Vec<Bound<'py, PyList>>, Bound<'py, PyList>)> {
         let mut recs = Vec::new();
-        let mut no_rec_indices = Vec::new();
-        for (k, u) in users.iter().enumerate() {
+        let mut additional_rec_counts = Vec::new();
+        for u in users {
             let u: i32 = u.extract()?;
             let consumed = self
                 .user_consumed
@@ -169,23 +218,25 @@ impl PySwing {
                             }
                         }
                     }
+
                     if item_scores.is_empty() {
+                        additional_rec_counts.push(n_rec);
                         recs.push(PyList::empty(py));
-                        no_rec_indices.push(k);
                     } else {
                         let items = get_rec_items(item_scores, n_rec, random_rec);
+                        additional_rec_counts.push(n_rec - items.len());
                         recs.push(PyList::new(py, items)?);
                     }
                 }
                 None => {
+                    additional_rec_counts.push(n_rec);
                     recs.push(PyList::empty(py));
-                    no_rec_indices.push(k);
                 }
             }
         }
 
-        let no_rec_indices = PyList::new(py, no_rec_indices)?;
-        Ok((recs, no_rec_indices))
+        let additional_rec_counts = PyList::new(py, additional_rec_counts)?;
+        Ok((recs, additional_rec_counts))
     }
 }
 
@@ -267,7 +318,7 @@ mod tests {
                 &user_consumed,
                 default_pred,
             )?;
-            swing.compute_swing(2, false)?;
+            swing.compute_swing(2)?;
             Ok(swing)
         })?;
         Ok(swing)
@@ -304,7 +355,9 @@ mod tests {
     fn test_save_model() -> Result<(), Box<dyn std::error::Error>> {
         pyo3::prepare_freethreaded_python();
         let model = get_swing_model()?;
-        let cur_dir = std::env::current_dir()?.to_string_lossy().to_string();
+        let cur_dir = std::env::current_dir()?
+            .to_string_lossy()
+            .to_string();
         let model_name = "swing_model";
         save(&model, &cur_dir, model_name)?;
 
