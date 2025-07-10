@@ -193,8 +193,8 @@ impl PySwing {
         random_rec: bool,
     ) -> PyResult<(Vec<Bound<'py, PyList>>, Bound<'py, PyList>)> {
         let mut recs = Vec::new();
-        let mut no_rec_indices = Vec::new();
-        for (k, u) in users.iter().enumerate() {
+        let mut additional_rec_counts = Vec::new();
+        for u in users {
             let u: i32 = u.extract()?;
             let consumed = self
                 .user_consumed
@@ -218,23 +218,25 @@ impl PySwing {
                             }
                         }
                     }
+
                     if item_scores.is_empty() {
+                        additional_rec_counts.push(n_rec);
                         recs.push(PyList::empty(py));
-                        no_rec_indices.push(k);
                     } else {
                         let items = get_rec_items(item_scores, n_rec, random_rec);
+                        additional_rec_counts.push(n_rec - items.len());
                         recs.push(PyList::new(py, items)?);
                     }
                 }
                 None => {
+                    additional_rec_counts.push(n_rec);
                     recs.push(PyList::empty(py));
-                    no_rec_indices.push(k);
                 }
             }
         }
 
-        let no_rec_indices = PyList::new(py, no_rec_indices)?;
-        Ok((recs, no_rec_indices))
+        let additional_rec_counts = PyList::new(py, additional_rec_counts)?;
+        Ok((recs, additional_rec_counts))
     }
 }
 
@@ -353,7 +355,9 @@ mod tests {
     fn test_save_model() -> Result<(), Box<dyn std::error::Error>> {
         pyo3::prepare_freethreaded_python();
         let model = get_swing_model()?;
-        let cur_dir = std::env::current_dir()?.to_string_lossy().to_string();
+        let cur_dir = std::env::current_dir()?
+            .to_string_lossy()
+            .to_string();
         let model_name = "swing_model";
         save(&model, &cur_dir, model_name)?;
 

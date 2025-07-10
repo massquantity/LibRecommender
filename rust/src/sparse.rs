@@ -48,7 +48,7 @@ impl<T: Copy + Eq + Hash + Ord, U: Copy> CsrMatrix<T, U> {
         dok_matrix.merge(other).to_csr()
     }
 
-    fn iter(&self) -> CsrMatrixIterator<T, U> {
+    fn iter(&self) -> CsrMatrixIterator<'_, T, U> {
         CsrMatrixIterator {
             matrix: self,
             row_idx: 0,
