@@ -159,7 +159,11 @@ fn compute_single_swing(
     let target_i32 = target_item as i32;
     let users = get_row_vec(item_interactions, target_item);
     if users.is_empty() {
-        return (target_i32, Vec::new());
+        let scores = prev_scores
+            .get(&target_i32)
+            .cloned()
+            .unwrap_or_default();
+        return (target_i32, scores);
     }
 
     let mut item_scores = init_item_scores(target_i32, n_items, prev_scores);

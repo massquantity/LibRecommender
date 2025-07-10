@@ -70,11 +70,9 @@ impl PySwing {
         })
     }
 
-    fn compute_swing(&mut self, num_threads: usize, update_scores: bool) -> PyResult<()> {
+    fn compute_swing(&mut self, num_threads: usize) -> PyResult<()> {
         std::env::set_var("RAYON_NUM_THREADS", format!("{num_threads}"));
-        if !update_scores {
-            self.swing_score_mapping.clear();
-        }
+        self.swing_score_mapping.clear();
         self.swing_score_mapping = compute_swing_scores(
             &self.user_interactions,
             &self.item_interactions,
@@ -86,6 +84,57 @@ impl PySwing {
         )?;
         Ok(())
     }
+
+    /// update on new sparse interactions
+    fn update_swing(
+        &mut self,
+        num_threads: usize,
+        user_interactions: &Bound<'_, PyAny>,
+        item_interactions: &Bound<'_, PyAny>,
+    ) -> PyResult<()> {
+        std::env::set_var("RAYON_NUM_THREADS", format!("{num_threads}"));
+        let new_user_interactions: CsrMatrix<i32, f32> = user_interactions.extract()?;
+        let new_item_interactions: CsrMatrix<i32, f32> = item_interactions.extract()?;
+        self.swing_score_mapping = compute_swing_scores(
+            &new_user_interactions,
+            &new_item_interactions,
+            &self.swing_score_mapping,
+            self.n_users,
+            self.n_items,
+            self.alpha,
+            self.max_cache_num,
+        )?;
+
+        // merge interactions for inference on new users/items
+        self.user_interactions = CsrMatrix::merge(
+            &self.user_interactions,
+            &new_user_interactions,
+            Some(self.n_users),
+        );
+        self.item_interactions = CsrMatrix::merge(
+            &self.item_interactions,
+            &new_item_interactions,
+            Some(self.n_items),
+        );
+        Ok(())
+    }
+
+    // fn get_item_interactions(&self, user: usize) -> PyResult<Vec<i32>> {
+    //     let start = self.user_interactions.indptr[user];
+    //     let end = self.user_interactions.indptr[user + 1];
+    //     let item_interactions = (start..end)
+    //         .map(|i| self.user_interactions.indices[i])
+    //         .collect();
+    //     Ok(item_interactions)
+    // }
+    //
+    // fn get_swing_scores(&self, item: i32) -> PyResult<Vec<(i32, f32)>> {
+    //     let scores = match self.swing_score_mapping.get(&item).cloned() {
+    //         Some(ss) => ss,
+    //         None => Vec::new(),
+    //     };
+    //     Ok(scores)
+    // }
 
     fn num_swing_elements(&self) -> PyResult<usize> {
         if self.swing_score_mapping.is_empty() {
@@ -267,7 +316,7 @@ mod tests {
                 &user_consumed,
                 default_pred,
             )?;
-            swing.compute_swing(2, false)?;
+            swing.compute_swing(2)?;
             Ok(swing)
         })?;
         Ok(swing)
